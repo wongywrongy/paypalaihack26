@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: coalition
+      POSTGRES_PASSWORD: coalition
+      POSTGRES_DB: coalition
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["coalition_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coalition"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+  api:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://coalition:coalition@postgres:5432/coalition
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8000}
+    ports: ["127.0.0.1:8000:8000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)",
+        ]
+      interval: 2s
+      timeout: 4s
+      retries: 30
+      start_period: 10s
+  worker:
+    build: .
+    restart: unless-stopped
+    command: ["python", "-m", "coalition.worker"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://coalition:coalition@postgres:5432/coalition
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8000}
+    depends_on:
+      postgres: { condition: service_healthy }
+      api: { condition: service_healthy }
+volumes:
+  coalition_data:

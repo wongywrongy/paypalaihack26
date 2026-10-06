@@ -1,0 +1,5 @@
+# Commonplace / Coalition
+The supplied brief pins a restrained shopping interface. The chosen direction is a campus cooperative catalog: warm ivory storefront, precise dark lettering, quiet ruled sections, and a compact violet Coalition offer beside normal purchase controls. Original product drawings are geometric SVG assets. No photographic or Amazon assets.
+Display and body type: self-hosted Archivo variable. Financial figures use tabular numerals. Desktop has a product gallery, product information, and a purchase column. Mobile stacks the product and opens Coalition as a bottom sheet. The sheet preserves the product page behind it and appears only after user action.
+The gradient occupies only a narrow offer edge. Payment amounts and terms never animate. The adapted Magic UI NumberTicker animates only a changed confirmed count, with the actual integer always visible. Reduced motion disables it.
+The design exploration tool ran with no remote catalog; the explicit brief and user-delegated implementation choices govern this build.

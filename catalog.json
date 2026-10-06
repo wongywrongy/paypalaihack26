@@ -1,0 +1,77 @@
+[
+  {
+    "id": "arc-991",
+    "title": "Arc 991 Scientific Calculator",
+    "brand": "ARC STUDY",
+    "price_minor": 8000,
+    "currency": "USD",
+    "variants": ["Graphite", "Cloud"],
+    "category": "Study essentials",
+    "image": "/assets/calculator.svg",
+    "description": "One less unknown. A capable scientific calculator for lectures and everyday problem sets. Course and exam compatibility are unknown.",
+    "features": [
+      "552 functions, from fractions to statistics",
+      "Natural textbook display with a four-line screen",
+      "Solar power with battery backup",
+      "Protective slide cover included"
+    ],
+    "specs": {
+      "Model": "Arc 991",
+      "Dimensions": "16.2 \u00d7 7.7 \u00d7 1.1 cm",
+      "Weight": "95 g",
+      "Power": "Solar + replaceable battery",
+      "In the box": "Calculator, slide cover, quick guide"
+    },
+    "delivery_days": 7
+  },
+  {
+    "id": "form-lamp",
+    "title": "Form Task Lamp",
+    "brand": "FORM OBJECTS",
+    "price_minor": 4900,
+    "currency": "USD",
+    "variants": ["Sage", "Chalk"],
+    "category": "Desk & workspace",
+    "image": "/assets/lamp.svg",
+    "description": "A little focus, by design. Warm, adjustable light for late-night notes and early-morning ideas.",
+    "features": [
+      "Three color temperatures",
+      "Touch dimming, from 10% to 100%",
+      "Adjustable aluminum arm",
+      "USB-C power cable included"
+    ],
+    "specs": {
+      "Model": "Form 01",
+      "Height": "38 cm",
+      "Power": "USB-C, 8 W",
+      "Material": "Powder-coated aluminum",
+      "In the box": "Lamp, USB-C cable"
+    },
+    "delivery_days": 4
+  },
+  {
+    "id": "rove-bottle",
+    "title": "Rove Everyday Bottle \u00b7 750 ml",
+    "brand": "ROVE GOODS",
+    "price_minor": 3200,
+    "currency": "USD",
+    "variants": ["Terracotta", "Forest"],
+    "category": "Everyday carry",
+    "image": "/assets/bottle.svg",
+    "description": "For the long way to class. A thoughtfully simple bottle that keeps your coffee hot and your water cold.",
+    "features": [
+      "Double-wall stainless steel",
+      "Cold for 24 hours, hot for 12",
+      "Leakproof twist lid",
+      "BPA-free, easy-clean interior"
+    ],
+    "specs": {
+      "Model": "Rove 750",
+      "Capacity": "750 ml",
+      "Weight": "320 g",
+      "Material": "18/8 stainless steel",
+      "Care": "Hand wash"
+    },
+    "delivery_days": 5
+  }
+]

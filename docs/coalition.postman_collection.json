@@ -1,0 +1,379 @@
+{
+  "info": {
+    "name": "Coalition \u2014 conditional sandbox checkout",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Buyer approval must happen through PayPal. Queued commands are not payment proof. Cookie jar retains buyer session. Set operator_token privately in your local Postman environment."
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "origin",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "run_id",
+      "value": ""
+    },
+    {
+      "key": "commitment_id",
+      "value": ""
+    },
+    {
+      "key": "order_id",
+      "value": ""
+    },
+    {
+      "key": "operator_token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Config",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "{{origin}}"
+          },
+          {
+            "key": "X-Coalition-Request",
+            "value": "1"
+          }
+        ],
+        "url": "{{base_url}}/api/config"
+      }
+    },
+    {
+      "name": "Catalog",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "{{origin}}"
+          },
+          {
+            "key": "X-Coalition-Request",
+            "value": "1"
+          }
+        ],
+        "url": "{{base_url}}/api/catalog"
+      }
+    },
+    {
+      "name": "Buyer session",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "{{origin}}"
+          },
+          {
+            "key": "X-Coalition-Request",
+            "value": "1"
+          }
+        ],
+        "url": "{{base_url}}/api/session",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"run_id\": \"{{run_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Status",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "{{origin}}"
+          },
+          {
+            "key": "X-Coalition-Request",
+            "value": "1"
+          }
+        ],
+        "url": "{{base_url}}/api/status"
+      }
+    },
+    {
+      "name": "Evaluate need",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "{{origin}}"
+          },
+          {
+            "key": "X-Coalition-Request",
+            "value": "1"
+          }
+        ],
+        "url": "{{base_url}}/api/assistant",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"request_text\": \"Below $70, delivery within 2 days, exact Arc 991 in Graphite.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Publish immutable offer",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "{{origin}}"
+          },
+          {
+            "key": "X-Coalition-Request",
+            "value": "1"
+          },
+          {
+            "key": "X-Operator-Token",
+            "value": "{{operator_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/operator/runs",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"scenario\": \"success\",\n  \"demo\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Merchant evidence",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "{{origin}}"
+          },
+          {
+            "key": "X-Coalition-Request",
+            "value": "1"
+          },
+          {
+            "key": "X-Operator-Token",
+            "value": "{{operator_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/operator/runs/{{run_id}}"
+      }
+    },
+    {
+      "name": "Activate demo deadline",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "{{origin}}"
+          },
+          {
+            "key": "X-Coalition-Request",
+            "value": "1"
+          },
+          {
+            "key": "X-Operator-Token",
+            "value": "{{operator_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/operator/runs/{{run_id}}/activate",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Cancel open group",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "{{origin}}"
+          },
+          {
+            "key": "X-Coalition-Request",
+            "value": "1"
+          },
+          {
+            "key": "X-Operator-Token",
+            "value": "{{operator_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/operator/runs/{{run_id}}/cancel",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Authorize approved order",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "{{origin}}"
+          },
+          {
+            "key": "X-Coalition-Request",
+            "value": "1"
+          }
+        ],
+        "url": "{{base_url}}/api/commitments/{{commitment_id}}/authorize",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"order_id\": \"{{order_id}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Leave open group",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "{{origin}}"
+          },
+          {
+            "key": "X-Coalition-Request",
+            "value": "1"
+          }
+        ],
+        "url": "{{base_url}}/api/commitments/{{commitment_id}}/leave",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Refund successful sandbox demo",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "{{origin}}"
+          },
+          {
+            "key": "X-Coalition-Request",
+            "value": "1"
+          },
+          {
+            "key": "X-Operator-Token",
+            "value": "{{operator_token}}"
+          }
+        ],
+        "url": "{{base_url}}/api/operator/runs/{{run_id}}/refund-cleanup",
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
