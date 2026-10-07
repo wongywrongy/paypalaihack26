@@ -84,6 +84,7 @@ interface Created {
   preparation_links: { name: string; url: string; buyer_id: string }[];
 }
 export default function Operator({ config }: { config: Config | null }) {
+  const assistantEnabled = config?.mode === "fixture" || !!config?.llm_configured;
   const [demo, setDemo] = useState(true);
   const [token, setToken] = useState(""),
     [runs, setRuns] = useState<Run[]>([]),
@@ -182,7 +183,7 @@ export default function Operator({ config }: { config: Config | null }) {
           <span>
             {config?.mode === "fixture"
               ? "Payments and AI are simulated. No service verification."
-              : `PayPal ${config?.paypal_configured ? "configured" : "credentials missing"} · LLM ${config?.llm_configured ? "configured" : "key missing"}. Configuration is not proof of verification.`}
+              : `PayPal ${config?.paypal_configured ? "configured" : "credentials missing"} · AI recommendations ${config?.llm_configured ? "enabled" : "disabled"}. Configuration is not proof of verification.`}
           </span>
         </div>
         {!connected ? (
@@ -318,7 +319,11 @@ export default function Operator({ config }: { config: Config | null }) {
                 <p>
                   {config?.mode === "fixture"
                     ? "Open each invitation to explicitly simulate approval, or use the fixture preparation control below."
-                    : "Prepare four genuine sandbox approvals using distinct buyer accounts, then let the judge approve the fifth. Sam’s live recommendation should reject the two-day delivery requirement. Recommendations do not restrict ordinary checkout. Preparation expires after 30 minutes."}
+                    : "Prepare four genuine sandbox approvals using distinct buyer accounts, then let the judge approve the fifth. Preparation expires after 30 minutes."}
+                  {config?.mode === "connected" &&
+                    (assistantEnabled
+                      ? " Sam’s live recommendation should reject the two-day delivery requirement. Recommendations do not restrict ordinary checkout."
+                      : " AI recommendations are disabled for this payment demo.")}
                 </p>
                 <ul>
                   {created.preparation_links.map((p) => (
@@ -342,8 +347,7 @@ export default function Operator({ config }: { config: Config | null }) {
                 </a>
                 <small>
                   Disclose that these authorizations were prepared before the
-                  presentation. A persona or model acceptance is never a payment
-                  approval.
+                  presentation. A preparation persona is never a payment approval.
                 </small>
               </div>
             )}
@@ -545,15 +549,19 @@ export default function Operator({ config }: { config: Config | null }) {
                               </small>
                             </td>
                             <td>
-                              {b.result?.guardrail_override
-                                ? "Code rejected (model: " +
-                                  b.result.model_result?.decision +
-                                  ")"
-                                : b.result?.decision ||
-                                  (b.decision_status === "failed"
-                                    ? "Assistant unavailable"
-                                    : b.decision_status)}
-                              <small>{b.result?.explanation || b.decision_error}</small>
+                              {!assistantEnabled
+                                ? "Not enabled"
+                                : b.result?.guardrail_override
+                                  ? "Code rejected (model: " +
+                                    b.result.model_result?.decision +
+                                    ")"
+                                  : b.result?.decision ||
+                                    (b.decision_status === "failed"
+                                      ? "Assistant unavailable"
+                                      : b.decision_status)}
+                              {assistantEnabled && (
+                                <small>{b.result?.explanation || b.decision_error}</small>
+                              )}
                             </td>
                             <td>
                               {b.authorization_status || "Not authorized"}

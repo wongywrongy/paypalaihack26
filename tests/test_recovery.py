@@ -426,7 +426,9 @@ class RecoveryChecks(unittest.TestCase):
 
         with connect() as db:
             db.execute("UPDATE jobs SET status='done' WHERE mode='connected'")
-        gid, _ = self.group(count=0)
+        # Model jobs created before disabling AI remain tracked and finish safely.
+        with patch("coalition.demo.settings", replace(settings, llm_api_key="configured")):
+            gid, _ = self.group(count=0)
         with (
             patch("coalition.assistant.settings", replace(settings, llm_api_key="")),
             patch("coalition.assistant.decide") as model,
@@ -452,6 +454,25 @@ class RecoveryChecks(unittest.TestCase):
             self.assertTrue(all(j["status"] == "done" and j["error"] is None for j in jobs))
         self.assertTrue(run_once())  # The following group deadline job still runs.
         self.assertFalse(self.state(gid)["needs_attention"])
+
+    def test_blank_model_key_publishes_payment_demo_without_ai_jobs(self):
+        from dataclasses import replace
+
+        with patch("coalition.demo.settings", replace(settings, llm_api_key="")):
+            gid, _ = self.group(count=0)
+        with connect() as db:
+            buyers = db.execute(
+                "SELECT b.id FROM buyers b JOIN groups g ON g.run_id=b.run_id WHERE g.id=%s", (gid,)
+            ).fetchall()
+            self.assertEqual(len(buyers), 5)
+            decisions = db.execute("SELECT id FROM ai_decisions WHERE group_id=%s", (gid,)).fetchall()
+            self.assertEqual(decisions, [])
+            jobs = db.execute(
+                "SELECT kind FROM jobs WHERE payload->>'group_id'=%s OR payload->>'decision_id' IN (SELECT id::text FROM ai_decisions WHERE group_id=%s)",
+                (gid, gid),
+            ).fetchall()
+            self.assertEqual([j["kind"] for j in jobs], ["tick"])
+            self.assertEqual(self.state(gid)["inventory_reserved"], 5)
 
     def test_provider_timing_amount_and_merchant_checked_before_capture(self):
         for field, value in [

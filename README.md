@@ -2,7 +2,7 @@
 
 Coalition is a merchant-installed conditional group-buy widget on **Commonplace Supply**, an original fictional participating supplier. One exact Arc 991 calculator in Graphite costs an ordinary **$80 demo price** or **$65 per buyer** when exactly five approved buyers join. Shipping is included; tax is explicitly simulated at $0. Five simulated units are reserved before each fixed offer version is published.
 
-**Simulated merchant and buyers; real PayPal sandbox operations; live AI recommendations** describes connected mode only. Fixture mode labels its payments and recommendations as simulated. Prices, inventory, tax, product/course attributes and fulfillment are simulated in both modes. A sandbox purchase does not ship a physical product.
+**Simulated merchant and buyers; real PayPal sandbox operations; AI recommendations coming soon** describes the connected payment demo with `LLM_API_KEY` blank. Recommendations are optional and enabled only when a model key is configured. Fixture mode labels its payments and recommendations as simulated. Prices, inventory, tax, product/course attributes and fulfillment are simulated in both modes. A sandbox purchase does not ship a physical product.
 
 No Amazon integration, novelty claim, atomic payment guarantee, guaranteed savings, escrow, pooled wallet, split payout, tiers, fees, subscriptions, or production-readiness claim is made. Configuring this one sandbox business account is not a production marketplace integration. Each future merchant needs its own payment onboarding.
 
@@ -57,7 +57,7 @@ For Vite, use `PUBLIC_URL=http://localhost:5173`. For Docker's integrated static
 | `PAYPAL_CLIENT_SECRET` | Server-only sandbox REST app secret |
 | `PAYPAL_MERCHANT_ID` | Sandbox business account merchant ID, verified against provider payee |
 | `PAYPAL_WEBHOOK_ID` | Webhook registered on the same sandbox REST app |
-| `LLM_API_KEY` | Server-only Anthropic API key |
+| `LLM_API_KEY` | Optional server-only Anthropic API key; leave blank for the payment demo |
 | `LLM_MODEL`, `LLM_BASE_URL` | One configurable model adapter; default Anthropic Messages API |
 | `PAYPAL_PAYMENTS_RETRY_HOURS` | Verified Payments v2 replay retention; default `0` means reconcile, then review unknown capture/refund POSTs |
 | `VITE_API_URL` | Static frontend's public API origin; empty for local same-origin proxy |
@@ -108,6 +108,8 @@ For the judge demonstration, show the evidence panel before and after a genuine 
 
 ## Optional assistant
 
+Leave `LLM_API_KEY` blank on both the API and worker for the payment-only demo. The sheet shows **AI recommendations coming soon**, without an input, evaluation button or recommendation results. New offers retain their five buyer invitations and payment/deadline jobs but create no AI decisions or jobs. Existing AI records remain available in protected evidence. This configuration does not demonstrate live AI and cannot satisfy the live-model proof gate.
+
 “Does this fit my needs?” accepts natural-language budget, delivery deadline and requirements. A real runtime call uses Anthropic's [structured output API](https://platform.claude.com/docs/en/build-with-claude/structured-outputs) and Pydantic validation. It returns a recommendation, extracted constraints, supplied evidence, one concise explanation and at most one necessary question. Code independently checks explicit numeric budget/day expressions, amounts, eligible offer identity, availability, exact variants, required features and known course compatibility. Missing course/exam policy stays unknown. An unsupported required capability or unknown required approval cannot become an acceptance merely from a model's product-name inference.
 
 Try `Below $70, delivery within 2 days, exact Arc 991 in Graphite.` The live model should reject seven-day delivery; code independently rejects it even if the model accepts. Try a specified course requiring exam approval: compatibility remains unknown. A model failure explicitly leaves the assistant unavailable while normal offer browsing and buyer-approved checkout remain usable. Recommendations never authorize payment. A substitute would require fresh exact-offer consent; external catalog results cannot become merchant offers automatically. Structured decisions and short explanations are logged, not hidden chain of thought.
@@ -153,7 +155,7 @@ Local Docker can serve the bundled frontend through FastAPI; the Render target s
 
 For a manually created Docker web service, create a separate Render Background Worker from the same repository and region. Leave Root Directory empty, use `./Dockerfile`, and override Docker Command with `python -m coalition.worker`. Copy the web service's server environment variables, including the exact same `DATABASE_URL` and `COALITION_MODE=connected`; the default Docker command only starts the website. No worker port or public URL is needed. Keep `PUBLIC_URL` set to the storefront origin on both services.
 
-A missing `LLM_API_KEY` marks recommendations unavailable without repeatedly retrying AI jobs; payment jobs continue. Add the Anthropic key to both backend services to enable live recommendations. For AI jobs exhausted by an earlier deployment, use their protected merchant **Retry job** controls after redeploying the worker. This retains existing offers, buyers and payment records.
+A blank `LLM_API_KEY` disables recommendations and prevents new prepared AI jobs; payment jobs continue. Add the Anthropic key to both backend services to enable live recommendations. For AI jobs exhausted by an earlier deployment, use their protected merchant **Retry job** controls after redeploying the worker; without a key they finish as unavailable without repeated retries. This retains existing offers, buyers and payment records.
 
 ## Known production gaps
 

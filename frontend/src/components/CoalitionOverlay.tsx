@@ -135,6 +135,7 @@ export default function CoalitionOverlay({
       )
     : null;
   const decision = status?.decision;
+  const assistantEnabled = config?.mode === "fixture" || !!config?.llm_configured;
   const groupJoinable = status && status.group.status === "OPEN";
   async function createCommitment(): Promise<Commitment> {
     if (!status) throw new Error("Group status unavailable.");
@@ -489,83 +490,92 @@ export default function CoalitionOverlay({
                     </p>
                   </div>
                 </div>
-                <details className="assistant-fit">
-                  <summary>Does this fit my needs?</summary>
-                  <form
-                    onSubmit={async (event) => {
-                      event.preventDefault();
-                      await evaluateNeeds();
-                    }}
-                  >
-                    <label htmlFor="buyer-needs">
-                      Budget, delivery date, and product requirements
-                    </label>
-                    <textarea
-                      id="buyer-needs"
-                      value={needs}
-                      onChange={(e) => setNeeds(e.target.value)}
-                      maxLength={1200}
-                      minLength={3}
-                      required
-                      placeholder="Below $70, delivery within 2 days, scientific calculator for my course."
-                    />
-                    <button
-                      className="secondary-button"
-                      disabled={assistantBusy || decision?.status === "queued"}
-                    >
-                      {assistantBusy || decision?.status === "queued"
-                        ? "Evaluating…"
-                        : "Evaluate this offer"}
-                    </button>
-                  </form>
-                  {decision && (
-                    <div className="agent-note" role="status">
-                      <div>
-                        <strong>
-                          {decision.mode === "fixture"
-                            ? "Simulated recommendation"
-                            : "Live recommendation"}
-                        </strong>
-                        <p>
-                          {decision.status === "completed"
-                            ? decision.result?.explanation
-                            : decision.status === "failed"
-                              ? "Assistant unavailable. You can still browse and join."
-                              : "Evaluating your constraints…"}
-                        </p>
-                        {decision.result?.question && (
-                          <p>{decision.result.question}</p>
-                        )}
-                        {decision.result?.extracted_constraints && (
-                          <dl>
-                            {Object.entries(
-                              decision.result.extracted_constraints,
-                            )
-                              .filter(
-                                ([, v]) =>
-                                  v !== null &&
-                                  v !== false &&
-                                  (!Array.isArray(v) || v.length),
-                              )
-                              .map(([k, v]) => (
-                                <div key={k}>
-                                  <dt>{k.replaceAll("_", " ")}</dt>
-                                  <dd>{String(v)}</dd>
-                                </div>
-                              ))}
-                          </dl>
-                        )}
-                        {decision.result?.evidence?.map((e) => (
-                          <p key={e}>{e}</p>
-                        ))}
-                        <small>
-                          A recommendation never approves payment. Course and
-                          exam approval stay unknown without supplied policy.
-                        </small>
-                      </div>
+                {!assistantEnabled ? (
+                  <div className="assistant-fit agent-note">
+                    <div>
+                      <strong>AI recommendations coming soon</strong>
+                      <p>Review the offer details. PayPal checkout is available.</p>
                     </div>
-                  )}
-                </details>
+                  </div>
+                ) : (
+                  <details className="assistant-fit">
+                    <summary>Does this fit my needs?</summary>
+                    <form
+                      onSubmit={async (event) => {
+                        event.preventDefault();
+                        await evaluateNeeds();
+                      }}
+                    >
+                      <label htmlFor="buyer-needs">
+                        Budget, delivery date, and product requirements
+                      </label>
+                      <textarea
+                        id="buyer-needs"
+                        value={needs}
+                        onChange={(e) => setNeeds(e.target.value)}
+                        maxLength={1200}
+                        minLength={3}
+                        required
+                        placeholder="Below $70, delivery within 2 days, scientific calculator for my course."
+                      />
+                      <button
+                        className="secondary-button"
+                        disabled={assistantBusy || decision?.status === "queued"}
+                      >
+                        {assistantBusy || decision?.status === "queued"
+                          ? "Evaluating…"
+                          : "Evaluate this offer"}
+                      </button>
+                    </form>
+                    {decision && (
+                      <div className="agent-note" role="status">
+                        <div>
+                          <strong>
+                            {decision.mode === "fixture"
+                              ? "Simulated recommendation"
+                              : "Live recommendation"}
+                          </strong>
+                          <p>
+                            {decision.status === "completed"
+                              ? decision.result?.explanation
+                              : decision.status === "failed"
+                                ? "Assistant unavailable. You can still browse and join."
+                                : "Evaluating your constraints…"}
+                          </p>
+                          {decision.result?.question && (
+                            <p>{decision.result.question}</p>
+                          )}
+                          {decision.result?.extracted_constraints && (
+                            <dl>
+                              {Object.entries(
+                                decision.result.extracted_constraints,
+                              )
+                                .filter(
+                                  ([, v]) =>
+                                    v !== null &&
+                                    v !== false &&
+                                    (!Array.isArray(v) || v.length),
+                                )
+                                .map(([k, v]) => (
+                                  <div key={k}>
+                                    <dt>{k.replaceAll("_", " ")}</dt>
+                                    <dd>{String(v)}</dd>
+                                  </div>
+                                ))}
+                            </dl>
+                          )}
+                          {decision.result?.evidence?.map((e) => (
+                            <p key={e}>{e}</p>
+                          ))}
+                          <small>
+                            A recommendation never approves payment. Course and
+                            exam approval stay unknown without supplied policy.
+                          </small>
+                        </div>
+                      </div>
+                    )}
+                  </details>
+                )}
                 <label className="terms-check">
                   <input
                     type="checkbox"
@@ -764,9 +774,13 @@ export default function CoalitionOverlay({
               </button>
             )}
             <p>
-              Simulated merchant and buyers; real PayPal sandbox operations and
-              live AI in connected mode. Prices, inventory, tax and fulfillment
-              are simulated.
+              {config?.mode === "connected"
+                ? "Simulated merchant and buyers; real PayPal sandbox operations. " +
+                  (assistantEnabled
+                    ? "Live AI recommendations enabled. "
+                    : "AI recommendations coming soon. ")
+                : "Fixture mode: payments and recommendations are simulated. "}
+              Prices, inventory, tax and fulfillment are simulated.
             </p>
           </div>
         </aside>

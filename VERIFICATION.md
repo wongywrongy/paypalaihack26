@@ -69,3 +69,10 @@ Read-only checks of the user's deployment confirmed `/api/health`, `/api/config`
 Fixed missing-key handling for prepared AI jobs: a missing `LLM_API_KEY` now records assistant unavailability and finishes the job without repeated retries or group payment attention. The merchant table displays the recorded reason. Regression coverage verifies all five AI jobs finish without model calls or error logs and the following group job still runs. Existing exhausted AI jobs retain their records and can be retried from protected merchant controls.
 
 Ran all 38 backend checks against isolated local PostgreSQL schemas (passed), TypeScript/Vite production build (passed), and focused Ruff checks (passed). These recovery tests use provider doubles and do not prove genuine PayPal payment operations.
+
+
+## Payment-only placeholder — 2026-10-07
+
+At the user's request, connected mode with a blank model key now displays an AI-coming-soon placeholder, hides the input and historical recommendation results, and retains ordinary PayPal checkout. Merchant copy marks recommendations disabled and omits Sam's live rejection instructions. New connected offers with a blank key create five buyer invitations and deadline work without AI decisions/jobs. Existing records remain intact. No local model was installed or started.
+
+All 39 backend checks passed against isolated PostgreSQL schemas. Four desktop/mobile browser cases passed using explicit API fixtures, including refresh persistence, no assistant requests, enabled PayPal checkout controls after consent, and disabled merchant recommendation copy. TypeScript/Vite production build and focused Ruff checks passed. These checks do not prove a genuine PayPal payment. The full external acceptance gate still requires live AI and cannot be satisfied by this placeholder; the payment-only demo documents that limitation.

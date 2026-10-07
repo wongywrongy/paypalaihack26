@@ -149,3 +149,61 @@ test("buyer reviews exact terms, approves fixture, refreshes and sees completed 
   );
   expect(overflow).toBe(false);
 });
+
+test("connected payment demo shows an AI placeholder and keeps checkout available", async ({ page }) => {
+  let assistantRequests = 0;
+  const group = {
+    id: "test-group", run_id: "test-run", mode: "connected", status: "OPEN",
+    activated: true, demo: false, deadline: new Date(Date.now() + 86400000).toISOString(),
+    inventory_reserved: 5, needs_attention: false, preparation_expires_at: new Date(Date.now() + 1800000).toISOString(),
+  };
+  const status = {
+    group, offer, confirmed_count: 0, completed_captures: 0, commitment: null,
+    decision: { status: "completed", mode: "connected", result: { decision: "accept", explanation: "Historical recommendation" } },
+    activity: [], buyer: { name: "You", prepared: false },
+  };
+  await page.route("**/api/**", async route => {
+    const path = new URL(route.request().url()).pathname;
+    let body: unknown = {};
+    if (path === "/api/config") body = { mode: "connected", paypal_configured: true, paypal_client_id: "test-client", llm_configured: false };
+    else if (path === "/api/session") body = { run_id: "test-run" };
+    else if (path === "/api/opportunity") body = { ...status, available: true };
+    else if (path === "/api/status") body = status;
+    else if (path === "/api/assistant") assistantRequests++;
+    else if (path === "/api/operator/runs") body = route.request().method() === "GET" ? [] : {
+      run_id: "test-run", judge_url: "/?run=test-run",
+      preparation_links: [{ name: "Maya", buyer_id: "maya", url: "/?run=test-run&invite=maya" }],
+    };
+    else if (path === "/api/operator/runs/test-run") body = {
+      group, buyers: [{ id: "maya", name: "Maya", prepared: true, decision_status: "completed", result: status.decision.result }],
+      jobs: [], operations: [], observations: [], events: [],
+    };
+    await route.fulfill({ json: body });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Join for $65" }).click();
+  const panel = page.getByRole("complementary", { name: "Coalition group purchase" });
+  await expect(panel.getByText("AI recommendations coming soon", { exact: true })).toBeVisible();
+  await expect(panel.getByRole("textbox")).toHaveCount(0);
+  await expect(panel.getByRole("button", { name: "Evaluate this offer" })).toHaveCount(0);
+  await expect(panel.getByText("Live recommendation", { exact: true })).toHaveCount(0);
+  await expect(panel.getByText("Historical recommendation")).toHaveCount(0);
+  await panel.getByRole("checkbox").check();
+  await expect(panel.getByRole("button", { name: "Continue with PayPal" })).toBeEnabled();
+  await page.screenshot({ path: `/tmp/coalition-placeholder-${test.info().project.name}.png` });
+  await page.reload();
+  await expect(panel.getByText("AI recommendations coming soon", { exact: true })).toBeVisible();
+  expect(assistantRequests).toBe(0);
+
+  await page.goto("/merchant");
+  await expect(page.getByText(/AI recommendations disabled/)).toBeVisible();
+  await page.getByLabel("Operator token").fill("test-operator");
+  await page.getByRole("button", { name: "Open operator controls" }).click();
+  await page.getByRole("button", { name: "Publish fixed offer" }).click();
+  await expect(page.getByText("Prepare sandbox buyers", { exact: true })).toBeVisible();
+  await expect(page.getByText(/AI recommendations are disabled for this payment demo/)).toBeVisible();
+  await expect(page.getByText("Not enabled", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Sam’s live recommendation/)).toHaveCount(0);
+  await expect(page.getByText("Historical recommendation")).toHaveCount(0);
+  expect(assistantRequests).toBe(0);
+});

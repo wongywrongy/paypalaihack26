@@ -47,12 +47,13 @@ def create_run(db, scenario, demo=True):
             "INSERT INTO buyers(id,run_id,name,persona,invite_hash,prepared) VALUES(%s,%s,%s,%s,%s,true)",
             (buyer_id, run_id, name, Jsonb(persona), digest(token)),
         )
-        decision_id = uuid4()
-        db.execute(
-            "INSERT INTO ai_decisions(id,buyer_id,group_id,mode) VALUES(%s,%s,%s,%s)",
-            (decision_id, buyer_id, group_id, settings.mode),
-        )
-        enqueue(db, "ai", {"decision_id": str(decision_id)}, f"ai:{decision_id}")
+        if settings.mode == "fixture" or settings.llm_api_key:
+            decision_id = uuid4()
+            db.execute(
+                "INSERT INTO ai_decisions(id,buyer_id,group_id,mode) VALUES(%s,%s,%s,%s)",
+                (decision_id, buyer_id, group_id, settings.mode),
+            )
+            enqueue(db, "ai", {"decision_id": str(decision_id)}, f"ai:{decision_id}")
         invites.append(
             {
                 "name": name,
