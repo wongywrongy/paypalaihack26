@@ -5,7 +5,10 @@
     "brand": "ARC STUDY",
     "price_minor": 8000,
     "currency": "USD",
-    "variants": ["Graphite", "Cloud"],
+    "variants": [
+      "Graphite",
+      "Cloud"
+    ],
     "category": "Study essentials",
     "image": "/assets/calculator.svg",
     "description": "One less unknown. A capable scientific calculator for lectures and everyday problem sets. Course and exam compatibility are unknown.",
@@ -30,7 +33,10 @@
     "brand": "FORM OBJECTS",
     "price_minor": 4900,
     "currency": "USD",
-    "variants": ["Sage", "Chalk"],
+    "variants": [
+      "Sage",
+      "Chalk"
+    ],
     "category": "Desk & workspace",
     "image": "/assets/lamp.svg",
     "description": "A little focus, by design. Warm, adjustable light for late-night notes and early-morning ideas.",
@@ -55,7 +61,10 @@
     "brand": "ROVE GOODS",
     "price_minor": 3200,
     "currency": "USD",
-    "variants": ["Terracotta", "Forest"],
+    "variants": [
+      "Terracotta",
+      "Forest"
+    ],
     "category": "Everyday carry",
     "image": "/assets/bottle.svg",
     "description": "For the long way to class. A thoughtfully simple bottle that keeps your coffee hot and your water cold.",
@@ -73,5 +82,179 @@
       "Care": "Hand wash"
     },
     "delivery_days": 5
+  },
+  {
+    "id": "cabin-one",
+    "title": "Cabin One",
+    "brand": "COALITION DEMO",
+    "price_minor": 11000,
+    "currency": "USD",
+    "variants": [
+      "Graphite"
+    ],
+    "category": "Headphones",
+    "image": "",
+    "description": "Bluetooth 5.3 audio; iOS audio supported. Flight noise reduction effectiveness is not documented.",
+    "features": [
+      "Bluetooth 5.3 audio; iOS audio supported. Flight noise reduction effectiveness is not documented."
+    ],
+    "specs": {
+      "ANC": "Yes",
+      "Connection": "Bluetooth audio"
+    },
+    "delivery_days": 7,
+    "source_version": 1,
+    "evidence": {
+      "anc": true,
+      "bluetooth_audio": true,
+      "iphone_12": true,
+      "flight_effectiveness": null
+    },
+    "policy_id": "headphones-v1"
+  },
+  {
+    "id": "cabin-pro",
+    "title": "Cabin Pro",
+    "brand": "COALITION DEMO",
+    "price_minor": 14900,
+    "currency": "USD",
+    "variants": [
+      "Graphite"
+    ],
+    "category": "Headphones",
+    "image": "",
+    "description": "Bluetooth audio and tested simulated cabin noise reduction.",
+    "features": [
+      "Bluetooth audio and tested simulated cabin noise reduction."
+    ],
+    "specs": {
+      "ANC": "Yes",
+      "Connection": "Bluetooth audio"
+    },
+    "delivery_days": 7,
+    "source_version": 1,
+    "evidence": {
+      "anc": true,
+      "bluetooth_audio": true,
+      "iphone_12": true,
+      "flight_effectiveness": true
+    },
+    "policy_id": "headphones-v1"
+  },
+  {
+    "id": "quiet-wire",
+    "title": "Quiet Wire",
+    "brand": "COALITION DEMO",
+    "price_minor": 9500,
+    "currency": "USD",
+    "variants": [
+      "Graphite"
+    ],
+    "category": "Headphones",
+    "image": "",
+    "description": "Lightning connector; compatible with iPhone 12. Flight effectiveness unknown.",
+    "features": [
+      "Lightning connector; compatible with iPhone 12. Flight effectiveness unknown."
+    ],
+    "specs": {
+      "ANC": "Yes",
+      "Connection": "Lightning"
+    },
+    "delivery_days": 5,
+    "source_version": 1,
+    "evidence": {
+      "anc": true,
+      "bluetooth_audio": false,
+      "iphone_12": true,
+      "flight_effectiveness": null
+    },
+    "policy_id": "headphones-v1"
+  },
+  {
+    "id": "air-light",
+    "title": "Air Light",
+    "brand": "COALITION DEMO",
+    "price_minor": 7900,
+    "currency": "USD",
+    "variants": [
+      "Graphite"
+    ],
+    "category": "Headphones",
+    "image": "",
+    "description": "Bluetooth audio; no active noise cancellation.",
+    "features": [
+      "Bluetooth audio; no active noise cancellation."
+    ],
+    "specs": {
+      "ANC": "No",
+      "Connection": "Bluetooth audio"
+    },
+    "delivery_days": 4,
+    "source_version": 1,
+    "evidence": {
+      "anc": false,
+      "bluetooth_audio": true,
+      "iphone_12": true,
+      "flight_effectiveness": null
+    },
+    "policy_id": "headphones-v1"
+  },
+  {
+    "id": "travel-studio",
+    "title": "Travel Studio",
+    "brand": "COALITION DEMO",
+    "price_minor": 12500,
+    "currency": "USD",
+    "variants": [
+      "Graphite"
+    ],
+    "category": "Headphones",
+    "image": "",
+    "description": "Bluetooth audio; simulated aircraft cabin test documented.",
+    "features": [
+      "Bluetooth audio; simulated aircraft cabin test documented."
+    ],
+    "specs": {
+      "ANC": "Yes",
+      "Connection": "Bluetooth audio"
+    },
+    "delivery_days": 12,
+    "source_version": 1,
+    "evidence": {
+      "anc": true,
+      "bluetooth_audio": true,
+      "iphone_12": true,
+      "flight_effectiveness": true
+    },
+    "policy_id": "headphones-v1"
+  },
+  {
+    "id": "mystery-sound",
+    "title": "Mystery Sound",
+    "brand": "COALITION DEMO",
+    "price_minor": 9900,
+    "currency": "USD",
+    "variants": [
+      "Graphite"
+    ],
+    "category": "Headphones",
+    "image": "",
+    "description": "Connector and noise cancellation not documented.",
+    "features": [
+      "Connector and noise cancellation not documented."
+    ],
+    "specs": {
+      "ANC": "Unknown",
+      "Connection": "Unknown"
+    },
+    "delivery_days": 6,
+    "source_version": 1,
+    "evidence": {
+      "anc": null,
+      "bluetooth_audio": null,
+      "iphone_12": null,
+      "flight_effectiveness": null
+    },
+    "policy_id": "headphones-v1"
   }
 ]

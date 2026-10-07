@@ -65,6 +65,26 @@ def seed():
                 "INSERT INTO products VALUES(%s,%s) ON CONFLICT DO NOTHING",
                 (product["id"], Jsonb(product)),
             )
+            if product["category"] == "Headphones":
+                db.execute(
+                    "INSERT INTO catalog_stock VALUES(%s,60) ON CONFLICT DO NOTHING",
+                    (product["id"],),
+                )
+        db.execute(
+            "INSERT INTO merchant_policies VALUES('headphones-v1',1,%s) ON CONFLICT DO NOTHING",
+            (
+                Jsonb(
+                    {
+                        "base": [9200, 8800],
+                        "ranges": [[8900, 9200], [8500, 8800]],
+                        "floors": [8900, 8500],
+                        "variants": ["Graphite"],
+                        "currency": "USD",
+                        "delivery_concessions": False,
+                    }
+                ),
+            ),
+        )
         db.execute(
             "INSERT INTO offers(id,product_id,terms,price_minor,currency,minimum,capacity,inventory) VALUES(%s,%s,%s,6500,'USD',5,5,5) ON CONFLICT DO NOTHING",
             (TERMS["offer_id"], TERMS["product_id"], Jsonb(TERMS)),
@@ -75,5 +95,5 @@ if __name__ == "__main__":
     init_db()
     seed()
     print(
-        "Migrations applied; three simulated products seeded. Publish an offer in merchant controls."
+        "Migrations applied; six headphone offers and three legacy products seeded. Prepare a run in operator controls."
     )

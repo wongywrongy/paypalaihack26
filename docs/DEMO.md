@@ -1,15 +1,27 @@
-# Five-buyer sandbox demonstration
+# Coalition demonstration
 
-Use connected mode for real PayPal evidence. For the payment-only demo, leave `LLM_API_KEY` blank on both API and worker and say: **“Simulated merchant and buyers; real PayPal sandbox operations; AI recommendations coming soon.”** No model runs or recommendation results are presented in this configuration. Prices, product attributes, inventory, tax and fulfillment are simulated. Human operators/buyers must approve each sandbox account. Prepared approvals are explicitly disclosed and tied to this fresh immutable offer version.
+## Small live preparation
 
-1. First prove the individual adapter lifecycle: publish a fresh demo; use one human-approved account to create and authorize an order, inspect its real authorization timestamp, cancel the OPEN group, and inspect the confirmed void. Never substitute fixture evidence. For captures/refunds, use the five-buyer success run below; settlement cannot capture a single underfilled buyer merely for a smoke check.
-2. Publish `success`, demo preparation enabled. Prepare four approved accounts using separate profiles or the protected preparation links. Five simulated personas alone do not fund anything. Preparation expires in thirty minutes and the worker unwinds abandoned holds.
-3. Open the ordinary shared `/?run=...` supplier page in a fresh judge profile. Inspect the exact Arc 991 Graphite offer: $80 ordinary demo price, $65 group total, included shipping and simulated $0 tax, five reserved units.
-4. Inside the compact sheet, show the **AI recommendations coming soon** placeholder and review the actual offer terms. Checkout remains available. If live AI is enabled later, separately demonstrate “Below $70, delivery within 2 days, exact Arc 991 in Graphite” and show its genuine rejection. Course/exam approval without supplied policy remains unknown.
-5. Activate the labeled ninety-second group clock. The judge accepts exact terms and approves the fifth distinct sandbox buyer in PayPal. Count increases only after server-confirmed admission. The group freezes, settles and releases simulated fulfillment only after all five captures are confirmed completed.
-6. Expand Judge evidence. Show API versus reconciliation provenance and at least one genuine app-generated, signature-verified webhook receipt arriving in the UI. If a payment was already API-confirmed, explain that this new receipt is the webhook-driven UI change; do not relabel the earlier API result.
-7. Refresh the page and inspect the persistent receipt. In merchant controls request explicit sandbox refund cleanup after purchase. Wait for confirmed full refunds; bank availability may lag. Retain prior records and operation IDs.
-8. Independently publish `deadline`, a fresh immutable version/run. Human-approve fewer than five accounts. Activate ninety seconds and wait. Show UNWINDING until each authorization is confirmed voided or genuinely expired, then FAILED. Inventory stays reserved until obligations resolve.
-9. Preserve payment evidence without exposing secrets or unnecessary buyer data. The full `scripts/check_connected.py SUCCESS_RUN DEADLINE_RUN` acceptance gate additionally requires live AI acceptance/rejection and will not pass in the payment-only configuration. Run that gate only after enabling and genuinely demonstrating the model; a placeholder cannot satisfy it.
+1. Configure authenticated model access, PayPal sandbox app credentials, business merchant ID and a genuine registered public webhook. Verify all services share their configuration.
+2. Prepare a small run in `/operator`. Choose a quote closing window long enough for real approval latency; the default is ten minutes. Prices and the closing deadline become fixed when negotiation accepts a quote. Activation never rewrites new quote terms.
+3. Open the judge link, enter headphone requirements and show a consequential edit (for example, $86 excludes the $89 maximum). Show an unknown requirement and its evidence. Explicitly revise it only with buyer consent.
+4. Negotiate a merchant-authorized quote. Canonical target: three buyers at $89, five at $85. If live agents accept other permitted prices, show those actual terms or prepare a new run; do not overwrite the result.
+5. Prepare four **distinct sandbox payer approvals** in separate browser profiles using protected preparation links. Each simulated persona is evaluated live. A persona, timer or account is not an authorization. Preparation must be fresh and refer to this exact quote.
+6. Activate the run without changing accepted terms. Approve the hero's exact maximum through PayPal. Only provider-verified, admitted authorizations update the count.
+7. Wait for actual closing. Inspect the frozen members and price, actual captures and buyer-owned receipt. Verify authorization resources after the lower final capture; do not invent a separate remainder void or instant bank release.
+8. Run a separate below-minimum group and verify voids. Run the partial-capture fixture/recovery checks and disclose any injected fault. Use explicit refund cleanup for completed sandbox purchases; never delete unresolved obligations.
 
-Partial capture failure is validated with deterministic automated doubles in `tests/test_recovery.py`. Optional fixture demo controls explicitly inject “fifth capture declined” or “refund pending.” These are injected faults, not real PayPal declines, webhooks, refunds or model calls. No test account, decorative dot or persona constitutes approval. Never delete unresolved records or begin a new capture after unwinding starts.
+## Fixture mode
+
+Fixture preparation simulates four approvals and all model decisions. It runs the real API, worker, PostgreSQL state transitions and application deadlines. Connected mode never enables these controls. Fixture evidence cannot prove genuine PayPal capture, webhook timing or live model output.
+
+## Two-to-three-minute recording
+
+- 0:00–0:20: buyer problem and visible simulation disclosure.
+- 0:20–0:45: request, evidence and consequential edit.
+- 0:45–1:10: actual role exchanges and accepted merchant permissions.
+- 1:10–1:50: disclosed prepared genuine commitments and hero PayPal approval.
+- 1:50–2:20: actual lower capture and persistent receipt/evidence.
+- 2:20–2:45: verified failed-group unwind and concise recovery explanation.
+
+Use real observed durations. Label any time cut, replay or prerecorded session. Never edit a pending payment into apparent immediate success. A video is judging-ready only after genuine connected gates pass. Verify current official submission requirements before submission.

@@ -3,20 +3,20 @@
 ## Platform
 web
 ## Stack
-React, TypeScript, Vite, Tailwind, selected Magic UI components; Python FastAPI; PostgreSQL; one worker; Render.
+React, TypeScript, Vite, selected actual Magic UI components; FastAPI; PostgreSQL; one durable-job worker; configurable structured LLM adapter; PayPal sandbox adapter. Render deployment configuration is provided.
 ## Users
-Students shopping for a required scientific calculator; hackathon judges; operators preparing sandbox buyers.
+Shoppers seeking compatible headphones within a maximum delivered total and arrival deadline; hackathon judges; operators preparing disclosed sandbox buyer sessions.
 ## Product Purpose
-Join a conditional group purchase from the product page, review exact terms, approve $65 through PayPal sandbox, and see the durable result.
+Turn editable shopping requirements into evidence-backed eligibility, a bounded two-role negotiation, an immutable merchant-authorized group quote, and a buyer-owned persistent checkout and receipt.
 ## Capabilities and Constraints
-Five genuine authorizations for one exact variant. Fixed $65 including shipping and $0 simulated tax. Operator starts a 90-second deadline after preparation. Fixture mode is explicit. No separate buyer onboarding, chat, or checkout wizard. Live models cannot approve payment. Unresolved financial records survive reset.
+Six fictional headphone offers. One unit per buyer, USD, included simulated shipping, explicitly zero simulated tax, one configured sandbox business payee. Small demo: capacity five, minimum three, accepted example $89 at three and $85 at five. Large illustrative profile: capacity sixty, minimum twenty-five, $85 at fifty. Counts represent actual verified commitments in connected mode; fixture counts are explicitly simulated. Unknown mandatory requirements block eligibility. Quote and buyer consent remain fixed once approval begins. Settlement freezes membership and price at the accepted deadline; all selected payments complete or captures are refunded and remaining authorizations unwound. Unresolved financial records survive new runs. Live models cannot approve payment.
 ## Brand Commitments
-Coalition is the working overlay name. Original demo storefront; no Amazon affiliation. Restrained surfaces, clear typography, narrow gradient accent.
+Coalition is the request-first purchase identity. Commonplace Audio is a fictional merchant; settlement uses one sandbox business account. White and pale neutral surfaces, fine borders, Archivo text, tabular numbers, solid indigo actions. No decorative agent avatars or speculative payment animation.
 ## Evidence on Hand
-Existing Commonplace storefront, PayPal adapter, PostgreSQL worker and tests, revised against the supplied brief. Local fixture and deterministic recovery checks are available. No genuine sandbox payment, webhook or live-model evidence is available without credentials.
+Existing payment foundation and isolated PostgreSQL recovery checks; request-to-negotiation-to-lower-capture fixture checks on desktop and mobile. GPU model and structured live evaluation are recorded separately from fixture and provider verification in VERIFICATION.md. Screenshots live under `.impeccable/review/`. Genuine sandbox lower capture, void, refund, webhook and remaining-hold behavior require provider evidence; fixture results do not establish them.
 ## Product Principles
-Keep shopping in context; explain financial states precisely; persist every financial operation; enforce terms in code.
+Explain eligibility with sources and uncertainty; enforce merchant pricing authority and inventory in code; reserve inventory atomically; persist immutable terms and intended payment operations; distinguish approval, authorization, capture and refund confirmation. A full authorization count alone never means purchase success.
 ## Accessibility & Inclusion
-Keyboard access, mobile bottom sheet, reduced motion, stable financial amounts.
+Native editable form controls, visible focus, keyboard access, explicit text states, responsive offer and action hierarchy, reduced motion, stable monetary amounts. Refresh restores owned state without replaying success celebrations. Optional explanatory help never adds a checkout step.
 ## Delegated Decisions
-The user authorizes reasonable implementation decisions. Original storefront name: Commonplace. Two secondary fictional products are a desk lamp and insulated bottle. Channel3 omitted until discovery meaningfully improves matching.
+Reuse the established visual world and existing payment foundation. Prefer the five-buyer live profile. Preserve the older calculator fixture as a regression path, not the main demonstration. Self-hosted models remain server-side and fail closed when unavailable.

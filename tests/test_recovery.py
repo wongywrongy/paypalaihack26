@@ -22,6 +22,7 @@ from coalition.groups import (
     lock_group,
     members,
     safe_terminal,
+    snapshot,
     tick,
     unwind,
     withdraw,
@@ -56,6 +57,9 @@ class Remote:
             return copy.deepcopy(self.keys[str(key)])
         amount = {"currency_code": "USD", "value": "65.00"}
         if path == "/v2/checkout/orders":
+            context = body["payment_source"]["paypal"]["experience_context"]
+            assert "/checkout?run=" in context["return_url"]
+            assert "/checkout?run=" in context["cancel_url"]
             oid = "order-" + uuid4().hex
             unit = {
                 **body["purchase_units"][0],
@@ -219,6 +223,29 @@ class RecoveryChecks(unittest.TestCase):
         self.assertEqual(
             sum(v for k, v in self.remote.posts.items() if k.endswith("/capture")), 5
         )
+
+    def test_queued_authorization_restores_without_confirming_a_buyer(self):
+        gid, _ = self.group(count=0)
+        with connect() as db:
+            b = db.execute(
+                "SELECT b.* FROM buyers b JOIN groups g ON g.run_id=b.run_id WHERE g.id=%s LIMIT 1",
+                (gid,),
+            ).fetchone()
+            c = join(db, b, gid, baseline.CONTEXT, terms_for(db, gid))
+            db.commit()
+            perform(db, c, "order")
+            enqueue(
+                db,
+                "authorize",
+                {"commitment_id": str(c["id"]), "group_id": str(gid)},
+                f"authorize:{c['id']}",
+            )
+        with connect() as db:
+            restored = snapshot(db, b)
+            self.assertTrue(restored["authorization_pending"])
+            self.assertEqual(restored["confirmed_count"], 0)
+            self.assertEqual(restored["members"], [])
+            self.assertEqual(restored["commitment"]["id"], c["id"])
 
     def test_pending_capture_reconciles_before_any_new_action(self):
         gid, _ = self.group()
@@ -427,7 +454,9 @@ class RecoveryChecks(unittest.TestCase):
         with connect() as db:
             db.execute("UPDATE jobs SET status='done' WHERE mode='connected'")
         # Model jobs created before disabling AI remain tracked and finish safely.
-        with patch("coalition.demo.settings", replace(settings, llm_api_key="configured")):
+        with patch(
+            "coalition.demo.settings", replace(settings, llm_api_key="configured")
+        ):
             gid, _ = self.group(count=0)
         with (
             patch("coalition.assistant.settings", replace(settings, llm_api_key="")),
@@ -451,7 +480,9 @@ class RecoveryChecks(unittest.TestCase):
                 "SELECT status,error FROM jobs WHERE payload->>'decision_id' IN (SELECT id::text FROM ai_decisions WHERE group_id=%s)",
                 (gid,),
             ).fetchall()
-            self.assertTrue(all(j["status"] == "done" and j["error"] is None for j in jobs))
+            self.assertTrue(
+                all(j["status"] == "done" and j["error"] is None for j in jobs)
+            )
         self.assertTrue(run_once())  # The following group deadline job still runs.
         self.assertFalse(self.state(gid)["needs_attention"])
 
@@ -462,10 +493,13 @@ class RecoveryChecks(unittest.TestCase):
             gid, _ = self.group(count=0)
         with connect() as db:
             buyers = db.execute(
-                "SELECT b.id FROM buyers b JOIN groups g ON g.run_id=b.run_id WHERE g.id=%s", (gid,)
+                "SELECT b.id FROM buyers b JOIN groups g ON g.run_id=b.run_id WHERE g.id=%s",
+                (gid,),
             ).fetchall()
             self.assertEqual(len(buyers), 5)
-            decisions = db.execute("SELECT id FROM ai_decisions WHERE group_id=%s", (gid,)).fetchall()
+            decisions = db.execute(
+                "SELECT id FROM ai_decisions WHERE group_id=%s", (gid,)
+            ).fetchall()
             self.assertEqual(decisions, [])
             jobs = db.execute(
                 "SELECT kind FROM jobs WHERE payload->>'group_id'=%s OR payload->>'decision_id' IN (SELECT id::text FROM ai_decisions WHERE group_id=%s)",
@@ -582,6 +616,19 @@ class RecoveryChecks(unittest.TestCase):
         headers = {"X-Coalition-Request": "1", "Origin": settings.public_url}
         with TestClient(app) as client:
             client.cookies.set("coalition_session", "stranger")
+            stranger_state = client.get(
+                f"/api/status?run={buyers[0]['run_id']}&commitment={c['id']}"
+            ).json()
+            self.assertIsNone(stranger_state["commitment"])
+            self.assertFalse(any(m["is_you"] for m in stranger_state["members"]))
+            self.assertEqual(
+                client.post(
+                    f"/api/commitments/{c['id']}/authorize",
+                    json={"order_id": c["order_id"]},
+                    headers=headers,
+                ).status_code,
+                404,
+            )
             self.assertEqual(
                 client.post(
                     f"/api/commitments/{c['id']}/leave", json={}, headers=headers

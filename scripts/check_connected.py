@@ -8,7 +8,7 @@ import sys
 
 from coalition.config import settings
 from coalition.db import connect
-from coalition.payments import amount_matches, paypal
+from coalition.payments import amount_matches, operation_amount, paypal
 
 if settings.mode != "connected":
     raise SystemExit("Connected mode required; test doubles are not external proof.")
@@ -36,6 +36,11 @@ with connect() as db:
         "SELECT result FROM ai_decisions d JOIN groups g ON g.id=d.group_id WHERE g.run_id=ANY(%s::uuid[]) AND d.mode='connected' AND d.status='completed'",
         (sys.argv[1:],),
     ).fetchall()
+    assessments = db.execute(
+        "SELECT a.eligible FROM compatibility_assessments a JOIN buyer_requests q ON q.id=a.request_id JOIN buyers b ON b.id=q.buyer_id WHERE b.run_id=ANY(%s::uuid[]) AND q.status='completed'",
+        (sys.argv[1:],),
+    ).fetchall()
+authorization_results = []
 for c in rows:
     assert c["mode"] == "connected", "Fixture history cannot be used as proof"
 for op in ops:
@@ -62,17 +67,29 @@ for op in ops:
         assert (
             data["intent"] == "AUTHORIZE"
             and unit["custom_id"] == str(c["id"])
-            and amount_matches(unit["amount"])
+            and amount_matches(unit["amount"], c["amount_minor"])
         )
         assert unit["payee"]["merchant_id"] == settings.paypal_merchant_id
         confirmed.add("order")
     else:
-        assert amount_matches(data["amount"]), "Amount/currency mismatch"
+        expected = operation_amount(c, "refund" if kind == "refund_recovery" else kind)
+        assert amount_matches(data["amount"], expected), "Amount/currency mismatch"
         if kind == "authorize" and data["status"] in ("CREATED", "CAPTURED", "VOIDED"):
             confirmed.add("authorize")
+            authorization_results.append(
+                {
+                    "status": data["status"],
+                    "amount": data["amount"],
+                    "expiration_time": data.get("expiration_time"),
+                }
+            )
         if kind == "void" and data["status"] == "VOIDED":
             confirmed.add("void")
         if kind == "capture" and data["status"] in ("COMPLETED", "REFUNDED"):
+            if c["settlement_minor"] and c["settlement_minor"] < c["amount_minor"]:
+                assert data.get("final_capture") is True, (
+                    "Verify final_capture on the actual lower capture resource"
+                )
             confirmed.add("capture")
             captured.add(c["id"])
         if kind in ("refund", "refund_recovery") and data["status"] == "COMPLETED":
@@ -85,18 +102,24 @@ assert any(
     len(selected := [c for c in rows if str(c["group_id"]) == str(gid) and c["locked"]])
     == 5
     and len({c["provider_payer_id"] for c in selected}) == 5
+    and all(
+        c["amount_minor"] == 8900 and c["settlement_minor"] == 8500 for c in selected
+    )
     and all(c["id"] in captured and c["id"] in refunded for c in selected)
     for gid in {c["group_id"] for c in rows}
-), "No frozen five-payer group with captures and cleanup refunds"
+), "No frozen five-payer $89 authorization/$85 capture group with cleanup refunds"
 assert any(
     e["payload"]
     .get("event_type", "")
     .startswith(("PAYMENT.AUTHORIZATION.", "PAYMENT.CAPTURE."))
     for e in events
 ), "No processed genuine app webhook receipt for these groups"
-assert {"accept", "reject"} <= {
-    d["result"].get("model_result", {}).get("decision") for d in decisions
-}, "Live model acceptance and rejection are both required"
+assert {True, False} <= {a["eligible"] for a in assessments} or {
+    "accept",
+    "reject",
+} <= {d["result"].get("model_result", {}).get("decision") for d in decisions}, (
+    "Live model eligibility and exclusion are both required"
+)
 print(
     json.dumps(
         {
@@ -104,6 +127,7 @@ print(
             "five_distinct_approved_payers": True,
             "genuine_webhook_receipt": True,
             "live_model_acceptance_and_rejection": True,
+            "authorization_resources_after_capture": authorization_results,
         },
         indent=2,
     )

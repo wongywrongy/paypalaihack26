@@ -2,4 +2,5 @@ import ReactDOM from "react-dom/client";
 import "@fontsource-variable/archivo";
 import "./styles.css";
 import App from "./App";
-ReactDOM.createRoot(document.getElementById("root")!).render(<App />);
+import RequestDeal, { PricingHelp } from "./RequestDeal";
+ReactDOM.createRoot(document.getElementById("root")!).render(location.pathname === "/" && !location.search.includes("paypal_") ? <RequestDeal /> : location.pathname === "/how-group-pricing-works" ? <PricingHelp /> : <App />);

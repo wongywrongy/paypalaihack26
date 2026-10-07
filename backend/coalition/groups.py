@@ -3,10 +3,11 @@ from uuid import uuid4
 from fastapi import HTTPException
 from psycopg.types.json import Jsonb
 
-from .catalog import validate_context
+from .catalog import PRODUCTS, validate_context
+from .config import settings
 from .db import enqueue
 from .offers import terms_for
-from .payments import RecoveryRequired, perform, reconcile
+from .payments import RecoveryRequired, fresh_authorization, perform, reconcile
 
 FAILURES = {"DECLINED", "DENIED", "FAILED", "REVERSED", "REFUNDED"}
 
@@ -54,6 +55,11 @@ def wake(db, group_id):
 
 def unwind(db, group_id, reason):
     group = lock_group(db, group_id)
+    if group["status"] == "DRAFT":
+        db.execute(
+            "UPDATE groups SET status='FAILED',failure_reason=%s WHERE id=%s",
+            (reason, group_id),
+        )
     if group["status"] in ("OPEN", "SETTLING"):
         db.execute(
             "UPDATE groups SET status='UNWINDING',failure_reason=%s WHERE id=%s",
@@ -78,6 +84,20 @@ def join(db, buyer, group_id, context, accepted_terms):
         raise HTTPException(404, "Group not found.")
     if accepted_terms != terms:
         raise HTTPException(409, "Offer terms changed. Review the exact offer again.")
+    if (context.product_id, context.selected_variant, context.quantity) != (
+        terms["product_id"],
+        terms["variant"],
+        1,
+    ):
+        raise HTTPException(422, "Selection does not match the exact quote.")
+    if terms.get("pricing_model") == "tiers":
+        from .matching import eligible_for_quote
+
+        db.execute("SELECT id FROM buyers WHERE id=%s FOR UPDATE", (buyer["id"],))
+        if not eligible_for_quote(db, buyer["id"], terms):
+            raise HTTPException(
+                409, "This quote does not satisfy your current evaluated requirements."
+            )
     expire_reservations(db, group_id)
     existing = db.execute(
         "SELECT * FROM commitments WHERE buyer_id=%s AND group_id=%s AND active",
@@ -87,6 +107,7 @@ def join(db, buyer, group_id, context, accepted_terms):
         return existing
     if (
         group["status"] != "OPEN"
+        or group["closing"]
         or expired(db, group["deadline"])
         or (not group["activated"] and expired(db, group["preparation_expires_at"]))
     ):
@@ -102,8 +123,8 @@ def join(db, buyer, group_id, context, accepted_terms):
         )
     cid = uuid4()
     db.execute(
-        "INSERT INTO commitments(id,buyer_id,group_id,accepted_terms,amount_minor,currency) VALUES(%s,%s,%s,%s,6500,'USD')",
-        (cid, buyer["id"], group_id, Jsonb(terms)),
+        "INSERT INTO commitments(id,buyer_id,group_id,accepted_terms,amount_minor,currency) VALUES(%s,%s,%s,%s,%s,'USD')",
+        (cid, buyer["id"], group_id, Jsonb(terms), terms["total_minor"]),
     )
     enqueue(
         db,
@@ -132,8 +153,19 @@ def admit(db, cid):
             (group["id"], c["provider_payer_id"], cid),
         ).fetchone()
     )
+    terms = terms_for(db, group["id"])
+    eligible = True
+    if terms.get("pricing_model") == "tiers":
+        from .matching import eligible_for_quote
+        from .payments import fresh_authorization
+
+        eligible = eligible_for_quote(db, c["buyer_id"], terms) and fresh_authorization(
+            c, group["deadline"]
+        )
     if (
         group["status"] != "OPEN"
+        or group["closing"]
+        or not eligible
         or expired(db, group["deadline"])
         or expired(db, group["preparation_expires_at"])
         and not group["activated"]
@@ -157,7 +189,7 @@ def admit(db, cid):
         "SELECT count(*) AS n FROM commitments WHERE group_id=%s AND admitted AND active",
         (group["id"],),
     ).fetchone()["n"]
-    if count >= 5:
+    if count >= terms["capacity"]:
         db.execute(
             "UPDATE commitments SET active=false,error='Group capacity reached; cancellation is in progress.' WHERE id=%s",
             (cid,),
@@ -176,6 +208,72 @@ def admit(db, cid):
 def freeze(db, group_id):
     group = lock_group(db, group_id)
     if group["status"] != "OPEN":
+        return
+    terms = terms_for(db, group_id)
+    if terms.get("pricing_model") == "tiers":
+        if not expired(db, group["deadline"]):
+            return
+        from .matching import eligible_for_quote
+        from .payments import fresh_authorization
+
+        rows = members(db, group_id)
+        selected = [
+            c
+            for c in rows
+            if funded(c)
+            and c["active"]
+            and c["authorized_minor"] == terms["total_minor"]
+            and fresh_authorization(c)
+            and eligible_for_quote(db, c["buyer_id"], terms)
+        ]
+        if len(selected) < terms["minimum"]:
+            unwind(
+                db, group_id, "Deadline passed below the required valid authorizations."
+            )
+            return
+        if len(selected) > terms["capacity"] or group["inventory_reserved"] < len(
+            selected
+        ):
+            unwind(db, group_id, "Reserved inventory does not cover selected buyers.")
+            return
+        price = next(
+            t["total_each_cents"]
+            for t in reversed(terms["tier_schedule"])
+            if len(selected) >= t["minimum_buyers"]
+        )
+        ids = [c["id"] for c in selected]
+        snapshot = {
+            "member_ids": [str(cid) for cid in ids],
+            "quote_id": terms["offer_id"],
+            "quote_version": terms["version"],
+            "total_each_cents": price,
+            "currency": "USD",
+        }
+        db.execute(
+            "UPDATE commitments SET locked=true,settlement_minor=%s WHERE id=ANY(%s)",
+            (price, ids),
+        )
+        db.execute(
+            "UPDATE groups SET status='SETTLING',closing=true,locked_at=clock_timestamp(),settlement_snapshot=%s WHERE id=%s",
+            (Jsonb(snapshot), group_id),
+        )
+        for c in rows:
+            if (
+                c["id"] not in ids
+                and c["authorization_id"]
+                and c["void_status"] != "VOIDED"
+            ):
+                db.execute(
+                    "UPDATE commitments SET active=false,admitted=false WHERE id=%s",
+                    (c["id"],),
+                )
+                enqueue(
+                    db,
+                    "void",
+                    {"commitment_id": str(c["id"]), "group_id": str(group_id)},
+                    f"void:{c['id']}",
+                )
+        wake(db, group_id)
         return
     if (
         expired(db, group["deadline"])
@@ -230,6 +328,27 @@ def withdraw(db, buyer_id, cid):
 
 def group_plan(group, rows, deadline_expired):
     state = group["status"]
+    snapshot = group.get("settlement_snapshot")
+    if snapshot:
+        locked = [c for c in rows if c["locked"]]
+        if state == "SETTLING":
+            if any(
+                c["capture_status"] in FAILURES
+                or c["refund_id"]
+                or c["authorization_status"] in ("VOIDED", "DENIED", "EXPIRED")
+                for c in locked
+            ):
+                return "UNWINDING"
+            if len(locked) == len(snapshot["member_ids"]) and all(
+                c["capture_status"] == "COMPLETED" for c in locked
+            ):
+                return "SUCCEEDED"
+        if state == "FAILED" and any(
+            c["capture_status"] == "COMPLETED" and c["refund_status"] != "COMPLETED"
+            for c in rows
+        ):
+            return "UNWINDING"
+        return state
     if state == "OPEN" and deadline_expired:
         return "UNWINDING"
     if (
@@ -290,25 +409,31 @@ def refresh_transition(db, group_id):
     freeze(db, group_id)
     group = lock_group(db, group_id)
     rows = members(db, group_id)
-    state = group_plan(
-        group,
-        rows,
-        expired(db, group["deadline"])
-        or not group["activated"]
-        and expired(db, group["preparation_expires_at"]),
-    )
+    terms = terms_for(db, group_id) if group["offer_id"] else None
+    if terms and terms.get("pricing_model") == "tiers" and group["status"] == "OPEN":
+        freeze(db, group_id)
+        group = lock_group(db, group_id)
+        state = group["status"]
+    else:
+        state = group_plan(
+            group,
+            rows,
+            expired(db, group["deadline"])
+            or not group["activated"]
+            and expired(db, group["preparation_expires_at"]),
+        )
     if state == "UNWINDING":
         if group["status"] == "FAILED":
             db.execute(
-                "UPDATE groups SET status='UNWINDING',inventory_reserved=5 WHERE id=%s",
-                (group_id,),
+                "UPDATE groups SET status='UNWINDING',inventory_reserved=%s WHERE id=%s",
+                (terms["capacity"], group_id),
             )
         else:
-            unwind(db, group_id, "Settlement cannot achieve five completed captures.")
+            unwind(db, group_id, "Not all selected payments can complete.")
     if state == "SUCCEEDED" and group["status"] == "SETTLING":
         db.execute(
-            "UPDATE groups SET status='SUCCEEDED',fulfillment_released=true,inventory_reserved=0 WHERE id=%s",
-            (group_id,),
+            "UPDATE groups SET status='SUCCEEDED',fulfillment_released=true,inventory_reserved=CASE WHEN %s THEN inventory_reserved ELSE 0 END WHERE id=%s",
+            (bool(terms.get("pricing_model") == "tiers"), group_id),
         )
     if group["status"] == "SUCCEEDED" and any(
         c["capture_status"] in FAILURES or c["refund_id"] for c in rows if c["locked"]
@@ -324,6 +449,10 @@ def refresh_transition(db, group_id):
 def tick(db, group_id):
     # Every lock is transaction-scoped and released before a provider request.
     group = lock_group(db, group_id)
+    if group["status"] == "DRAFT":
+        return None
+    if group["status"] == "OPEN" and expired(db, group["deadline"]):
+        db.execute("UPDATE groups SET closing=true WHERE id=%s", (group_id,))
     expire_reservations(db, group_id)
     db.commit()
     for c in members(db, group_id):
@@ -338,9 +467,23 @@ def tick(db, group_id):
         terms = terms_for(db, group_id)
         selected = [c for c in rows if c["locked"]]
         if (
-            len(selected) != 5
-            or group["inventory_reserved"] != 5
+            len(selected)
+            != len(
+                (group.get("settlement_snapshot") or {"member_ids": list(range(5))})[
+                    "member_ids"
+                ]
+            )
+            or group["inventory_reserved"] < len(selected)
             or any(c["accepted_terms"] != terms for c in selected)
+            or (
+                group.get("settlement_snapshot")
+                and {str(c["id"]) for c in selected}
+                != set(group["settlement_snapshot"]["member_ids"])
+            )
+            or (
+                terms.get("pricing_model") == "tiers"
+                and terms["payee_id"] != settings.paypal_merchant_id
+            )
         ):
             raise RecoveryRequired(
                 "Frozen offer, membership or reserved inventory mismatch."
@@ -375,7 +518,7 @@ def tick(db, group_id):
                 ):
                     continue
                 if not c["capture_id"]:
-                    c["fault_member"] = index == 4
+                    c["fault_member"] = index == len(selected) - 1
                     perform(db, c, "capture", scenario)
             group = refresh_transition(db, group_id)
     if group["status"] == "UNWINDING":
@@ -424,9 +567,36 @@ def tick(db, group_id):
             )
         db.commit()
     group = db.execute("SELECT * FROM groups WHERE id=%s", (group_id,)).fetchone()
+    if group["status"] in ("SUCCEEDED", "FAILED"):
+        release_inventory(db, group)
     if group["status"] == "FAILED":
         return None
     return 30 if group["status"] == "SUCCEEDED" else 2
+
+
+def release_inventory(db, group):
+    if group["status"] == "SUCCEEDED" and any(
+        not safe_terminal(db, c) for c in members(db, group["id"]) if not c["locked"]
+    ):
+        return
+    reservation = db.execute(
+        "UPDATE inventory_reservations SET status=%s WHERE quote_id=%s AND status='reserved' RETURNING *",
+        (
+            "consumed" if group["status"] == "SUCCEEDED" else "released",
+            group["offer_id"],
+        ),
+    ).fetchone()
+    if reservation:
+        used = (
+            len((group.get("settlement_snapshot") or {"member_ids": []})["member_ids"])
+            if group["status"] == "SUCCEEDED"
+            else 0
+        )
+        db.execute(
+            "UPDATE catalog_stock SET available=available+%s WHERE product_id=%s",
+            (reservation["units"] - used, reservation["product_id"]),
+        )
+        db.execute("UPDATE groups SET inventory_reserved=0 WHERE id=%s", (group["id"],))
 
 
 def snapshot(db, buyer):
@@ -453,13 +623,53 @@ def snapshot(db, buyer):
     ).fetchall()
     for event in events:
         event["id"] = redact(event["id"])
+    offer = terms_for(db, group["id"])
+    capture_operations = {
+        row["commitment_id"]: row["status"]
+        for row in db.execute(
+            "SELECT p.commitment_id,p.status FROM payment_operations p JOIN commitments c ON c.id=p.commitment_id WHERE c.group_id=%s AND p.kind='capture'",
+            (group["id"],),
+        ).fetchall()
+    }
+    participants = [
+        c for c in rows if c["locked"] or (c["admitted"] and not c["withdrawn"])
+    ]
+    authorization_pending = bool(
+        commitment
+        and commitment["active"]
+        and not commitment["authorization_id"]
+        and db.execute(
+            "SELECT 1 FROM jobs WHERE dedupe_key=%s AND status IN ('ready','running')",
+            (f"authorize:{commitment['id']}",),
+        ).fetchone()
+    )
     return {
         "group": group,
-        "offer": terms_for(db, group["id"]),
+        "offer": offer,
+        "ordinary_price_minor": next(
+            p["price_minor"] for p in PRODUCTS if p["id"] == offer["product_id"]
+        ),
+        "selected_count": len(
+            (group.get("settlement_snapshot") or {"member_ids": []})["member_ids"]
+        )
+        or sum(c["locked"] for c in rows),
+        "totals": {
+            "authorized_minor": sum(c["authorized_minor"] or 0 for c in rows),
+            "captured_minor": sum(c["captured_minor"] or 0 for c in rows),
+            "refunded_minor": sum(c["refunded_minor"] or 0 for c in rows),
+        },
         "confirmed_count": sum(
             c["admitted"]
             and not c["withdrawn"]
-            and c["authorization_status"] in ("CREATED", "CAPTURED")
+            and (
+                c["capture_status"] == "COMPLETED"
+                or (
+                    c["authorization_status"] in ("CREATED", "CAPTURED")
+                    and (
+                        offer.get("pricing_model") != "tiers" or fresh_authorization(c)
+                    )
+                )
+            )
             and c["void_status"] != "VOIDED"
             and c["refund_status"] != "COMPLETED"
             for c in rows
@@ -471,6 +681,22 @@ def snapshot(db, buyer):
             for c in rows
         ),
         "commitment": commitment,
+        "authorization_pending": authorization_pending,
+        # Anonymous progress only. Payment commands still require the buyer's session.
+        "members": [
+            {
+                "position": i + 1,
+                "is_you": c["buyer_id"] == buyer["id"],
+                "authorization_status": c["authorization_status"],
+                "capture_status": c["capture_status"],
+                "capture_operation_status": capture_operations.get(c["id"]),
+                "refund_status": c["refund_status"],
+                "void_status": c["void_status"],
+                "evidence_source": c["evidence_source"],
+                "updated_at": c["observed_at"],
+            }
+            for i, c in enumerate(participants[: offer["capacity"]])
+        ],
         "decision": decision,
         "activity": [],
         "evidence": evidence,

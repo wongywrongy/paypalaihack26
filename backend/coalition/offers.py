@@ -35,10 +35,9 @@ def terms_for(db, group_id):
     ).fetchone()
     if (
         not row
-        or row["inventory"] != 5
-        or row["price_minor"] != 6500
+        or row["inventory"] < row["capacity"]
+        or row["price_minor"] != row["terms"]["total_minor"]
         or row["currency"] != "USD"
-        or row["capacity"] != row["minimum"]
     ):
         raise RuntimeError("Published offer or reserved inventory invariant failed.")
     return row["terms"]

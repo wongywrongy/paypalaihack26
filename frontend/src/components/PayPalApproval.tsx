@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, type Commitment } from "../api";
 interface PayPalWindow extends Window {
   paypal?: {
@@ -48,9 +48,12 @@ export default function PayPalApproval({
   onError: (e: string) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const callbacks = useRef({ onApproved, onError });
   callbacks.current = { onApproved, onError };
   useEffect(() => {
+    setFailed(false);
     let canceled = false;
     let buttons:
       ReturnType<NonNullable<PayPalWindow["paypal"]>["Buttons"]> | undefined;
@@ -86,11 +89,19 @@ export default function PayPalApproval({
         });
         await buttons.render(ref.current);
       })
-      .catch((e) => callbacks.current.onError((e as Error).message));
+      .catch((e) => {
+        if (!canceled) {
+          setFailed(true);
+          callbacks.current.onError((e as Error).message);
+        }
+      });
     return () => {
       canceled = true;
       buttons?.close();
     };
-  }, [clientId, commitment.id, commitment.order_id]);
-  return <div ref={ref} className="paypal-buttons" />;
+  }, [clientId, commitment.id, commitment.order_id, attempt]);
+  return <div className="paypal-buttons">
+    <div ref={ref} hidden={failed} />
+    {failed && <button className="coalition-button" onClick={() => { callbacks.current.onError(""); setAttempt(n => n + 1); }}>Retry PayPal approval</button>}
+  </div>;
 }

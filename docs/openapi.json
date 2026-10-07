@@ -125,6 +125,94 @@
         }
       }
     },
+    "/api/requests": {
+      "post": {
+        "summary": "Request Entry",
+        "operationId": "request_entry_api_requests_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/negotiations": {
+      "post": {
+        "summary": "Negotiate",
+        "operationId": "negotiate_api_negotiations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NegotiationBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/journey": {
+      "get": {
+        "summary": "Journey",
+        "operationId": "journey_api_journey_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/commitments": {
       "post": {
         "summary": "Commitment",
@@ -884,6 +972,63 @@
         ],
         "title": "AssistantBody"
       },
+      "Constraints": {
+        "properties": {
+          "max_total_minor": {
+            "type": "integer",
+            "maximum": 1000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Max Total Minor"
+          },
+          "quantity": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Quantity",
+            "default": 1
+          },
+          "latest_arrival": {
+            "type": "string",
+            "format": "date",
+            "title": "Latest Arrival"
+          },
+          "required_features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "title": "Required Features"
+          },
+          "device": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device"
+          },
+          "flexibility": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "title": "Flexibility"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "max_total_minor",
+          "latest_arrival"
+        ],
+        "title": "Constraints"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -921,6 +1066,21 @@
           "accepted_terms"
         ],
         "title": "JoinBody"
+      },
+      "NegotiationBody": {
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Product Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "product_id"
+        ],
+        "title": "NegotiationBody"
       },
       "ProductContext": {
         "properties": {
@@ -978,6 +1138,32 @@
         ],
         "title": "RefundRecoveryBody"
       },
+      "RequestInput": {
+        "properties": {
+          "raw_text": {
+            "type": "string",
+            "maxLength": 1200,
+            "minLength": 3,
+            "title": "Raw Text"
+          },
+          "edits": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Constraints"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "raw_text"
+        ],
+        "title": "RequestInput"
+      },
       "RunBody": {
         "properties": {
           "scenario": {
@@ -989,6 +1175,18 @@
             "type": "boolean",
             "title": "Demo",
             "default": true
+          },
+          "profile": {
+            "type": "string",
+            "title": "Profile",
+            "default": "small"
+          },
+          "close_seconds": {
+            "type": "integer",
+            "maximum": 1800.0,
+            "minimum": 90.0,
+            "title": "Close Seconds",
+            "default": 600
           }
         },
         "type": "object",

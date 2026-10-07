@@ -7,6 +7,7 @@ const offer = {
   title: catalog[0].title,
   variant: "Graphite",
   quantity: 1,
+  merchant: "Commonplace Supply",
   total_minor: 6500,
   currency: "USD",
   minimum: 5,
@@ -32,6 +33,10 @@ test("buyer reviews exact terms, approves fixture, refreshes and sees completed 
       failure_reason: null,
     },
     offer,
+    authorization_pending: false,
+    members: Array.from({ length: authorized ? 5 : 4 }, (_, i) => ({ position: i + 1, is_you: i === 4, authorization_status: "CREATED", capture_status: completed ? "COMPLETED" : null, refund_status: null, void_status: null })),
+    evidence: [], webhooks: [],
+    ordinary_price_minor: 8000,
     confirmed_count: authorized ? 5 : 4,
     completed_captures: completed ? 5 : 0,
     commitment:
@@ -92,18 +97,18 @@ test("buyer reviews exact terms, approves fixture, refreshes and sees completed 
     }
     await route.fulfill({ json: body });
   });
-  await page.goto("/");
+  await page.goto("/shop");
   await expect(
     page.getByRole("heading", { name: catalog[0].title, exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Join for $65" }).click();
+  await page.getByRole("link", { name: "Join for $65" }).click();
   const panel = page.getByRole("complementary", {
     name: "Coalition group purchase",
   });
   await expect(
-    panel.getByText("FIXTURE DEMO · PAYMENTS & AI SIMULATED"),
+    page.getByText("FIXTURE DEMO · SIMULATED PAYMENTS"),
   ).toBeVisible();
-  await expect(panel.getByText("Shipping · within 7 days")).toBeVisible();
+  await expect(page.getByText("Delivery within 7 days", { exact: true })).toBeVisible();
   await expect(
     panel.getByRole("button", { name: "Simulate $65 authorization" }),
   ).toBeDisabled();
@@ -120,11 +125,10 @@ test("buyer reviews exact terms, approves fixture, refreshes and sees completed 
   ).toBeVisible({ timeout: 10000 });
   await expect(panel.getByText("Paid $65.00 USD")).toBeVisible();
   await page.reload();
-  await page.getByRole("button", { name: "View group status" }).click();
   await expect(
     page.getByRole("heading", { name: "Your group made it." }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Close group offer" }).click();
+  await page.getByRole("link", { name: "Return to merchant" }).click();
   await page.getByRole("button", { name: "Cloud", exact: true }).click();
   await expect(
     page.getByText("No exact group offer for this selection."),
@@ -158,7 +162,7 @@ test("connected payment demo shows an AI placeholder and keeps checkout availabl
     inventory_reserved: 5, needs_attention: false, preparation_expires_at: new Date(Date.now() + 1800000).toISOString(),
   };
   const status = {
-    group, offer, confirmed_count: 0, completed_captures: 0, commitment: null,
+    group, offer, members: [], authorization_pending: false, evidence: [], webhooks: [], ordinary_price_minor: 8000, confirmed_count: 0, completed_captures: 0, commitment: null,
     decision: { status: "completed", mode: "connected", result: { decision: "accept", explanation: "Historical recommendation" } },
     activity: [], buyer: { name: "You", prepared: false },
   };
@@ -180,10 +184,10 @@ test("connected payment demo shows an AI placeholder and keeps checkout availabl
     };
     await route.fulfill({ json: body });
   });
-  await page.goto("/");
-  await page.getByRole("button", { name: "Join for $65" }).click();
+  await page.goto("/shop");
+  await page.getByRole("link", { name: "Join for $65" }).click();
   const panel = page.getByRole("complementary", { name: "Coalition group purchase" });
-  await expect(panel.getByText("AI recommendations coming soon", { exact: true })).toBeVisible();
+  await expect(page.getByText("AI recommendations coming soon", { exact: true })).toBeVisible();
   await expect(panel.getByRole("textbox")).toHaveCount(0);
   await expect(panel.getByRole("button", { name: "Evaluate this offer" })).toHaveCount(0);
   await expect(panel.getByText("Live recommendation", { exact: true })).toHaveCount(0);
@@ -192,14 +196,14 @@ test("connected payment demo shows an AI placeholder and keeps checkout availabl
   await expect(panel.getByRole("button", { name: "Continue with PayPal" })).toBeEnabled();
   await page.screenshot({ path: `/tmp/coalition-placeholder-${test.info().project.name}.png` });
   await page.reload();
-  await expect(panel.getByText("AI recommendations coming soon", { exact: true })).toBeVisible();
+  await expect(page.getByText("AI recommendations coming soon", { exact: true })).toBeVisible();
   expect(assistantRequests).toBe(0);
 
   await page.goto("/merchant");
   await expect(page.getByText(/AI recommendations disabled/)).toBeVisible();
   await page.getByLabel("Operator token").fill("test-operator");
   await page.getByRole("button", { name: "Open operator controls" }).click();
-  await page.getByRole("button", { name: "Publish fixed offer" }).click();
+  await page.getByRole("button", { name: "Prepare run" }).click();
   await expect(page.getByText("Prepare sandbox buyers", { exact: true })).toBeVisible();
   await expect(page.getByText(/AI recommendations are disabled for this payment demo/)).toBeVisible();
   await expect(page.getByText("Not enabled", { exact: true })).toBeVisible();

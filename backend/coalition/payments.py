@@ -28,8 +28,41 @@ def amount_matches(data, minor=6500):
             data["currency_code"] == "USD"
             and Decimal(data["value"]) == Decimal(minor) / 100
         )
-    except (KeyError, InvalidOperation, TypeError):
+    except (KeyError, InvalidOperation, TypeError, ValueError):
         return False
+
+
+def operation_amount(c, kind):
+    if kind in ("order", "authorize"):
+        return c.get("amount_minor", 6500)
+    if kind in ("refund", "refund_recovery"):
+        return (
+            c.get("captured_minor")
+            or c.get("settlement_minor")
+            or c.get("amount_minor", 6500)
+        )
+    return c.get("settlement_minor") or c.get("amount_minor", 6500)
+
+
+def provider_amount(c, kind):
+    return {
+        "currency_code": c.get("currency", "USD"),
+        "value": f"{operation_amount(c, kind) / 100:.2f}",
+    }
+
+
+def fresh_authorization(c, deadline=None):
+    created, expiry = (
+        c.get("authorization_created_at"),
+        c.get("authorization_expires_at"),
+    )
+    if not created or not expiry or not created.tzinfo or not expiry.tzinfo:
+        return False
+    now = datetime.now(timezone.utc)
+    required = max(now, deadline) if deadline else now
+    return created <= now and min(
+        expiry, created + timedelta(days=3)
+    ) > required + timedelta(minutes=5)
 
 
 def paypal(method, path, body=None, key=None):
@@ -79,7 +112,7 @@ def validate_order(data, c):
         or data.get("intent") != "AUTHORIZE"
         or len(units) != 1
         or units[0].get("custom_id") != str(c["id"])
-        or not amount_matches(units[0].get("amount", {}))
+        or not amount_matches(units[0].get("amount", {}), operation_amount(c, "order"))
     ):
         raise RecoveryRequired(
             "Provider order identity or amount mismatch; manual review required."
@@ -123,7 +156,7 @@ def observe(db, c, kind, data, source=None, event_id=None):
     if current:
         c = {**c, **current}
     if kind in ("authorize", "capture", "refund"):
-        if not amount_matches(data.get("amount", {})):
+        if not amount_matches(data.get("amount", {}), operation_amount(c, kind)):
             raise RecoveryRequired("Provider payment amount mismatch.")
         if settings.mode == "connected":
             related = data.get("supplementary_data", {}).get("related_ids", {})
@@ -182,6 +215,16 @@ def observe(db, c, kind, data, source=None, event_id=None):
             f"UPDATE commitments SET {column}_id=%s,{column}_status=%s,error=NULL WHERE id=%s",
             (data["id"], status, c["id"]),
         )
+        amount_column = {
+            "authorize": "authorized_minor",
+            "capture": "captured_minor",
+            "refund": "refunded_minor",
+        }[kind]
+        if kind == "authorize" or status in ("COMPLETED", "REFUNDED", "REVERSED"):
+            db.execute(
+                f"UPDATE commitments SET {amount_column}=%s WHERE id=%s",
+                (operation_amount(c, kind), c["id"]),
+            )
     elif kind == "void":
         db.execute(
             "UPDATE commitments SET void_status='VOIDED',authorization_status=CASE WHEN authorization_status='CAPTURED' THEN authorization_status ELSE 'VOIDED' END,error=NULL WHERE id=%s",
@@ -211,8 +254,18 @@ def observe(db, c, kind, data, source=None, event_id=None):
         new_status = "VOIDED"
     if old_status != new_status:
         db.execute(
-            "INSERT INTO payment_observations(commitment_id,kind,provider_status,source,event_id,resource_id) VALUES(%s,%s,%s,%s,%s,%s)",
-            (c["id"], kind, new_status, source, event_id, data.get("id")),
+            "INSERT INTO payment_observations(commitment_id,kind,provider_status,source,event_id,resource_id,amount_minor) VALUES(%s,%s,%s,%s,%s,%s,%s)",
+            (
+                c["id"],
+                kind,
+                new_status,
+                source,
+                event_id,
+                data.get("id"),
+                operation_amount(c, kind)
+                if kind in ("authorize", "capture", "refund")
+                else None,
+            ),
         )
         db.execute(
             "UPDATE commitments SET evidence_source=%s,observed_at=clock_timestamp(),evidence_event_id=%s WHERE id=%s",
@@ -258,7 +311,7 @@ def fixture_result(c, kind, op, scenario):
             raise ProviderError("Fixture: fifth capture declined", True)
     return {
         "id": provider_id,
-        "amount": {"currency_code": "USD", "value": "65.00"},
+        "amount": provider_amount(c, kind),
         "create_time": datetime.now(timezone.utc).isoformat(),
         "expiration_time": (
             datetime.now(timezone.utc) + timedelta(days=29)
@@ -283,6 +336,7 @@ def perform(db, c, kind, scenario=None):
         raise RecoveryRequired("Captures are forbidden once unwinding begins.")
     if kind in ("order", "authorize") and (
         group["status"] != "OPEN"
+        or group["closing"]
         or not c["active"]
         or c["withdrawn"]
         or expired(db, c["reservation_expires_at"])
@@ -299,8 +353,8 @@ def perform(db, c, kind, scenario=None):
     if not run or run["mode"] != settings.mode:
         raise RecoveryRequired("Payment mode does not match its isolated demo run.")
     db.execute(
-        "INSERT INTO payment_operations(id,commitment_id,kind) VALUES(%s,%s,%s) ON CONFLICT DO NOTHING",
-        (uuid4(), c["id"], kind),
+        "INSERT INTO payment_operations(id,commitment_id,kind,amount_minor) VALUES(%s,%s,%s,%s) ON CONFLICT DO NOTHING",
+        (uuid4(), c["id"], kind, operation_amount(c, kind)),
     )
     db.commit()
     op = db.execute(
@@ -350,13 +404,16 @@ def perform(db, c, kind, scenario=None):
                         {
                             "reference_id": str(c["id"]),
                             "custom_id": str(c["id"]),
-                            "description": "Commonplace Supply demo: one Arc 991 in Graphite",
+                            "description": "Coalition sandbox: "
+                            + c["accepted_terms"]["title"]
+                            + " · "
+                            + c["accepted_terms"]["variant"],
                             **(
                                 {"payee": {"merchant_id": settings.paypal_merchant_id}}
                                 if settings.paypal_merchant_id
                                 else {}
                             ),
-                            "amount": {"currency_code": "USD", "value": "65.00"},
+                            "amount": provider_amount(c, kind),
                         }
                     ],
                     "payment_source": {
@@ -366,11 +423,11 @@ def perform(db, c, kind, scenario=None):
                                 "shipping_preference": "NO_SHIPPING",
                                 "user_action": "CONTINUE",
                                 "return_url": settings.public_url
-                                + "/?run="
+                                + "/checkout?run="
                                 + str(c["run_id"])
                                 + "&paypal_return=1",
                                 "cancel_url": settings.public_url
-                                + "/?run="
+                                + "/checkout?run="
                                 + str(c["run_id"])
                                 + "&paypal_cancel=1",
                             }
@@ -414,6 +471,7 @@ def perform(db, c, kind, scenario=None):
                 ).fetchone()
                 allowed = (
                     group["status"] == "OPEN"
+                    and not group["closing"]
                     and current["active"]
                     and not expired(db, current["reservation_expires_at"])
                     and not expired(db, group["deadline"])
@@ -444,7 +502,7 @@ def perform(db, c, kind, scenario=None):
                 "POST",
                 f"/v2/payments/authorizations/{c['authorization_id']}/capture",
                 {
-                    "amount": {"currency_code": "USD", "value": "65.00"},
+                    "amount": provider_amount(c, kind),
                     "final_capture": True,
                 },
                 op["id"],
@@ -468,7 +526,7 @@ def perform(db, c, kind, scenario=None):
             result = paypal(
                 "POST",
                 f"/v2/payments/captures/{c['capture_id']}/refund",
-                {"amount": {"currency_code": "USD", "value": "65.00"}},
+                {"amount": provider_amount(c, kind)},
                 op["id"],
             )
         observe(db, c, kind, result)
@@ -578,10 +636,10 @@ def confirm_recovered_refund(db, c, refund_id):
     if (
         result.get("id") != refund_id
         or result.get("status") != "COMPLETED"
-        or not amount_matches(result.get("amount", {}))
+        or not amount_matches(result.get("amount", {}), operation_amount(c, "refund"))
     ):
         raise RecoveryRequired(
-            "Recovery refund is not a provider-confirmed completed $65 USD refund."
+            "Recovery refund is not a provider-confirmed full refund of this capture."
         )
     from urllib.parse import urlparse
 
@@ -616,8 +674,8 @@ def confirm_recovered_refund(db, c, refund_id):
         (uuid4(), c["id"], Jsonb(result)),
     )
     db.execute(
-        "UPDATE commitments SET refund_id=%s,refund_status='COMPLETED',error=NULL WHERE id=%s",
-        (refund_id, c["id"]),
+        "UPDATE commitments SET refund_id=%s,refund_status='COMPLETED',refunded_minor=%s,error=NULL WHERE id=%s",
+        (refund_id, operation_amount(c, "refund"), c["id"]),
     )
     db.commit()
 
@@ -627,11 +685,11 @@ def validate_capture(c):
         not c["locked"]
         or not c.get("admitted")
         or c["authorization_status"] != "CREATED"
-        or c["amount_minor"] != 6500
+        or not 0 < operation_amount(c, "capture") <= c["amount_minor"]
         or c["currency"] != "USD"
     ):
         raise RecoveryRequired(
-            "Capture requires an admitted, frozen $65 USD authorization."
+            "Capture requires an admitted, frozen authorization and an approved settlement amount."
         )
     if settings.mode == "fixture":
         return
@@ -639,7 +697,7 @@ def validate_capture(c):
     if (
         data.get("id") != c["authorization_id"]
         or data.get("status") != "CREATED"
-        or not amount_matches(data.get("amount", {}))
+        or not amount_matches(data.get("amount", {}), c["amount_minor"])
         or data.get("payee", {}).get("merchant_id") != settings.paypal_merchant_id
     ):
         raise RecoveryRequired("Authorization state, merchant or amount mismatch.")

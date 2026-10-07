@@ -33,6 +33,11 @@ export interface Terms {
   capacity: number;
   delivery_days: number;
   payment_terms: string;
+  pricing_model?: "tiers";
+  tier_schedule?: { minimum_buyers: number; total_each_cents: number }[];
+  delivery_by?: string;
+  close_at?: string;
+  version?: number;
   [key: string]: unknown;
 }
 export interface Commitment {
@@ -51,6 +56,23 @@ export interface Commitment {
   active: boolean;
   withdrawn: boolean;
   reservation_expires_at: string;
+  accepted_terms?: Terms;
+  amount_minor?: number;
+  authorized_minor?: number | null;
+  captured_minor?: number | null;
+  refunded_minor?: number | null;
+  settlement_minor?: number | null;
+}
+export interface PaymentMember {
+  position: number;
+  is_you: boolean;
+  authorization_status: string | null;
+  capture_status: string | null;
+  capture_operation_status: string | null;
+  refund_status: string | null;
+  void_status: string | null;
+  evidence_source: string | null;
+  updated_at: string | null;
 }
 export interface Status {
   group: {
@@ -66,9 +88,14 @@ export interface Status {
     failure_reason: string | null;
   };
   offer: Terms;
+  ordinary_price_minor?: number;
   confirmed_count: number;
   completed_captures: number;
+  selected_count?: number;
+  totals?: { authorized_minor: number; captured_minor: number; refunded_minor: number };
   commitment: Commitment | null;
+  authorization_pending: boolean;
+  members: PaymentMember[];
   decision: {
     status: string;
     result: {
@@ -131,11 +158,11 @@ export async function api<T>(
     detail: "Backend did not respond. Start the API and worker, then retry.",
   }));
   if (!response.ok)
-    throw new Error(
+    throw Object.assign(new Error(
       typeof data.detail === "string"
         ? data.detail
         : "The request could not be validated.",
-    );
+    ), { status: response.status });
   return data;
 }
 export const money = (minor: number) =>

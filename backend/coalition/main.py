@@ -4,9 +4,10 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from uuid import UUID, uuid4
 
+import httpx
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from psycopg.types.json import Jsonb
 from pydantic import BaseModel, ConfigDict, Field
@@ -28,6 +29,9 @@ from .groups import (
     wake,
     withdraw,
 )
+from .matching import RequestInput, eligible_for_quote, latest_request, submit_request
+from .negotiation import start as start_negotiation
+from .offers import terms_for
 
 
 @asynccontextmanager
@@ -43,6 +47,55 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type", "X-Operator-Token", "X-Coalition-Request"],
 )
+
+
+class ModelMessage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    role: str = Field(pattern="^(system|user)$")
+    content: str = Field(max_length=64000)
+
+
+class ModelCommand(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    model: str
+    messages: list[ModelMessage] = Field(min_length=1, max_length=2)
+    response_format: dict
+    max_tokens: int = Field(ge=1, le=4000)
+    temperature: float = Field(ge=0, le=1)
+    reasoning_effort: str = Field(pattern="^none$")
+
+
+@app.post("/api/model/v1/chat/completions", include_in_schema=False)
+async def local_model(request: Request):
+    # Native Ollama does not authenticate bearer keys. Keep this gateway in the
+    # existing API; configure the fixed upstream to the server's local Ollama.
+    if not settings.ollama_upstream or not settings.llm_api_key:
+        raise HTTPException(503, "Local model gateway is unavailable.")
+    if not hmac.compare_digest(
+        request.headers.get("authorization", ""), "Bearer " + settings.llm_api_key
+    ):
+        raise HTTPException(401, "Model authentication required.")
+    body = bytearray()
+    async for part in request.stream():
+        body.extend(part)
+        if len(body) > 256000:
+            raise HTTPException(413, "Model request is too large.")
+    try:
+        command = ModelCommand.model_validate_json(body)
+    except ValueError:
+        raise HTTPException(422, "Invalid structured model request.") from None
+    if command.model != settings.llm_model:
+        raise HTTPException(422, "This model is not configured.")
+    try:
+        async with httpx.AsyncClient(timeout=45, follow_redirects=False) as client:
+            result = await client.post(
+                settings.ollama_upstream + "/v1/chat/completions",
+                json=command.model_dump(),
+            )
+            result.raise_for_status()
+            return JSONResponse(result.json())
+    except (httpx.HTTPError, ValueError):
+        raise HTTPException(503, "Local model unavailable. Retry later.") from None
 
 
 def rate_limit(request: Request):
@@ -143,6 +196,10 @@ def config():
 @app.post("/api/session", dependencies=[Depends(same_origin)])
 def session(body: SessionBody, request: Request, response: Response):
     with connect() as db:
+        owner = db.execute(
+            "SELECT b.owner_id FROM sessions s JOIN buyers b ON b.id=s.buyer_id WHERE s.token_hash=%s AND s.expires_at>now()",
+            (digest(request.cookies.get("coalition_session", "")),),
+        ).fetchone()
         run_id = body.run_id
         if not run_id:
             restored = db.execute(
@@ -163,11 +220,11 @@ def session(body: SessionBody, request: Request, response: Response):
         if not run:
             raise HTTPException(
                 404,
-                "No published offer is available. The merchant must publish an offer first.",
+                "No purchase run is available. Prepare a run in operator controls.",
             )
         old = db.execute(
-            "SELECT b.* FROM sessions s JOIN buyers b ON b.id=s.buyer_id WHERE token_hash=%s AND expires_at>now() AND b.run_id=%s",
-            (digest(request.cookies.get("coalition_session", "")), run_id),
+            "SELECT b.* FROM buyers b WHERE b.owner_id=%s AND b.run_id=%s ORDER BY b.prepared DESC LIMIT 1",
+            (owner["owner_id"] if owner else None, run_id),
         ).fetchone()
         if body.invite:
             row = db.execute(
@@ -188,10 +245,18 @@ def session(body: SessionBody, request: Request, response: Response):
                 "needs": "Required scientific calculator for engineering class. Exact model only.",
             }
             db.execute(
-                "INSERT INTO buyers(id,run_id,name,persona) VALUES(%s,%s,'You',%s)",
-                (buyer_id, run_id, Jsonb(persona)),
+                "INSERT INTO buyers(id,run_id,name,persona,owner_id) VALUES(%s,%s,'You',%s,%s) ON CONFLICT(run_id,owner_id) DO NOTHING",
+                (
+                    buyer_id,
+                    run_id,
+                    Jsonb(persona),
+                    owner["owner_id"] if owner else buyer_id,
+                ),
             )
-            row = db.execute("SELECT * FROM buyers WHERE id=%s", (buyer_id,)).fetchone()
+            row = db.execute(
+                "SELECT * FROM buyers WHERE run_id=%s AND owner_id=%s",
+                (run_id, owner["owner_id"] if owner else buyer_id),
+            ).fetchone()
         token = secrets.token_urlsafe(32)
         db.execute(
             "INSERT INTO sessions(token_hash,buyer_id) VALUES(%s,%s)",
@@ -216,6 +281,32 @@ def catalog():
 @app.post("/api/opportunity", dependencies=[Depends(same_origin)])
 def opportunity(context: ProductContext, b=Depends(buyer)):
     validate_context(context)
+    with connect() as db:
+        g = db.execute(
+            "SELECT offer_id FROM groups WHERE run_id=%s", (b["run_id"],)
+        ).fetchone()
+        if not g or not g["offer_id"]:
+            return {
+                "available": False,
+                "reason": "Enter your requirements and negotiate a quote first.",
+            }
+        terms = terms_for(
+            db,
+            db.execute(
+                "SELECT id FROM groups WHERE run_id=%s", (b["run_id"],)
+            ).fetchone()["id"],
+        )
+        if terms.get("pricing_model") == "tiers":
+            if (context.product_id, context.selected_variant, context.quantity) != (
+                terms["product_id"],
+                terms["variant"],
+                1,
+            ):
+                return {
+                    "available": False,
+                    "reason": "No exact accepted quote for this selection.",
+                }
+            return {"available": True, **snapshot(db, b)}
     if (context.product_id, context.selected_variant, context.quantity) != (
         "arc-991",
         "Graphite",
@@ -232,7 +323,84 @@ def opportunity(context: ProductContext, b=Depends(buyer)):
 @app.get("/api/status")
 def status(b=Depends(buyer)):
     with connect() as db:
+        g = db.execute(
+            "SELECT offer_id FROM groups WHERE run_id=%s", (b["run_id"],)
+        ).fetchone()
+        if not g or not g["offer_id"]:
+            raise HTTPException(
+                409, "No accepted quote yet. Return to your request to negotiate."
+            )
         return snapshot(db, b)
+
+
+@app.post("/api/requests", dependencies=[Depends(same_origin)])
+def request_entry(body: RequestInput, b=Depends(buyer)):
+    with connect() as db:
+        return submit_request(db, b, body)
+
+
+class NegotiationBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    product_id: str = Field(max_length=100)
+
+
+@app.post("/api/negotiations", dependencies=[Depends(same_origin)])
+def negotiate(body: NegotiationBody, b=Depends(buyer)):
+    with connect() as db:
+        return start_negotiation(db, b, body.product_id)
+
+
+@app.get("/api/journey")
+def journey(b=Depends(buyer)):
+    with connect() as db:
+        req = latest_request(db, b["id"])
+        g = db.execute(
+            "SELECT g.*,r.profile FROM groups g JOIN runs r ON r.id=g.run_id WHERE g.run_id=%s",
+            (b["run_id"],),
+        ).fetchone()
+        assessments = db.execute(
+            "SELECT a.*,s.available FROM compatibility_assessments a JOIN catalog_stock s ON s.product_id=a.product_id WHERE request_id=%s",
+            (req["id"] if req else None,),
+        ).fetchall()
+        n = db.execute(
+            "SELECT id,status,error,created_at FROM negotiations WHERE group_id=%s ORDER BY created_at DESC LIMIT 1",
+            (g["id"],),
+        ).fetchone()
+        rounds = db.execute(
+            "SELECT id,role,valid,public_summary,created_at FROM negotiation_rounds WHERE negotiation_id=%s ORDER BY ordinal",
+            (n["id"] if n else None,),
+        ).fetchall()
+        offer = terms_for(db, g["id"]) if g["offer_id"] else None
+        compatible = 0
+        if offer:
+            compatible = (
+                sum(
+                    eligible_for_quote(db, row["id"], offer)
+                    for row in db.execute(
+                        "SELECT id FROM buyers WHERE run_id=%s", (b["run_id"],)
+                    ).fetchall()
+                )
+                if offer.get("pricing_model") == "tiers"
+                else 0
+            )
+        return {
+            "request": req,
+            "assessments": assessments,
+            "negotiation": n,
+            "rounds": rounds,
+            "group": {
+                "id": g["id"],
+                "run_id": g["run_id"],
+                "status": g["status"],
+                "profile": g["profile"],
+            },
+            "status": snapshot(db, b) if offer else None,
+            "compatible_count": compatible,
+            "eligible": eligible_for_quote(db, b["id"], offer)
+            if offer and offer.get("pricing_model") == "tiers"
+            else bool(offer),
+            "products": [p for p in PRODUCTS if p["category"] == "Headphones"],
+        }
 
 
 class JoinBody(BaseModel):
@@ -310,6 +478,8 @@ def webhook(request: Request, event: dict):
 class RunBody(BaseModel):
     scenario: str = "success"
     demo: bool = True
+    profile: str = "small"
+    close_seconds: int = Field(default=600, ge=90, le=1800)
 
 
 @app.post("/api/operator/runs", dependencies=[Depends(operator)])
@@ -319,7 +489,14 @@ def new_run(body: RunBody):
     if settings.mode == "connected" and body.scenario not in ("success", "deadline"):
         raise HTTPException(422, "Fault injection is fixture-only.")
     with connect() as db:
-        return create_run(db, body.scenario, body.demo)
+        if body.profile not in ("legacy", "small", "large"):
+            raise HTTPException(422, "Unknown run profile.")
+        result = create_run(db, body.scenario, body.demo, body.profile)
+        db.execute(
+            "UPDATE runs SET close_seconds=%s WHERE id=%s",
+            (body.close_seconds, result["run_id"]),
+        )
+        return result
 
 
 @app.get("/api/operator/runs", dependencies=[Depends(operator)])
@@ -335,7 +512,7 @@ def runs():
 def evidence(run_id: UUID):
     with connect() as db:
         group = db.execute(
-            "SELECT g.*,r.mode,r.scenario FROM groups g JOIN runs r ON r.id=g.run_id WHERE run_id=%s AND r.mode=%s",
+            "SELECT g.*,r.mode,r.scenario,r.profile FROM groups g JOIN runs r ON r.id=g.run_id WHERE run_id=%s AND r.mode=%s",
             (run_id, settings.mode),
         ).fetchone()
         if not group:
@@ -371,6 +548,18 @@ def evidence(run_id: UUID):
         for observation in observations:
             observation["resource_id"] = redact(observation["resource_id"])
             observation["event_id"] = redact(observation["event_id"])
+        requests = db.execute(
+            "SELECT q.id,q.buyer_id,q.version,q.status,q.constraints,q.error FROM buyer_requests q JOIN buyers b ON b.id=q.buyer_id WHERE b.run_id=%s ORDER BY q.created_at DESC",
+            (run_id,),
+        ).fetchall()
+        negotiations = db.execute(
+            "SELECT * FROM negotiations WHERE group_id=%s ORDER BY created_at DESC",
+            (group["id"],),
+        ).fetchall()
+        rounds = db.execute(
+            "SELECT r.* FROM negotiation_rounds r JOIN negotiations n ON n.id=r.negotiation_id WHERE n.group_id=%s ORDER BY r.id",
+            (group["id"],),
+        ).fetchall()
         return {
             "observations": observations,
             "group": group,
@@ -378,6 +567,10 @@ def evidence(run_id: UUID):
             "jobs": jobs,
             "operations": ops,
             "events": events,
+            "requests": requests,
+            "negotiations": negotiations,
+            "rounds": rounds,
+            "offer": terms_for(db, group["id"]) if group["offer_id"] else None,
         }
 
 
@@ -397,16 +590,21 @@ def activate(run_id: UUID):
             or expired(db, group["preparation_expires_at"])
         ):
             raise HTTPException(409, "Preparation ended or group already activated.")
+        terms = terms_for(db, group["id"])
         db.execute(
-            "UPDATE groups SET activated=true,deadline=clock_timestamp()+interval '90 seconds' WHERE id=%s",
-            (group["id"],),
+            "UPDATE groups SET activated=true,deadline=CASE WHEN %s THEN deadline ELSE clock_timestamp()+interval '90 seconds' END WHERE id=%s",
+            (terms.get("pricing_model") == "tiers", group["id"]),
         )
         freeze(db, group["id"])
         db.execute(
             "UPDATE jobs SET status='ready',available_at=now(),attempts=0 WHERE dedupe_key=%s AND status!='running'",
             ("tick:" + str(group["id"]),),
         )
-        return {"status": "activated", "deadline_seconds": 90}
+        return {
+            "status": "activated",
+            "deadline": terms.get("close_at"),
+            "deadline_seconds": 90 if terms.get("pricing_model") != "tiers" else None,
+        }
 
 
 @app.post("/api/operator/runs/{run_id}/archive", dependencies=[Depends(operator)])
@@ -666,8 +864,8 @@ def sandbox_refund_cleanup(run_id: UUID):
                 409, "Only a successfully purchased sandbox run can use refund cleanup."
             )
         db.execute(
-            "UPDATE groups SET status='UNWINDING',inventory_reserved=5,failure_reason='Explicit operator sandbox cleanup after completed demo purchase' WHERE id=%s",
-            (g["id"],),
+            "UPDATE groups SET status='UNWINDING',inventory_reserved=%s,failure_reason='Explicit operator sandbox cleanup after completed demo purchase' WHERE id=%s",
+            (terms_for(db, g["id"])["capacity"], g["id"]),
         )
         wake(db, g["id"])
     return {"status": "refund_cleanup_requested", "refunds": "Not yet completed"}

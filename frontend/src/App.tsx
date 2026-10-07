@@ -3,6 +3,7 @@ import productsData from "../../catalog.json";
 import { api, money, type Config, type Product, type Status } from "./api";
 import Icon from "./components/Icon";
 import CoalitionOverlay from "./components/CoalitionOverlay";
+import Checkout from "./components/Checkout";
 import Operator from "./Operator";
 
 const PRODUCTS: Product[] = productsData.map((p) => ({
@@ -57,25 +58,31 @@ export default function App() {
         invite: params.get("invite") || undefined,
       });
       const offerURL = new URL(location.href);
+      if (params.has("paypal_return") || params.has("paypal_cancel")) offerURL.pathname = "/checkout";
       offerURL.searchParams.set("run", session.run_id);
       if (params.get("invite")) offerURL.searchParams.delete("invite");
       history.replaceState(null, "", offerURL);
-      setReady(true);
       if (params.get("paypal_return")) {
         const state = await api<Status>("/status");
         const order = params.get("token");
-        if (state.commitment?.order_id && order === state.commitment.order_id)
+        if (state.commitment?.order_id && order === state.commitment.order_id) {
           await api("/commitments/" + state.commitment.id + "/authorize", {
             order_id: order,
           });
-        setNotice(
-          "PayPal approval received. Open Coalition to check the confirmed authorization.",
-        );
+          setNotice(
+          "PayPal approval received. Coalition is checking the authorization.",
+          );
+        } else setNotice("This PayPal return does not match your payment. No authorization was requested.");
       }
       if (params.get("paypal_cancel"))
         setNotice(
           "PayPal approval canceled. Your group status has not been advanced.",
         );
+      for (const key of ["paypal_return", "paypal_cancel", "token", "PayerID"]) offerURL.searchParams.delete(key);
+      history.replaceState(null, "", offerURL);
+      try { setBuyerStatus(await api<Status>("/status")); }
+      catch (e) { if (location.pathname !== "/shop" || (e as Error & {status:number}).status !== 409) throw e; }
+      setReady(true);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -83,6 +90,18 @@ export default function App() {
   useEffect(() => {
     void bootstrap();
   }, []);
+  useEffect(() => {
+    if (!ready || (!buyerStatus && location.pathname === "/shop")) return;
+    let ignore = false;
+    const refresh = async () => {
+      try {
+        const state = await api<Status>("/status");
+        if (!ignore) { setBuyerStatus(state); setError(""); }
+      } catch (e) { if (!ignore) setError((e as Error).message); }
+    };
+    const timer = setInterval(refresh, buyerStatus && ["SUCCEEDED", "FAILED"].includes(buyerStatus.group.status) ? 10000 : 2000);
+    return () => { ignore = true; clearInterval(timer); };
+  }, [ready, buyerStatus?.group.status]);
   function browse(p: Product) {
     setSelected(p.id);
     setSearchOpen(false);
@@ -109,6 +128,8 @@ export default function App() {
   }
   if (["/operator", "/merchant"].includes(location.pathname))
     return <Operator config={config} />;
+  if (location.pathname === "/checkout") return <Checkout config={config} status={buyerStatus} onStatus={setBuyerStatus}
+    initialError={error} notice={notice} onRetry={bootstrap} products={PRODUCTS} />;
   const context = {
     product_id: product.id,
     title: product.title,
@@ -124,7 +145,7 @@ export default function App() {
     <>
       <div className="demo-ribbon">
         <span>
-          <span className="status-dot" />A little shop. A collective advantage.
+          Conditional group checkout · Commonplace Supply
         </span>
         <span>
           DEMO STOREFRONT <i />{" "}
@@ -137,10 +158,10 @@ export default function App() {
       </div>
       <header className="store-header">
         <a href="/" className="store-logo" aria-label="Commonplace home">
-          <Icon name="logo" size={30} />
-          commonplace
+          <Icon name="logo" size={24} />
+          commonplace<span className="merchant-suffix">supply</span>
         </a>
-        <div className="search-box">
+        <div className={"search-box" + (searchOpen ? " mobile-open" : "")}>
           <Icon name="search" size={18} />
           <input
             placeholder="Find your everyday essential"
@@ -161,7 +182,7 @@ export default function App() {
               {filtered.length ? (
                 filtered.map((p) => (
                   <button key={p.id} onClick={() => browse(p)}>
-                    <img src={p.image} alt="" />
+                    {p.image && <img src={p.image} alt="" />}
                     <span>
                       {p.title}
                       <small>{p.category}</small>
@@ -182,6 +203,9 @@ export default function App() {
           )}
         </div>
         <div className="header-actions">
+          <button className="mobile-search-toggle" aria-label="Search catalog" aria-expanded={searchOpen} onClick={() => setSearchOpen(!searchOpen)}>
+            <Icon name="search" size={18} />
+          </button>
           <a href="/merchant" className="operator-link">
             Merchant view
           </a>
@@ -276,6 +300,11 @@ export default function App() {
           </div>
         )}
         <div className="product-layout">
+          <div className="product-column">
+            <div className="product-heading">
+              <h1>{product.title}</h1>
+              <p>{product.brand} · {variant} · Sold by Commonplace Supply</p>
+            </div>
           <section className="product-gallery" aria-label="Product images">
             <div
               className={
@@ -284,8 +313,8 @@ export default function App() {
                 (gallery === 1 ? " zoomed" : gallery === 2 ? " flipped" : "")
               }
             >
-              <span className="gallery-label">Made for your everyday</span>
-              <img
+              <span className="gallery-label">{product.category}</span>
+              {product.image ? <img
                 src={product.image}
                 alt={
                   product.title +
@@ -305,8 +334,8 @@ export default function App() {
                       }
                     : undefined
                 }
-              />
-              <span className="gallery-index">{gallery + 1} / 3</span>
+              /> : <p className="catalog-image-note">Simulated headphone offer · product photography unavailable</p>}
+              {product.image && <span className="gallery-index">{gallery + 1} / 3</span>}
               <button
                 className={"save-button " + (saved ? "saved" : "")}
                 onClick={() => setSaved(!saved)}
@@ -318,7 +347,7 @@ export default function App() {
                 <Icon name="heart" />
               </button>
             </div>
-            <div className="thumbnails">
+            {product.image && <div className="thumbnails">
               {["Product view", "Detail view", "Alternate view"].map(
                 (name, i) => (
                   <button
@@ -328,16 +357,14 @@ export default function App() {
                     className={gallery === i ? "active" : ""}
                     onClick={() => setGallery(i)}
                   >
-                    <img src={product.image} alt="" className={"thumb-" + i} />
+                    {product.image && <img src={product.image} alt="" className={"thumb-" + i} />}
                   </button>
                 ),
               )}
-              <span>Good things, in the details.</span>
-            </div>
+              <span>Original demo product</span>
+            </div>}
           </section>
           <section className="product-info">
-            <p className="brand-name">{product.brand}</p>
-            <h1>{product.title}</h1>
             <p className="product-description">{product.description}</p>
             <div className="product-price">
               {money(product.price_minor)}
@@ -389,15 +416,15 @@ export default function App() {
             <div className="quiet-delivery">
               <Icon name="truck" size={24} />
               <div>
-                <strong>A good day, delivered.</strong>
+                <strong>Shipping included</strong>
                 <p>
                   Free simulated delivery within {product.delivery_days} days.
                 </p>
               </div>
             </div>
           </section>
-          <div className="purchase-column">
-            <section className="purchase-box" aria-label="Purchase controls">
+            <details className="purchase-box">
+              <summary>Buy individually · {money(product.price_minor)}<span>Demo bag</span></summary>
               <div className="in-stock">
                 <span className="status-dot" />
                 In stock · demo inventory
@@ -429,13 +456,17 @@ export default function App() {
                 <span>Fulfillment</span>
                 <strong>Simulated</strong>
               </div>
-            </section>
+            </details>
+          </div>
+          <div className="purchase-column">
             <CoalitionOverlay
+              requestEntry={product.category === "Headphones"}
               context={context}
               config={config}
               ready={ready}
               initialError={error}
               onStatus={setBuyerStatus}
+              status={buyerStatus}
             />
             <div className="purchase-footnote">
               <Icon name="shield" size={16} />
@@ -531,7 +562,7 @@ export default function App() {
             {PRODUCTS.filter((p) => p.id !== product.id).map((p) => (
               <button key={p.id} onClick={() => browse(p)}>
                 <div>
-                  <img src={p.image} alt="" />
+                  {p.image && <img src={p.image} alt="" />}
                   <span>
                     <Icon name="arrow" />
                   </span>

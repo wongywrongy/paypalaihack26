@@ -1,51 +1,32 @@
 # Coalition API
 
-The running FastAPI `/docs` and `/openapi.json` describe request schemas. Integer USD cents, UUID references, UTC timestamps. Every write except the signed webhook needs `X-Coalition-Request: 1` and the allowed frontend `Origin`. Buyer requests use the HttpOnly session cookie. Merchant requests also require `X-Operator-Token`; never put that token in a URL or persistent browser storage.
+FastAPI's `/openapi.json` is the executable schema. Money uses integer USD minor units and timestamps are UTC.
+
+Buyer commands require an owned HttpOnly session, exact allowed origin and `X-Coalition-Request: 1`. IDs and run links do not grant access to someone else's receipt. Operator commands additionally require `X-Operator-Token`.
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /api/config` | Mode, available run and public SDK configuration; never secrets |
-| `GET /api/catalog` | Three simulated products |
-| `POST /api/session` | Restore/create buyer for ordinary `run_id`; optional operator preparation token |
-| `POST /api/opportunity` | Validate product context, return exact eligible group |
-| `GET /api/status` | Backend payment state, recommendation and redacted judge evidence |
-| `POST /api/commitments` | Reserve five-minute slot; exact published terms and product context required |
-| `POST /api/commitments/{id}/authorize` | Verify owned order reference and enqueue provider authorization |
-| `POST /api/commitments/{id}/leave` | Atomically exclude while OPEN and queue cancellation |
-| `POST /api/assistant` | Queue structured runtime evaluation of `request_text`; independent of checkout |
-| `POST /api/paypal/webhook` | Durable signature-verification queue; only verified events affect payments |
-| `GET/POST /api/operator/runs` | Protected run listing / immutable fixed offer publication (`scenario`, `demo`) |
-| `GET /api/operator/runs/{id}` | Redacted payment/observation/event/job evidence |
-| `POST /api/operator/runs/{id}/activate` | Start prepared demo's real 90-second group deadline |
-| `POST /api/operator/runs/{id}/cancel` | Cancel while OPEN using the shared unwind workflow |
-| `POST /api/operator/runs/{id}/cleanup` | Cancel OPEN or resume UNWINDING; frozen SETTLING returns 409 |
-| `POST /api/operator/runs/{id}/refund-cleanup` | Explicit sandbox refund cleanup of an already successful run |
-| `POST /api/operator/runs/{id}/archive` | Archive only resolved history; records remain |
-| `POST /api/operator/runs/{id}/preparation-links` | Optional operator-only preparation sessions |
-| `POST /api/operator/jobs/{id}/retry` | Retry exhausted job with original operation IDs; expired replay window stays blocked |
-| `POST /api/operator/commitments/{id}/confirm-refund` | Verify a completed manually recovered refund's capture relationship |
-| `POST /api/operator/runs/{id}/fixture-prepare` | Fixture-only simulated preparation; impossible in connected mode |
-| `POST /api/operator/runs/{id}/fixture-refunds` | Fixture-only pending refund completion |
+| `GET /api/config` | Public configuration/disclosures, without secrets |
+| `POST /api/session` | Restore/create run-owned buyer; optional protected preparation invite |
+| `GET /api/catalog` | Fictional products; private policies excluded |
+| `POST /api/requests` | `{raw_text, edits?}` creates a version and durable matching job |
+| `GET /api/journey` | Owned request, assessments, safe rounds, quote and verified progress |
+| `POST /api/negotiations` | `{product_id}` queues a bounded attempt for the run |
+| `POST /api/opportunity` | Validates merchant-widget product context against accepted quote |
+| `GET /api/status` | Buyer-owned commitment, immutable terms and provider evidence; 409 before a quote exists |
+| `POST /api/commitments` | Exact context/terms consent; reserves an expiring slot and queues order creation |
+| `POST /api/commitments/{id}/authorize` | Owned recorded order only; queues provider authorization |
+| `POST /api/commitments/{id}/leave` | Withdraw before closure; queues safe unwind |
+| `POST /api/paypal/webhook` | Durable inbox; signature verification and processing are asynchronous |
+| `POST /api/operator/runs` | `{scenario, demo, profile, close_seconds}`; default small/600 seconds |
+| `GET /api/operator/runs/{id}` | Protected jobs, negotiation attempts and payment evidence |
+| `POST /api/operator/runs/{id}/activate` | Activates preparations, retaining tiered quote deadline |
+| `POST /api/operator/runs/{id}/cleanup` | Unwind an open run; preserves unresolved records |
+| `POST /api/operator/runs/{id}/refund-cleanup` | Explicit refund cleanup after a sandbox success |
+| `POST /api/operator/jobs/{id}/retry` | Retry unresolved durable work with original operation identity |
 
-Publishing body: `{"scenario":"success","demo":false}` for the ordinary 24-hour window. `demo:true` permits preparation followed by 90-second activation. Connected scenarios: `success`, `deadline`. Fixture-only faults: `partial`, `refund_pending`.
+Explicit request edits contain `max_total_minor`, `latest_arrival` (ISO date in UTC), `required_features`, `device` and `flexibility`. Unknown mandatory assessments block checkout. Constraint edits cannot modify an active approved agreement.
 
-Reserve body example (replace `accepted_terms` with the complete exact `offer` returned by status):
+Accepted quote terms include immutable version, product/variant, sandbox payee, maximum total, `tier_schedule`, minimum/capacity, delivery date, closing time and reservation expiry. A settlement snapshot freezes member IDs, quote version and selected cents per buyer. Commitment `amount_minor` remains the approved maximum; `settlement_minor`, `authorized_minor`, `captured_minor` and `refunded_minor` have separate meanings.
 
-```json
-{
-  "group_id": "GROUP_UUID",
-  "context": {
-    "product_id": "arc-991",
-    "title": "Arc 991 Scientific Calculator",
-    "selected_variant": "Graphite",
-    "displayed_price_minor": 8000,
-    "currency": "USD",
-    "quantity": 1
-  },
-  "accepted_terms": {}
-}
-```
-
-The reservation response is not payment proof. Poll status for the server-created order. PayPal SDK approval supplies an order reference; post `{"order_id":"..."}` to authorize. The worker fetches PayPal, checks identity and immutable amounts, then records an admitted authorization only if deadline/slot/capacity allow. A 200 command response means accepted/queued, not payment success.
-
-Errors: 401 session/signature problems, 403 CSRF/origin/merchant access, 404 wrong owner or missing reference, 409 closed group/expired slot/changed terms, 422 invalid context/body, 429 rate limit, 503 assistant unavailable. Provider errors remain visible through backend operation/payment state. A timeout or pending result does not mean a decline.
+Poll active work approximately every two seconds. Terminal views back off. Payment success requires every selected capture to be confirmed; pending approval, an authorization threshold or application timer is never provider evidence.

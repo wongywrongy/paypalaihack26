@@ -8,6 +8,7 @@ from uuid import uuid4
 from psycopg.types.json import Jsonb
 
 from .assistant import run_decision
+from .catalog import PRODUCTS
 from .config import settings
 from .db import connect
 from .groups import tick
@@ -28,7 +29,7 @@ def claim(db):
     job = db.execute(
         """UPDATE jobs SET status='running',lease_until=now()+interval '10 minutes',lease_token=%s,attempts=attempts+1
       WHERE id=(SELECT id FROM jobs WHERE mode=%s AND ((status='ready' AND available_at<=now()) OR (status='running' AND lease_until<now()))
-      ORDER BY available_at,id FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING *""",
+      ORDER BY CASE WHEN kind IN ('order','authorize','capture','void','refund','event') THEN 0 ELSE 1 END,available_at,id FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING *""",
         (uuid4(), settings.mode),
     ).fetchone()
     db.commit()
@@ -130,6 +131,16 @@ def handle_event(db, event_id):
 
 def handle(db, job):
     p, kind = job["payload"], job["kind"]
+    if kind == "match":
+        from .matching import run_match
+
+        run_match(db, p["request_id"])
+        return
+    if kind == "negotiate":
+        from .negotiation import run_negotiation
+
+        run_negotiation(db, p["negotiation_id"])
+        return
     if kind == "ai":
         run_decision(db, p["decision_id"])
         db.commit()
@@ -153,10 +164,12 @@ def handle(db, job):
             return
         terms = terms_for(db, group["id"])
         context = ProductContext(
-            product_id="arc-991",
+            product_id=terms["product_id"],
             title=terms["title"],
-            selected_variant="Graphite",
-            displayed_price_minor=8000,
+            selected_variant=terms["variant"],
+            displayed_price_minor=next(
+                p["price_minor"] for p in PRODUCTS if p["id"] == terms["product_id"]
+            ),
             currency="USD",
             quantity=1,
         )

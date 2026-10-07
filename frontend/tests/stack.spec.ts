@@ -40,7 +40,7 @@ for (const scenario of ["success", "deadline", "partial", "refund_pending"]) {
       config.mode !== "fixture",
       "Fault scenarios and automated approval are fixture-only.",
     );
-    const run = await operator(request, "/runs", { scenario });
+    const run = await operator(request, "/runs", { scenario, profile: "legacy" });
     const path = "/runs/" + run.run_id;
     let evidence: any;
     const refresh = async () => {
@@ -71,7 +71,7 @@ for (const scenario of ["success", "deadline", "partial", "refund_pending"]) {
     ).toBe("reject");
 
     await page.goto("/?run=" + run.run_id);
-    await page.getByRole("button", { name: "Join for $65" }).click();
+    await page.getByRole("link", { name: "Join for $65" }).click();
     const panel = page.getByRole("complementary", {
       name: "Coalition group purchase",
     });
@@ -175,7 +175,6 @@ for (const scenario of ["success", "deadline", "partial", "refund_pending"]) {
       });
       expect(archive.status()).toBe(409);
       await page.reload();
-      await page.getByRole("button", { name: "View group status" }).click();
       await expect(panel.getByText("Paid $65.00 USD")).toBeVisible();
       await operator(request, path + "/refund-cleanup", {});
       await expect

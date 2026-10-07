@@ -16,10 +16,10 @@ class Settings:
     payments_retry_hours: float = float(os.getenv("PAYPAL_PAYMENTS_RETRY_HOURS", "0"))
     paypal_webhook_id: str = os.getenv("PAYPAL_WEBHOOK_ID", "")
     llm_api_key: str = os.getenv("LLM_API_KEY", "")
-    llm_model: str = os.getenv("LLM_MODEL", "claude-sonnet-4-6")
-    llm_base_url: str = os.getenv("LLM_BASE_URL", "https://api.anthropic.com").rstrip(
-        "/"
-    )
+    llm_model: str = os.getenv("LLM_MODEL", "qwen3:30b-a3b-instruct-2507-q4_K_M")
+    llm_protocol: str = os.getenv("LLM_PROTOCOL", "openai")
+    llm_base_url: str = os.getenv("LLM_BASE_URL", "").rstrip("/")
+    ollama_upstream: str = os.getenv("OLLAMA_UPSTREAM", "").rstrip("/")
 
 
 settings = Settings()

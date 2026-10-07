@@ -20,7 +20,9 @@ def digest(token):
     return hashlib.sha256(token.encode()).hexdigest()
 
 
-def create_run(db, scenario, demo=True):
+def create_run(db, scenario, demo=True, profile="legacy"):
+    if profile != "legacy":
+        return create_request_run(db, scenario, demo, profile)
     from .offers import publish
 
     terms = publish(db)
@@ -62,6 +64,52 @@ def create_run(db, scenario, demo=True):
             }
         )
     enqueue(db, "tick", {"group_id": str(group_id)}, f"tick:{group_id}")
+    return {
+        "run_id": str(run_id),
+        "group_id": str(group_id),
+        "judge_url": f"{settings.public_url}/?run={run_id}",
+        "preparation_links": invites,
+    }
+
+
+def create_request_run(db, scenario, demo, profile):
+    run_id, group_id = uuid4(), uuid4()
+    db.execute(
+        "INSERT INTO runs(id,mode,scenario,profile) VALUES(%s,%s,%s,%s)",
+        (run_id, settings.mode, scenario, profile),
+    )
+    db.execute(
+        "INSERT INTO groups(id,run_id,status,inventory_reserved,demo,activated) VALUES(%s,%s,'DRAFT',0,%s,false)",
+        (group_id, run_id, demo),
+    )
+    invites = []
+    count = 4 if profile == "small" else 61
+    from .matching import RequestInput, submit_request
+
+    for i in range(count):
+        bid, token = uuid4(), secrets.token_urlsafe(32)
+        name = (
+            ["Maya", "Leo", "Aisha", "Noah"][i] if i < 4 else f"Simulated buyer {i + 1}"
+        )
+        db.execute(
+            "INSERT INTO buyers(id,run_id,name,persona,invite_hash,prepared) VALUES(%s,%s,%s,%s,%s,true)",
+            (bid, run_id, name, Jsonb({}), digest(token)),
+        )
+        b = {"id": bid, "run_id": run_id}
+        submit_request(
+            db,
+            b,
+            RequestInput(
+                raw_text="Noise-canceling headphones for flights, under $100, works with my iPhone 12. I can wait a week."
+            ),
+        )
+        invites.append(
+            {
+                "name": name,
+                "buyer_id": str(bid),
+                "url": f"{settings.public_url}/?run={run_id}&invite={token}",
+            }
+        )
     return {
         "run_id": str(run_id),
         "group_id": str(group_id),

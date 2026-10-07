@@ -56,10 +56,17 @@ def validate_context(context: ProductContext, offer=False):
             422,
             "The product context does not match the catalog. Refresh the product page.",
         )
-    if offer and (context.product_id, context.selected_variant, context.quantity) != (
-        "arc-991",
-        "Graphite",
-        1,
+    if offer and product["category"] == "Headphones" and context.quantity != 1:
+        raise HTTPException(422, "This offer is for one headphone unit per buyer.")
+    if (
+        offer
+        and product["category"] != "Headphones"
+        and (context.product_id, context.selected_variant, context.quantity)
+        != (
+            "arc-991",
+            "Graphite",
+            1,
+        )
     ):
         raise HTTPException(422, "This offer is for one Arc 991 in Graphite only.")
     return product

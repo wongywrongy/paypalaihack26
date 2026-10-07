@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type Config } from "./api";
+import { api, type Config, type Terms } from "./api";
 import Icon from "./components/Icon";
 interface Run {
   id: string;
@@ -13,6 +13,10 @@ interface Run {
   needs_attention: boolean;
 }
 interface Evidence {
+  offer?: Terms | null;
+  negotiations?: { id: string; status: string; error: string | null }[];
+  rounds?: { id: number; public_summary: string; valid: boolean; private_error: string | null }[];
+  requests?: { id: string; status: string; error: string | null }[];
   group: {
     id: string;
     run_id: string;
@@ -86,6 +90,7 @@ interface Created {
 export default function Operator({ config }: { config: Config | null }) {
   const assistantEnabled = config?.mode === "fixture" || !!config?.llm_configured;
   const [demo, setDemo] = useState(true);
+  const [profile,setProfile]=useState("small"),[closeSeconds,setCloseSeconds]=useState(600);
   const [token, setToken] = useState(""),
     [runs, setRuns] = useState<Run[]>([]),
     [selected, setSelected] = useState(""),
@@ -169,10 +174,9 @@ export default function Operator({ config }: { config: Config | null }) {
         </a>
       </header>
       <main>
-        <h1>Publish a fixed offer. Track every payment.</h1>
+        <h1>Prepare a run. Track every payment.</h1>
         <p>
-          Prepare buyers first. Start the timer when you are ready. Every
-          payment state stays visible.
+          Negotiate an immutable quote, prepare buyer approvals, and inspect settlement or recovery. Every payment state stays visible.
         </p>
         <div className="operator-mode">
           <strong>
@@ -217,9 +221,7 @@ export default function Operator({ config }: { config: Config | null }) {
         ) : (
           <>
             <p className="merchant-offer-terms">
-              One Arc 991 · Graphite · $65 USD · 5 reserved simulated units ·
-              shipping included · $0 simulated tax. Terms become immutable when
-              published. Normal offer window: 24 hours.
+              Prepare requests, negotiate a permitted merchant quote, then approve real sandbox payments. Inventory is reserved only on quote acceptance. Shipping included · simulated tax $0. Existing obligations remain recorded.
             </p>
             <div className="operator-toolbar">
               <label className="demo-toggle">
@@ -228,8 +230,10 @@ export default function Operator({ config }: { config: Config | null }) {
                   checked={demo}
                   onChange={(e) => setDemo(e.target.checked)}
                 />{" "}
-                Demo: prepare, then start 90 seconds
+                Prepare sandbox participants before activation
               </label>
+              <label>Profile<select value={profile} onChange={e=>setProfile(e.target.value)}><option value="small">Small live · capacity 5 · tiers 3/5</option><option value="large">Large illustrative · capacity 60 · tiers 25/50</option><option value="legacy">Preserved calculator · fixed $65</option></select></label>
+              {profile!=="legacy" && <label>Closing window · seconds<input className="operator-deadline" type="number" min={90} max={1800} value={closeSeconds} onChange={e=>setCloseSeconds(Number(e.target.value))}/></label>}
               <label>
                 Scenario
                 <select
@@ -237,7 +241,7 @@ export default function Operator({ config }: { config: Config | null }) {
                   onChange={(e) => setScenario(e.target.value)}
                 >
                   <option value="success">Five buyers · success</option>
-                  <option value="deadline">Deadline · fewer than five</option>
+                  <option value="deadline">Deadline · below minimum</option>
                   {config?.mode === "fixture" && (
                     <>
                       <option value="partial">
@@ -257,7 +261,7 @@ export default function Operator({ config }: { config: Config | null }) {
                   action(async () => {
                     const r = await api<Created>(
                       "/operator/runs",
-                      { scenario, demo },
+                      { scenario, demo, profile, close_seconds: closeSeconds },
                       token,
                     );
                     setCreated(r);
@@ -265,10 +269,10 @@ export default function Operator({ config }: { config: Config | null }) {
                     setEvidence(
                       await api("/operator/runs/" + r.run_id, undefined, token),
                     );
-                  }, "New immutable offer published with five reserved simulated units.")
+                  }, "Run prepared. Review requests and negotiate before approving payments.")
                 }
               >
-                Publish fixed offer
+                Prepare run
                 <Icon name="plus" size={17} />
               </button>
             </div>
@@ -357,7 +361,7 @@ export default function Operator({ config }: { config: Config | null }) {
                   <div>
                     <h2>{evidence.group.status.replace("_", " ")}</h2>
                     <p>
-                      <strong>{confirmed}/5</strong> confirmed authorizations ·{" "}
+                      <strong>{confirmed}/{evidence.offer?.capacity ?? 5}</strong> confirmed authorizations ·{" "}
                       {
                         evidence.buyers.filter(
                           (b) =>
@@ -365,7 +369,7 @@ export default function Operator({ config }: { config: Config | null }) {
                             b.refund_status !== "COMPLETED",
                         ).length
                       }
-                      /5 completed captures
+                      /{evidence.offer?.capacity ?? 5} completed captures
                     </p>
                     <small>
                       {evidence.group.deadline
@@ -434,11 +438,11 @@ export default function Operator({ config }: { config: Config | null }) {
                               {},
                               token,
                             ),
-                          "90-second deadline activated.",
+                          "Run activated. Tiered quotes retain their accepted deadline.",
                         )
                       }
                     >
-                      Start 90-second group
+                      Activate prepared run
                       <Icon name="clock" size={17} />
                     </button>
                     {evidence.group.status === "OPEN" && (
@@ -599,6 +603,8 @@ export default function Operator({ config }: { config: Config | null }) {
                     <p>No payment operations yet.</p>
                   )}
                   <h3>Worker jobs</h3>
+                  {evidence.requests && <details><summary>Request evaluations</summary><ul>{evidence.requests.map(r=><li key={r.id}><strong>{r.status}</strong><small>{r.error}</small></li>)}</ul></details>}
+                  {evidence.negotiations && <details><summary>Negotiation attempts and validation</summary><ul>{evidence.negotiations.map(n=><li key={n.id}><strong>{n.status}</strong><small>{n.error}</small></li>)}{evidence.rounds?.map(r=><li key={r.id}><strong>{r.public_summary}</strong><small>{r.valid?"Validated":"Invalid output"}{r.private_error?": "+r.private_error:""}</small></li>)}</ul></details>}
                   <ul>
                     {evidence.jobs.map((j) => (
                       <li key={j.id}>

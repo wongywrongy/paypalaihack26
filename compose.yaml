@@ -20,6 +20,7 @@ services:
     environment:
       DATABASE_URL: postgresql://coalition:coalition@postgres:5432/coalition
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8000}
+      LLM_BASE_URL: ${LLM_CONTAINER_BASE_URL:-${LLM_BASE_URL:-}}
     ports: ["127.0.0.1:8000:8000"]
     depends_on:
       postgres: { condition: service_healthy }
@@ -43,6 +44,7 @@ services:
     environment:
       DATABASE_URL: postgresql://coalition:coalition@postgres:5432/coalition
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8000}
+      LLM_BASE_URL: ${LLM_CONTAINER_BASE_URL:-${LLM_BASE_URL:-}}
     depends_on:
       postgres: { condition: service_healthy }
       api: { condition: service_healthy }

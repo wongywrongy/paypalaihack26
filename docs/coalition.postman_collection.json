@@ -1,6 +1,6 @@
 {
   "info": {
-    "name": "Coalition \u2014 conditional sandbox checkout",
+    "name": "Coalition \u2014 request, negotiation and conditional sandbox checkout",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": "Buyer approval must happen through PayPal. Queued commands are not payment proof. Cookie jar retains buyer session. Set operator_token privately in your local Postman environment."
   },
@@ -125,6 +125,87 @@
       }
     },
     {
+      "name": "Saved request and negotiation",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "{{origin}}"
+          },
+          {
+            "key": "X-Coalition-Request",
+            "value": "1"
+          }
+        ],
+        "url": "{{base_url}}/api/journey"
+      }
+    },
+    {
+      "name": "Submit editable headphone request",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "{{origin}}"
+          },
+          {
+            "key": "X-Coalition-Request",
+            "value": "1"
+          }
+        ],
+        "url": "{{base_url}}/api/requests",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"raw_text\": \"Noise-canceling headphones for flights, under $100, works with my iPhone 12. I can wait a week.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Start bounded negotiation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Origin",
+            "value": "{{origin}}"
+          },
+          {
+            "key": "X-Coalition-Request",
+            "value": "1"
+          }
+        ],
+        "url": "{{base_url}}/api/negotiations",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"product_id\": \"cabin-pro\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
       "name": "Evaluate need",
       "request": {
         "method": "POST",
@@ -155,7 +236,7 @@
       }
     },
     {
-      "name": "Publish immutable offer",
+      "name": "Prepare small request-first run",
       "request": {
         "method": "POST",
         "header": [
@@ -179,7 +260,7 @@
         "url": "{{base_url}}/api/operator/runs",
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"scenario\": \"success\",\n  \"demo\": true\n}",
+          "raw": "{\n  \"scenario\": \"success\",\n  \"demo\": true,\n  \"profile\": \"small\",\n  \"close_seconds\": 600\n}",
           "options": {
             "raw": {
               "language": "json"

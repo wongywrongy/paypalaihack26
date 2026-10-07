@@ -15,9 +15,11 @@ envVarGroups:
       - key: OPERATOR_TOKEN
         generateValue: true
       - key: LLM_MODEL
-        value: claude-sonnet-4-6
+        value: qwen3:30b-a3b-instruct-2507-q4_K_M
       - key: LLM_BASE_URL
-        value: https://api.anthropic.com
+        value: ""
+      - key: LLM_PROTOCOL
+        value: ollama
       - key: PAYPAL_PAYMENTS_RETRY_HOURS
         value: "0"
 # Set PUBLIC_URL, PayPal credentials/merchant/webhook IDs, and LLM_API_KEY in this

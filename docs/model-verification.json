@@ -1,0 +1,94 @@
+{
+  "verified_at_utc": "2026-10-07T08:43:49.101946+00:00",
+  "mode": "live model with synthetic buyers; payment operations disabled",
+  "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+  "gateway": "existing API bearer-authenticated model route",
+  "matching": [
+    {
+      "live_matching": "completed",
+      "seconds": 11.01
+    },
+    {
+      "live_matching": "completed",
+      "seconds": 7.44
+    },
+    {
+      "live_matching": "completed",
+      "seconds": 7.21
+    },
+    {
+      "live_matching": "completed",
+      "seconds": 7.36
+    },
+    {
+      "live_matching": "completed",
+      "seconds": 7.31
+    }
+  ],
+  "eligibility": [
+    {
+      "product_id": "air-light",
+      "eligible": false
+    },
+    {
+      "product_id": "cabin-one",
+      "eligible": false
+    },
+    {
+      "product_id": "cabin-pro",
+      "eligible": true
+    },
+    {
+      "product_id": "mystery-sound",
+      "eligible": false
+    },
+    {
+      "product_id": "quiet-wire",
+      "eligible": false
+    },
+    {
+      "product_id": "travel-studio",
+      "eligible": false
+    }
+  ],
+  "edits": [
+    {
+      "live_edited_maximum": 8600,
+      "eligible_offers": 0
+    },
+    {
+      "live_edited_maximum": 9999,
+      "eligible_offers": 1
+    }
+  ],
+  "negotiation": {
+    "live_negotiation": {
+      "status": "accepted",
+      "error": null,
+      "token_count": 5262
+    },
+    "seconds": 5.22
+  },
+  "rounds": [
+    {
+      "ordinal": 1,
+      "role": "buyer",
+      "valid": true,
+      "public_summary": "Buyer agent: Proposed $92.00 at 3 buyers / $88.00 at 5 buyers."
+    },
+    {
+      "ordinal": 2,
+      "role": "merchant",
+      "valid": true,
+      "public_summary": "Merchant agent: Proposed $89.00 at 3 buyers / $85.00 at 5 buyers."
+    },
+    {
+      "ordinal": 3,
+      "role": "buyer",
+      "valid": true,
+      "public_summary": "Buyer agent: Accepted the validated merchant quote."
+    }
+  ],
+  "payment_operations": 0,
+  "provider_payee_verification": false
+}

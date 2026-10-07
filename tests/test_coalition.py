@@ -203,7 +203,17 @@ class Invariants(unittest.TestCase):
                 "coalition.assistant.settings",
                 replace(settings, mode="connected", llm_api_key="test"),
             ),
-            patch("coalition.assistant.httpx.Client", Client),
+            patch("coalition.model.httpx.Client", Client),
+            patch(
+                "coalition.model.settings",
+                replace(
+                    settings,
+                    mode="connected",
+                    llm_api_key="test",
+                    llm_protocol="anthropic",
+                    llm_base_url="https://example.invalid",
+                ),
+            ),
         ):
             self.assertEqual(decide(persona, TERMS)["decision"], "reject")
             for request_text in ("Below $65", "Under $70, delivery within 2 days"):
@@ -382,6 +392,21 @@ class PostgreSQLChecks(unittest.TestCase):
             tick(db, group_id)
             self.assertEqual(snapshot(db, buyers[-1])["group"]["status"], "SUCCEEDED")
             self.assertEqual(snapshot(db, buyers[-1])["completed_captures"], 5)
+            self.assertEqual(snapshot(db, buyers[-1])["ordinary_price_minor"], 8000)
+            progress = snapshot(db, buyers[-1])
+            self.assertEqual(
+                [m["position"] for m in progress["members"]], [1, 2, 3, 4, 5]
+            )
+            self.assertEqual(sum(m["is_you"] for m in progress["members"]), 1)
+            self.assertTrue(
+                all(m["capture_status"] == "COMPLETED" for m in progress["members"])
+            )
+            self.assertFalse(progress["authorization_pending"])
+            for member in progress["members"]:
+                self.assertFalse(
+                    {"buyer_id", "id", "authorization_id", "capture_id", "order_id"}
+                    & member.keys()
+                )
             captures = db.execute(
                 "SELECT count(*) AS n FROM payment_operations p JOIN commitments c ON c.id=p.commitment_id WHERE c.group_id=%s AND kind='capture'",
                 (group_id,),
