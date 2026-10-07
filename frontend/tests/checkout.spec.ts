@@ -172,6 +172,7 @@ test("optional assistant follows payment controls in keyboard order", async ({ p
   await consent.check(); await consent.focus();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("button", { name: "Simulate $65 authorization" })).toBeFocused();
+  await page.keyboard.press("Tab"); await expect(page.getByRole("link", { name: "How group pricing works" })).toBeFocused();
   await page.keyboard.press("Tab"); await expect(page.getByText("Activity & payment evidence", { exact: true })).toBeFocused();
   await page.keyboard.press("Tab"); await expect(page.getByText("Optional · Does this fit my needs?", { exact: true })).toBeFocused();
 });

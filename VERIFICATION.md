@@ -1,5 +1,15 @@
 # Coalition — verification record
 
+## Storefront correction — October 7, 2026
+
+Replaced the technical request layout with the user-specified Coalition storefront. Six products and illustrative studio photographs appear before search; editable requirements and completed negotiation history are expandable. The accepted photograph, price, real authorization count and review action share one product panel. The sandbox badge/footer disclose simulation and AI-generated imagery; source prompt and asset provenance are in `docs/photography.json`.
+
+Shopping sessions move from restored legacy runs to an available headphone run without deleting earlier commitments. The journey endpoint does not label calculator terms as a headphone result. The frontend requires a completed matching request for the exact tiered product before presenting an accepted deal; failed evaluations show the requested retry copy. Invalid/missing dates are never formatted as a date, and the highest-tier label requires an actual positive qualifying count. `/api/purchases` filters by authenticated owner across runs.
+
+Executed checks: 51 backend tests passed, including legacy suppression, shopping-run selection, explicit legacy-invite preservation and owned purchase-history access. TypeScript/Vite and focused Ruff checks passed. Eighteen desktop/mobile browser regressions passed with intercepted API/provider fixtures; two integrated browser journeys passed against an isolated PostgreSQL/API/worker stack, including request edits, accepted terms, the actual 90-second application deadline, lower fixture capture and persistent receipt. The four storefront cases were also rerun after the review fixes; these are repeats, not additional distinct tests.
+
+The design detector returned no findings. Independent finish review found stale fit labels after failed requests and mismatched alternate-product selection; both were fixed and scored resolved, with a ship disposition limited to those fixes. DESIGN.md and the schema-v2 sidecar now reflect the shipped storefront. Current desktop/mobile evidence is in `.impeccable/review/storefront-*` and `negotiated-*`. Private preview smoke checks found no JavaScript errors or horizontal overflow and initiated no payment. Earlier genuine PayPal verification gates remain unchanged; fixture captures are not sandbox provider proof.
+
 ## Current request-first implementation — October 7, 2026
 
 Historical entries below refer to earlier revisions. These are the current executed results and remaining gates.

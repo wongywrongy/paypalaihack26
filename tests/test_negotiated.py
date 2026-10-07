@@ -319,3 +319,41 @@ class NegotiatedChecks(unittest.TestCase):
                         "final_capture": True,
                     },
                 )
+
+    def test_shopping_session_hides_legacy_quote_and_preserves_owned_purchases(self):
+        from coalition.main import app, buyer
+        from fastapi.testclient import TestClient
+
+        with connect() as db:
+            legacy = create_run(db, 'success')
+            row = db.execute('SELECT * FROM buyers WHERE run_id=%s LIMIT 1', (legacy['run_id'],)).fetchone()
+            small = create_run(db, 'success', profile='small')
+        app.dependency_overrides[buyer] = lambda: row
+        try:
+            with TestClient(app) as client:
+                data = client.get('/api/journey').json()
+                self.assertIsNone(data['status'])
+                self.assertFalse(data['eligible'])
+                result = client.post('/api/session',json={'run_id':str(legacy['run_id']),'shopping':True},headers={'X-Coalition-Request':'1'})
+                self.assertEqual(result.status_code, 200)
+                self.assertEqual(result.json()['run_id'],str(small['run_id']))
+                self.assertEqual(client.get('/api/purchases').json(), [])
+                from urllib.parse import parse_qs, urlsplit
+
+                invite = parse_qs(urlsplit(legacy['preparation_links'][0]['url']).query)['invite'][0]
+                invited = client.post('/api/session',json={'run_id':str(legacy['run_id']),'invite':invite,'shopping':True},headers={'X-Coalition-Request':'1'})
+                self.assertEqual(invited.status_code,200)
+                self.assertEqual(invited.json()['run_id'],str(legacy['run_id']))
+        finally:
+            app.dependency_overrides.clear()
+        run, hero, _, _ = self.prepare(5)
+        app.dependency_overrides[buyer] = lambda: hero
+        try:
+            with TestClient(app) as client:
+                items = client.get('/api/purchases').json()
+                self.assertEqual(len(items),1)
+                self.assertEqual(items[0]['run_id'],str(run['run_id']))
+        finally:
+            app.dependency_overrides.clear()
+        with TestClient(app) as client:
+            self.assertEqual(client.get('/api/purchases').status_code,401)

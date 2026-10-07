@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, money, type Commitment, type Config, type PaymentMember, type Product, type Status } from "../api";
 import Icon from "./Icon";
+import ProductPhoto from "./ProductPhoto";
 import CommitmentTrack from "./CommitmentTrack";
 import PayPalApproval from "./PayPalApproval";
 import { AnimatedList } from "./magicui/animated-list";
@@ -123,7 +124,7 @@ export default function Checkout({ status, config, onStatus, products, initialEr
       {!status ? <section className="checkout-loading"><h1>Restoring your checkout</h1><p>Checking the offer and your payment record…</p></section> : <div className="checkout-layout">
         <BlurFade delay={0} duration={0.25} className="checkout-summary">
           <section aria-label="Order summary">
-            <div className="offer-item">{product?.image && <img src={product.image} alt="" />}<div><h1>{offer!.title}</h1><span>{offer!.variant} · Quantity {offer!.quantity}</span><small>Sold by {offer!.merchant}</small></div></div>
+            <div className="offer-item">{product?.image && <ProductPhoto product={product}/>}<div><h1>{offer!.title}</h1><span>{offer!.variant} · Quantity {offer!.quantity}</span><small>Sold by {offer!.merchant}</small></div></div>
             <div className="checkout-offer-price"><strong>{price}</strong><span>per buyer</span>{status.ordinary_price_minor !== undefined && <b>Save {money(Math.max(0, status.ordinary_price_minor - offer!.total_minor))}</b>}</div>
             <dl className="receipt"><div><dt>Item · {offer!.variant}</dt><dd>{price}</dd></div><div><dt>Shipping</dt><dd>Included</dd></div><div><dt>Tax · simulation</dt><dd>{money(Number(offer!.tax_minor ?? 0))}</dd></div><div className="receipt-total"><dt>Maximum delivered total</dt><dd>{price} <span>{offer!.currency}</span></dd></div></dl>
             <div className="checkout-logistics"><div><Icon name="truck" size={18} /><span><strong>{offer!.delivery_by ? "Delivery by " + new Date(offer!.delivery_by).toLocaleDateString("en-US",{timeZone:"UTC"}) + " UTC" : `Delivery within ${offer!.delivery_days} days`}</strong><small>By the accepted delivery date · simulated fulfillment</small></span></div><div><Icon name="clock" size={18} /><span><strong>{status.group.deadline ? new Date(status.group.deadline).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "UTC", timeZoneName: "short" }) : "Deadline starts on activation"}</strong><small>{status.group.status !== "OPEN" ? "Participation closed" : expired ? "Deadline reached · checking group" : status.group.deadline ? "Join before the deadline" : "Operator activates the demo window"}</small></span></div></div>

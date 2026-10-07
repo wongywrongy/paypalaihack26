@@ -7,6 +7,7 @@ export interface Product {
   variants: string[];
   category: string;
   image: string;
+  image_position?: string;
   description: string;
   features: string[];
   specs: Record<string, string>;

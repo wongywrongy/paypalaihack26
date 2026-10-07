@@ -25,7 +25,9 @@ npm run dev --prefix frontend
 
 Load your private environment into **both** API and worker. Use `PUBLIC_URL=http://localhost:5173` for Vite, or the integrated server origin for a built frontend. Do not delete database volumes or payment history to reset a demo.
 
-Open `/operator`, enter the private token and prepare a **small** run. Share its request URL. `/` is request-first, `/shop` preserves the optional merchant widget, `/checkout?run=…` is buyer-owned persistent checkout, and `/how-group-pricing-works` explains pricing. Old calculator runs retain their fixed $65 terms and settlement behavior.
+Open `/operator`, enter the private token and prepare a **small** run. Share its request URL. `/` is the Coalition storefront with six products visible before search, `/purchases` lists the session owner’s saved purchases, `/shop` preserves the optional merchant widget, `/checkout?run=…` is buyer-owned persistent checkout, and `/how-group-pricing-works` explains pricing. Old calculator runs retain their fixed $65 terms and settlement behavior.
+
+The storefront folds editable requirements into a disclosure and keeps the accepted product, maximum price and group progress together. Failed evaluations show a retry state; legacy calculator quotes remain in their dedicated checkout. Illustrative AI-generated product photographs are disclosed in the sandbox badge and footer; their source prompt is recorded in `docs/photography.json`.
 
 ## Model and payment configuration
 

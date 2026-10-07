@@ -1,3 +1,4 @@
+import ProductPhoto from "./components/ProductPhoto";
 import { useEffect, useState } from "react";
 import productsData from "../../catalog.json";
 import { api, money, type Config, type Product, type Status } from "./api";
@@ -182,7 +183,7 @@ export default function App() {
               {filtered.length ? (
                 filtered.map((p) => (
                   <button key={p.id} onClick={() => browse(p)}>
-                    {p.image && <img src={p.image} alt="" />}
+                    {p.image && <ProductPhoto product={p}/>}
                     <span>
                       {p.title}
                       <small>{p.category}</small>
@@ -314,7 +315,7 @@ export default function App() {
               }
             >
               <span className="gallery-label">{product.category}</span>
-              {product.image ? <img
+              {product.image_position ? <ProductPhoto product={product}/> : product.image ? <img
                 src={product.image}
                 alt={
                   product.title +
@@ -335,7 +336,7 @@ export default function App() {
                     : undefined
                 }
               /> : <p className="catalog-image-note">Simulated headphone offer · product photography unavailable</p>}
-              {product.image && <span className="gallery-index">{gallery + 1} / 3</span>}
+              {product.image && !product.image_position && <span className="gallery-index">{gallery + 1} / 3</span>}
               <button
                 className={"save-button " + (saved ? "saved" : "")}
                 onClick={() => setSaved(!saved)}
@@ -347,7 +348,7 @@ export default function App() {
                 <Icon name="heart" />
               </button>
             </div>
-            {product.image && <div className="thumbnails">
+            {product.image && !product.image_position && <div className="thumbnails">
               {["Product view", "Detail view", "Alternate view"].map(
                 (name, i) => (
                   <button
@@ -562,7 +563,7 @@ export default function App() {
             {PRODUCTS.filter((p) => p.id !== product.id).map((p) => (
               <button key={p.id} onClick={() => browse(p)}>
                 <div>
-                  {p.image && <img src={p.image} alt="" />}
+                  {p.image && <ProductPhoto product={p}/>}
                   <span>
                     <Icon name="arrow" />
                   </span>

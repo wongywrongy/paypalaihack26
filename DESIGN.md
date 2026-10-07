@@ -1,6 +1,6 @@
 ---
 name: Commonplace / Coalition
-description: Evidence-backed group purchasing in the incumbent merchant and checkout system.
+description: Photo-led headphone shopping and evidence-backed group purchasing with persistent checkout.
 colors:
   indigo: "#4338ca"
   indigo-hover: "#352aa8"
@@ -10,12 +10,29 @@ colors:
   ground: "#f7f8fa"
   surface: "#fff"
   line: "#e0e3e9"
+  photo-ground: "#efeeec"
 typography:
   display:
     fontFamily: '"Archivo Variable", sans-serif'
-    fontSize: "clamp(25px, 3vw, 34px)"
-    fontWeight: 400
-    letterSpacing: "-.025em"
+    fontSize: "clamp(30px, 3.1vw, 42px)"
+    fontWeight: 600
+    lineHeight: 1.15
+    letterSpacing: "-.035em"
+  storefront-title:
+    fontFamily: '"Archivo Variable", sans-serif'
+    fontSize: "28px"
+    fontWeight: 600
+    lineHeight: 1.25
+    letterSpacing: "-.03em"
+  catalog-title:
+    fontFamily: '"Archivo Variable", sans-serif'
+    fontSize: "22px"
+    fontWeight: 550
+    letterSpacing: "-.02em"
+  product-title:
+    fontFamily: '"Archivo Variable", sans-serif'
+    fontSize: "17px"
+    fontWeight: 550
   title:
     fontFamily: '"Archivo Variable", sans-serif'
     fontSize: "24px"
@@ -31,20 +48,27 @@ typography:
   body:
     fontFamily: '"Archivo Variable", sans-serif'
     fontSize: "14px"
-    lineHeight: 1.55
+    lineHeight: 1.7
   label:
     fontFamily: '"Archivo Variable", sans-serif'
-    fontSize: "14px"
+    fontSize: "13px"
+    fontWeight: 550
+  storefront-price:
+    fontFamily: '"Archivo Variable", sans-serif'
+    fontSize: "36px"
     fontWeight: 600
+    lineHeight: 1.15
+    letterSpacing: "-.035em"
 rounded:
   field: "6px"
   panel: "10px"
+  media: "12px"
 spacing:
   field-gap: "12px"
   panel-mobile: "20px"
   panel: "24px"
   checkout-panel: "26px"
-  request-gap: "28px"
+  selected-gap: "64px"
 components:
   button-primary:
     backgroundColor: "{colors.indigo}"
@@ -58,23 +82,30 @@ components:
     backgroundColor: "{colors.surface}"
     rounded: "{rounded.panel}"
     padding: "{spacing.panel}"
+  search-field:
+    rounded: "{rounded.media}"
+    padding: "6px 6px 6px 20px"
+  product-photo:
+    backgroundColor: "{colors.photo-ground}"
+    rounded: "{rounded.media}"
+    width: "100%"
 ---
 
-# Commonplace / Coalition
+# Design System: Commonplace / Coalition
 
 ## Overview
 
-**Creative North Star: "Commonplace / Coalition Operate"**
+**Creative North Star: "Coalition storefront"**
 
-The incumbent system uses cool off-white surroundings, white surfaces, precise Archivo typography and solid indigo actions. Coalition is the request-first purchase identity; Commonplace Audio is the fictional headphone merchant. The retained Commonplace Supply calculator storefront remains a regression surface. This is a code-led extension of the existing system, following the user's direction without an approved image comp, FORM roll or a new visual world.
+Coalition brings shopping and group purchasing into a white storefront with precise Archivo typography, fine neutral dividers and solid indigo actions. Large graphite headphone photographs make the catalog immediately browsable; intelligent search supports product choice. Commonplace Audio is the fictional headphone merchant. The retained Commonplace Supply calculator storefront remains a regression surface. The user-approved composition extends the incumbent neutral/indigo system.
 
-Editable needs, product evidence and a bounded buyer/merchant negotiation lead to a fixed quote and persistent checkout. Financial outcomes use restrained text, tabular amounts and explicit provenance rather than speculative payment animation.
+Editable needs unfold on demand. Product evidence and a bounded buyer/merchant negotiation lead to a concise deal summary and persistent checkout, where the full payment explanation remains visible. Financial outcomes use restrained text, tabular amounts and explicit provenance. Generated product photographs are illustrations, never evidence of specifications or fulfillment.
 
 **Key Characteristics:**
 
-- White bordered panels on a cool neutral ground.
+- Large product photographs, white shopping surfaces and fine neutral dividers.
 - One Archivo family, tabular amounts and solid indigo actions.
-- Evidence-backed eligibility, stable quote amounts and buyer-owned payment outcomes.
+- Collapsed requirements and completed negotiation history; evidence-backed eligibility and buyer-owned payment outcomes.
 - Finite, reduced-motion-aware confirmation effects.
 
 ## Colors
@@ -89,7 +120,7 @@ Green identifies savings and completed payment confirmations. Eligibility also u
 
 ### Neutral
 
-Cool ink and muted supporting text sit on off-white ground and white surfaces. Thin neutral borders separate evidence and consent without decorative gradients or glow. The frontmatter preserves the incumbent palette; local request-surface neutral variants are existing code drift, not replacement tokens.
+Cool ink and muted supporting text sit on white shopping surfaces and pale checkout surroundings. Thin neutral borders separate browsing, evidence and consent. Warm pale-gray photographic material supports graphite products. The frontmatter preserves the incumbent palette and the reused photo fallback; local checkout and operator neutral variants remain contextual code values, not replacement tokens.
 
 **The Evidence Color Rule.** Authorization uses indigo; confirmed payment uses green. A compatible request or full authorization count does not establish completed payment.
 
@@ -97,13 +128,15 @@ Cool ink and muted supporting text sit on off-white ground and white surfaces. T
 
 Self-hosted Archivo Variable is the only font family. Prices, counts and deadlines use tabular numerals. Product identity, payment status and totals have clear size and weight differences; supporting terms and evidence remain subordinate. No serif display typography.
 
-The request heading uses the responsive display role. Request section headings use (20px), offer titles (18px), and body and editable field labels use the body and label roles. Checkout status uses the title role; its mobile heading reduces to (20px). Checkout maximum price uses the price role, reducing to (32px) on mobile; the accepted-quote maximum is (30px). Supporting checkout copy is compact and should remain subordinate without inheriting its smallest evidence labels into new surfaces.
+The shopping heading uses the responsive display role, fixed at (30px) on mobile. Selected-product headings use the storefront-title role, reducing to (25px) on mobile; catalog headings reduce from (22px) to (20px). Product tile titles reduce from (17px) to (14px). Search labels use the label role; editable requirement labels use (12px). Selected-deal prices use storefront-price; checkout status uses title, reducing to (20px) on mobile, and checkout maximum price uses price, reducing to (32px). Supporting checkout copy remains compact without making its smallest evidence labels a default for new surfaces.
 
 **The Stable Amount Rule.** Monetary amounts remain static; only verified counts may use a number ticker.
 
 ## Layout
 
-The request surface leads with editable requirements and supplied headphone eligibility. A centered container (1140px) has horizontal padding (28px); desktop uses a narrower requirements column and a wider offer/negotiation column with a gap (28px). At (700px) and below, panels stack, main horizontal padding becomes (16px), and panel padding reduces from (24px) to (20px). An accepted quote precedes eligibility details and negotiation history in its column. Buyer and merchant roles stay embedded in this journey.
+The storefront is browsable before a request is submitted. A centered container (1200px) with horizontal padding (28px) holds the wordmark, navigation, a left-aligned heading and wide search, then the product catalog. The search field is capped at (920px). Desktop browsing uses three columns with gaps (38px vertically, 26px horizontally); square photographs occupy most of each unboxed tile. A selected product appears above the catalog, with its large photograph beside a concise purchase column, a gap (64px), and a fine divider below. Requirements remain in a native disclosure beneath search; completed negotiation history remains beneath the selected deal.
+
+At (700px) and below, horizontal padding becomes (16px), navigation wraps below the wordmark and demo badge, and the search action fills its own row. The catalog becomes two columns with gaps (28px vertically, 16px horizontally); the selected photograph stacks before the deal and is capped at (400px). Requirement fields become a single column. Buyer and merchant roles stay embedded in the selected-product journey.
 
 The retained storefront keeps its product gallery and ordinary demo purchase controls alongside a compact Coalition widget. The widget shows backend price, savings, confirmed count and one checkout link; full consent and payment live at `/checkout?run=<run UUID>`.
 
@@ -113,27 +146,31 @@ Desktop checkout allocates 40% to the order summary and 60% to group progress an
 
 Checkout and merchant widget surfaces use thin neutral borders and tonal separation rather than prominent shadows. Keep the receipt's restrained green tint subordinate to the verified payment outcome. Focus outlines remain visible on links, buttons, native disclosures and form controls.
 
-Request and negotiation panels share the flat bordered treatment. The incumbent ambient shadow is reserved for floating search and bag surfaces. Request focus uses a solid indigo outline (2px) with offset (3px); incumbent checkout focus uses (3px) with offset (4px).
+Shopping tiles are unboxed; selected content and negotiation use dividers and pale proposal material. The incumbent ambient shadow is reserved for floating legacy search and bag surfaces. Visible keyboard focus uses a solid indigo outline (3px) with offset (4px). The search wrapper also changes its border to indigo on focus. Selected product photographs use an indigo outline (2px) with offset (4px).
 
 ## Shapes
 
-White request, negotiation, checkout and merchant-widget surfaces share gently rounded panel corners. Native fields, tier strips, proposal rows and receipts use the smaller field radius. Numbered commitment positions are circles joined by thin connectors. Preserve these established forms rather than introducing avatars or ornamental shapes.
+Photographs and the wide search wrapper share the media radius; checkout and merchant-widget panels retain the panel radius. Native fields, role labels, proposal rows and receipts use the smaller field radius. The compact demo badge is outlined. Numbered commitment positions are circles joined by thin connectors. Preserve these established forms rather than introducing avatars or ornamental shapes.
 
 ## Components
 
+### Product photography and browsing
+
+Six square studio photographs place graphite headphones on pale neutral material. `frontend/public/assets/headphones-studio.png` is a generated three-column, two-row contact sheet, displayed with CSS background size (300% 200%) and catalog positions. Each photo has an accessible illustrative-product label. Source, prompt and fictional status are recorded in `docs/photography.json`; the footer and demo disclosure retain that status. Selection outlines the photograph and scrolls to the selected-product section. Tile titles, retail price, delivery and fit evidence remain distinct from accepted group terms.
+
 ### Requirements and eligibility
 
-Native textarea, number, date and text fields expose the extracted requirements for editing. Native checkboxes explicitly relax requirements. Compatible offers are divided rows with a radio selector, text status and native disclosure for per-requirement rationale, sources and uncertainty. Unknown mandatory requirements remain distinct from compatible offers. Approval locks the accepted agreement rather than silently editing its financial terms.
+The labeled search input and “Find deals” action evaluate the shopper's needs. Extracted number, date and text fields are editable inside the initially collapsed “Your requirements” disclosure. Native checkboxes explicitly relax requirements. Product tiles use text fit status and native disclosures for per-requirement rationale, sources and uncertainty; excluded products have a separate disclosure. Unknown mandatory requirements remain distinct from compatible offers. Failed or edited requests suppress previous fit and quote presentation until a current evaluation completes; failure shows a plain retry alert and the ordinary catalog. Approval locks the accepted agreement rather than silently editing its financial terms.
 
 ### Buttons and navigation
 
-The full-width solid indigo primary control retains the incumbent rounded shape and minimum height (50px), with a deeper hover and visible focus. Secondary buttons use a neutral stroke and minimum height (42px); text actions use an underline. The request header provides simple text navigation; mobile navigation stacks. The merchant widget links to persistent checkout, with labels for joining, viewing the buyer's checkout or viewing group progress.
+The full-width solid indigo primary control retains the incumbent rounded shape and minimum height (50px), with a deeper hover and visible focus. The search control uses a minimum height (48px desktop, 42px mobile). Secondary buttons use a neutral stroke and minimum height (42px); text actions use an underline. The Coalition wordmark accompanies “Shop,” session-owned “My purchases,” and a compact “Sandbox demo” disclosure. Mobile navigation wraps onto its own row. Purchase history uses divided rows for item, recorded payment state, amount and one checkout link. The retained merchant widget links to persistent checkout, with labels for joining, viewing the buyer's checkout or viewing group progress.
 
 ### Accepted quote and negotiation
 
-The quote panel shows version, exact product/variant, merchant, reserved inventory and maximum authorization before a bordered tier strip. Separate count labels distinguish compatible requests from authorized payments; native progress and explicit next-tier copy follow. The small demo displays ($89) at three verified authorizations and ($85) at five; these are quote data, not universal price tokens. Delivery and fixed closing time remain inspectable. The lower tier remains provisional until closing; checkout retains the immutable accepted quote and maximum.
+The selected deal pairs its photograph with product/variant, merchant, static maximum per person, possible lower tier, real authorized-payment count, native progress, next-tier copy, delivery, closing time, reserved units and “Review deal.” The small demo displays ($89) at three verified authorizations and ($85) at five; these are quote data, not universal price tokens. Zero authorizations never establishes a reached tier. Browsing a different product changes the selection without moving the accepted quote or its price to that product. The lower tier remains provisional until closing; checkout retains the immutable quote, version, full tier schedule and maximum.
 
-Buyer and merchant appear as plain bordered role labels, without agent avatars. Buyer proposals align left; merchant proposals align right on pale neutral material. Public summaries stay in the embedded negotiation panel; failures provide an edit-request action. Operator disclosures preserve request evaluations, negotiation attempts and validation evidence separately from payment evidence.
+Buyer and merchant appear as plain bordered role labels, without agent avatars. While negotiation runs, the activity disclosure opens with both roles and a short status; buyer proposals align left and merchant proposals align right on pale neutral material. After completion it collapses into “How we got this price.” A failed negotiation remains expanded. Technical request evaluations, negotiation attempts and validation diagnostics stay in operator disclosures, separately from shopper-facing fit explanations and payment evidence.
 
 ### Commitment, consent and receipt
 
@@ -143,7 +180,7 @@ Native checkbox consent covers the exact item, seller, maximum delivered total, 
 
 Official Magic UI Animated Beam, Number Ticker, Animated List and Blur Fade sources use the existing Motion dependency. Confirmation beams run once after verified count increases. The ticker starts at the actual backend count; payment amounts stay static. Blur Fade briefly staggers the two checkout sections and reveals a newly confirmed receipt once; it does not replay a success celebration on refresh. Latest-event animation follows a new recorded resource/status/source event, not a reconciliation timestamp alone. All motion is finite and respects reduced motion.
 
-Activity starts with the latest recorded provider observation, with history and webhook evidence in a native disclosure. Evidence preserves fixture, API, reconciliation and webhook provenance. The request-first tiered checkout needs no extra AI step or coming-soon placeholder; optional assistance remains after payment only on the retained untiered checkout. Explicit fixture/sandbox and simulated-fulfillment disclosures remain visible.
+Activity starts with the latest recorded provider observation, with history and webhook evidence in a native disclosure. Evidence preserves fixture, API, reconciliation and webhook provenance. The tiered storefront checkout needs no extra AI step or coming-soon placeholder; optional assistance remains after payment only on the retained untiered checkout. Explicit fixture/sandbox and simulated-fulfillment disclosures remain visible.
 
 ## Do's and Don'ts
 

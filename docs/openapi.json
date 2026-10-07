@@ -213,6 +213,22 @@
         }
       }
     },
+    "/api/purchases": {
+      "get": {
+        "summary": "Purchases",
+        "operationId": "purchases_api_purchases_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/commitments": {
       "post": {
         "summary": "Commitment",
@@ -1217,6 +1233,11 @@
               }
             ],
             "title": "Invite"
+          },
+          "shopping": {
+            "type": "boolean",
+            "title": "Shopping",
+            "default": false
           }
         },
         "type": "object",

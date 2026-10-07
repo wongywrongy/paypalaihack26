@@ -167,6 +167,7 @@ def operator(request: Request):
 class SessionBody(BaseModel):
     run_id: UUID | None = None
     invite: str | None = Field(default=None, max_length=150)
+    shopping: bool = False
 
 
 @app.get("/api/config")
@@ -217,6 +218,12 @@ def session(body: SessionBody, request: Request, response: Response):
             "SELECT * FROM runs WHERE id=%s AND mode=%s",
             (run_id, settings.mode),
         ).fetchone()
+        if body.shopping and not body.invite and run and run["profile"] == "legacy":
+            run = db.execute(
+                "SELECT * FROM runs WHERE mode=%s AND NOT archived AND profile IN ('small','large') ORDER BY created_at DESC LIMIT 1",
+                (settings.mode,),
+            ).fetchone()
+            run_id = run["id"] if run else None
         if not run:
             raise HTTPException(
                 404,
@@ -394,13 +401,24 @@ def journey(b=Depends(buyer)):
                 "status": g["status"],
                 "profile": g["profile"],
             },
-            "status": snapshot(db, b) if offer else None,
+            "status": snapshot(db, b)
+            if offer and offer.get("pricing_model") == "tiers"
+            else None,
             "compatible_count": compatible,
             "eligible": eligible_for_quote(db, b["id"], offer)
             if offer and offer.get("pricing_model") == "tiers"
-            else bool(offer),
+            else False,
             "products": [p for p in PRODUCTS if p["category"] == "Headphones"],
         }
+
+
+@app.get("/api/purchases")
+def purchases(b=Depends(buyer)):
+    with connect() as db:
+        return db.execute(
+            "SELECT DISTINCT ON (c.group_id) g.run_id,g.status AS group_status,o.terms,c.capture_status,c.refund_status,c.void_status,c.authorization_status,c.active,c.captured_minor,c.created_at FROM commitments c JOIN buyers b ON b.id=c.buyer_id JOIN groups g ON g.id=c.group_id JOIN runs r ON r.id=g.run_id JOIN offers o ON o.id=g.offer_id WHERE b.owner_id=%s AND r.mode=%s ORDER BY c.group_id,c.created_at DESC",
+            (b["owner_id"], settings.mode),
+        ).fetchall()
 
 
 class JoinBody(BaseModel):

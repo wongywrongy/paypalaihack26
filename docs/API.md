@@ -7,10 +7,11 @@ Buyer commands require an owned HttpOnly session, exact allowed origin and `X-Co
 | Endpoint | Purpose |
 |---|---|
 | `GET /api/config` | Public configuration/disclosures, without secrets |
-| `POST /api/session` | Restore/create run-owned buyer; optional protected preparation invite |
+| `POST /api/session` | Restore/create run-owned buyer; optional protected preparation invite; `shopping:true` selects a headphone run instead of a restored legacy run |
 | `GET /api/catalog` | Fictional products; private policies excluded |
 | `POST /api/requests` | `{raw_text, edits?}` creates a version and durable matching job |
 | `GET /api/journey` | Owned request, assessments, safe rounds, quote and verified progress |
+| `GET /api/purchases` | Latest purchase per group for the authenticated owner across runs; no other buyer’s records |
 | `POST /api/negotiations` | `{product_id}` queues a bounded attempt for the run |
 | `POST /api/opportunity` | Validates merchant-widget product context against accepted quote |
 | `GET /api/status` | Buyer-owned commitment, immutable terms and provider evidence; 409 before a quote exists |
