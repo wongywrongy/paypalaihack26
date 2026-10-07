@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from fastapi import HTTPException
 from psycopg.types.json import Jsonb
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, create_model
 
 from .catalog import PRODUCTS
 from .config import settings
@@ -38,23 +38,21 @@ class RequestInput(BaseModel):
     edits: Constraints | None = None
 
 
-class Requirement(BaseModel):
+class RequirementEvidence(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    requirement: str = Field(min_length=1, max_length=150)
     verdict: Literal["yes", "no", "unknown"]
     rationale: str = Field(min_length=1, max_length=240)
     source: str = Field(max_length=100)
+
+
+class Requirement(RequirementEvidence):
+    requirement: str = Field(min_length=1, max_length=150)
 
 
 class Assessment(BaseModel):
     model_config = ConfigDict(extra="forbid")
     product_id: str
     requirements: list[Requirement] = Field(max_length=16)
-
-
-class Assessments(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    assessments: list[Assessment] = Field(max_length=6)
 
 
 def submit_request(db, buyer, body):
@@ -87,7 +85,27 @@ def submit_request(db, buyer, body):
 
 
 def requirements_for(c):
-    return c.required_features + (["Device: " + c.device] if c.device else [])
+    return list(
+        dict.fromkeys(
+            c.required_features + (["Device: " + c.device] if c.device else [])
+        )
+    )
+
+
+def assessment_schema(c, products):
+    findings = create_model(
+        "RequirementFindings",
+        __config__=ConfigDict(extra="forbid"),
+        **{
+            f"r{i}": (RequirementEvidence, ...)
+            for i, _ in enumerate(requirements_for(c))
+        },
+    )
+    return create_model(
+        "CatalogFindings",
+        __config__=ConfigDict(extra="forbid"),
+        **{p["id"]: (findings, ...) for p in products},
+    )
 
 
 def numeric_guards(raw, c, today):
@@ -215,19 +233,32 @@ def run_match(db, rid):
                 (Jsonb(c.model_dump(mode="json")), rid),
             )
             return
-        payload = {"requirements": requirements_for(c), "products": products}
+        requirement_ids = {f"r{i}": name for i, name in enumerate(requirements_for(c))}
+        payload = {"requirements": requirement_ids, "products": products}
+        schema = assessment_schema(c, products)
         for attempt in range(2):
             try:
                 if settings.mode == "fixture":
                     results = [fixture_assessment(c, p) for p in products]
                 else:
                     result, _ = complete(
-                        Assessments,
-                        "Assess every supplied product against every requirement exactly once. Keep each rationale under 18 words. Copy requirement names exactly, including the Device: prefix. Never merge similar requirements. ANC alone does not prove flight effectiveness. Lightning is compatible with iPhone 12 when documented. Cite only provided field paths. Unknown mandatory requirements block eligibility.",
+                        schema,
+                        "Assess every supplied product for every indexed requirement. Return the product IDs and requirement IDs required by the schema, with a verdict, rationale and source for each. Keep rationales under 12 words. Never merge similar requirements. ANC alone does not prove flight effectiveness. Lightning is compatible with iPhone 12 when documented. Cite only supplied catalog field paths; absent evidence means unknown. Unknown mandatory requirements block eligibility.",
                         payload,
                         max_tokens=4000,
+                        provider_schema=True,
                     )
-                    results = result.assessments
+                    findings = result.model_dump()
+                    results = [
+                        Assessment(
+                            product_id=p["id"],
+                            requirements=[
+                                Requirement(requirement=name, **findings[p["id"]][key])
+                                for key, name in requirement_ids.items()
+                            ],
+                        )
+                        for p in products
+                    ]
                 if {a.product_id for a in results} != {
                     p["id"] for p in products
                 } or len(results) != len(products):

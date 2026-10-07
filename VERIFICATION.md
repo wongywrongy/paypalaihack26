@@ -1,5 +1,15 @@
 # Coalition — verification record
 
+## Required assessment keys — October 7, 2026
+
+The user's 18:15 UTC log confirms the prior coverage correction was deployed but both assessment attempts still failed exact-name coverage. HTTP 200 proves connectivity, not a valid assessment. The exact failed response was not retained. Protected evidence locates that request in the already-FAILED large run; its earlier requests also failed and have no stored parsed constraints.
+
+Replaced free-form assessment arrays with a provider JSON schema requiring every catalog product and every indexed requirement (`r0`, `r1`, etc.). The model supplies verdicts, evidence references and concise rationales; code restores each authoritative requirement name. Missing/renamed fields and unexpected fields fail schema validation. Identical repeated requirement labels are deduplicated; differently named requirements remain distinct, including a feature about iPhone compatibility and the separate device requirement. The existing source/unknown guards and bounded retry remain. No requirement is treated as satisfied because its assessment was omitted.
+
+Executed: 54 backend tests passed in disposable PostgreSQL schemas, including required-field rejection, exact identity mapping, duplicate-label handling, unknown eligibility, retry success and exhausted retry with no stored assessments. Focused Ruff checks passed. Nine full matching evaluations using the changed code and public GPU tunnel completed: four canonical simulated buyers, three varied requests, and $86/$100 edits. The simultaneous-two-device requirement stayed unknown and excluded all offers; $86 also excluded all offers. A separate live empty-requirement schema check passed. No payment operations were initiated. These are isolated live-code checks, not a claim of a new Render deployment.
+
+Prepared fresh small production run `af1abafe-dabb-4ab3-af51-b056c6ad2fcb`, preserving older runs and obligations. It has four simulated request jobs and no approved payments; preparation alone does not prove their successful evaluation under this revision. Redeploy both Render services with this commit before production verification. Genuine payment acceptance gates remain outstanding.
+
 ## Matching coverage correction — October 7, 2026
 
 The later production log at 17:53 UTC shows successful HTTP 200 model calls followed by `Assessment must cover each requirement in order.` The previous successful production journey did not establish continued matching reliability. That validator conflated reordered responses with missing, duplicate or renamed requirements; the exact failed model response was not retained, so the log alone cannot distinguish those cases.

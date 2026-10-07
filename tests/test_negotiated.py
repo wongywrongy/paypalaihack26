@@ -16,10 +16,10 @@ from coalition.demo import create_run
 from coalition.groups import freeze, join, members, snapshot, tick
 from coalition.matching import (
     Assessment,
-    Assessments,
     Constraints,
     RequestInput,
     Requirement,
+    assessment_schema,
     check_assessment,
     fixture_assessment,
     requirements_for,
@@ -34,6 +34,51 @@ from psycopg.errors import UniqueViolation
 
 
 class VariableAmountChecks(unittest.TestCase):
+    def test_keyed_assessments_require_every_product_and_distinct_requirement(self):
+        c = Constraints(
+            max_total_minor=10000,
+            latest_arrival=datetime.now(timezone.utc).date(),
+            required_features=[
+                "Active noise cancellation",
+                "Active noise cancellation",
+                "iPhone compatibility",
+            ],
+            device="iPhone 12",
+        )
+        products = [p for p in PRODUCTS if p["category"] == "Headphones"]
+        schema = assessment_schema(c, products)
+        self.assertEqual(
+            requirements_for(c),
+            ["Active noise cancellation", "iPhone compatibility", "Device: iPhone 12"],
+        )
+        data = {
+            p["id"]: {
+                f"r{i}": r.model_dump(exclude={"requirement"})
+                for i, r in enumerate(fixture_assessment(c, p).requirements)
+            }
+            for p in products
+        }
+        self.assertEqual(schema.model_validate(data).model_dump(), data)
+        for defect in (
+            "missing product",
+            "missing requirement",
+            "renamed requirement",
+            "extra requirement",
+        ):
+            with self.subTest(defect=defect), self.assertRaises(ValueError):
+                invalid = schema.model_validate(data).model_dump()
+                if defect == "missing product":
+                    invalid.pop(products[0]["id"])
+                elif defect == "missing requirement":
+                    invalid[products[0]["id"]].pop("r2")
+                elif defect == "renamed requirement":
+                    invalid[products[0]["id"]]["iPhone"] = invalid[
+                        products[0]["id"]
+                    ].pop("r2")
+                else:
+                    invalid[products[0]["id"]]["r3"] = invalid[products[0]["id"]]["r2"]
+                schema.model_validate(invalid)
+
     def test_assessment_order_is_harmless_but_coverage_must_be_exact(self):
         c = Constraints(
             max_total_minor=10000,
@@ -147,15 +192,21 @@ class NegotiatedChecks(unittest.TestCase):
             required_features=["Active noise cancellation", "Flight effectiveness"],
             device="iPhone 12",
         )
-        valid = Assessments(
-            assessments=[
-                fixture_assessment(c, p)
-                for p in PRODUCTS
-                if p["category"] == "Headphones"
-            ]
+        products = [p for p in PRODUCTS if p["category"] == "Headphones"]
+        schema = assessment_schema(c, products)
+        valid = schema.model_validate(
+            {
+                p["id"]: {
+                    f"r{i}": r.model_dump(exclude={"requirement"})
+                    for i, r in enumerate(fixture_assessment(c, p).requirements)
+                }
+                for p in products
+            }
         )
-        invalid = valid.model_copy(deep=True)
-        invalid.assessments[0].requirements.pop()
+        invalid = valid.model_dump()
+        invalid[products[0]["id"]].pop("r2")
+        with self.assertRaises(ValueError) as rejected:
+            schema.model_validate(invalid)
         with connect() as db:
             run = create_run(db, "success", profile="small")
             buyer = db.execute(
@@ -174,11 +225,8 @@ class NegotiatedChecks(unittest.TestCase):
                     patch(
                         "coalition.matching.complete",
                         side_effect=[
-                            (invalid.model_copy(deep=True), 100),
-                            (
-                                (valid if corrected else invalid).model_copy(deep=True),
-                                100,
-                            ),
+                            rejected.exception,
+                            (valid, 100) if corrected else rejected.exception,
                         ],
                     ) as model,
                     patch("coalition.matching.logging.getLogger"),
@@ -187,6 +235,7 @@ class NegotiatedChecks(unittest.TestCase):
                 db.commit()
                 self.assertEqual(model.call_count, 2)
                 self.assertIn("validation_error", model.call_args.args[2])
+                self.assertTrue(model.call_args.kwargs["provider_schema"])
                 self.assertEqual(
                     db.execute(
                         "SELECT status FROM buyer_requests WHERE id=%s",
@@ -201,6 +250,15 @@ class NegotiatedChecks(unittest.TestCase):
                     ).fetchone()["n"],
                     6 if corrected else 0,
                 )
+                if corrected:
+                    assessment = db.execute(
+                        "SELECT requirements FROM compatibility_assessments WHERE request_id=%s AND product_id='cabin-one'",
+                        (request["id"],),
+                    ).fetchone()["requirements"]
+                    self.assertEqual(
+                        [r["requirement"] for r in assessment[:3]], requirements_for(c)
+                    )
+                    self.assertEqual(assessment[1]["verdict"], "unknown")
 
     def test_one_owned_buyer_per_run(self):
         run, hero, _, _ = self.prepare(0)
