@@ -1,5 +1,15 @@
 # Coalition — verification record
 
+## Render model connectivity and live journey — October 7, 2026
+
+The reported `httpx.ConnectError: [Errno -2] Name or service not known` prevented the Render worker from reaching the model. The Tailscale hostname resolved privately but remained NXDOMAIN on public resolvers. With explicit user approval, configured a dedicated Cloudflare Tunnel at `https://coalition-model.wongworks.dev/api/model`. It forwards only `/api/model/v1/chat/completions` to the existing authenticated gateway. Anonymous model calls return 401; unrelated paths return 404. The connector is an enabled, restarting user systemd service. Private connector credentials are excluded through `.runtime/`. Removed the unused public Tailscale port 443 mapping, preserving the private application mapping.
+
+After the user redeployed both Render services with the new base URL, exercised the actual production frontend, API, database, worker and live GPU model without intercepting responses. Fresh small run `fa2a56c4-d7ce-40d9-afa0-a0cc66ac9be4` selected Cabin Pro for the flights/iPhone request. Editing the maximum to $86 excluded every offer; restoring $100 restored eligibility. Live buyer/merchant/buyer exchanges proposed $92/$88, countered with $89/$85, then accepted the validated merchant quote. The stored agreement reserves five units and requires three authorizations at $89 or five at $85. Three initial simulated-request evaluations failed; new live evaluations completed for all four prepared personas, retaining earlier failure records.
+
+The dedicated checkout retained the exact product and terms after refresh. Mobile checks at 390px with reduced motion found no horizontal overflow, invalid dates or false highest-tier label. Editing to $86 after acceptance hid the executable deal while preserving the immutable quote; restoring $100 restored it. Anonymous status reads returned 401. Evidence snapshots showed OPEN, no needs-attention flag, zero payment operations and zero authorizations. Screenshots are `/tmp/coalition-production-search.png`, `coalition-production-quote.png`, `coalition-production-checkout.png`, `coalition-production-mobile.png` and `coalition-production-mobile-checkout.png`.
+
+These checks verify deployed live matching, negotiation and checkout presentation. No PayPal approval, authorization, capture, void, refund or webhook was initiated in this run; genuine payment acceptance gates remain outstanding. Earlier unresolved payment records were preserved. The accepted run closes at its stored application deadline; it is a finite demonstration, not a permanent offer.
+
 ## Storefront correction — October 7, 2026
 
 Replaced the technical request layout with the user-specified Coalition storefront. Six products and illustrative studio photographs appear before search; editable requirements and completed negotiation history are expandable. The accepted photograph, price, real authorization count and review action share one product panel. The sandbox badge/footer disclose simulation and AI-generated imagery; source prompt and asset provenance are in `docs/photography.json`.

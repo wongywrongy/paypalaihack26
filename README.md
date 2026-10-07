@@ -37,6 +37,10 @@ For this GPU server, use the installed **qwen3:30b-a3b-instruct-2507-q4_K_M** wi
 
 Native Ollama does not enforce bearer authentication. The existing API provides `POST /api/model/v1/chat/completions`, authenticated with `LLM_API_KEY`, restricted to the configured model and bounded input/output. Set `OLLAMA_UPSTREAM` to the same server's native origin, `LLM_BASE_URL=http://127.0.0.1:8000/api/model` for host development, and `LLM_CONTAINER_BASE_URL=http://api:8000/api/model` for Compose's private network. The native listener must be local/private; the authenticated route does not change an existing daemon's network exposure. No daemon configuration or GPU drivers were changed. For Render, use the host gateway's HTTPS origin plus `/api/model`, the same private bearer key and `LLM_PROTOCOL=ollama`; leave `OLLAMA_UPSTREAM` empty on Render. Configure authenticated private connectivity or a restricted HTTPS gateway before deployment.
 
+The configured Cloudflare Tunnel endpoint is `https://coalition-model.wongworks.dev/api/model`. Use it as `LLM_BASE_URL` on both Render API and worker, with the same private `LLM_API_KEY`, `LLM_PROTOCOL=ollama` and the model above. The tunnel routes only the exact `/api/model/v1/chat/completions` path; all other paths return 404. Its connector is the enabled user service `coalition-model-tunnel.service`; inspect it with `systemctl --user status coalition-model-tunnel.service`. Connector credentials live in the ignored, private `.runtime/` directory and must never be committed. The GPU server and local API must remain available.
+
+Check public DNS as well as authentication before calling a tunnel externally verified. A request from a Tailscale-connected host can use private MagicDNS and succeed while public resolvers still return NXDOMAIN. The earlier Funnel hostname failed that public-DNS check; local inference was not evidence of Render connectivity.
+
 Run the actual model-only check without creating payment operations:
 
 ```bash

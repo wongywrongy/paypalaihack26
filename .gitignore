@@ -13,3 +13,4 @@ frontend/playwright-report/
 .aws/
 .ruff_cache/
 .pytest_cache/
+.runtime/
