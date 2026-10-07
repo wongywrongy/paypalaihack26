@@ -33,6 +33,7 @@ interface Evidence {
     admitted: boolean;
     withdrawn: boolean;
     decision_status: string;
+    decision_error: string | null;
     result: {
       decision: string;
       explanation: string;
@@ -548,8 +549,11 @@ export default function Operator({ config }: { config: Config | null }) {
                                 ? "Code rejected (model: " +
                                   b.result.model_result?.decision +
                                   ")"
-                                : b.result?.decision || b.decision_status}
-                              <small>{b.result?.explanation}</small>
+                                : b.result?.decision ||
+                                  (b.decision_status === "failed"
+                                    ? "Assistant unavailable"
+                                    : b.decision_status)}
+                              <small>{b.result?.explanation || b.decision_error}</small>
                             </td>
                             <td>
                               {b.authorization_status || "Not authorized"}

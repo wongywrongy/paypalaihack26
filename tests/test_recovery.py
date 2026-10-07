@@ -419,6 +419,40 @@ class RecoveryChecks(unittest.TestCase):
             self.assertEqual(result.status_code, 200)
             self.assertIsNone(result.json()["authorization_id"])
 
+    def test_missing_model_key_finishes_ai_jobs_without_blocking_payment_jobs(self):
+        from dataclasses import replace
+
+        from coalition.worker import run_once
+
+        with connect() as db:
+            db.execute("UPDATE jobs SET status='done' WHERE mode='connected'")
+        gid, _ = self.group(count=0)
+        with (
+            patch("coalition.assistant.settings", replace(settings, llm_api_key="")),
+            patch("coalition.assistant.decide") as model,
+            patch("coalition.worker.log.error") as errors,
+        ):
+            for _ in range(5):
+                self.assertTrue(run_once())
+            model.assert_not_called()
+            errors.assert_not_called()
+        with connect() as db:
+            decisions = db.execute(
+                "SELECT status,result,error FROM ai_decisions WHERE group_id=%s", (gid,)
+            ).fetchall()
+            self.assertEqual(len(decisions), 5)
+            for decision in decisions:
+                self.assertEqual(decision["status"], "failed")
+                self.assertIsNone(decision["result"])
+                self.assertIn("LLM_API_KEY is missing", decision["error"])
+            jobs = db.execute(
+                "SELECT status,error FROM jobs WHERE payload->>'decision_id' IN (SELECT id::text FROM ai_decisions WHERE group_id=%s)",
+                (gid,),
+            ).fetchall()
+            self.assertTrue(all(j["status"] == "done" and j["error"] is None for j in jobs))
+        self.assertTrue(run_once())  # The following group deadline job still runs.
+        self.assertFalse(self.state(gid)["needs_attention"])
+
     def test_provider_timing_amount_and_merchant_checked_before_capture(self):
         for field, value in [
             (

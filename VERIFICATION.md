@@ -60,3 +60,12 @@ Complete [docs/DEMO.md](docs/DEMO.md), then run `scripts/check_connected.py` aga
 Render configuration, a Postman collection, OpenAPI export, migrations, environment example, seed command and local setup are supplied. Production gaps remain documented in the README. Existing unresolved financial records must be retained; archive is permitted only after confirmed resolution.
 
 On the user's follow-up, the existing Tailscale proxy was present but its port-8000 API was down. Ran `docker compose up --build --detach --wait --wait-timeout 180`, preserved the database volume and prior runs, and verified both container payment modules match the workspace. The private preview uses the existing tailnet host on port 8766. Published a fresh normal 24-hour fixture offer because the prior default run was legacy. This is a simulated preview, not PayPal/model proof or a public webhook endpoint.
+
+
+## Render follow-up — 2026-10-07
+
+Read-only checks of the user's deployment confirmed `/api/health`, `/api/config`, `/api/catalog`, buyer session setup and status responses. CORS accepts the configured HTTPS storefront origin. Connected-mode configuration reports all four PayPal values present, but no LLM key. The public PayPal JavaScript SDK returned HTTP 200; this does not prove server credentials, buyer approval, authorization, capture, void, refund or webhook verification. No payment was initiated by these checks.
+
+Fixed missing-key handling for prepared AI jobs: a missing `LLM_API_KEY` now records assistant unavailability and finishes the job without repeated retries or group payment attention. The merchant table displays the recorded reason. Regression coverage verifies all five AI jobs finish without model calls or error logs and the following group job still runs. Existing exhausted AI jobs retain their records and can be retried from protected merchant controls.
+
+Ran all 38 backend checks against isolated local PostgreSQL schemas (passed), TypeScript/Vite production build (passed), and focused Ruff checks (passed). These recovery tests use provider doubles and do not prove genuine PayPal payment operations.

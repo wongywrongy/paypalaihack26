@@ -151,6 +151,10 @@ This gate checks current provider resource amounts, five distinct payer captures
 
 Local Docker can serve the bundled frontend through FastAPI; the Render target splits the static frontend and API. No external write or paid deployment has been performed automatically.
 
+For a manually created Docker web service, create a separate Render Background Worker from the same repository and region. Leave Root Directory empty, use `./Dockerfile`, and override Docker Command with `python -m coalition.worker`. Copy the web service's server environment variables, including the exact same `DATABASE_URL` and `COALITION_MODE=connected`; the default Docker command only starts the website. No worker port or public URL is needed. Keep `PUBLIC_URL` set to the storefront origin on both services.
+
+A missing `LLM_API_KEY` marks recommendations unavailable without repeatedly retrying AI jobs; payment jobs continue. Add the Anthropic key to both backend services to enable live recommendations. For AI jobs exhausted by an earlier deployment, use their protected merchant **Retry job** controls after redeploying the worker. This retains existing offers, buyers and payment records.
+
 ## Known production gaps
 
 This is a recoverable sandbox MVP, not a production commerce service. Inventory/fulfillment/tax are simulated. Buyer identity is a session plus provider payer, not a production account system. Merchant access uses one private operator token rather than OIDC/RBAC. There is one worker; large-scale scheduling, horizontal concurrency, endpoint rate quotas, edge abuse controls, monitoring/alerting, dispute handling, retention policies, audited accounting, accessibility audit and real merchant onboarding need further work before production. The model's language extraction is probabilistic; displayed constraints and explicit buyer consent remain essential. Unknown provider results can require manual intervention rather than blind mutation replay.

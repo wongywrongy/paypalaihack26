@@ -244,6 +244,15 @@ def run_decision(db, decision_id):
     ).fetchone()
     if row["status"] == "completed":
         return
+    if settings.mode == "connected" and not settings.llm_api_key:
+        db.execute(
+            "UPDATE ai_decisions SET status='failed',result=NULL,error=%s WHERE id=%s",
+            (
+                "Assistant unavailable: LLM_API_KEY is missing. Checkout remains available.",
+                decision_id,
+            ),
+        )
+        return
     db.commit()  # No transaction is held across the model call.
     result = decide(row["persona"], row["terms"], row["request_text"])
     current = db.execute(
