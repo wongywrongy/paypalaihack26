@@ -135,8 +135,14 @@ def fixture_constraints(raw, today):
 
 def check_assessment(c, product, assessment):
     expected = requirements_for(c)
-    if [r.requirement for r in assessment.requirements] != expected:
-        raise ValueError("Assessment must cover each requirement in order.")
+    by_requirement = {r.requirement: r for r in assessment.requirements}
+    if (
+        len(by_requirement) != len(assessment.requirements)
+        or len(assessment.requirements) != len(expected)
+        or set(by_requirement) != set(expected)
+    ):
+        raise ValueError("Assessment must cover each requirement exactly once.")
+    assessment.requirements = [by_requirement[name] for name in expected]
     for r in assessment.requirements:
         evidence = product.get("evidence", {})
         canonical = CATALOG_REQUIREMENTS.get(r.requirement)
@@ -209,25 +215,35 @@ def run_match(db, rid):
                 (Jsonb(c.model_dump(mode="json")), rid),
             )
             return
-        if settings.mode == "fixture":
-            results = [fixture_assessment(c, p) for p in products]
-        else:
-            result, _ = complete(
-                Assessments,
-                "Assess every supplied product against every requirement, in the supplied order. Keep each rationale under 18 words. Copy requirement names exactly. ANC alone does not prove flight effectiveness. Lightning is compatible with iPhone 12 when documented. Cite only provided field paths. Unknown mandatory requirements block eligibility.",
-                {"requirements": requirements_for(c), "products": products},
-                max_tokens=4000,
-            )
-            results = result.assessments
-        if {a.product_id for a in results} != {p["id"] for p in products} or len(
-            results
-        ) != len(products):
-            raise ValueError(
-                "Model did not assess every catalog candidate exactly once."
-            )
+        payload = {"requirements": requirements_for(c), "products": products}
+        for attempt in range(2):
+            try:
+                if settings.mode == "fixture":
+                    results = [fixture_assessment(c, p) for p in products]
+                else:
+                    result, _ = complete(
+                        Assessments,
+                        "Assess every supplied product against every requirement exactly once. Keep each rationale under 18 words. Copy requirement names exactly, including the Device: prefix. Never merge similar requirements. ANC alone does not prove flight effectiveness. Lightning is compatible with iPhone 12 when documented. Cite only provided field paths. Unknown mandatory requirements block eligibility.",
+                        payload,
+                        max_tokens=4000,
+                    )
+                    results = result.assessments
+                if {a.product_id for a in results} != {
+                    p["id"] for p in products
+                } or len(results) != len(products):
+                    raise ValueError(
+                        "Model did not assess every catalog candidate exactly once."
+                    )
+                for a in results:
+                    p = next(p for p in products if p["id"] == a.product_id)
+                    check_assessment(c, p, a)
+                break
+            except ValueError as exc:
+                if attempt or settings.mode == "fixture":
+                    raise
+                payload["validation_error"] = str(exc)[:400]
         for a in results:
             p = next(p for p in products if p["id"] == a.product_id)
-            check_assessment(c, p, a)
             eligible = (
                 all(r.verdict == "yes" for r in a.requirements)
                 and c.max_total_minor >= 8900

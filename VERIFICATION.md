@@ -1,5 +1,15 @@
 # Coalition — verification record
 
+## Matching coverage correction — October 7, 2026
+
+The later production log at 17:53 UTC shows successful HTTP 200 model calls followed by `Assessment must cover each requirement in order.` The previous successful production journey did not establish continued matching reliability. That validator conflated reordered responses with missing, duplicate or renamed requirements; the exact failed model response was not retained, so the log alone cannot distinguish those cases.
+
+Matching now verifies exact requirement-name coverage, rejects duplicates and unexpected names, and restores the buyer's display order without changing verdicts or sources. Invalid assessment coverage/schema receives at most one additional live model call with validation feedback. Both attempts must cover every catalog product exactly once; no assessment rows are stored until the whole response passes. Unresolved invalid output still fails closed, and documented unknown requirements remain ineligible.
+
+Executed: all 53 backend tests passed against disposable PostgreSQL schemas, including all six order permutations, rejected missing/duplicate/extra/renamed requirements, corrected retry success and two-invalid-response failure with zero stored assessments. Focused Ruff checks passed. Four simulated buyers and two budget edits completed through the actual public Cloudflare model endpoint using the changed code in an isolated database schema: each initial request had one eligible offer, $86 had none, and $100 restored one. No payment operations. Eight earlier live assessment probes using the old prompt did not reproduce the exact production mismatch; the controlled regression establishes the validator behavior.
+
+The correction requires a new Render deployment of the API and worker. These results do not claim the changed validator has already been verified on Render or that future malformed model output cannot occur. The earlier genuine-payment gates remain outstanding.
+
 ## Render model connectivity and live journey — October 7, 2026
 
 The reported `httpx.ConnectError: [Errno -2] Name or service not known` prevented the Render worker from reaching the model. The Tailscale hostname resolved privately but remained NXDOMAIN on public resolvers. With explicit user approval, configured a dedicated Cloudflare Tunnel at `https://coalition-model.wongworks.dev/api/model`. It forwards only `/api/model/v1/chat/completions` to the existing authenticated gateway. Anonymous model calls return 401; unrelated paths return 404. The connector is an enabled, restarting user systemd service. Private connector credentials are excluded through `.runtime/`. Removed the unused public Tailscale port 443 mapping, preserving the private application mapping.

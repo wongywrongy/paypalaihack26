@@ -4,6 +4,7 @@ import os
 import unittest
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
+from itertools import permutations
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -15,10 +16,13 @@ from coalition.demo import create_run
 from coalition.groups import freeze, join, members, snapshot, tick
 from coalition.matching import (
     Assessment,
+    Assessments,
     Constraints,
     RequestInput,
     Requirement,
     check_assessment,
+    fixture_assessment,
+    requirements_for,
     run_match,
     submit_request,
 )
@@ -30,6 +34,40 @@ from psycopg.errors import UniqueViolation
 
 
 class VariableAmountChecks(unittest.TestCase):
+    def test_assessment_order_is_harmless_but_coverage_must_be_exact(self):
+        c = Constraints(
+            max_total_minor=10000,
+            latest_arrival=datetime.now(timezone.utc).date(),
+            required_features=["Active noise cancellation", "Flight effectiveness"],
+            device="iPhone 12",
+        )
+        product = next(p for p in PRODUCTS if p["id"] == "cabin-one")
+        original = fixture_assessment(c, product)
+        for order in permutations(original.requirements):
+            a = original.model_copy(deep=True)
+            a.requirements = [r.model_copy(deep=True) for r in order]
+            checked = check_assessment(c, product, a)
+            self.assertEqual(
+                [r.requirement for r in checked.requirements], requirements_for(c)
+            )
+            self.assertEqual(checked.requirements[1].verdict, "unknown")
+        for names in (
+            requirements_for(c)[:-1],
+            [requirements_for(c)[0]] * 3,
+            requirements_for(c) + ["Unrequested feature"],
+            ["Noise canceling", *requirements_for(c)[1:]],
+        ):
+            with (
+                self.subTest(names=names),
+                self.assertRaisesRegex(ValueError, "exactly once"),
+            ):
+                a = original.model_copy(deep=True)
+                a.requirements = [
+                    original.requirements[0].model_copy(update={"requirement": name})
+                    for name in names
+                ]
+                check_assessment(c, product, a)
+
     def test_generic_source_cannot_override_explicit_catalog_unknown(self):
         c = Constraints(
             max_total_minor=10000,
@@ -101,6 +139,68 @@ class VariableAmountChecks(unittest.TestCase):
 class NegotiatedChecks(unittest.TestCase):
     setUpClass = classmethod(legacy_tests.PostgreSQLChecks.setUpClass.__func__)
     tearDownClass = classmethod(legacy_tests.PostgreSQLChecks.tearDownClass.__func__)
+
+    def test_live_assessment_retry_is_bounded_and_does_not_store_invalid_coverage(self):
+        c = Constraints(
+            max_total_minor=10000,
+            latest_arrival=(datetime.now(timezone.utc) + timedelta(days=7)).date(),
+            required_features=["Active noise cancellation", "Flight effectiveness"],
+            device="iPhone 12",
+        )
+        valid = Assessments(
+            assessments=[
+                fixture_assessment(c, p)
+                for p in PRODUCTS
+                if p["category"] == "Headphones"
+            ]
+        )
+        invalid = valid.model_copy(deep=True)
+        invalid.assessments[0].requirements.pop()
+        with connect() as db:
+            run = create_run(db, "success", profile="small")
+            buyer = db.execute(
+                "SELECT * FROM buyers WHERE run_id=%s LIMIT 1", (run["run_id"],)
+            ).fetchone()
+            for corrected in (True, False):
+                request = submit_request(
+                    db, buyer, RequestInput(raw_text="Explicit requirements", edits=c)
+                )
+                db.commit()
+                with (
+                    patch(
+                        "coalition.matching.settings",
+                        replace(settings, mode="connected"),
+                    ),
+                    patch(
+                        "coalition.matching.complete",
+                        side_effect=[
+                            (invalid.model_copy(deep=True), 100),
+                            (
+                                (valid if corrected else invalid).model_copy(deep=True),
+                                100,
+                            ),
+                        ],
+                    ) as model,
+                    patch("coalition.matching.logging.getLogger"),
+                ):
+                    run_match(db, request["id"])
+                db.commit()
+                self.assertEqual(model.call_count, 2)
+                self.assertIn("validation_error", model.call_args.args[2])
+                self.assertEqual(
+                    db.execute(
+                        "SELECT status FROM buyer_requests WHERE id=%s",
+                        (request["id"],),
+                    ).fetchone()["status"],
+                    "completed" if corrected else "failed",
+                )
+                self.assertEqual(
+                    db.execute(
+                        "SELECT count(*) AS n FROM compatibility_assessments WHERE request_id=%s",
+                        (request["id"],),
+                    ).fetchone()["n"],
+                    6 if corrected else 0,
+                )
 
     def test_one_owned_buyer_per_run(self):
         run, hero, _, _ = self.prepare(0)
