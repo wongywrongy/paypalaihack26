@@ -1,0 +1,139 @@
+{
+  "observed_at": "2026-10-08T04:29:03.009Z",
+  "origin": "https://paypalaihack26.onrender.com",
+  "mode": "connected",
+  "model_evidence": "actual deployed API and worker; no model routes mocked",
+  "request": {
+    "text": "Noise-canceling headphones under $100 for my iPhone 12. I can wait a week.",
+    "status": "completed"
+  },
+  "negotiation": {
+    "id": "42ab1441-4b8f-4da1-836b-88df17b067ee",
+    "product_id": "sony-wh-ch720n",
+    "request_id": "2f909c54-eb2e-4927-945d-5993427c8211",
+    "status": "accepted",
+    "error": null,
+    "error_kind": null,
+    "created_at": "2026-10-08T04:28:52.830493+00:00",
+    "state": "agreed",
+    "phase": "agreed",
+    "accepted_quote_reference": {
+      "id": "quote-396ee2ea-f7ad-4f76-8d11-66a806adda33",
+      "version": 1
+    }
+  },
+  "rounds": [
+    {
+      "tiers": [
+        {
+          "minimum_buyers": 3,
+          "total_each_cents": 9200
+        },
+        {
+          "minimum_buyers": 5,
+          "total_each_cents": 8800
+        }
+      ],
+      "valid": true,
+      "action": "offered",
+      "changes": [],
+      "speaker": "buyer",
+      "currency": "USD",
+      "explanation": "Quantity prices proposed within your maximum; authorizations are still required.",
+      "proposal_reference": {
+        "id": "42ab1441-4b8f-4da1-836b-88df17b067ee",
+        "version": 1
+      },
+      "accepted_quote_reference": null,
+      "id": 16,
+      "sequence": 1,
+      "timestamp": "2026-10-08T04:28:56.071904+00:00"
+    },
+    {
+      "tiers": [
+        {
+          "minimum_buyers": 3,
+          "total_each_cents": 9200
+        },
+        {
+          "minimum_buyers": 5,
+          "total_each_cents": 8800
+        }
+      ],
+      "valid": true,
+      "action": "accepted",
+      "changes": [],
+      "speaker": "merchant",
+      "currency": "USD",
+      "explanation": "Matches your agent's offer within the merchant's published quantity-price ranges.",
+      "proposal_reference": {
+        "id": "42ab1441-4b8f-4da1-836b-88df17b067ee",
+        "version": 2
+      },
+      "accepted_quote_reference": null,
+      "id": 17,
+      "sequence": 2,
+      "timestamp": "2026-10-08T04:28:58.622392+00:00"
+    },
+    {
+      "tiers": [
+        {
+          "minimum_buyers": 3,
+          "total_each_cents": 9200
+        },
+        {
+          "minimum_buyers": 5,
+          "total_each_cents": 8800
+        }
+      ],
+      "valid": true,
+      "action": "accepted",
+      "changes": [],
+      "speaker": "buyer",
+      "currency": "USD",
+      "explanation": "Within your maximum and delivery requirement. Human payment approval is still needed.",
+      "proposal_reference": {
+        "id": "42ab1441-4b8f-4da1-836b-88df17b067ee",
+        "version": 2
+      },
+      "accepted_quote_reference": {
+        "id": "quote-396ee2ea-f7ad-4f76-8d11-66a806adda33",
+        "version": 1
+      },
+      "id": 18,
+      "sequence": 3,
+      "timestamp": "2026-10-08T04:28:59.675617+00:00"
+    }
+  ],
+  "agreement": {
+    "offer_id": "quote-396ee2ea-f7ad-4f76-8d11-66a806adda33",
+    "version": 1,
+    "product_id": "sony-wh-ch720n",
+    "variant": "Black",
+    "currency": "USD",
+    "total_minor": 9200,
+    "minimum": 3,
+    "capacity": 5,
+    "tier_schedule": [
+      {
+        "minimum_buyers": 3,
+        "total_each_cents": 9200
+      },
+      {
+        "minimum_buyers": 5,
+        "total_each_cents": 8800
+      }
+    ],
+    "shipping_minor": 0,
+    "tax_minor": 0,
+    "delivery_by": "2026-10-15T23:59:59+00:00",
+    "close_at": "2026-10-08T04:38:59+00:00"
+  },
+  "compatible_count": 3,
+  "confirmed_authorizations": 0,
+  "commitment": null,
+  "negotiation_calls": 1,
+  "payment_creation_calls": 0,
+  "refresh": "identical round IDs, events and immutable quote",
+  "checkout": "exact accepted maximum; stopped before consent/PayPal approval"
+}

@@ -108,6 +108,8 @@ Latest October 8 negotiation checks: **81 PostgreSQL tests, zero skips**, build 
 
 The automated `.github/workflows/verify.yml` gate runs PostgreSQL backend checks, focused lint, the frontend build and desktop/mobile fixture browser checks. Tests create disposable schemas and preserve existing history. Payment/model doubles prove application behavior, not external account behavior. [docs/DEMO.md](docs/DEMO.md) describes the live preparation and video gates.
 
+The negotiation feature's remote CI passed. A fresh connected Render journey also negotiated **$92/$88**, restored three structured rounds and the exact quote after refresh, and reached the dedicated **$92 maximum** checkout with **zero payment-creation calls and zero authorizations**. See `docs/model-verification-render-negotiation.json`. The merchant accepted the buyer's initial prices; no counteroffer is claimed for that execution. This is live model/application evidence, not a completed PayPal lifecycle.
+
 ## Deployment
 
 `render.yaml` retains the static frontend, API, single worker and private PostgreSQL topology. Configure the model and PayPal values in the shared backend environment, `PUBLIC_URL` to the frontend origin, and `VITE_API_URL` to the public API. Use same-site custom domains so browser session cookies remain dependable. Deploy API and worker with the same code/configuration. Keep provider retry retention at its conservative default unless verified for the actual endpoints.
