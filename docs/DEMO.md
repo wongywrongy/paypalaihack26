@@ -2,7 +2,7 @@
 
 ## Prerequisites and current blockers
 
-Use the existing React/API/single-worker/PostgreSQL deployment. This revision has not been deployed during this review. An authorized operator must make the API and worker run the same revision, with the configured real model, `COALITION_MODE=connected`, sandbox app credentials, `PAYPAL_MERCHANT_ID`, and the webhook registration belonging to that app. Preserve the database and apply additive migrations. Never reset payment history.
+Use the existing React/API/single-worker/PostgreSQL deployment; check the latest deployment evidence in `VERIFICATION.md`. The API and worker must run the same revision, with the configured real model, `COALITION_MODE=connected`, sandbox app credentials, `PAYPAL_MERCHANT_ID`, and the webhook registration belonging to that app. Preserve the database and apply additive migrations. Never reset payment history.
 
 The local merchant ID is missing; the existing local operator token was rejected by Render. App OAuth and registration retrieval succeeded, but neither proves webhook delivery. Five distinct sandbox payer accounts and five human PayPal approvals are required. Keep passwords and operator tokens out of chat, logs and recordings. The buyer approves on PayPal's sandbox surface; Coalition never collects credentials.
 
@@ -28,6 +28,8 @@ The local merchant ID is missing; the existing local operator token was rejected
 ## Independent judge shopping
 
 Open `/` in a fresh profile, browse or submit “Headphones under $100,” answer the delivery question, inspect matching products and negotiate. Editable chips preserve the request and completed answers. A compatible open group can be joined; otherwise a new bounded draft is negotiated. Closed, canceled, settled and unavailable deals offer another search. Previously approved terms remain attached to the original purchase.
+
+For the negotiation feature alone: select Sony WH-CH720N, inspect the simulated list price and actual compatible-interest count, then click **Negotiate for me**. Identify both agents, watch validated cards arrive, and point out any price changes. An unchanged merchant offer is acceptance, not a counteroffer. The agreement shows the approved maximum, conditional lower tier, required authorizations, shipping, delivery and closing time. Completed exchanges stay visible; refresh restores the exact quote and **View negotiation**. **Review agreement & authorize** opens the existing checkout. Stop before approving PayPal when demonstrating only this UI. The latest configured model observed $90/$87 for one ordinary Sony request; different valid results are allowed.
 
 ## Fixture demonstration and recording
 

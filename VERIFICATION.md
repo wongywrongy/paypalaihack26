@@ -1,5 +1,52 @@
 # Coalition — verification record
 
+## First-class agent negotiation — October 8, 2026
+
+Inspected the current implementation and repository instructions before editing. The writable checkout matched remote `main` at **ffbd2650cc023a69eab7b90d53651eb15ddcd7b2**. The previous real-product catalog and returning-shopper fixes are preserved. No accessible `AGENTS.md` was found. Changes keep React, FastAPI, one worker, PostgreSQL, Render and the configured model, with no new dependency, service or payment endpoint.
+
+### Implemented behavior
+
+- The product's purchase panel now leads with compact editable requirements, actual compatible interest, confirmed authorizations and **Negotiate for me**. Simulated list price, indicative public range and accepted quote are separate. Product photography remains beside it on desktop and compact above it on mobile.
+- Persisted rounds identify both agents, their validated tier prices, actions and numeric changes. Merchant terms identical to the buyer's bid are **accepted**, while retaining the executable merchant proposal. Safe explanations use validated differences and public policy facts, never model reasoning, private floors or invented economics.
+- Migration **006** adds `public_event` to existing rounds and `error_kind` to existing attempts. Each round commits before another model call. Journey returns stable IDs/sequences, explicit currency, timestamps, ordered changes, real processing phase and exact accepted quote reference. Older unstructured rounds are labeled unavailable rather than parsed from strings.
+- Negotiation remains prominent while running and does not collapse on completion. The agreement presents maximum, conditional lower tier, buyer thresholds, shipping/delivery/closing, actual counts and **Review agreement & authorize**. A compact summary remains visible; full history is available through **View negotiation**. Agent acceptance explicitly does not mean human approval or settlement.
+- Existing polling remains. All unseen valid offers queue once in sequence, including batches; refresh restores without replay. AnimatedBeam and AnimatedList reuse existing components. Exact prices use restrained opacity, and reduced motion/keyboard/status announcements remain understandable without animation. No animation changes terms, creates authorization or delays checkout.
+- No-agreement and interrupted states provide explicit adjustment/selection/retry. Provider failures stop the attempt instead of silently repeating it; existing schema-repair/time/token/round budgets remain. Evaluated edits are not trapped by an older failed attempt. Out-of-order refresh responses cannot overwrite a newer response.
+- Payment architecture, immutable consent, server validation, inventory reservation, ownership, idempotent operations, verified webhooks and reconciliation are retained. No connected fallback was added. Negotiation itself creates no payment.
+
+### Executed checks — deterministic fixtures and application behavior
+
+| Check | Actual result |
+|---|---|
+| PostgreSQL backend suite | **81 passed, zero failures/skips**, disposable PostgreSQL 16 schemas, final run **48.778 seconds**; `/tmp/coalition-negotiation-backend-final.log`. New checks cover truthful first-offer acceptance/diffs/private-output exclusion, an offer visible while the merchant call is blocked, accepted quote restored unchanged, and provider failure with no automatic retry. Existing deadlines during slow AI, ownership, inventory, leases, payment/webhook/recovery tests also pass. |
+| Desktop/mobile browser regression gate | **28 passed, zero skips**, **44.0 seconds**; `/tmp/coalition-negotiation-browser-final.log`. Eight negotiation cases cover first acceptance, counter/accept, decline, connection failure and explicit retry, edited-request recovery, batched round animation order, duplicates, refresh during/after negotiation, exact-term checkout, keyboard and reduced motion. Other storefront/checkout regressions remain included. The final shared-agreement provenance change passed all **eight negotiation checks again**, 22.7 seconds; `/tmp/coalition-negotiation-browser-confirm.log`. |
+| Built frontend with actual isolated API/worker/database | **Two desktop/mobile journeys passed**; `/tmp/coalition-negotiation-stack.log` and `.json`. Both restored identical round IDs and quote/version after refresh, reached exact-term checkout and preserved empty purchase history with **one negotiation submission and zero payment-creation calls** per journey. They used fixture AI and fixture provider configuration. The second shopper joined the same compatible open quote. Shared agreements identify the existing group buying agent rather than claiming the new shopper originated that exchange. Interest counts were **11/12**, confirmed authorizations **0**; no personas were treated as funding. |
+| Build/lint/gate | TypeScript/Vite and focused Ruff passed; `/tmp/coalition-negotiation-build-final.log`, `/tmp/coalition-negotiation-lint-final.log`. The existing GitHub gate now includes `negotiation-ui.spec.ts`. No dependency or infrastructure added. |
+| Rendered screens | Batched desktop/mobile active negotiation and agreement inspected, then confirmed after the bounded recovery correction. Screenshots: `.impeccable/review/negotiation-active-{desktop,mobile}.png`, `negotiation-agreed-{desktop,mobile}.png`. These use explicit public API fixtures and are **not genuine provider screenshots**. The design detector reported no deterministic findings. |
+
+Intermediate failures were not provider outcomes: the first TypeScript build caught a removed count reference and was corrected. An initial browser run reused another app on shared port 5173 and failed all 28 checks; isolated port 5186 passed all 28 twice, including the final recovery correction. A backend rerun without local-network sandbox permission failed to connect to the disposable database; the permitted final run passed all 81. Earlier intermediate backend and browser successful runs are retained in `/tmp/coalition-negotiation-backend-2.log` and `/tmp/coalition-negotiation-browser-2.log`. Full fixture payment/deadline browser scenarios and worker-restart receipt checks were **not rerun for this UI change**; their prior evidence below remains historical. Chromium desktop/mobile emulation was used, not physical phones or every browser.
+
+### Genuine configured-model evidence — separate from fixtures
+
+`docs/model-verification-negotiation-ui.json` records six actual authenticated cases through the configured Ollama adapter to **qwen3:30b-a3b-instruct-2507-q4_K_M**, against disposable schemas with payment creation disabled. **Zero payment operations; zero confirmed authorizations.**
+
+| Actual request / product | Observed outcome, 3/5-buyer tiers |
+|---|---|
+| ANC, iPhone 12, under $100, seven days / Sony WH-CH720N | **$90/$87**; buyer offered, merchant accepted those prices, buyer accepted the executable merchant quote |
+| Bluetooth, iPhone 12, under $80, five days / Sony WH-CH520 | **$75/$69**, first offer accepted |
+| ANC, under $350, fourteen days / Sony WH-1000XM5 | **$299/$279**, first offer accepted |
+| Maximum $66, five days | **No agreement** within three exchanges; invalid over-budget buyer responses did not become executable offers |
+| “Headphones under $100” | **Delivery clarification**, no negotiation |
+| Five distinct simulated requirements, Sam under $90 / Sony WH-CH720N | **$89/$88**, first offer accepted; five requests were interest only |
+
+No actual merchant counter occurred in this model execution; counter/accept and numeric changes are proven by the deterministic PostgreSQL and browser tests. Genuine prices were not forced. The preserved model record's legacy text summary was captured before the final display-only summary wording change; structured actions and accepted references are the authority.
+
+### Limits and deployment
+
+No genuine PayPal operation, approval or external configuration change was initiated to demonstrate this feature. The earlier genuine lifecycle gates remain unresolved and are not claimed completed. Deployment/CI observations for this feature will be recorded after the already-authorized normal push; local tests alone do not prove deployment. The frontend and worker require migration 006 through the existing startup migration mechanism.
+
+---
+
 ## Returning-shopper navigation fix — October 8, 2026
 
 A fresh browser on the deployed Render home showed all six current models, and the public catalog matched. The reported Cabin One behavior had an independent session/navigation cause: shopping without an explicit run restored the session cookie's original purchase; checkout's “Return to storefront” also carried that run and product back into shopping. Journey responses exposed retired products and their old matching assessments alongside the current catalog. This could pull a returning shopper back into the historical deal and disable new shopping.

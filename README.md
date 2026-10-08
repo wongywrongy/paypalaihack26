@@ -54,6 +54,12 @@ The October 7 inspection found working sandbox app credentials, but the local co
 
 ## Agreements and lifecycle
 
+On the product page, **Negotiate for me** turns the purchase panel into a persistent exchange between your buying agent and the named merchant's agent. Requirements remain editable before negotiation. Compatible requests are counted from current supported assessments; they never count as funding. The simulated list price and indicative public range are separate from an accepted quote.
+
+Validated rounds are committed individually and polled with stable IDs, ordered sequences, tier prices, price changes, public explanations and the accepted quote reference. An unchanged merchant proposal is labeled acceptance of the buyer's offer while retaining its executable merchant quote. Completed rounds stay open when negotiation finishes. The agreement shows the maximum, conditional lower tier, minimum authorizations, shipping, delivery and closing time before **Review agreement & authorize** opens the existing exact-quote checkout. Agent acceptance is not human payment approval.
+
+Refresh restores state without restarting negotiation or payment. Duplicate/batched responses are deduplicated and animated in order; reduced motion shows all information directly. Interrupted attempts require explicit retry. Revised evaluated requirements can start a new attempt without being trapped by an earlier declined exchange. No new dependencies, endpoints or services were introduced; migration 006 adds public round events and an error category to existing tables.
+
 Six real headphone models with simulated merchant offers have versioned evidence. A live model extracts explicit requirements and assesses each candidate. Numeric budget/delivery constraints are independently enforced. Required unknowns block eligibility; explicit edits can relax a requirement. A model recommendation never approves a payment.
 
 Buyer and merchant roles share one adapter with separate contexts. Only the merchant receives its private policy. At most three exchanges (six calls), 120 seconds, 6,000 output tokens and 24,000 total tokens are allowed per attempt. A crash terminates that attempt; an explicit retry creates a new bounded one. Public transcripts contain structured prices and server-written decisions, without private reasoning or floors.
@@ -89,7 +95,7 @@ COALITION_TEST_DATABASE_URL=postgresql://coalition:coalition@localhost:5432/coal
   PYTHONPATH=backend .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/ruff check --isolated --select E4,E7,E9,F,I --ignore E402 backend tests scripts
 npm run build --prefix frontend
-npm run test:browser --prefix frontend -- tests/buyer.spec.ts tests/checkout.spec.ts tests/storefront.spec.ts
+npm run test:browser --prefix frontend -- tests/buyer.spec.ts tests/checkout.spec.ts tests/storefront.spec.ts tests/negotiation-ui.spec.ts
 # Use an isolated fixture API/worker database for this real-stack test:
 COALITION_E2E_URL=http://127.0.0.1:8014 COALITION_OPERATOR_TOKEN=... \
   npm run test:browser --prefix frontend -- --grep 'negotiated stack|ordinary shopping' --workers=1
@@ -98,7 +104,7 @@ COALITION_E2E_URL=http://127.0.0.1:8014 COALITION_OPERATOR_TOKEN=... \
   npm run test:browser --prefix frontend -- tests/stack.spec.ts --project=desktop --workers=1
 ```
 
-Latest October 8 navigation checks: **78 PostgreSQL tests, zero skips**, build and focused lint passed, and **20 desktop/mobile browser checks passed**. Earlier catalog checks also passed 77 PostgreSQL tests and 18 browser regressions. Four desktop/mobile ordinary-shopping application cases passed with the real-product catalog and fixture payments. A historical Cabin One $85 receipt retained its original identity after the catalog change. Earlier checks also covered four desktop settlement/recovery cases and owned receipts surviving an API/worker restart. Genuine payment acceptance remains blocked; [VERIFICATION.md](VERIFICATION.md) records failures, limits and the Ponytail audit.
+Latest October 8 negotiation checks: **81 PostgreSQL tests, zero skips**, build and focused lint passed, and **28 desktop/mobile browser checks passed**. Two additional browser journeys used the isolated API, worker and database to restore the same rounds/quote and reach exact-term checkout with **zero payment creation calls**. The configured real model passed six cases: $90/$87, $75/$69, $299/$279, bounded no agreement at $66, delivery clarification, and $89/$88 from five distinct simulated requirements; **zero payment operations**. See `docs/model-verification-negotiation-ui.json`. Earlier catalog, settlement/recovery and restart evidence remains historical. Genuine PayPal acceptance remains blocked; [VERIFICATION.md](VERIFICATION.md) records failures, limits and the Ponytail audit.
 
 The automated `.github/workflows/verify.yml` gate runs PostgreSQL backend checks, focused lint, the frontend build and desktop/mobile fixture browser checks. Tests create disposable schemas and preserve existing history. Payment/model doubles prove application behavior, not external account behavior. [docs/DEMO.md](docs/DEMO.md) describes the live preparation and video gates.
 

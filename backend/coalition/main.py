@@ -33,7 +33,7 @@ from .groups import (
     withdraw,
 )
 from .matching import RequestInput, eligible_for_quote, latest_request, submit_request
-from .negotiation import matching_group
+from .negotiation import compatible_demand, matching_group
 from .negotiation import start as start_negotiation
 from .offers import terms_for
 from .payments import verify_webhook
@@ -350,7 +350,7 @@ def journey(b=Depends(buyer)):
             == active_products[a["product_id"]]["source_version"]
         ]
         n = db.execute(
-            "SELECT id,status,error,created_at FROM negotiations WHERE group_id=%s ORDER BY created_at DESC LIMIT 1",
+            "SELECT id,product_id,request_id,status,error,error_kind,created_at FROM negotiations WHERE group_id=%s ORDER BY created_at DESC LIMIT 1",
             (g["id"],),
         ).fetchone()
         for assessment in assessments:
@@ -367,22 +367,43 @@ def journey(b=Depends(buyer)):
                 match["available_slots"] if match else 0,
             )
         rounds = db.execute(
-            "SELECT id,role,valid,public_summary,created_at FROM negotiation_rounds WHERE negotiation_id=%s ORDER BY ordinal",
+            "SELECT id,ordinal,role,valid,public_summary,public_event,created_at FROM negotiation_rounds WHERE negotiation_id=%s ORDER BY ordinal",
             (n["id"] if n else None,),
         ).fetchall()
         offer = terms_for(db, g["id"]) if g["offer_id"] else None
-        compatible = 0
-        if offer:
-            compatible = (
-                sum(
-                    eligible_for_quote(db, row["id"], offer)
-                    for row in db.execute(
-                        "SELECT id FROM buyers WHERE run_id=%s", (b["run_id"],)
-                    ).fetchall()
-                )
-                if offer.get("pricing_model") == "tiers"
-                else 0
+        counts = {
+            p["id"]: len(compatible_demand(
+                db, p, b["run_id"] if g["demo"] else None,
+                offer if offer and offer["product_id"] == p["id"] else None,
+            ))
+            for p in SHOP_PRODUCTS
+        }
+        public_rounds = [
+            {
+                **(r["public_event"] or {
+                    "speaker": r["role"], "action": "unavailable", "valid": False,
+                    "currency": "USD", "tiers": [], "changes": [],
+                    "explanation": "Earlier exchange retained; no structured public terms recorded.",
+                    "accepted_quote_reference": None,
+                }),
+                "id": r["id"], "sequence": r["ordinal"], "timestamp": r["created_at"],
+                "role": r["role"], "public_summary": r["public_summary"],
+            }
+            for r in rounds
+        ]
+        if n:
+            n["state"] = (
+                "agreed" if n["status"] == "accepted"
+                else "declined" if n["status"] == "failed" and n["error_kind"] in ("no_agreement", "unsupported_requirements")
+                else "interrupted" if n["status"] == "failed"
+                else "negotiating"
             )
+            n["phase"] = (
+                "preparing" if not rounds
+                else "waiting_for_merchant" if rounds[-1]["role"] == "buyer"
+                else "evaluating_offer"
+            ) if n["state"] == "negotiating" else n["state"]
+            n["accepted_quote_reference"] = {"id": offer["offer_id"], "version": offer["version"]} if n["state"] == "agreed" and offer else None
         used = db.execute(
             "SELECT count(*) AS n FROM commitments WHERE group_id=%s AND active",
             (g["id"],),
@@ -404,7 +425,7 @@ def journey(b=Depends(buyer)):
             "request": req,
             "assessments": assessments,
             "negotiation": n,
-            "rounds": rounds,
+            "rounds": public_rounds,
             "availability": availability,
             "group": {
                 "id": g["id"],
@@ -415,7 +436,8 @@ def journey(b=Depends(buyer)):
             "status": snapshot(db, b)
             if offer and offer.get("pricing_model") == "tiers"
             else None,
-            "compatible_count": compatible,
+            "compatible_count": counts.get(offer["product_id"], 0) if offer else 0,
+            "compatible_counts": counts,
             "eligible": eligible_for_quote(db, b["id"], offer)
             if offer and offer.get("pricing_model") == "tiers"
             else False,

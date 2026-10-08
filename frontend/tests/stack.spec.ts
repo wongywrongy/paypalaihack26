@@ -23,10 +23,10 @@ for (const scenario of ["success", "deadline", "partial", "refund_pending"]) {
     const refresh = async () => evidence = await operator(request, path);
     await page.goto(run.preparation_links.find((b: any) => b.name === "Sam").url);
     await page.getByRole("button", { name: "Explore Sony WH-CH720N" }).click();
-    await expect(page.getByRole("button", { name: "Get group price" })).toBeEnabled();
-    await page.getByRole("button", { name: "Get group price" }).click();
+    await expect(page.getByRole("button", { name: "Negotiate for me" })).toBeEnabled();
+    await page.getByRole("button", { name: "Negotiate for me" }).click();
     await expect(page.getByRole("heading", { name: "Your group deal" })).toBeVisible();
-    await page.getByRole("link", { name: "Review deal", exact: true }).click();
+    await page.getByRole("link", { name: "Review agreement & authorize", exact: true }).click();
     const panel = page.getByRole("complementary", { name: "Coalition group purchase" });
     const approve = async () => {
       await panel.getByRole("checkbox").check();
@@ -54,7 +54,7 @@ for (const scenario of ["success", "deadline", "partial", "refund_pending"]) {
         const response = await page.request.post("/api/commitments?run=" + run.run_id, {
           headers: { "X-Coalition-Request": "1" }, data: {
             group_id: status.group.id, accepted_terms: status.offer,
-            context: { product_id: product.id, title: product.title, selected_variant: "Graphite", quantity: 1, currency: "USD", displayed_price_minor: product.price_minor },
+            context: { product_id: product.id, title: product.title, selected_variant: product.variants[0], quantity: 1, currency: "USD", displayed_price_minor: product.price_minor },
           },
         });
         expect(response.ok()).toBeTruthy();

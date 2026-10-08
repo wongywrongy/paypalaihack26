@@ -1,0 +1,1782 @@
+{
+  "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+  "protocol": "ollama",
+  "payment_operations": 0,
+  "cases": [
+    {
+      "request": "Noise-canceling headphones under $100 for my iPhone 12. I can wait a week.",
+      "status": "completed",
+      "constraints": {
+        "device": "iPhone 12",
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-15",
+        "max_total_minor": 9999,
+        "product_category": "Headphones",
+        "required_features": [
+          "Active noise cancellation"
+        ]
+      },
+      "error_kind": null,
+      "assessments": [
+        {
+          "product_id": "apple-airpods-max-usbc",
+          "eligible": false,
+          "requirements": [
+            {
+              "source": "evidence.anc",
+              "verdict": "yes",
+              "rationale": "ANC confirmed in specs and evidence.",
+              "requirement": "Active noise cancellation"
+            },
+            {
+              "source": "evidence.iphone_12",
+              "verdict": "yes",
+              "rationale": "Compatible per Apple support documentation.",
+              "requirement": "Device: iPhone 12"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "no",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "no",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "bose-quietcomfort",
+          "eligible": true,
+          "requirements": [
+            {
+              "source": "evidence.anc",
+              "verdict": "yes",
+              "rationale": "ANC confirmed in specs and evidence.",
+              "requirement": "Active noise cancellation"
+            },
+            {
+              "source": "evidence.iphone_12",
+              "verdict": "yes",
+              "rationale": "Compatible per Apple support documentation.",
+              "requirement": "Device: iPhone 12"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "yes",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "yes",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "bose-quietcomfort-ultra-2",
+          "eligible": false,
+          "requirements": [
+            {
+              "source": "evidence.anc",
+              "verdict": "yes",
+              "rationale": "ANC confirmed in specs and evidence.",
+              "requirement": "Active noise cancellation"
+            },
+            {
+              "source": "evidence.iphone_12",
+              "verdict": "yes",
+              "rationale": "Compatible per Apple support documentation.",
+              "requirement": "Device: iPhone 12"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "no",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "no",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "sony-wh-1000xm5",
+          "eligible": false,
+          "requirements": [
+            {
+              "source": "evidence.anc",
+              "verdict": "yes",
+              "rationale": "ANC confirmed in specs and evidence.",
+              "requirement": "Active noise cancellation"
+            },
+            {
+              "source": "evidence.iphone_12",
+              "verdict": "yes",
+              "rationale": "Compatible per Apple support documentation.",
+              "requirement": "Device: iPhone 12"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "no",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "no",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "sony-wh-ch520",
+          "eligible": false,
+          "requirements": [
+            {
+              "source": "evidence.anc",
+              "verdict": "no",
+              "rationale": "The supplied catalog does not establish this requirement.",
+              "requirement": "Active noise cancellation"
+            },
+            {
+              "source": "evidence.iphone_12",
+              "verdict": "yes",
+              "rationale": "Compatible per Apple support documentation.",
+              "requirement": "Device: iPhone 12"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "yes",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "yes",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "sony-wh-ch720n",
+          "eligible": true,
+          "requirements": [
+            {
+              "source": "evidence.anc",
+              "verdict": "yes",
+              "rationale": "ANC confirmed in specs and evidence.",
+              "requirement": "Active noise cancellation"
+            },
+            {
+              "source": "evidence.iphone_12",
+              "verdict": "yes",
+              "rationale": "Compatible per Apple support documentation.",
+              "requirement": "Device: iPhone 12"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "yes",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "yes",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        }
+      ],
+      "negotiation": {
+        "status": "accepted",
+        "error": null,
+        "error_kind": null,
+        "token_count": 6569
+      },
+      "rounds": [
+        {
+          "id": 1,
+          "ordinal": 1,
+          "role": "buyer",
+          "valid": true,
+          "public_summary": "Buyer agent: Proposed $90.00 at 3 buyers / $87.00 at 5 buyers.",
+          "public_event": {
+            "tiers": [
+              {
+                "minimum_buyers": 3,
+                "total_each_cents": 9000
+              },
+              {
+                "minimum_buyers": 5,
+                "total_each_cents": 8700
+              }
+            ],
+            "valid": true,
+            "action": "offered",
+            "changes": [],
+            "speaker": "buyer",
+            "currency": "USD",
+            "explanation": "Quantity prices proposed within your maximum; authorizations are still required.",
+            "proposal_reference": {
+              "id": "3558674a-a54d-476c-a165-88422c0e7d2f",
+              "version": 1
+            },
+            "accepted_quote_reference": null
+          },
+          "created_at": "2026-10-08 04:04:02.669066+00:00"
+        },
+        {
+          "id": 2,
+          "ordinal": 2,
+          "role": "merchant",
+          "valid": true,
+          "public_summary": "Merchant agent: Proposed $90.00 at 3 buyers / $87.00 at 5 buyers.",
+          "public_event": {
+            "tiers": [
+              {
+                "minimum_buyers": 3,
+                "total_each_cents": 9000
+              },
+              {
+                "minimum_buyers": 5,
+                "total_each_cents": 8700
+              }
+            ],
+            "valid": true,
+            "action": "accepted",
+            "changes": [],
+            "speaker": "merchant",
+            "currency": "USD",
+            "explanation": "Matches your agent's offer within the merchant's published quantity-price ranges.",
+            "proposal_reference": {
+              "id": "3558674a-a54d-476c-a165-88422c0e7d2f",
+              "version": 2
+            },
+            "accepted_quote_reference": null
+          },
+          "created_at": "2026-10-08 04:04:05.144930+00:00"
+        },
+        {
+          "id": 3,
+          "ordinal": 3,
+          "role": "buyer",
+          "valid": true,
+          "public_summary": "Buyer agent: Accepted the validated merchant quote.",
+          "public_event": {
+            "tiers": [
+              {
+                "minimum_buyers": 3,
+                "total_each_cents": 9000
+              },
+              {
+                "minimum_buyers": 5,
+                "total_each_cents": 8700
+              }
+            ],
+            "valid": true,
+            "action": "accepted",
+            "changes": [],
+            "speaker": "buyer",
+            "currency": "USD",
+            "explanation": "Within your maximum and delivery requirement. Human payment approval is still needed.",
+            "proposal_reference": {
+              "id": "3558674a-a54d-476c-a165-88422c0e7d2f",
+              "version": 2
+            },
+            "accepted_quote_reference": {
+              "id": "quote-be869876-d52d-46fa-b818-3119d9662235",
+              "version": 1
+            }
+          },
+          "created_at": "2026-10-08 04:04:06.022465+00:00"
+        }
+      ],
+      "agreement": {
+        "product_id": "sony-wh-ch720n",
+        "total_minor": 9000,
+        "tier_schedule": [
+          {
+            "minimum_buyers": 3,
+            "total_each_cents": 9000
+          },
+          {
+            "minimum_buyers": 5,
+            "total_each_cents": 8700
+          }
+        ],
+        "delivery_by": "2026-10-15T23:59:59+00:00",
+        "close_at": "2026-10-08T04:14:06+00:00",
+        "policy_id": "commuter-real-v1",
+        "offer_id": "quote-be869876-d52d-46fa-b818-3119d9662235",
+        "version": 1
+      },
+      "seconds": 17.17
+    },
+    {
+      "request": "Bluetooth headphones under $80 for my iPhone 12. I can wait 5 days.",
+      "status": "completed",
+      "constraints": {
+        "device": "iPhone 12",
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-13",
+        "max_total_minor": 7999,
+        "product_category": "Headphones",
+        "required_features": [
+          "Bluetooth audio"
+        ]
+      },
+      "error_kind": null,
+      "assessments": [
+        {
+          "product_id": "apple-airpods-max-usbc",
+          "eligible": false,
+          "requirements": [
+            {
+              "source": "evidence.bluetooth_audio",
+              "verdict": "yes",
+              "rationale": "Bluetooth audio confirmed in specs and evidence.",
+              "requirement": "Bluetooth audio"
+            },
+            {
+              "source": "evidence.iphone_12",
+              "verdict": "yes",
+              "rationale": "Compatible with iPhone 12 per Apple support.",
+              "requirement": "Device: iPhone 12"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "no",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "no",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "bose-quietcomfort",
+          "eligible": false,
+          "requirements": [
+            {
+              "source": "evidence.bluetooth_audio",
+              "verdict": "yes",
+              "rationale": "Bluetooth audio confirmed in specs and evidence.",
+              "requirement": "Bluetooth audio"
+            },
+            {
+              "source": "evidence.iphone_12",
+              "verdict": "yes",
+              "rationale": "Compatible with iPhone 12 per Apple support.",
+              "requirement": "Device: iPhone 12"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "no",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "no",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "bose-quietcomfort-ultra-2",
+          "eligible": false,
+          "requirements": [
+            {
+              "source": "evidence.bluetooth_audio",
+              "verdict": "yes",
+              "rationale": "Bluetooth audio confirmed in specs and evidence.",
+              "requirement": "Bluetooth audio"
+            },
+            {
+              "source": "evidence.iphone_12",
+              "verdict": "yes",
+              "rationale": "Compatible with iPhone 12 per Apple support.",
+              "requirement": "Device: iPhone 12"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "no",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "no",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "sony-wh-1000xm5",
+          "eligible": false,
+          "requirements": [
+            {
+              "source": "evidence.bluetooth_audio",
+              "verdict": "yes",
+              "rationale": "Bluetooth audio confirmed in specs and evidence.",
+              "requirement": "Bluetooth audio"
+            },
+            {
+              "source": "evidence.iphone_12",
+              "verdict": "yes",
+              "rationale": "Compatible with iPhone 12 per Apple support.",
+              "requirement": "Device: iPhone 12"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "no",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "no",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "sony-wh-ch520",
+          "eligible": true,
+          "requirements": [
+            {
+              "source": "evidence.bluetooth_audio",
+              "verdict": "yes",
+              "rationale": "Bluetooth audio confirmed in specs and evidence.",
+              "requirement": "Bluetooth audio"
+            },
+            {
+              "source": "evidence.iphone_12",
+              "verdict": "yes",
+              "rationale": "Compatible with iPhone 12 per Apple support.",
+              "requirement": "Device: iPhone 12"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "yes",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "yes",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "sony-wh-ch720n",
+          "eligible": false,
+          "requirements": [
+            {
+              "source": "evidence.bluetooth_audio",
+              "verdict": "yes",
+              "rationale": "Bluetooth audio confirmed in specs and evidence.",
+              "requirement": "Bluetooth audio"
+            },
+            {
+              "source": "evidence.iphone_12",
+              "verdict": "yes",
+              "rationale": "Compatible with iPhone 12 per Apple support.",
+              "requirement": "Device: iPhone 12"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "no",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "no",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        }
+      ],
+      "negotiation": {
+        "status": "accepted",
+        "error": null,
+        "error_kind": null,
+        "token_count": 6384
+      },
+      "rounds": [
+        {
+          "id": 4,
+          "ordinal": 1,
+          "role": "buyer",
+          "valid": true,
+          "public_summary": "Buyer agent: Proposed $75.00 at 3 buyers / $69.00 at 5 buyers.",
+          "public_event": {
+            "tiers": [
+              {
+                "minimum_buyers": 3,
+                "total_each_cents": 7500
+              },
+              {
+                "minimum_buyers": 5,
+                "total_each_cents": 6900
+              }
+            ],
+            "valid": true,
+            "action": "offered",
+            "changes": [],
+            "speaker": "buyer",
+            "currency": "USD",
+            "explanation": "Quantity prices proposed within your maximum; authorizations are still required.",
+            "proposal_reference": {
+              "id": "d73cb184-c500-43ff-bd79-a41e411b7e3b",
+              "version": 1
+            },
+            "accepted_quote_reference": null
+          },
+          "created_at": "2026-10-08 04:04:14.728160+00:00"
+        },
+        {
+          "id": 5,
+          "ordinal": 2,
+          "role": "merchant",
+          "valid": true,
+          "public_summary": "Merchant agent: Proposed $75.00 at 3 buyers / $69.00 at 5 buyers.",
+          "public_event": {
+            "tiers": [
+              {
+                "minimum_buyers": 3,
+                "total_each_cents": 7500
+              },
+              {
+                "minimum_buyers": 5,
+                "total_each_cents": 6900
+              }
+            ],
+            "valid": true,
+            "action": "accepted",
+            "changes": [],
+            "speaker": "merchant",
+            "currency": "USD",
+            "explanation": "Matches your agent's offer within the merchant's published quantity-price ranges.",
+            "proposal_reference": {
+              "id": "d73cb184-c500-43ff-bd79-a41e411b7e3b",
+              "version": 2
+            },
+            "accepted_quote_reference": null
+          },
+          "created_at": "2026-10-08 04:04:17.004528+00:00"
+        },
+        {
+          "id": 6,
+          "ordinal": 3,
+          "role": "buyer",
+          "valid": true,
+          "public_summary": "Buyer agent: Accepted the validated merchant quote.",
+          "public_event": {
+            "tiers": [
+              {
+                "minimum_buyers": 3,
+                "total_each_cents": 7500
+              },
+              {
+                "minimum_buyers": 5,
+                "total_each_cents": 6900
+              }
+            ],
+            "valid": true,
+            "action": "accepted",
+            "changes": [],
+            "speaker": "buyer",
+            "currency": "USD",
+            "explanation": "Within your maximum and delivery requirement. Human payment approval is still needed.",
+            "proposal_reference": {
+              "id": "d73cb184-c500-43ff-bd79-a41e411b7e3b",
+              "version": 2
+            },
+            "accepted_quote_reference": {
+              "id": "quote-0cce9a72-edb9-4939-b439-55d7136686c8",
+              "version": 1
+            }
+          },
+          "created_at": "2026-10-08 04:04:17.844015+00:00"
+        }
+      ],
+      "agreement": {
+        "product_id": "sony-wh-ch520",
+        "total_minor": 7500,
+        "tier_schedule": [
+          {
+            "minimum_buyers": 3,
+            "total_each_cents": 7500
+          },
+          {
+            "minimum_buyers": 5,
+            "total_each_cents": 6900
+          }
+        ],
+        "delivery_by": "2026-10-12T23:59:59+00:00",
+        "close_at": "2026-10-08T04:14:17+00:00",
+        "policy_id": "value-real-v1",
+        "offer_id": "quote-0cce9a72-edb9-4939-b439-55d7136686c8",
+        "version": 1
+      },
+      "seconds": 11.82
+    },
+    {
+      "request": "Noise-canceling headphones under $350. I can wait 14 days.",
+      "status": "completed",
+      "constraints": {
+        "device": null,
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-22",
+        "max_total_minor": 34999,
+        "product_category": "Headphones",
+        "required_features": [
+          "Active noise cancellation"
+        ]
+      },
+      "error_kind": null,
+      "assessments": [
+        {
+          "product_id": "apple-airpods-max-usbc",
+          "eligible": true,
+          "requirements": [
+            {
+              "source": "evidence.anc",
+              "verdict": "yes",
+              "rationale": "ANC confirmed in specs and evidence.",
+              "requirement": "Active noise cancellation"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "yes",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "yes",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "bose-quietcomfort",
+          "eligible": true,
+          "requirements": [
+            {
+              "source": "evidence.anc",
+              "verdict": "yes",
+              "rationale": "ANC confirmed in specs and evidence.",
+              "requirement": "Active noise cancellation"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "yes",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "yes",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "bose-quietcomfort-ultra-2",
+          "eligible": true,
+          "requirements": [
+            {
+              "source": "evidence.anc",
+              "verdict": "yes",
+              "rationale": "ANC confirmed in specs and evidence.",
+              "requirement": "Active noise cancellation"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "yes",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "yes",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "sony-wh-1000xm5",
+          "eligible": true,
+          "requirements": [
+            {
+              "source": "evidence.anc",
+              "verdict": "yes",
+              "rationale": "ANC confirmed in specs and evidence.",
+              "requirement": "Active noise cancellation"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "yes",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "yes",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "sony-wh-ch520",
+          "eligible": false,
+          "requirements": [
+            {
+              "source": "evidence.anc",
+              "verdict": "no",
+              "rationale": "The supplied catalog does not establish this requirement.",
+              "requirement": "Active noise cancellation"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "yes",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "yes",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "sony-wh-ch720n",
+          "eligible": true,
+          "requirements": [
+            {
+              "source": "evidence.anc",
+              "verdict": "yes",
+              "rationale": "ANC confirmed in specs and evidence.",
+              "requirement": "Active noise cancellation"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "yes",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "yes",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        }
+      ],
+      "negotiation": {
+        "status": "accepted",
+        "error": null,
+        "error_kind": null,
+        "token_count": 6478
+      },
+      "rounds": [
+        {
+          "id": 7,
+          "ordinal": 1,
+          "role": "buyer",
+          "valid": true,
+          "public_summary": "Buyer agent: Proposed $299.00 at 3 buyers / $279.00 at 5 buyers.",
+          "public_event": {
+            "tiers": [
+              {
+                "minimum_buyers": 3,
+                "total_each_cents": 29900
+              },
+              {
+                "minimum_buyers": 5,
+                "total_each_cents": 27900
+              }
+            ],
+            "valid": true,
+            "action": "offered",
+            "changes": [],
+            "speaker": "buyer",
+            "currency": "USD",
+            "explanation": "Quantity prices proposed within your maximum; authorizations are still required.",
+            "proposal_reference": {
+              "id": "f7e3cbfa-6ac1-4bff-8b69-4a2faa8145d1",
+              "version": 1
+            },
+            "accepted_quote_reference": null
+          },
+          "created_at": "2026-10-08 04:04:24.172421+00:00"
+        },
+        {
+          "id": 8,
+          "ordinal": 2,
+          "role": "merchant",
+          "valid": true,
+          "public_summary": "Merchant agent: Proposed $299.00 at 3 buyers / $279.00 at 5 buyers.",
+          "public_event": {
+            "tiers": [
+              {
+                "minimum_buyers": 3,
+                "total_each_cents": 29900
+              },
+              {
+                "minimum_buyers": 5,
+                "total_each_cents": 27900
+              }
+            ],
+            "valid": true,
+            "action": "accepted",
+            "changes": [],
+            "speaker": "merchant",
+            "currency": "USD",
+            "explanation": "Matches your agent's offer within the merchant's published quantity-price ranges.",
+            "proposal_reference": {
+              "id": "f7e3cbfa-6ac1-4bff-8b69-4a2faa8145d1",
+              "version": 2
+            },
+            "accepted_quote_reference": null
+          },
+          "created_at": "2026-10-08 04:04:26.419797+00:00"
+        },
+        {
+          "id": 9,
+          "ordinal": 3,
+          "role": "buyer",
+          "valid": true,
+          "public_summary": "Buyer agent: Accepted the validated merchant quote.",
+          "public_event": {
+            "tiers": [
+              {
+                "minimum_buyers": 3,
+                "total_each_cents": 29900
+              },
+              {
+                "minimum_buyers": 5,
+                "total_each_cents": 27900
+              }
+            ],
+            "valid": true,
+            "action": "accepted",
+            "changes": [],
+            "speaker": "buyer",
+            "currency": "USD",
+            "explanation": "Within your maximum and delivery requirement. Human payment approval is still needed.",
+            "proposal_reference": {
+              "id": "f7e3cbfa-6ac1-4bff-8b69-4a2faa8145d1",
+              "version": 2
+            },
+            "accepted_quote_reference": {
+              "id": "quote-8e2a955b-97f4-42bc-813a-20b3bbad656e",
+              "version": 1
+            }
+          },
+          "created_at": "2026-10-08 04:04:27.245106+00:00"
+        }
+      ],
+      "agreement": {
+        "product_id": "sony-wh-1000xm5",
+        "total_minor": 29900,
+        "tier_schedule": [
+          {
+            "minimum_buyers": 3,
+            "total_each_cents": 29900
+          },
+          {
+            "minimum_buyers": 5,
+            "total_each_cents": 27900
+          }
+        ],
+        "delivery_by": "2026-10-20T23:59:59+00:00",
+        "close_at": "2026-10-08T04:14:27+00:00",
+        "policy_id": "studio-real-v1",
+        "offer_id": "quote-8e2a955b-97f4-42bc-813a-20b3bbad656e",
+        "version": 1
+      },
+      "seconds": 9.41
+    },
+    {
+      "request": "Headphones maximum $66. I can wait 5 days.",
+      "status": "completed",
+      "constraints": {
+        "device": null,
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-13",
+        "max_total_minor": 6600,
+        "product_category": "Headphones",
+        "required_features": []
+      },
+      "error_kind": null,
+      "assessments": [
+        {
+          "product_id": "apple-airpods-max-usbc",
+          "eligible": false,
+          "requirements": [
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "no",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "no",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "bose-quietcomfort",
+          "eligible": false,
+          "requirements": [
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "no",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "no",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "bose-quietcomfort-ultra-2",
+          "eligible": false,
+          "requirements": [
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "no",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "no",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "sony-wh-1000xm5",
+          "eligible": false,
+          "requirements": [
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "no",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "no",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "sony-wh-ch520",
+          "eligible": true,
+          "requirements": [
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "yes",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "yes",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "sony-wh-ch720n",
+          "eligible": false,
+          "requirements": [
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "no",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "no",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        }
+      ],
+      "negotiation": {
+        "status": "failed",
+        "error": "No agreement reached within three exchanges.",
+        "error_kind": "no_agreement",
+        "token_count": 15309
+      },
+      "rounds": [
+        {
+          "id": 10,
+          "ordinal": 1,
+          "role": "buyer",
+          "valid": false,
+          "public_summary": "Buyer agent: Invalid output; no executable quote.",
+          "public_event": {
+            "tiers": [],
+            "valid": false,
+            "action": "invalid",
+            "changes": [],
+            "speaker": "buyer",
+            "currency": "USD",
+            "explanation": "Response could not be validated. No terms changed.",
+            "proposal_reference": null,
+            "accepted_quote_reference": null
+          },
+          "created_at": "2026-10-08 04:04:32.031512+00:00"
+        },
+        {
+          "id": 11,
+          "ordinal": 2,
+          "role": "merchant",
+          "valid": true,
+          "public_summary": "Merchant agent: Proposed $75.00 at 3 buyers / $69.00 at 5 buyers.",
+          "public_event": {
+            "tiers": [
+              {
+                "minimum_buyers": 3,
+                "total_each_cents": 7500
+              },
+              {
+                "minimum_buyers": 5,
+                "total_each_cents": 6900
+              }
+            ],
+            "valid": true,
+            "action": "offered",
+            "changes": [],
+            "speaker": "merchant",
+            "currency": "USD",
+            "explanation": "Quantity prices offered within the merchant's published ranges.",
+            "proposal_reference": {
+              "id": "801dc758-3e28-410b-b024-a79883e0d0a8",
+              "version": 2
+            },
+            "accepted_quote_reference": null
+          },
+          "created_at": "2026-10-08 04:04:34.115969+00:00"
+        },
+        {
+          "id": 12,
+          "ordinal": 3,
+          "role": "buyer",
+          "valid": false,
+          "public_summary": "Buyer agent: Invalid output; no executable quote.",
+          "public_event": {
+            "tiers": [],
+            "valid": false,
+            "action": "invalid",
+            "changes": [],
+            "speaker": "buyer",
+            "currency": "USD",
+            "explanation": "Response could not be validated. No terms changed.",
+            "proposal_reference": {
+              "id": "801dc758-3e28-410b-b024-a79883e0d0a8",
+              "version": 2
+            },
+            "accepted_quote_reference": null
+          },
+          "created_at": "2026-10-08 04:04:34.939957+00:00"
+        },
+        {
+          "id": 13,
+          "ordinal": 4,
+          "role": "merchant",
+          "valid": true,
+          "public_summary": "Merchant agent: Proposed $75.00 at 3 buyers / $69.00 at 5 buyers.",
+          "public_event": {
+            "tiers": [
+              {
+                "minimum_buyers": 3,
+                "total_each_cents": 7500
+              },
+              {
+                "minimum_buyers": 5,
+                "total_each_cents": 6900
+              }
+            ],
+            "valid": true,
+            "action": "offered",
+            "changes": [],
+            "speaker": "merchant",
+            "currency": "USD",
+            "explanation": "Quantity prices offered within the merchant's published ranges.",
+            "proposal_reference": {
+              "id": "801dc758-3e28-410b-b024-a79883e0d0a8",
+              "version": 4
+            },
+            "accepted_quote_reference": null
+          },
+          "created_at": "2026-10-08 04:04:37.158795+00:00"
+        },
+        {
+          "id": 14,
+          "ordinal": 5,
+          "role": "buyer",
+          "valid": false,
+          "public_summary": "Buyer agent: Invalid output; no executable quote.",
+          "public_event": {
+            "tiers": [],
+            "valid": false,
+            "action": "invalid",
+            "changes": [],
+            "speaker": "buyer",
+            "currency": "USD",
+            "explanation": "Response could not be validated. No terms changed.",
+            "proposal_reference": {
+              "id": "801dc758-3e28-410b-b024-a79883e0d0a8",
+              "version": 4
+            },
+            "accepted_quote_reference": null
+          },
+          "created_at": "2026-10-08 04:04:37.932160+00:00"
+        },
+        {
+          "id": 15,
+          "ordinal": 6,
+          "role": "merchant",
+          "valid": true,
+          "public_summary": "Merchant agent: Proposed $75.00 at 3 buyers / $69.00 at 5 buyers.",
+          "public_event": {
+            "tiers": [
+              {
+                "minimum_buyers": 3,
+                "total_each_cents": 7500
+              },
+              {
+                "minimum_buyers": 5,
+                "total_each_cents": 6900
+              }
+            ],
+            "valid": true,
+            "action": "offered",
+            "changes": [],
+            "speaker": "merchant",
+            "currency": "USD",
+            "explanation": "Quantity prices offered within the merchant's published ranges.",
+            "proposal_reference": {
+              "id": "801dc758-3e28-410b-b024-a79883e0d0a8",
+              "version": 6
+            },
+            "accepted_quote_reference": null
+          },
+          "created_at": "2026-10-08 04:04:40.111383+00:00"
+        }
+      ],
+      "seconds": 12.85
+    },
+    {
+      "request": "Headphones under $100",
+      "status": "clarification",
+      "constraints": {
+        "device": null,
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": null,
+        "max_total_minor": 9999,
+        "product_category": "Headphones",
+        "required_features": []
+      },
+      "error_kind": "missing_information",
+      "assessments": [],
+      "seconds": 0.76
+    },
+    {
+      "request": "Headphones under $90 for my iPhone 12. I can wait 10 days.",
+      "status": "completed",
+      "constraints": {
+        "device": "iPhone 12",
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-18",
+        "max_total_minor": 8999,
+        "product_category": "Headphones",
+        "required_features": []
+      },
+      "error_kind": null,
+      "assessments": [
+        {
+          "product_id": "apple-airpods-max-usbc",
+          "eligible": false,
+          "requirements": [
+            {
+              "source": "evidence.iphone_12",
+              "verdict": "yes",
+              "rationale": "Documented iPhone 12 compatibility via Apple support.",
+              "requirement": "Device: iPhone 12"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "no",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "no",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "bose-quietcomfort",
+          "eligible": true,
+          "requirements": [
+            {
+              "source": "evidence.iphone_12",
+              "verdict": "yes",
+              "rationale": "Documented iPhone 12 compatibility via Apple support.",
+              "requirement": "Device: iPhone 12"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "yes",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "yes",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "bose-quietcomfort-ultra-2",
+          "eligible": false,
+          "requirements": [
+            {
+              "source": "evidence.iphone_12",
+              "verdict": "yes",
+              "rationale": "Documented iPhone 12 compatibility via Apple support.",
+              "requirement": "Device: iPhone 12"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "no",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "no",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "sony-wh-1000xm5",
+          "eligible": false,
+          "requirements": [
+            {
+              "source": "evidence.iphone_12",
+              "verdict": "yes",
+              "rationale": "Documented iPhone 12 compatibility via Apple support.",
+              "requirement": "Device: iPhone 12"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "no",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "no",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "sony-wh-ch520",
+          "eligible": true,
+          "requirements": [
+            {
+              "source": "evidence.iphone_12",
+              "verdict": "yes",
+              "rationale": "Documented iPhone 12 compatibility via Apple support.",
+              "requirement": "Device: iPhone 12"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "yes",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "yes",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        },
+        {
+          "product_id": "sony-wh-ch720n",
+          "eligible": true,
+          "requirements": [
+            {
+              "source": "evidence.iphone_12",
+              "verdict": "yes",
+              "rationale": "Documented iPhone 12 compatibility via Apple support.",
+              "requirement": "Device: iPhone 12"
+            },
+            {
+              "source": "price_minor",
+              "verdict": "yes",
+              "rationale": "The permitted group-price envelope must fit this product's listed price.",
+              "requirement": "Merchant pricing authority"
+            },
+            {
+              "source": "merchant public pricing",
+              "verdict": "yes",
+              "rationale": "Your budget must cover this product's public first-tier price range.",
+              "requirement": "Maximum total"
+            },
+            {
+              "source": "delivery_days",
+              "verdict": "yes",
+              "rationale": "Catalog simulated delivery compared with your concrete deadline.",
+              "requirement": "Latest arrival"
+            }
+          ]
+        }
+      ],
+      "simulated_personas": [
+        {
+          "name": "Aisha",
+          "status": "completed",
+          "constraints": {
+            "device": "iPhone 12",
+            "quantity": 1,
+            "flexibility": [],
+            "latest_arrival": "2026-10-17",
+            "max_total_minor": 9499,
+            "product_category": "Headphones",
+            "required_features": [
+              "Bluetooth audio"
+            ]
+          }
+        },
+        {
+          "name": "Leo",
+          "status": "completed",
+          "constraints": {
+            "device": null,
+            "quantity": 1,
+            "flexibility": [],
+            "latest_arrival": "2026-10-16",
+            "max_total_minor": 9200,
+            "product_category": "Headphones",
+            "required_features": [
+              "Active noise cancellation"
+            ]
+          }
+        },
+        {
+          "name": "Maya",
+          "status": "completed",
+          "constraints": {
+            "device": "iPhone 12",
+            "quantity": 1,
+            "flexibility": [],
+            "latest_arrival": "2026-10-15",
+            "max_total_minor": 9999,
+            "product_category": "Headphones",
+            "required_features": [
+              "Active noise cancellation"
+            ]
+          }
+        },
+        {
+          "name": "Noah",
+          "status": "completed",
+          "constraints": {
+            "device": null,
+            "quantity": 1,
+            "flexibility": [],
+            "latest_arrival": "2026-10-15",
+            "max_total_minor": 11999,
+            "product_category": "Headphones",
+            "required_features": [
+              "Active noise cancellation"
+            ]
+          }
+        },
+        {
+          "name": "Sam",
+          "status": "completed",
+          "constraints": {
+            "device": "iPhone 12",
+            "quantity": 1,
+            "flexibility": [],
+            "latest_arrival": "2026-10-18",
+            "max_total_minor": 8999,
+            "product_category": "Headphones",
+            "required_features": []
+          }
+        }
+      ],
+      "confirmed_authorizations": 0,
+      "negotiation": {
+        "status": "accepted",
+        "error": null,
+        "error_kind": null,
+        "token_count": 6618
+      },
+      "rounds": [
+        {
+          "id": 16,
+          "ordinal": 1,
+          "role": "buyer",
+          "valid": true,
+          "public_summary": "Buyer agent: Proposed $89.00 at 3 buyers / $88.00 at 5 buyers.",
+          "public_event": {
+            "tiers": [
+              {
+                "minimum_buyers": 3,
+                "total_each_cents": 8900
+              },
+              {
+                "minimum_buyers": 5,
+                "total_each_cents": 8800
+              }
+            ],
+            "valid": true,
+            "action": "offered",
+            "changes": [],
+            "speaker": "buyer",
+            "currency": "USD",
+            "explanation": "Quantity prices proposed within your maximum; authorizations are still required.",
+            "proposal_reference": {
+              "id": "c25900c8-1999-4ea2-a3fe-1f1ad615d0e5",
+              "version": 1
+            },
+            "accepted_quote_reference": null
+          },
+          "created_at": "2026-10-08 04:05:03.339627+00:00"
+        },
+        {
+          "id": 17,
+          "ordinal": 2,
+          "role": "merchant",
+          "valid": true,
+          "public_summary": "Merchant agent: Proposed $89.00 at 3 buyers / $88.00 at 5 buyers.",
+          "public_event": {
+            "tiers": [
+              {
+                "minimum_buyers": 3,
+                "total_each_cents": 8900
+              },
+              {
+                "minimum_buyers": 5,
+                "total_each_cents": 8800
+              }
+            ],
+            "valid": true,
+            "action": "accepted",
+            "changes": [],
+            "speaker": "merchant",
+            "currency": "USD",
+            "explanation": "Matches your agent's offer within the merchant's published quantity-price ranges.",
+            "proposal_reference": {
+              "id": "c25900c8-1999-4ea2-a3fe-1f1ad615d0e5",
+              "version": 2
+            },
+            "accepted_quote_reference": null
+          },
+          "created_at": "2026-10-08 04:05:05.603167+00:00"
+        },
+        {
+          "id": 18,
+          "ordinal": 3,
+          "role": "buyer",
+          "valid": true,
+          "public_summary": "Buyer agent: Accepted the validated merchant quote.",
+          "public_event": {
+            "tiers": [
+              {
+                "minimum_buyers": 3,
+                "total_each_cents": 8900
+              },
+              {
+                "minimum_buyers": 5,
+                "total_each_cents": 8800
+              }
+            ],
+            "valid": true,
+            "action": "accepted",
+            "changes": [],
+            "speaker": "buyer",
+            "currency": "USD",
+            "explanation": "Within your maximum and delivery requirement. Human payment approval is still needed.",
+            "proposal_reference": {
+              "id": "c25900c8-1999-4ea2-a3fe-1f1ad615d0e5",
+              "version": 2
+            },
+            "accepted_quote_reference": {
+              "id": "quote-73d740ce-9894-4867-afdb-752612034d14",
+              "version": 1
+            }
+          },
+          "created_at": "2026-10-08 04:05:06.495448+00:00"
+        }
+      ],
+      "agreement": {
+        "product_id": "sony-wh-ch720n",
+        "total_minor": 8900,
+        "tier_schedule": [
+          {
+            "minimum_buyers": 3,
+            "total_each_cents": 8900
+          },
+          {
+            "minimum_buyers": 5,
+            "total_each_cents": 8800
+          }
+        ],
+        "delivery_by": "2026-10-15T23:59:59+00:00",
+        "close_at": "2026-10-08T04:15:06+00:00",
+        "policy_id": "commuter-real-v1",
+        "offer_id": "quote-73d740ce-9894-4867-afdb-752612034d14",
+        "version": 1
+      },
+      "seconds": 25.63
+    }
+  ]
+}

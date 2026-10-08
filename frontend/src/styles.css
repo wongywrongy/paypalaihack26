@@ -590,8 +590,6 @@ td small {
 .shopping-purchase > .coalition-button { margin-top:22px; }
 .product-description { line-height:1.7; color:var(--muted); font-size:14px; margin-top:18px; }
 .shopping-delivery { font-size:13px; margin:20px 0; }
-.shopping-negotiation { border-top:1px solid var(--line); margin-top:22px; padding-top:18px; font-size:13px; }
-.shopping-negotiation summary { cursor:pointer; font-weight:550; }
 .agent-connection { display:flex; justify-content:space-between; align-items:center; position:relative; padding:24px 0 18px; }
 .agent-connection span { border:1px solid var(--line); border-radius:6px; padding:8px 12px; font-size:12px; background:#fff; z-index:1; }
 .proposal-round { margin:12px 0; padding:12px 14px; background:#f7f8fa; border-radius:6px; max-width:90%; font-size:12px; }
@@ -693,3 +691,43 @@ td small {
 /* Keep immutable quantity tiers readable beside the checkout maximum. */
 .tier-ladder li { display: flex; gap: .6rem; align-items: baseline; padding: .25rem 0; font-size: .875rem; }
 .tier-ladder span { color: #626977; }
+
+/* Negotiation stays in the purchase column; all prices remain exact text. */
+.shopping-selected > .product-photo { position:sticky; top:24px; align-self:start; }
+.shopping-purchase .shopping-price { margin:12px 0; }
+.shopping-purchase .shopping-price > strong { font-size:20px; color:var(--muted); }
+.shopping-purchase .shopping-requirements { margin:16px 0; font-size:12px; line-height:1.7; }
+.negotiation-panel { min-height:240px; margin-top:20px; padding-top:18px; border-top:1px solid var(--line); }
+.negotiation-panel .agent-connection { display:flex; align-items:center; gap:12px; justify-content:space-between; margin:0 0 20px; padding:14px 0; font-size:12px; font-weight:550; }
+.negotiation-panel .agent-connection > span { max-width:46%; }
+.negotiation-status { font-size:16px; font-weight:550; line-height:1.5; }
+.interest-count { margin:12px 0 4px; font-size:13px; font-variant-numeric:tabular-nums; }
+.negotiation-panel .progress-note { margin:8px 0 14px; line-height:1.6; }
+.indicative-price { font-size:13px; color:var(--muted); line-height:1.7; margin:18px 0; }
+.negotiation-transcript { margin-top:22px; font-size:13px; }
+.negotiation-transcript summary { cursor:pointer; padding:8px 0; }
+.proposal-list { gap:12px; margin-top:12px; }
+.negotiation-panel .proposal-round { padding:16px; margin:0; background:#f7f8fa; border:1px solid var(--line); border-radius:12px; }
+.proposal-heading { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; margin-bottom:12px; font-size:12px; }
+.proposal-heading > span { color:var(--indigo); text-transform:capitalize; }
+.proposal-prices { list-style:none; margin:0 0 12px; padding:0; }
+.proposal-prices li { display:flex; flex-wrap:wrap; justify-content:space-between; gap:4px 12px; padding:4px 0; font-size:12px; font-variant-numeric:tabular-nums; }
+.proposal-prices strong { font-size:18px; font-weight:550; }
+.negotiation-panel .proposal-round p { font-size:12px; line-height:1.7; color:var(--muted); }
+.negotiation-panel .proposal-round .offer-change { color:var(--ink); font-weight:500; margin:8px 0; }
+.negotiated-agreement { margin:18px 0 0; padding:20px 0; border-top:1px solid var(--line); }
+.negotiated-agreement h3 { font-size:20px; letter-spacing:-.02em; }
+.agreement-price { margin:18px 0 10px; display:flex; align-items:baseline; flex-wrap:wrap; gap:8px 12px; }
+.agreement-price strong { font-size:38px; letter-spacing:-.03em; font-weight:550; }
+.agreement-price span { font-size:12px; color:var(--muted); }
+.negotiated-agreement > p { font-size:13px; line-height:1.7; margin:10px 0; }
+.conditional-price { color:var(--indigo); }
+.agreement-summary { padding-top:12px; border-top:1px solid var(--line); }
+.negotiation-recovery { margin-top:16px; font-size:13px; line-height:1.7; }
+.recovery-actions { display:flex; flex-wrap:wrap; gap:16px; margin-top:16px; }
+@media (max-width:700px) {
+ .shopping-selected { gap:16px; }
+ .shopping-selected > .product-photo { width:112px; height:112px; position:static; object-fit:contain; }
+ .negotiation-panel { margin-top:16px; }
+ .agreement-price strong { font-size:32px; }
+}

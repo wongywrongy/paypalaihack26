@@ -22,6 +22,7 @@ export interface AnimatedBeamProps {
   duration?: number
   repeat?: number
   repeatDelay?: number
+  onAnimationComplete?: () => void
   startXOffset?: number
   startYOffset?: number
   endXOffset?: number
@@ -44,6 +45,7 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
   gradientStopColor = "#9c40ff",
   repeat = 0,
   repeatDelay = 0,
+  onAnimationComplete,
   startXOffset = 0,
   startYOffset = 0,
   endXOffset = 0,
@@ -153,6 +155,7 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
       />
       <defs>
         <motion.linearGradient
+          onAnimationComplete={onAnimationComplete}
           className="transform-gpu"
           id={id}
           gradientUnits={"userSpaceOnUse"}

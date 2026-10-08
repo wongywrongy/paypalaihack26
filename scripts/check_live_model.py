@@ -117,11 +117,11 @@ try:
                         run_negotiation(db, n["id"])
                         db.commit()
                         case["negotiation"] = db.execute(
-                            "SELECT status,error,token_count FROM negotiations WHERE id=%s",
+                            "SELECT status,error,error_kind,token_count FROM negotiations WHERE id=%s",
                             (n["id"],),
                         ).fetchone()
                         case["rounds"] = db.execute(
-                            "SELECT ordinal,role,valid,public_summary FROM negotiation_rounds WHERE negotiation_id=%s ORDER BY ordinal",
+                            "SELECT id,ordinal,role,valid,public_summary,public_event,created_at FROM negotiation_rounds WHERE negotiation_id=%s ORDER BY ordinal",
                             (n["id"],),
                         ).fetchall()
                     group = db.execute(
@@ -138,6 +138,8 @@ try:
                                 "delivery_by",
                                 "close_at",
                                 "policy_id",
+                                "offer_id",
+                                "version",
                             )
                         }
                 except Exception as exc:
@@ -151,9 +153,9 @@ try:
                 == 0
             )
             record["cases"].append(case)
-            print(json.dumps(case), flush=True)
+            print(json.dumps(case, default=str), flush=True)
     if output := os.environ.get("COALITION_MODEL_RECORD"):
-        Path(output).write_text(json.dumps(record, indent=2) + "\n")
+        Path(output).write_text(json.dumps(record, indent=2, default=str) + "\n")
     assert record["cases"][4]["status"] == "clarification", (
         "Incomplete request must clarify"
     )

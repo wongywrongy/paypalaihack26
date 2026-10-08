@@ -35,6 +35,10 @@ Accepted quote terms include immutable version, product/variant, sandbox payee, 
 
 Poll active work approximately every two seconds. Terminal views back off. Payment success requires every selected capture to be confirmed; pending approval, an authorization threshold or application timer is never provider evidence.
 
+Journey includes `compatible_counts` by product (distinct owners with current supported requirements), separately from `status.confirmed_count`. Its `negotiation` includes product/request identity, `state` (`negotiating`, `agreed`, `declined`, `interrupted`), `phase`, `error_kind` and `accepted_quote_reference`. No ordinary request creates a payment merely by negotiating.
+
+Each `rounds` item has stable `id`, ordered `sequence`, `speaker`, `action`, `valid`, explicit `currency`, validated `tiers`, numeric `changes`, server-written `explanation`, UTC `timestamp`, `proposal_reference` and `accepted_quote_reference`. Actions are `offered`, `countered`, `accepted`, `declined`, `invalid`, or `unavailable`. Changes compare the previous validated opponent offer by buyer threshold. An identical merchant price schedule is `accepted`, while its structured merchant proposal remains executable. Each round commits before the next model call; the accepted quote reference commits with publication. Invalid responses contain no executable tiers. Historical rows without structured data are labeled unavailable rather than inferred from prose. Raw prompts, model reasoning, private floors and provider diagnostics are excluded.
+
 Protected preparation invitations use URL fragments (`#invite=…`), then are removed after session creation. Access logging and referrers are disabled to protect approval/invitation tokens; verified payer identities never enter buyer responses. Operator evidence includes matching and negotiation jobs alongside payment/deadline jobs.
 
 The retired merchant-widget opportunity and optional calculator-assistant creation endpoints are absent. Historic calculator/large purchases retain owned status and recovery. New legacy/large run preparation returns 422.

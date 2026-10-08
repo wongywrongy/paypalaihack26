@@ -24,8 +24,8 @@ test('storefront browses before search and keeps failed searches separate from l
 test('a current headphone deal never invents a reached tier or renders invalid dates',async({page},info)=>{
  const offer={pricing_model:'tiers',product_id:'sony-wh-ch720n',title:'Sony WH-CH720N',total_minor:8900,capacity:5,minimum:3,tier_schedule:[{minimum_buyers:3,total_each_cents:8900},{minimum_buyers:5,total_each_cents:8500}],delivery_by:'invalid',close_at:'invalid'};
  await mock(page,{request,group:{...group,status:'OPEN'},products:[],assessments:[{product_id:'sony-wh-ch720n',eligible:true,available:55,requirements:[]},{product_id:'bose-quietcomfort',eligible:true,available:55,requirements:[]}],rounds:[],negotiation:null,status:{group:{status:"OPEN"},offer,confirmed_count:0,commitment:null},eligible:true,compatible_count:1});await page.goto('/');
- await expect(page.getByRole('heading',{name:'Your group deal'})).toBeVisible();await expect(page.getByText('3 more authorizations to reach $89')).toBeVisible();await expect(page.getByText(/Invalid Date|Highest tier reached/)).toHaveCount(0);
- await expect(page.getByRole('link',{name:'Review deal',exact:true})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'Your group deal'})).toBeVisible();await expect(page.getByText('Minimum 3 authorizations needed · capacity 5')).toBeVisible();await expect(page.getByText(/Invalid Date|Highest tier reached/)).toHaveCount(0);
+ await expect(page.getByRole('link',{name:'Review agreement & authorize',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Explore Bose QuietComfort'}).click();
  await expect(page.locator('#selected-product').getByRole('heading',{name:'Bose QuietComfort',exact:true})).toBeVisible();
  await expect(page.locator('#selected-product').getByRole('img',{name:'Bose QuietComfort'})).toBeVisible();

@@ -35,4 +35,4 @@ jobs:
       - run: npm ci --prefix frontend
       - run: npm run build --prefix frontend
       - run: cd frontend && npx playwright install --with-deps chromium
-      - run: npm run test:browser --prefix frontend -- tests/buyer.spec.ts tests/checkout.spec.ts tests/storefront.spec.ts
+      - run: npm run test:browser --prefix frontend -- tests/buyer.spec.ts tests/checkout.spec.ts tests/storefront.spec.ts tests/negotiation-ui.spec.ts

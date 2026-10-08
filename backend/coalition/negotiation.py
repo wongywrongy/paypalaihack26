@@ -47,6 +47,62 @@ class Reply(BaseModel):
     proposal: Proposal | None = None
 
 
+def compatible_demand(db, product, run_id=None, quote=None):
+    """Distinct owners with current, supported requirements; never funding."""
+    delivery = (
+        quote["delivery_by"][:10]
+        if quote
+        else (datetime.now(timezone.utc) + timedelta(days=product["delivery_days"])).date().isoformat()
+    )
+    maximum = quote["total_minor"] if quote else product["public_policy"]["ranges"][0][0]
+    rows = db.execute(
+        "SELECT DISTINCT ON(b.owner_id) q.constraints FROM buyers b JOIN runs r ON r.id=b.run_id JOIN LATERAL (SELECT * FROM buyer_requests WHERE owner_id=b.owner_id ORDER BY created_at DESC,version DESC LIMIT 1) q ON true JOIN compatibility_assessments a ON a.request_id=q.id WHERE r.mode=%s AND (%s::uuid IS NULL OR b.run_id=%s) AND q.status='completed' AND a.product_id=%s AND a.source_version=%s AND a.eligible ORDER BY b.owner_id",
+        (settings.mode, run_id, run_id, product["id"], product["source_version"]),
+    ).fetchall()
+    return [
+        r["constraints"] for r in rows
+        if r["constraints"]["max_total_minor"] >= maximum
+        and r["constraints"]["latest_arrival"] >= delivery
+        and r["constraints"]["quantity"] == 1
+    ]
+
+
+def public_round(reply, role, prior, valid=True):
+    """Server-written explanations; model explanations and private policy never leave here."""
+    previous = next((e for e in reversed(prior) if e["speaker"] != role and e["valid"] and e["tiers"]), None)
+    own = reply.proposal.model_dump(mode="json") if reply and reply.proposal and valid else None
+    tiers = own["tier_schedule"] if own else previous["tiers"] if valid and reply.action == "accept" and previous else []
+    changes = []
+    if tiers and previous:
+        old = {t["minimum_buyers"]: t["total_each_cents"] for t in previous["tiers"]}
+        changes = [
+            {"field": "tier_price", "minimum_buyers": t["minimum_buyers"], "from_minor": old.get(t["minimum_buyers"]), "to_minor": t["total_each_cents"]}
+            for t in tiers if old.get(t["minimum_buyers"]) != t["total_each_cents"]
+        ]
+    action = "invalid"
+    explanation = "Response could not be validated. No terms changed."
+    if valid:
+        if reply.action == "decline":
+            action, explanation = "declined", "No offer within the buyer's requirements and the merchant's permitted terms was accepted."
+        elif reply.action == "accept":
+            action, explanation = "accepted", "Within your maximum and delivery requirement. Human payment approval is still needed."
+        elif role == "merchant" and previous and not changes:
+            action, explanation = "accepted", "Matches your agent's offer within the merchant's published quantity-price ranges."
+        elif previous and changes:
+            action, explanation = "countered", "Tier prices changed; product, delivery and currency stay fixed."
+            if role == "merchant":
+                explanation += " Within the merchant's published quantity-price ranges."
+        else:
+            action, explanation = "offered", "Quantity prices proposed within your maximum; authorizations are still required." if role == "buyer" else "Quantity prices offered within the merchant's published ranges."
+    return {
+        "speaker": role, "action": action, "valid": valid,
+        "currency": "USD", "tiers": tiers, "changes": changes,
+        "explanation": explanation,
+        "proposal_reference": {"id": own["proposal_id"], "version": own["version"]} if own else previous.get("proposal_reference") if previous and reply and reply.action == "accept" else None,
+        "accepted_quote_reference": None,
+    }
+
+
 def validate_proposal(p, context, policy):
     expected = context["template"]
     if p.proposal_id != expected["proposal_id"] or p.version != expected["version"]:
@@ -309,7 +365,11 @@ def accept(db, n, product, proposal, policy):
         (quote_id, terms["capacity"], proposal.close_at, proposal.close_at, g["id"]),
     )
     db.execute(
-        "UPDATE negotiations SET status='accepted',error=NULL WHERE id=%s", (n["id"],)
+        "UPDATE negotiations SET status='accepted',error=NULL,error_kind=NULL WHERE id=%s", (n["id"],)
+    )
+    db.execute(
+        "UPDATE negotiation_rounds SET public_event=COALESCE(public_event,'{}'::jsonb)||%s WHERE negotiation_id=%s AND ordinal=(SELECT max(ordinal) FROM negotiation_rounds WHERE negotiation_id=%s)",
+        (Jsonb({"accepted_quote_reference": {"id": quote_id, "version": version}}), n["id"], n["id"]),
     )
     wake(db, g["id"])
 
@@ -324,7 +384,7 @@ def run_negotiation(db, nid):
     if n["status"] == "running":
         # A crash consumes this bounded attempt, never silently launches new live exchanges.
         db.execute(
-            "UPDATE negotiations SET status='failed',error='Negotiation interrupted. Retry with a new bounded attempt.' WHERE id=%s",
+            "UPDATE negotiations SET status='failed',error_kind='interrupted',error='Negotiation interrupted. Retry with a new bounded attempt.' WHERE id=%s",
             (nid,),
         )
         return
@@ -343,7 +403,7 @@ def run_negotiation(db, nid):
     ).fetchone()["available"]
     if n["profile"] != "small":
         db.execute(
-            "UPDATE negotiations SET status='failed',error='These merchant policies permit five-buyer groups; use a small run.' WHERE id=%s",
+            "UPDATE negotiations SET status='failed',error_kind='unsupported_requirements',error='These merchant policies permit five-buyer groups; use a small run.' WHERE id=%s",
             (nid,),
         )
         return
@@ -370,29 +430,15 @@ def run_negotiation(db, nid):
         ],
         "explanation": "Quantity-based merchant discount.",
     }
-    demand = []
-    for b in db.execute(
-        "SELECT DISTINCT ON (b.owner_id) b.id FROM buyers b JOIN runs r ON r.id=b.run_id WHERE r.mode=%s AND (%s::uuid IS NULL OR b.run_id=%s) ORDER BY b.owner_id,b.run_id",
-        (settings.mode, n["run_id"] if n["demo"] else None, n["run_id"]),
-    ).fetchall():
-        r = latest_request(db, b["id"])
-        if r and r["status"] == "completed":
-            assessment = db.execute(
-                "SELECT eligible FROM compatibility_assessments WHERE request_id=%s AND product_id=%s",
-                (r["id"], product["id"]),
-            ).fetchone()
-            if (
-                assessment
-                and assessment["eligible"]
-                and r["constraints"]["latest_arrival"] >= delivery.date().isoformat()
-            ):
-                demand.append(r["constraints"])
+    demand = compatible_demand(db, product, n["run_id"] if n["demo"] else None)
     db.commit()
     clock = time.monotonic()
     merchant_quote = None
     last_bid = None
     feedback = {}
     tokens = 0
+    events = []
+    failure_kind = "no_agreement"
     try:
         for i in range(6):
             remaining = 120 - (time.monotonic() - clock)
@@ -438,6 +484,7 @@ def run_negotiation(db, nid):
                 ),
             }
             private_error = None
+            provider_failed = False
             reply = None
             try:
                 if settings.mode == "fixture":
@@ -501,40 +548,37 @@ def run_negotiation(db, nid):
                     if reply.action != "propose" or not reply.proposal:
                         raise ValueError("Merchant must issue a structured quote.")
                     validate_proposal(reply.proposal, context, policy)
-                elif reply.action == "propose" and not reply.proposal:
-                    raise ValueError("Bid is missing.")
+                elif reply.action == "propose":
+                    if not reply.proposal:
+                        raise ValueError("Bid is missing.")
+                    validate_proposal(reply.proposal, context, {**policy, "floors": [0, 0]})
                 elif (
                     role == "buyer"
                     and reply.action == "accept"
                     and merchant_quote is None
                 ):
                     raise ValueError("There is no validated merchant quote to accept.")
+                if reply.action in ("accept", "decline") and reply.proposal is not None:
+                    raise ValueError("Acceptance or decline must not introduce another proposal.")
             except Exception as exc:
+                provider_failed = not isinstance(exc, ValueError)
                 tokens += 1000
                 private_error = type(exc).__name__
                 feedback[role] = (
                     "Correct the invalid response: match the schema and current template. Buyer bids and acceptance must respect max_total_minor; merchant proposals must respect its policy."
                 )
+            event = public_round(reply, role, events, valid=not bool(private_error))
+            events.append(event)
             summary = (
                 ("Buyer agent" if role == "buyer" else "Merchant agent")
-                + ": "
-                + (
-                    "Invalid output; no executable quote."
-                    if private_error
-                    else "No agreement proposed."
-                    if reply.action == "decline"
-                    else "Accepted the validated merchant quote."
-                    if reply.action == "accept"
-                    else "Proposed "
-                    + " / ".join(
-                        f"${Decimal(t.total_each_cents) / 100:.2f} at {t.minimum_buyers} buyers"
-                        for t in reply.proposal.tier_schedule
-                    )
-                    + "."
-                )
+                + ": " + event["action"].capitalize() + ". " + event["explanation"]
+                + (" " + " / ".join(
+                    f"${Decimal(t['total_each_cents']) / 100:.2f} at {t['minimum_buyers']} buyers"
+                    for t in event["tiers"]
+                ) if event["tiers"] else "")
             )
             db.execute(
-                "INSERT INTO negotiation_rounds(negotiation_id,ordinal,role,proposal,valid,private_error,public_summary) VALUES(%s,%s,%s,%s,%s,%s,%s)",
+                "INSERT INTO negotiation_rounds(negotiation_id,ordinal,role,proposal,valid,private_error,public_summary,public_event) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)",
                 (
                     nid,
                     i + 1,
@@ -553,17 +597,24 @@ def run_negotiation(db, nid):
                     not bool(private_error),
                     private_error,
                     summary,
+                    Jsonb(event),
                 ),
             )
             db.execute(
                 "UPDATE negotiations SET token_count=%s WHERE id=%s", (tokens, nid)
             )
             db.commit()
+            if provider_failed:
+                failure_kind = "provider_failure"
+                raise RuntimeError("Negotiation connection failed.")
             if private_error:
+                failure_kind = "invalid_model_output"
                 continue
+            failure_kind = "no_agreement"
             current = latest_request(db, n["buyer_id"])
             db.commit()
             if not current or current["id"] != n["request_id"]:
+                failure_kind = "requirements_changed"
                 raise ValueError(
                     "Buyer requirements changed; negotiate the updated request."
                 )
@@ -574,6 +625,7 @@ def run_negotiation(db, nid):
                     raise ValueError("No validated merchant quote exists to accept.")
                 if time.monotonic() - clock >= 120 or tokens > 24000:
                     raise ValueError("Negotiation budget exhausted.")
+                failure_kind = "agreement_unavailable"
                 accept(db, n, product, merchant_quote, policy)
                 return
             if role == "merchant":
@@ -590,6 +642,6 @@ def run_negotiation(db, nid):
             else "Negotiation unavailable. Retry when the model is available."
         )
         db.execute(
-            "UPDATE negotiations SET status='failed',error=%s WHERE id=%s",
-            (reason[:240], nid),
+            "UPDATE negotiations SET status='failed',error=%s,error_kind=%s WHERE id=%s",
+            (reason[:240], failure_kind, nid),
         )

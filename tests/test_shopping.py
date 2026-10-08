@@ -28,7 +28,7 @@ from coalition.matching import (
     run_match,
     submit_request,
 )
-from coalition.negotiation import Reply, run_negotiation, start
+from coalition.negotiation import Reply, public_round, run_negotiation, start
 from coalition.offers import terms_for
 from coalition.payments import perform, provider_amount
 from coalition.shopping import buyer_for_run, draft
@@ -38,6 +38,31 @@ from fastapi.testclient import TestClient
 
 
 class GroundedExtractionChecks(unittest.TestCase):
+    def test_public_rounds_compare_offers_without_model_explanations(self):
+        from coalition.negotiation import Proposal
+
+        template = {
+            "proposal_id": "proposal", "version": 1,
+            "product_id": "sony-wh-ch720n", "variant_id": "Black", "currency": "USD",
+            "tier_schedule": [{"minimum_buyers": 3, "total_each_cents": 8900}, {"minimum_buyers": 5, "total_each_cents": 8500}],
+            "minimum_commitments": 3, "requested_units": 5,
+            "reservation_expiry": "2026-10-09T12:00:00Z", "close_at": "2026-10-09T11:00:00Z", "delivery_by": "2026-10-15T23:59:59Z",
+            "explanation": "PRIVATE FLOOR AND INTERNAL REASONING MUST NOT LEAK",
+        }
+        bid = Reply(action="propose", proposal=Proposal.model_validate_json(json.dumps(template)))
+        first = public_round(bid, "buyer", [])
+        matched = public_round(bid, "merchant", [first])
+        self.assertEqual(matched["action"], "accepted")
+        self.assertEqual(matched["changes"], [])
+        bid.proposal.tier_schedule[1].total_each_cents = 8800
+        counter = public_round(bid, "merchant", [first])
+        self.assertEqual(counter["action"], "countered")
+        self.assertEqual(counter["changes"], [{"field": "tier_price", "minimum_buyers": 5, "from_minor": 8500, "to_minor": 8800}])
+        accepted = public_round(Reply(action="accept"), "buyer", [first, counter])
+        self.assertEqual(accepted["tiers"], counter["tiers"])
+        self.assertNotIn("PRIVATE", json.dumps([first, matched, counter, accepted]))
+        self.assertEqual(public_round(bid, "merchant", [first], valid=False)["tiers"], [])
+
     def test_real_catalog_has_new_identities_and_specific_brand_evidence(self):
         self.assertEqual({p["brand"] for p in SHOP_PRODUCTS}, {"Apple", "Sony", "Bose"})
         historical = next(p for p in PRODUCTS if p["id"] == "cabin-one")
@@ -135,6 +160,93 @@ class ShoppingChecks(unittest.TestCase):
                 "SELECT * FROM groups WHERE run_id=%s", (n["run_id"],)
             ).fetchone()
             return buyer_for_run(db, b, g["run_id"]), g, terms_for(db, g["id"])
+
+    def test_rounds_are_public_before_completion_and_quote_survives_refresh(self):
+        waiting, resume = Event(), Event()
+        calls = []
+
+        def model(schema, role, payload, **kwargs):
+            calls.append(role)
+            if len(calls) == 3:
+                return Reply(action="accept"), 10
+            proposal = dict(payload["template"])
+            proposal["explanation"] = "PRIVATE MERCHANT REASONING"
+            if len(calls) == 2:
+                waiting.set()
+                if not resume.wait(10):
+                    raise TimeoutError()
+                proposal["tier_schedule"] = [
+                    {"minimum_buyers": 3, "total_each_cents": 8900},
+                    {"minimum_buyers": 5, "total_each_cents": 8500},
+                ]
+            return schema.model_validate_json(json.dumps({"action": "propose", "proposal": proposal})), 10
+
+        connected = replace(settings, mode="connected", paypal_merchant_id="MODEL-FIXTURE-NO-PAYMENTS")
+        headers = {"X-Coalition-Request": "1"}
+        with (
+            patch("coalition.main.settings", connected),
+            patch("coalition.shopping.settings", connected),
+            patch("coalition.negotiation.settings", connected),
+            patch("coalition.negotiation.complete", side_effect=model),
+            TestClient(app) as client,
+            ThreadPoolExecutor(max_workers=1) as pool,
+        ):
+            session = client.post("/api/session", json={"shopping": True}, headers=headers).json()
+            scope = "?run=" + session["run_id"]
+            request = client.post("/api/requests" + scope, json={"raw_text": "Headphones under $100. I can wait 7 days."}, headers=headers).json()
+            with connect() as db:
+                run_match(db, request["id"])
+            initial = client.get("/api/journey" + scope).json()
+            self.assertEqual(initial["compatible_counts"]["sony-wh-ch720n"], 1)
+            n = client.post("/api/negotiations" + scope, json={"product_id": "sony-wh-ch720n"}, headers=headers).json()
+
+            def run():
+                with connect() as db:
+                    run_negotiation(db, n["id"])
+
+            work = pool.submit(run)
+            try:
+                self.assertTrue(waiting.wait(5))
+                live = client.get("/api/journey" + scope).json()
+                self.assertEqual(live["negotiation"]["phase"], "waiting_for_merchant")
+                self.assertEqual(len(live["rounds"]), 1)
+                self.assertEqual(live["rounds"][0]["action"], "offered")
+                self.assertIsNone(live["status"])
+            finally:
+                resume.set()
+            work.result(timeout=10)
+            complete = client.get("/api/journey" + scope).json()
+            self.assertEqual(complete["negotiation"]["state"], "agreed")
+            self.assertEqual([r["action"] for r in complete["rounds"]], ["offered", "countered", "accepted"])
+            self.assertEqual([r["sequence"] for r in complete["rounds"]], [1, 2, 3])
+            self.assertEqual(len(complete["rounds"][1]["changes"]), 2)
+            quote = complete["status"]["offer"]
+            self.assertEqual(complete["rounds"][-1]["accepted_quote_reference"], {"id": quote["offer_id"], "version": quote["version"]})
+            self.assertNotIn("PRIVATE", json.dumps(complete))
+            self.assertNotIn("floors", json.dumps(complete))
+            self.assertEqual(client.get("/api/journey" + scope).json()["rounds"], complete["rounds"])
+            with connect() as db:
+                self.assertEqual(db.execute("SELECT count(*) AS n FROM payment_operations").fetchone()["n"], 0)
+
+    def test_provider_failure_preserves_attempt_without_automatic_retry(self):
+        b = self.shopper()
+        with connect() as db:
+            n = start(db, b, "sony-wh-ch720n")
+            db.commit()
+            with (
+                patch("coalition.negotiation.settings", replace(settings, mode="connected")),
+                patch("coalition.negotiation.complete", side_effect=TimeoutError()) as model,
+            ):
+                run_negotiation(db, n["id"])
+                db.commit()
+                run_negotiation(db, n["id"])
+                self.assertEqual(model.call_count, 1)
+            saved = db.execute("SELECT status,error_kind FROM negotiations WHERE id=%s", (n["id"],)).fetchone()
+            self.assertEqual(saved, {"status": "failed", "error_kind": "provider_failure"})
+            event = db.execute("SELECT public_event FROM negotiation_rounds WHERE negotiation_id=%s", (n["id"],)).fetchone()["public_event"]
+            self.assertEqual(event["action"], "invalid")
+            self.assertEqual(event["tiers"], [])
+            self.assertEqual(db.execute("SELECT count(*) AS n FROM payment_operations").fetchone()["n"], 0)
 
     def test_preparation_accepts_only_current_scope_and_seed_keeps_private_policy_server_side(
         self,

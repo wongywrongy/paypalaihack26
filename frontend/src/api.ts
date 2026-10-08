@@ -10,10 +10,27 @@ export interface Product {
   image_position?: string;
   catalog_active?: boolean;
   source_url?: string;
+  public_policy?: { merchant: string; ranges: number[][]; thresholds: number[] };
   description: string;
   features: string[];
   specs: Record<string, string>;
   delivery_days: number;
+}
+export interface NegotiationRound {
+  id: number; sequence: number; speaker: "buyer" | "merchant";
+  action: "offered" | "countered" | "accepted" | "declined" | "invalid" | "unavailable";
+  valid: boolean; currency: string; timestamp: string;
+  tiers: { minimum_buyers: number; total_each_cents: number }[];
+  changes: { field: string; minimum_buyers: number; from_minor: number | null; to_minor: number }[];
+  explanation: string;
+  accepted_quote_reference: { id: string; version: number } | null;
+}
+export interface Negotiation {
+  id: string; product_id: string; request_id: string; status: string;
+  state: "negotiating" | "agreed" | "declined" | "interrupted";
+  phase: "preparing" | "waiting_for_merchant" | "evaluating_offer" | "agreed" | "declined" | "interrupted";
+  error_kind: string | null; error: string | null;
+  accepted_quote_reference: { id: string; version: number } | null;
 }
 export interface ProductContext {
   product_id: string;
