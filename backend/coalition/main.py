@@ -1,7 +1,9 @@
 import hmac
+import json
+import logging
 import secrets
-from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Literal
 from uuid import UUID, uuid4
 
 import httpx
@@ -11,8 +13,9 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from psycopg.types.json import Jsonb
 from pydantic import BaseModel, ConfigDict, Field
+from starlette.concurrency import run_in_threadpool
 
-from .catalog import PRODUCTS, ProductContext, validate_context
+from .catalog import PRODUCTS, SHOP_PRODUCTS, ProductContext
 from .config import settings
 from .db import connect, enqueue
 from .demo import create_run, digest
@@ -30,16 +33,27 @@ from .groups import (
     withdraw,
 )
 from .matching import RequestInput, eligible_for_quote, latest_request, submit_request
+from .negotiation import matching_group
 from .negotiation import start as start_negotiation
 from .offers import terms_for
+from .payments import verify_webhook
+from .shopping import buyer_for_run, draft, lock_owner
+
+app = FastAPI(title="Coalition", version="0.2.0")
+# Invite and PayPal approval tokens arrive in query strings. Never access-log them.
+logging.getLogger("uvicorn.access").disabled = True
 
 
-@asynccontextmanager
-async def lifespan(app):
-    yield
+@app.middleware("http")
+async def private_responses(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    if request.url.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
 
 
-app = FastAPI(title="Coalition", version="0.2.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.public_url],
@@ -109,17 +123,23 @@ def rate_limit(request: Request):
             ).fetchone()
         if owned:
             identity = str(owned["buyer_id"])
+    expensive = request.url.path in (
+        "/api/requests",
+        "/api/negotiations",
+        "/api/commitments",
+    )
     key = (
         digest(identity)
         + ":"
         + ("admin" if "/operator/" in request.url.path else "buyer")
+        + (":expensive" if expensive else "")
     )
     with connect() as db:
         row = db.execute(
             "INSERT INTO rate_limits(key) VALUES(%s) ON CONFLICT(key) DO UPDATE SET hits=CASE WHEN rate_limits.window_start<now()-interval '1 minute' THEN 1 ELSE rate_limits.hits+1 END,window_start=CASE WHEN rate_limits.window_start<now()-interval '1 minute' THEN now() ELSE rate_limits.window_start END RETURNING hits",
             (key,),
         ).fetchone()
-    if row["hits"] > 60:
+    if row["hits"] > (10 if expensive else 60):
         raise HTTPException(429, "Too many commands. Retry in one minute.")
 
 
@@ -149,9 +169,19 @@ def buyer(request: Request):
             "SELECT b.* FROM sessions s JOIN buyers b ON b.id=s.buyer_id JOIN runs r ON r.id=b.run_id WHERE token_hash=%s AND expires_at>now() AND r.mode=%s",
             (digest(token), settings.mode),
         ).fetchone()
+        selected = request.query_params.get("run")
+        if row and selected:
+            try:
+                run_id = UUID(selected)
+            except ValueError:
+                raise HTTPException(422, "Invalid deal identifier.") from None
+            row = db.execute(
+                "SELECT b.* FROM buyers b JOIN runs r ON r.id=b.run_id WHERE b.owner_id=%s AND b.run_id=%s AND r.mode=%s",
+                (row["owner_id"], run_id, settings.mode),
+            ).fetchone()
     if not row:
         raise HTTPException(
-            401, "Your demo session expired. Reload to start a new buyer session."
+            401, "Your shopping session is unavailable. Reload to restore it."
         )
     return row
 
@@ -168,18 +198,13 @@ class SessionBody(BaseModel):
     run_id: UUID | None = None
     invite: str | None = Field(default=None, max_length=150)
     shopping: bool = False
+    new_deal: bool = False
 
 
 @app.get("/api/config")
 def config():
-    with connect() as db:
-        latest = db.execute(
-            "SELECT id FROM runs WHERE mode=%s AND NOT archived ORDER BY created_at DESC LIMIT 1",
-            (settings.mode,),
-        ).fetchone()
     return {
         "mode": settings.mode,
-        "default_run_id": latest["id"] if latest else None,
         "paypal_client_id": settings.paypal_client_id
         if settings.mode == "connected"
         else None,
@@ -198,133 +223,69 @@ def config():
 def session(body: SessionBody, request: Request, response: Response):
     with connect() as db:
         owner = db.execute(
-            "SELECT b.owner_id FROM sessions s JOIN buyers b ON b.id=s.buyer_id WHERE s.token_hash=%s AND s.expires_at>now()",
-            (digest(request.cookies.get("coalition_session", "")),),
+            "SELECT b.* FROM sessions s JOIN buyers b ON b.id=s.buyer_id JOIN runs r ON r.id=b.run_id WHERE s.token_hash=%s AND s.expires_at>now() AND r.mode=%s",
+            (digest(request.cookies.get("coalition_session", "")), settings.mode),
         ).fetchone()
-        run_id = body.run_id
-        if not run_id:
-            restored = db.execute(
-                "SELECT b.run_id FROM sessions s JOIN buyers b ON b.id=s.buyer_id JOIN runs r ON r.id=b.run_id WHERE s.token_hash=%s AND s.expires_at>now() AND r.mode=%s",
-                (digest(request.cookies.get("coalition_session", "")), settings.mode),
-            ).fetchone()
-            run_id = restored["run_id"] if restored else None
-        if not run_id:
-            row = db.execute(
-                "SELECT id FROM runs WHERE mode=%s AND NOT archived ORDER BY created_at DESC LIMIT 1",
-                (settings.mode,),
-            ).fetchone()
-            run_id = row["id"] if row else None
-        run = db.execute(
-            "SELECT * FROM runs WHERE id=%s AND mode=%s",
-            (run_id, settings.mode),
-        ).fetchone()
-        if body.shopping and not body.invite and run and run["profile"] == "legacy":
-            run = db.execute(
-                "SELECT * FROM runs WHERE mode=%s AND NOT archived AND profile IN ('small','large') ORDER BY created_at DESC LIMIT 1",
-                (settings.mode,),
-            ).fetchone()
-            run_id = run["id"] if run else None
-        if not run:
-            raise HTTPException(
-                404,
-                "No purchase run is available. Prepare a run in operator controls.",
-            )
-        old = db.execute(
-            "SELECT b.* FROM buyers b WHERE b.owner_id=%s AND b.run_id=%s ORDER BY b.prepared DESC LIMIT 1",
-            (owner["owner_id"] if owner else None, run_id),
-        ).fetchone()
-        if body.invite:
-            row = db.execute(
-                "SELECT * FROM buyers WHERE invite_hash=%s AND run_id=%s",
-                (digest(body.invite), run_id),
-            ).fetchone()
-            if not row:
-                raise HTTPException(403, "Preparation invitation is invalid.")
-        elif old:
-            row = old
+        if owner:
+            lock_owner(db, owner["owner_id"])
+        if body.new_deal:
+            row = draft(db, owner)
         else:
-            buyer_id = uuid4()
-            persona = {
-                "budget_minor": 7000,
-                "delivery_days": 10,
-                "product_id": "arc-991",
-                "variant": "Graphite",
-                "needs": "Required scientific calculator for engineering class. Exact model only.",
-            }
-            db.execute(
-                "INSERT INTO buyers(id,run_id,name,persona,owner_id) VALUES(%s,%s,'You',%s,%s) ON CONFLICT(run_id,owner_id) DO NOTHING",
-                (
-                    buyer_id,
-                    run_id,
-                    Jsonb(persona),
-                    owner["owner_id"] if owner else buyer_id,
-                ),
-            )
-            row = db.execute(
-                "SELECT * FROM buyers WHERE run_id=%s AND owner_id=%s",
-                (run_id, owner["owner_id"] if owner else buyer_id),
+            run_id = body.run_id or (owner["run_id"] if owner else None)
+            run = db.execute(
+                "SELECT * FROM runs WHERE id=%s AND mode=%s AND (NOT archived OR EXISTS(SELECT 1 FROM buyers b WHERE b.run_id=runs.id AND b.owner_id=%s))",
+                (run_id, settings.mode, owner["owner_id"] if owner else None),
             ).fetchone()
-        token = secrets.token_urlsafe(32)
-        db.execute(
-            "INSERT INTO sessions(token_hash,buyer_id) VALUES(%s,%s)",
-            (digest(token), row["id"]),
-        )
-        response.set_cookie(
-            "coalition_session",
-            token,
-            httponly=True,
-            secure=settings.public_url.startswith("https://"),
-            samesite="none" if settings.public_url.startswith("https://") else "lax",
-            max_age=86400,
-        )
-        return {"buyer_id": row["id"], "run_id": run_id, "name": row["name"]}
+            if body.run_id and not run:
+                raise HTTPException(404, "This deal is unavailable. Find another deal.")
+            if body.shopping and not body.invite and run and run["profile"] == "legacy":
+                run = None
+            if body.invite:
+                row = db.execute(
+                    "SELECT * FROM buyers WHERE invite_hash=%s AND run_id=%s FOR UPDATE",
+                    (digest(body.invite), run_id),
+                ).fetchone()
+                if not row:
+                    raise HTTPException(403, "Preparation invitation is invalid.")
+                claimed = db.execute(
+                    "SELECT 1 FROM sessions WHERE buyer_id=%s AND expires_at>now()",
+                    (row["id"],),
+                ).fetchone()
+                if claimed and (not owner or owner["owner_id"] != row["owner_id"]):
+                    raise HTTPException(
+                        403, "This invitation has already been claimed."
+                    )
+            elif run:
+                row = buyer_for_run(
+                    db,
+                    owner or {"owner_id": uuid4(), "name": "You", "persona": {}},
+                    run["id"],
+                )
+            else:
+                row = draft(db, owner)
+        # The cookie identifies its owner. The explicit run query selects an owned
+        # buyer row, so one tab cannot silently switch another tab's checkout.
+        token = request.cookies.get("coalition_session", "")
+        if not owner or owner["owner_id"] != row["owner_id"]:
+            token = secrets.token_urlsafe(32)
+            db.execute(
+                "INSERT INTO sessions(token_hash,buyer_id) VALUES(%s,%s)",
+                (digest(token), row["id"]),
+            )
+            response.set_cookie(
+                "coalition_session",
+                token,
+                httponly=True,
+                secure=settings.public_url.startswith("https://"),
+                samesite="lax",
+                max_age=86400,
+            )
+        return {"buyer_id": row["id"], "run_id": row["run_id"], "name": row["name"]}
 
 
 @app.get("/api/catalog")
 def catalog():
-    return PRODUCTS
-
-
-@app.post("/api/opportunity", dependencies=[Depends(same_origin)])
-def opportunity(context: ProductContext, b=Depends(buyer)):
-    validate_context(context)
-    with connect() as db:
-        g = db.execute(
-            "SELECT offer_id FROM groups WHERE run_id=%s", (b["run_id"],)
-        ).fetchone()
-        if not g or not g["offer_id"]:
-            return {
-                "available": False,
-                "reason": "Enter your requirements and negotiate a quote first.",
-            }
-        terms = terms_for(
-            db,
-            db.execute(
-                "SELECT id FROM groups WHERE run_id=%s", (b["run_id"],)
-            ).fetchone()["id"],
-        )
-        if terms.get("pricing_model") == "tiers":
-            if (context.product_id, context.selected_variant, context.quantity) != (
-                terms["product_id"],
-                terms["variant"],
-                1,
-            ):
-                return {
-                    "available": False,
-                    "reason": "No exact accepted quote for this selection.",
-                }
-            return {"available": True, **snapshot(db, b)}
-    if (context.product_id, context.selected_variant, context.quantity) != (
-        "arc-991",
-        "Graphite",
-        1,
-    ):
-        return {
-            "available": False,
-            "reason": "No exact group offer for this selection.",
-        }
-    with connect() as db:
-        return {"available": True, **snapshot(db, b)}
+    return SHOP_PRODUCTS
 
 
 @app.get("/api/status")
@@ -373,6 +334,19 @@ def journey(b=Depends(buyer)):
             "SELECT id,status,error,created_at FROM negotiations WHERE group_id=%s ORDER BY created_at DESC LIMIT 1",
             (g["id"],),
         ).fetchone()
+        for assessment in assessments:
+            product = next(p for p in PRODUCTS if p["id"] == assessment["product_id"])
+            match = (
+                matching_group(db, b, g, product["id"])
+                if assessment["eligible"]
+                else None
+            )
+            assessment["available"] = max(
+                assessment["available"]
+                if assessment["available"] >= product["public_policy"]["capacity"]
+                else 0,
+                match["available_slots"] if match else 0,
+            )
         rounds = db.execute(
             "SELECT id,role,valid,public_summary,created_at FROM negotiation_rounds WHERE negotiation_id=%s ORDER BY ordinal",
             (n["id"] if n else None,),
@@ -390,11 +364,29 @@ def journey(b=Depends(buyer)):
                 if offer.get("pricing_model") == "tiers"
                 else 0
             )
+        used = db.execute(
+            "SELECT count(*) AS n FROM commitments WHERE group_id=%s AND active",
+            (g["id"],),
+        ).fetchone()["n"]
+        availability = (
+            "draft"
+            if g["status"] == "DRAFT"
+            else "settled"
+            if g["status"] == "SUCCEEDED"
+            else "canceled"
+            if g["status"] in ("UNWINDING", "FAILED")
+            else "closed"
+            if g["status"] != "OPEN" or expired(db, g["deadline"]) or g["closing"]
+            else "unavailable"
+            if offer and used >= offer["capacity"]
+            else "open"
+        )
         return {
             "request": req,
             "assessments": assessments,
             "negotiation": n,
             "rounds": rounds,
+            "availability": availability,
             "group": {
                 "id": g["id"],
                 "run_id": g["run_id"],
@@ -408,7 +400,12 @@ def journey(b=Depends(buyer)):
             "eligible": eligible_for_quote(db, b["id"], offer)
             if offer and offer.get("pricing_model") == "tiers"
             else False,
-            "products": [p for p in PRODUCTS if p["category"] == "Headphones"],
+            "products": SHOP_PRODUCTS
+            + [
+                p
+                for p in PRODUCTS
+                if offer and p["id"] == offer["product_id"] and p not in SHOP_PRODUCTS
+            ],
         }
 
 
@@ -431,7 +428,12 @@ class JoinBody(BaseModel):
 @app.post("/api/commitments", dependencies=[Depends(same_origin)])
 def commitment(body: JoinBody, b=Depends(buyer)):
     with connect() as db:
-        return join(db, b, body.group_id, body.context, body.accepted_terms)
+        c = join(db, b, body.group_id, body.context, body.accepted_terms)
+        return {
+            "id": c["id"],
+            "amount_minor": c["amount_minor"],
+            "currency": c["currency"],
+        }
 
 
 class ApprovalBody(BaseModel):
@@ -464,12 +466,22 @@ def authorize(commitment_id: UUID, body: ApprovalBody, b=Depends(buyer)):
 
 
 @app.post("/api/paypal/webhook")
-def webhook(request: Request, event: dict):
-    rate_limit(request)
-    if not isinstance(event.get("id"), str) or len(event["id"]) > 150:
+async def webhook(request: Request):
+    raw = bytearray()
+    async for part in request.stream():
+        raw.extend(part)
+        if len(raw) > 100000:
+            raise HTTPException(413, "Webhook body too large.")
+    try:
+        event = json.loads(raw)
+    except ValueError:
+        raise HTTPException(422, "Invalid webhook JSON.") from None
+    if (
+        not isinstance(event, dict)
+        or not isinstance(event.get("id"), str)
+        or len(event["id"]) > 150
+    ):
         raise HTTPException(422, "Missing or invalid event ID.")
-    if len(str(event)) > 100000:
-        raise HTTPException(413, "Webhook body too large.")
     names = (
         "paypal-auth-algo",
         "paypal-cert-url",
@@ -480,35 +492,46 @@ def webhook(request: Request, event: dict):
     headers = {name: request.headers.get(name) for name in names}
     if not all(headers.values()) or settings.mode != "connected":
         raise HTTPException(401, "Signed sandbox webhook required.")
+    try:
+        verified = await run_in_threadpool(verify_webhook, headers, event, bytes(raw))
+    except Exception:
+        raise HTTPException(
+            503, "Webhook verification unavailable; retry delivery."
+        ) from None
+    if not verified:
+        raise HTTPException(401, "Webhook signature verification failed.")
     with connect() as db:
+        existing = db.execute(
+            "SELECT payload FROM webhook_events WHERE id=%s AND verified",
+            (event["id"],),
+        ).fetchone()
+        if existing and existing["payload"] != event:
+            raise HTTPException(409, "Event ID payload mismatch.")
         db.execute(
-            "INSERT INTO webhook_events(id,payload,headers,verified) VALUES(%s,%s,%s,false) ON CONFLICT(id) DO UPDATE SET payload=EXCLUDED.payload,headers=EXCLUDED.headers,processed_at=NULL WHERE NOT webhook_events.verified",
-            (event["id"], Jsonb(event), Jsonb(headers)),
+            "INSERT INTO webhook_events(id,payload,headers,verified,raw_body) VALUES(%s,%s,%s,true,%s) ON CONFLICT(id) DO UPDATE SET payload=EXCLUDED.payload,headers=EXCLUDED.headers,verified=true,raw_body=EXCLUDED.raw_body,processed_at=NULL WHERE NOT webhook_events.verified",
+            (event["id"], Jsonb(event), Jsonb(headers), bytes(raw)),
         )
         enqueue(db, "event", {"event_id": event["id"]}, "event:" + event["id"])
         db.execute(
-            "UPDATE jobs SET status='ready',available_at=now(),attempts=0 WHERE dedupe_key=%s AND status IN ('done','recovery') AND EXISTS(SELECT 1 FROM webhook_events WHERE id=%s AND NOT verified)",
+            "UPDATE jobs SET status='ready',available_at=now(),attempts=0 WHERE dedupe_key=%s AND status IN ('done','recovery') AND EXISTS(SELECT 1 FROM webhook_events WHERE id=%s AND processed_at IS NULL)",
             ("event:" + event["id"], event["id"]),
         )
-    return {"received": True, "verification": "queued"}
+    return {"received": True, "verification": "verified"}
 
 
 class RunBody(BaseModel):
-    scenario: str = "success"
+    model_config = ConfigDict(extra="forbid")
+    scenario: Literal["success", "deadline", "partial", "refund_pending"] = "success"
     demo: bool = True
-    profile: str = "small"
+    profile: Literal["small"] = "small"
     close_seconds: int = Field(default=600, ge=90, le=1800)
 
 
 @app.post("/api/operator/runs", dependencies=[Depends(operator)])
 def new_run(body: RunBody):
-    if body.scenario not in ("success", "deadline", "partial", "refund_pending"):
-        raise HTTPException(422, "Unknown demo scenario.")
     if settings.mode == "connected" and body.scenario not in ("success", "deadline"):
         raise HTTPException(422, "Fault injection is fixture-only.")
     with connect() as db:
-        if body.profile not in ("legacy", "small", "large"):
-            raise HTTPException(422, "Unknown run profile.")
         result = create_run(db, body.scenario, body.demo, body.profile)
         db.execute(
             "UPDATE runs SET close_seconds=%s WHERE id=%s",
@@ -540,8 +563,8 @@ def evidence(run_id: UUID):
             (run_id,),
         ).fetchall()
         jobs = db.execute(
-            "SELECT id,kind,status,attempts,error FROM jobs WHERE payload->>'group_id'=%s OR payload->>'decision_id' IN (SELECT id::text FROM ai_decisions WHERE group_id=%s)",
-            (str(group["id"]), group["id"]),
+            "SELECT id,kind,status,attempts,error FROM jobs WHERE payload->>'group_id'=%s OR payload->>'decision_id' IN (SELECT id::text FROM ai_decisions WHERE group_id=%s) OR payload->>'request_id' IN (SELECT q.id::text FROM buyer_requests q JOIN buyers b ON b.id=q.buyer_id WHERE b.run_id=%s) OR payload->>'negotiation_id' IN (SELECT id::text FROM negotiations WHERE group_id=%s)",
+            (str(group["id"]), group["id"], run_id, group["id"]),
         ).fetchall()
         ops = db.execute(
             "SELECT p.* FROM payment_operations p JOIN commitments c ON c.id=p.commitment_id WHERE c.group_id=%s ORDER BY p.updated_at",
@@ -721,7 +744,7 @@ def preparation_links(run_id: UUID):
                 {
                     "name": b["name"],
                     "buyer_id": str(b["id"]),
-                    "url": f"{settings.public_url}/?run={run_id}&invite={token}",
+                    "url": f"{settings.public_url}/?run={run_id}#invite={token}",
                 }
             )
         return {
@@ -739,9 +762,9 @@ def fixture_prepare(run_id: UUID):
         raise HTTPException(409, "Simulated approvals are disabled in connected mode.")
     with connect() as db:
         group = db.execute(
-            "SELECT id,status FROM groups WHERE run_id=%s", (run_id,)
+            "SELECT id,status,activated FROM groups WHERE run_id=%s", (run_id,)
         ).fetchone()
-        if not group or group["status"] != "OPEN":
+        if not group or group["status"] != "OPEN" or group["activated"]:
             raise HTTPException(409, "Prepare an inactive fixture group first.")
         enqueue(
             db,
@@ -810,31 +833,6 @@ def recovered_refund(commitment_id: UUID, body: RefundRecoveryBody):
             f"recovery-refund:{c['id']}:{body.refund_id}",
         )
         return {"status": "proof_check_queued", "refund_completed": False}
-
-
-class AssistantBody(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    request_text: str = Field(min_length=3, max_length=1200)
-
-
-@app.post("/api/assistant", dependencies=[Depends(same_origin)])
-def assistant(body: AssistantBody, b=Depends(buyer)):
-    if settings.mode == "connected" and not settings.llm_api_key:
-        raise HTTPException(
-            503,
-            "Assistant unavailable. Ordinary offer browsing and checkout remain usable.",
-        )
-    with connect() as db:
-        group = db.execute(
-            "SELECT id FROM groups WHERE run_id=%s", (b["run_id"],)
-        ).fetchone()
-        did = uuid4()
-        db.execute(
-            "INSERT INTO ai_decisions(id,buyer_id,group_id,mode,request_text) VALUES(%s,%s,%s,%s,%s)",
-            (did, b["id"], group["id"], settings.mode, body.request_text),
-        )
-        enqueue(db, "ai", {"decision_id": str(did)}, f"ai:{did}")
-        return {"id": str(did), "status": "queued"}
 
 
 @app.post("/api/commitments/{commitment_id}/leave", dependencies=[Depends(same_origin)])

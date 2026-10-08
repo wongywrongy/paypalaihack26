@@ -1,5 +1,190 @@
 # Coalition — verification record
 
+## Real-product catalog update — October 8, 2026
+
+The storefront now offers six real models: Sony WH-CH720N, WH-CH520 and WH-1000XM5; Apple AirPods Max (2024 USB-C, Starlight); Bose QuietComfort and QuietComfort Ultra (2nd Gen). Locally served product photographs and manufacturer specification links are recorded in `docs/photography.json`. Two Sony photographs are retailer-sourced; the other four are manufacturer-sourced. The Apple photograph shows the official color range with Starlight foremost. Merchants, USD list/group prices, inventory and delivery remain simulated, with buyer-facing disclosure. This is not brand affiliation or current retail pricing.
+
+New model identities and separate merchant policy IDs preserve the retired fictional products, source versions, policies, inventory and immutable purchases. New matching/negotiation uses only the active catalog; owned historical checkouts retain their original product. Negotiation and consent now use the catalog variant instead of a universal Graphite default. The premium merchant has a materially different $285–$310 / $265–$290 public envelope. Public policy fields agree for products sharing a policy. Private floors remain server-side.
+
+Adding manufacturer provenance exposed a connected-model evidence issue: responses cited URLs rather than capability fields. The existing dynamic assessment schema now restricts citations to catalog field paths; deterministic evidence validation still checks the particular requirement. Brand/model requirements can cite brand/title. Unsupported flight effectiveness remains unknown; Bluetooth/iPhone evidence is limited to basic audio. Buyer bids are instructed to honor the selected merchant's public ranges, without a fixed price target.
+
+### Executed local checks — fixtures and application behavior
+
+- **77 backend tests passed, zero failures or skips**, 24.342 seconds, disposable PostgreSQL 16 schemas; `/tmp/coalition-real-products-backend-final-3.log`. Includes real-model identity/brand evidence, rejecting URL citations, retired-product exclusion and exact AirPods Starlight quote/consent. Existing money, concurrency, ownership and recovery regressions remain covered.
+- TypeScript/Vite build and focused Ruff lint passed after the final changes; `/tmp/coalition-real-products-build-final-2.log`, `/tmp/coalition-real-products-lint-final-2.log`.
+- **18 desktop/mobile browser regressions passed** in the first run. The expanded run passed 16 and failed two copies of a new ambiguous-heading assertion; a scoped selector fixed the test. The four storefront checks then passed twice, including the final image framing; `/tmp/coalition-real-products-browser-1.log`, `...-browser-final.log`, `...-storefront-final.log`, `...-storefront-confirm.log`. All six photographs loaded; Apple selection shows Starlight and the manufacturer link. Desktop/mobile screenshots are in `.impeccable/review/storefront-{desktop,mobile}.png`.
+- **Four real-stack desktop/mobile cases passed**, 4.1 minutes; `/tmp/coalition-real-products-stack.log`. Isolated fixture API, worker and PostgreSQL exercised Sony quote/consent, five fixture authorizations, deadline-driven $85 captures, refresh, cancellation, repeat shopping with another Sony model and history. These provider outcomes are fixtures.
+- An owned historical mobile receipt still displayed **Cabin One** and **Paid $85.00 USD** after the catalog switch. The first manual assertion incorrectly expected “Cabin One Headphones”; reading the saved heading and correcting the assertion passed. No historical obligation was renamed or recreated. No API/worker restart proof was rerun this turn; the earlier restart evidence below remains historical.
+
+The first backend run failed 3 tests with 17 errors because the real variants and shared policy identities exposed the old Graphite default and inconsistent public merchant names. Both root causes were fixed; subsequent database runs passed, and two relevant regression tests were added. No failing run has been relabeled as success.
+
+### Genuine configured-model evidence — no payments
+
+`docs/model-verification-real-products.json` records six actual authenticated configured-provider cases, with no model fixtures and **zero PayPal operations**:
+
+| Actual input/selected product | Observed result, three/five buyers |
+|---|---|
+| ANC, iPhone 12, under $100, a week / Sony WH-CH720N | Accepted **$92 / $88** |
+| Bluetooth, iPhone 12, under $80, five days / Sony WH-CH520 | Accepted **$75 / $69** |
+| ANC, under $350, fourteen days / Sony WH-1000XM5 | Accepted **$299 / $279** |
+| Maximum $66, five days | **No agreement** within three exchanges |
+| “Headphones under $100” | **Delivery clarification** |
+| Five distinct simulated requirements, Sam under $90 / Sony WH-CH720N | Accepted **$89 / $88**, **zero confirmed authorizations** |
+
+Two earlier executions are retained honestly. `docs/model-verification-real-products-initial-failure.json` recorded URL citations becoming unresolved and failed the positive matching gate. After the field-path schema fix, `docs/model-verification-real-products-second-check.json` accepted the three policy-specific quotes, clarified and declined as expected, but its five-person negotiation exhausted the bound: buyer bids did not respect the public five-person range. The final prompt clarification produced the observed valid agreement above. This is not a guarantee of a future quote or evidence of the specifically requested genuine $89/$85 payment lifecycle.
+
+README, demo instructions, API description, design text and photography provenance were updated. No dependency, service, payment flow, deployment or external configuration was added or changed. Temporary fixture services are stopped after verification; their retained review database/history is not deleted. The original genuine PayPal acceptance blockers below remain unresolved. The earlier Ponytail audit remains applicable; the catalog update reuses the existing schemas, policy seeds, native disclosure and CSS.
+
+---
+
+## Final acceptance audit — October 7, 2026, 20:55 UTC
+
+The preceding turn made concrete progress through implementation cleanup, real-model checks, application tests and restarted receipts. This continuation checked the current worktree, verifier, configuration and live read-only access again. The original implementation review, cleanup review and this acceptance review all encountered the same genuine-payment blocker. No live verification process or pending human-approved provider operation is running for this review.
+
+The read-only connected verifier now requires the frozen five-payer group to be **SUCCEEDED with fulfillment released**, in addition to five confirmed lower captures and completed cleanup refunds. Previously the resource checks alone could pass for an application group that had not confirmed success. Provider orders reuse the existing immutable-order validator, including the original approved merchant after a configuration change. A contract regression rejects SETTLING, UNWINDING, FAILED and unreleased groups despite confirmed fixture resources, and accepts the genuinely structured successful fixture case with its pinned merchant. These fixtures validate the verifier; they are not connected evidence.
+
+Executed after this change: **75 backend tests passed, zero failures/skips**, 26.414 seconds, disposable PostgreSQL 16; `/tmp/coalition-acceptance-gate-backend.log`. Focused lint passed, `/tmp/coalition-acceptance-gate-lint.log`. Frontend and runtime payment logic were unchanged, so the preceding browser/build/restart evidence remains applicable and was not rerun without cause.
+
+| Original acceptance scope | Authoritative evidence and conclusion |
+|---|---|
+| Stack, one category, five buyers, AI/payment boundaries | Current `render.yaml`, config, six-product public catalog, supported five-person preparation, immutable commitment guards and passing database tests. Five real payer approvals remain missing. |
+| 1. PayPal lifecycle | `payments.py`, durable operations, official contracts, recovery/webhook tests and updated read-only verifier establish local behavior. Fresh `paypal-connection-verification.json` at 20:55:17 UTC: OAuth 200, registration 200, connected deployed config 200, operator read 403, local merchant absent. Genuine authorization/capture/webhook/void/refund/five-payer/restart evidence is **not achieved**. |
+| 2. Independent repeat shopping and inventory | `shopping.py`, `negotiation.py`, ownership/expiration/different-product/concurrent-reservation/duplicate-submission tests; four desktop/mobile application cases. Local behavior verified; fixture payments disclosed. |
+| 3. Input-responsive negotiation and private policy | Current catalog/policy seeds, separate role contexts, deterministic proposal/budget checks and bounded attempts; six genuine configured-model cases in `model-verification-current.json`, earlier result and failures retained. Variation/no agreement proved; zero manufactured authorizations. |
+| 4. Clarification and compatibility | Grounded extraction, saved nullable constraints, evidence validation, editable exact-cent chips; clarification, unknown-evidence, policy-eligibility tests and real-model incomplete-request result. Local/model behavior verified. |
+| 5. Responsive single worker | Current one-model/two-payment-lane worker, independent connections, durable leases/advisory locks; slow-model deadline/lease-expiry tests, acceptance-time deadlines, token-cache contract and reconciliation backoff. Local behavior verified. |
+| 6. Fintech safeguards | Immutable server-calculated consent/amounts, explicit state transitions, stable operations, original-merchant validation, raw verified event persistence/deduplication, owner/operator/CSRF checks, secure cookies/CORS, append-only observations and additive migrations; PostgreSQL/contract tests verify applicable paths. No production-readiness or regulatory claim. Genuine provider outcomes remain unknown until actual lifecycle execution. |
+| 7. Storefront preservation | Existing photographs, checkout/history/Magic UI, event-driven progression/reduced motion and terminal actions; 18 desktop/mobile regressions, current application screenshots and saved receipts. Buyer-facing diagnostics remain concise; technical recovery stays operator-only. |
+| 8. Meaningful verification and gate | 75 PostgreSQL tests, 18 browser regressions, four desktop/mobile shopping cases, four desktop recovery cases, actual isolated restart receipts, build/lint and CI definition. Failures/skips/fixture limits are recorded below. Genuine acceptance is explicitly not inferred from these checks. |
+| Delivery, cleanup and Ponytail audit | Current README/API/OpenAPI/Postman, `docs/DEMO.md`, this evidence record, 968 runtime/style lines removed, retired plans and creation paths removed, call-site/dependency audit performed. Historical recovery retained. Git metadata is unavailable, so branch comparison and reviewable Git commits remain unavailable. |
+
+**Completion is unproven and the goal is blocked on external access/human approval.** No further independent implementation action can create the missing genuine evidence. Privately configure the sandbox merchant ID and valid deployed operator token, authorize running the reviewed revision on the existing Render services while preserving obligations, and complete the five human approvals and separate void/refund sequence in `docs/DEMO.md`. Re-run the read-only verifier against those connected run IDs. Do not substitute the latest $89/$88 model quote for the specifically requested $89/$85 evidence, or rewrite immutable terms to manufacture that price.
+
+---
+
+## Latest implementation cleanup and audit — October 7, 2026
+
+**The local implementation and cleanup checks pass. The full requested genuine PayPal lifecycle remains incomplete.** No deployment, payment mutation, external configuration change or manufactured payment evidence was performed. The original local services were not restarted. This is a sandbox application, with no compliance or production-readiness claim.
+
+### Changes and removed plans
+
+- Removed the retired multi-category storefront, demo bag, overlay, checkout assistant creation endpoint, opportunity endpoint, unused icons, config lookup and their unused CSS. `/` and `/shop` now use the existing headphone storefront; owned checkout, history, photographs and Magic UI remain. Corrected the selected merchant label and constrained editable budgets to exact cents.
+- New operator preparation accepts only the supported five-person headphone scope and known scenarios. Preparation after activation is rejected. Removed runtime creation and seeds for old calculator/large demos, moving their regression construction into `tests/legacy_fixtures.py`. Historical terms, migrations, receipts and recovery jobs remain; no obligations or payment history were deleted.
+- Reused each catalog policy's public fields when seeding backend-private policy. Removed superseded `.impeccable` direction/quality-bar plans and obsolete overlay audit exemptions/cache; retained current design tokens and review evidence. Updated API/OpenAPI/Postman documentation for the remaining endpoints.
+- Fresh real-model checks exposed over-budget buyer bids, comparisons of transient proposal versions instead of tier prices, and prepared-demo demand including unrelated shoppers. Deterministic bid validation, safe role-specific feedback, price comparison/final-turn instructions, and run-scoped prepared demand fix those causes within the existing six-call budget. Ordinary shopping still matches compatible demand across ordinary runs. No target price was forced.
+
+Compared with `/tmp/coalition-cleanup-before`, runtime backend code decreased by **207 lines** and frontend code/styles by **761 lines**: **968 net lines removed**, no dependency added. Built CSS fell from 56.25 kB to 42.36 kB. The snapshot and `/tmp/coalition-before` preserve review provenance; the workspace's inaccessible Git metadata still prevents branch/commit comparison or creation of focused Git commits.
+
+### Checks actually executed
+
+| Check | Result and evidence |
+|---|---|
+| Disposable PostgreSQL backend suite | **74 passed, zero failures or skips**, 23.660 seconds; `/tmp/coalition-cleanup-backend-final.log`. Includes three new checks for supported preparation/private policy seeds, buyer-budget/private-context feedback, and five-person demand isolation. Existing ownership, stock concurrency, leases, deadlines, consent, webhook ordering and payment recovery checks remain. |
+| Desktop/mobile API/provider browser fixtures | **18 passed**, 41.0 seconds; `/tmp/coalition-cleanup-browser-2.log`. Current storefront, exact-cent edits, checkout, SDK retry, approval return/cancel, keyboard order and narrow layouts. |
+| Desktop/mobile application stack | **4 passed**, 4.1 minutes; `/tmp/coalition-cleanup-stack-shopping.log`. Real isolated API/worker/PostgreSQL; fixture AI/payment resources. Five $89 approvals/$85 captures, deadline, refresh, clarification, repeat shopping, preserved history and cancellation. |
+| Desktop application settlement/recovery | All **four scenarios passed** across the final recovery run and success retry: success, below-minimum deadline/void, partial capture compensation, and pending refunds with guarded archive. `/tmp/coalition-cleanup-stack-recovery-2.log` contains three passes and a success-case UI assertion failure; `/tmp/coalition-cleanup-stack-success-3.log` contains the corrected success pass. These are four distinct fixture cases, not genuine PayPal evidence. Mobile versions of these four fault scenarios were not rerun. |
+| Actual API/worker restart | Both saved desktop/mobile owned receipts retained confirmed $85 fixture capture after service restart and another refresh. `/tmp/coalition-cleanup-receipt-restart.log`. The current code was loaded on both review services. |
+| Build and focused lint | TypeScript/Vite build and Ruff passed; `/tmp/coalition-cleanup-build-final.log`, `/tmp/coalition-cleanup-lint-final.log`. OpenAPI regenerated. No remote CI run claimed; the existing PostgreSQL/build/browser gate remains. |
+| Visual inspection | Current mobile receipt inspected; photos, price hierarchy, closed state, tier progress and confirmed fixture receipt remain readable. `.impeccable/review/negotiated-*` and `repeat-shopping-*`. |
+
+Intermediate failures are retained: cleanup briefly removed the active status handler, old test setup still patched the runtime rather than test fixture settings, and retired endpoint assertions assumed 404 where the static mount can return 405. The corrected database suite passes. The first stack run activated before fixture preparation finished; the test now awaits confirmed membership. The success refund assertion initially allowed five seconds while terminal receipt polling takes ten; its fifteen-second assertion passes. No timer was used to fabricate funding or settlement. Fresh model failure records remain at `docs/model-verification-cleanup-failure.json` and `docs/model-verification-cleanup-second-failure.json`; deterministic validation refused those invalid/unaccepted offers. Earlier failures and the local-isolation diagnostic are described in the prior record below.
+
+After the restart checks, the isolated review API/worker and PostgreSQL container were stopped. Their database, owned receipt snapshots and verification logs were retained. No original service was stopped or restarted.
+
+### Genuine provider evidence, separate from fixtures
+
+The latest authenticated configured-model execution passed all six cases in `docs/model-verification-current.json`: Cabin One **$92/$88**, Air Light **$75/$69**, Travel Studio **$120/$110**, no agreement at a **$66 maximum**, delivery clarification for **“Headphones under $100”**, and the five distinct prepared requirements accepting **$89/$88**. All five request evaluations completed. **Zero payment operations and zero confirmed authorizations**. The earlier successful five-person $89/$85 observation is preserved in `docs/model-verification-prior-success.json`. Variation is real; the future quote is not guaranteed.
+
+Fresh read-only PayPal evidence at **20:27:51 UTC** in `docs/paypal-connection-verification.json`: sandbox OAuth **200**, existing wildcard webhook registration **200**, connected deployed config **200**, deployed operator read **403**. The local merchant ID remains absent. Registration is not verified delivery. **No genuine $89 authorization, $85 capture, processed signature-verified webhook, void, refund, five-payer settlement or restart receipt was established.** Official PayPal lifecycle conclusions and contracts remain documented below.
+
+### Remaining gates and exact human steps
+
+An authorized operator must provide the existing sandbox merchant ID privately, use the valid deployed operator token, and run this same revision on the existing API/worker and preserved database. This review did not deploy or change external configuration. The current Render operator endpoint rejects the available token, so a connected prepared checkout cannot be claimed ready.
+
+Follow [`docs/DEMO.md`](docs/DEMO.md): prepare a five-person run with 1,800 seconds; open five protected browser profiles; wait for genuine evaluations; negotiate and review the actual immutable quote. For the requested $89/$85 proof, proceed only if those are the observed terms. Four distinct sandbox humans approve $89 on PayPal; the judge approves the fifth. Verify all five $85 captures plus a processed signature-verified app webhook, refresh after worker restart, then separately prove cancellation/confirmed void and completed capture refunds. Run `scripts/check_connected.py SUCCESS_RUN_ID VOID_RUN_ID` against that connected database and save its real redacted output. Interest and fixture preparation cannot substitute for these approvals. Pending and unknown results stay unresolved.
+
+### Ponytail audit after cleanup
+
+Whole-tree runtime/dependency review, with call sites checked in backend, frontend, scripts, tests and migrations. The earlier private-policy duplication and dead CSS findings were applied as part of the explicitly requested cleanup. No further safe complexity cuts were found: single-reference FastAPI handlers are registered callbacks, Magic UI is required, and the historical decision handler is still referenced by the worker for durable jobs. Payment operations, consent records, additive migrations and historical catalog metadata are necessary recovery code.
+
+Complexity audit result: **Lean already. Ship.** This describes complexity only; the genuine payment acceptance gates above remain unsatisfied. **net: 968 lines removed, 0 dependencies removed; no further deletion recommended.**
+
+---
+
+## Earlier implementation review — October 7, 2026
+
+**Local implementation and verification are complete; genuine connected payment acceptance is still blocked.** No deployment, PayPal payment mutation or external configuration change was performed in this review. App OAuth and webhook-registration reads are genuine; every authorization/capture/void/refund result below is explicitly a fixture. The configured model was called genuinely. This sandbox project makes no regulatory-compliance or production-readiness claim.
+
+The supplied workspace has empty, read-only `.git` and `.agents` directories and no accessible `AGENTS.md`. A branch/head comparison with commit `31cf9f0`, reviewable Git commits and a push were therefore unavailable. Changes were checked against the actual supplied code and useful existing payment/checkout safeguards retained; a before-copy is at `/tmp/coalition-before`. Historical entries below are prior observations, not new deployment or payment proof. In particular, their global $86 exclusion examples are superseded by product-specific pricing policies.
+
+### What changed
+
+- Shopper identity and purchase history now survive selection of another group. Ordinary shopping needs no prepared run. Compatible open groups reuse their reserved capacity, even when free catalog stock is zero; different products get independent drafts. Owner-scoped duplicate work, expired/terminal deals and unresolved previous attempts are handled explicitly.
+- Three merchant policies, distinct five-person requirements and private/public role contexts replace the universal $89/$85 instruction. Every executable quote is checked against merchant quantity/price/inventory/delivery authority and lead-buyer eligibility. Interest is not authorization. Atomic reservations prevent two accepted negotiations consuming the same stock. Existing calculator and large-run obligations remain recoverable; new large negotiations are outside the new policies and fail explicitly.
+- Missing budget/delivery information becomes a saved clarification. Grounded request spans and exact Decimal budget conversion prevent invented constraints. Required yes/no/unknown evidence must substantiate the particular requirement; unknowns block eligibility. Provider failure, invalid output, unsupported requirements and no matches have separate states. Repairs and negotiation calls/tokens/time are bounded.
+- One worker process has one model lane and two payment/deadline lanes, independent connections, durable leases and session job locks. A slow call cannot occupy all payment capacity, and lease expiry cannot cause another worker to execute the same still-running job. Funding time starts on acceptance. Superseded results are ignored; a crashed model attempt is not silently given another budget.
+- Durable payment operations and stable identifiers remain. Exact provider amounts, immutable consent/request snapshots, explicit status transitions, final lower capture, confirmed resource-based voids, pending refunds and unknown-outcome reconciliation are retained/strengthened. The approved merchant is pinned across configuration changes; fresh charges to another merchant are blocked while original obligations can still be observed for recovery.
+- Verified raw webhooks persist before acknowledgement; altered duplicates cannot replace an event. Resource parent/merchant checks and separately labeled historical webhook/current reconciliation observations protect against delayed events. OAuth/HTTP connections are reused; unresolved-resource polling backs off and settled purchases stop periodic fetching.
+- Existing photographs, storefront, checkout, history and Magic UI remain. Clarification, editable chips, factual negotiations, available tiers, terminal actions and “Find another deal” have desktop/mobile coverage. Buyer diagnostics are concise; model/payment jobs and recovery details are operator-only. Preparation fragments, disabled access logging, suppressed referrers, exact-origin CSRF checks and secure HTTPS cookies protect session/approval data. No new runtime dependency or service was added.
+
+### Checks actually executed
+
+| Check | Latest executed result and limits |
+|---|---|
+| Backend unittest suite | **71 passed, 0 failures, 0 skips**, 22.790 seconds. Actual disposable PostgreSQL 16 schemas on review port 55446; no database test skipped. `/tmp/coalition-backend-final-9.log`. Payment/model doubles remain fixtures. |
+| Covered database/payment risks | Repeat/expired shopping, separate products/owned tabs, simultaneous stock reservation, duplicate requests/checkouts, saved clarification, policy-specific prices, unsupported/unknown evidence, decline/invalid proposals, slow AI versus deadlines, lease expiry, duplicate/out-of-order verified events, ambiguous remote success, restart recovery, lower capture, partial group failure, pending/failed refunds, immutable consent/merchant and unauthorized receipt access. |
+| Browser API/provider fixtures | **18 passed**, desktop/mobile, 42.7 seconds. Keyboard order, PayPal SDK failure/retry, return/cancel validation, persistent checkout and narrow layouts. `/tmp/coalition-browser-final-mocks-3.log`. |
+| Browser application stack | **4 passed**, desktop/mobile, 4.1 minutes. Actual isolated API, worker and PostgreSQL; fixture AI/payments. Five approvals, actual 90-second application closing, $89 maximum/$85 capture, refreshed receipt; incomplete request clarification, another product, retained history and confirmed fixture cancellation. `/tmp/coalition-browser-final-stack-2.log`. |
+| Actual process restart | Two saved owned receipts, desktop/mobile, retained $85 fixture captures after terminating and restarting the review API/worker, then refreshing again. `/tmp/coalition-receipt-restart.log`. Separate timeout-after-remote-success database test confirms no duplicate capture. |
+| TypeScript/Vite build | Passed; `/tmp/coalition-build-final.log`. |
+| Focused Ruff checks | Passed for backend, tests and scripts; `/tmp/coalition-lint-final.log`. |
+| Visual checks | Existing Impeccable review returned no detector findings. Desktop negotiation and mobile receipt inspected; mobile tier labels received explicit spacing. Latest screenshots `.impeccable/review/negotiated-*` and `repeat-shopping-*`; reduced motion retained. |
+| Automated gate | Added `.github/workflows/verify.yml`: real PostgreSQL suite, focused lint, build and 18 desktop/mobile fixture regressions. Equivalent local commands executed; no remote CI run claimed. |
+
+Earlier checks failed and were corrected rather than hidden: live extraction hallucinated features/mis-scaled money, role ambiguity produced merchant acceptance without a quote, and valid `specs.ANC: Yes` evidence was rejected. Grounded required schemas, specific evidence support and explicit role proposal contracts corrected these; final live cases passed. The initial live failure record is `docs/model-verification-initial-failure.json`. Two ordinary-shopping browser assertions initially raced asynchronous URL updates; awaiting navigation fixed them. Two keyboard regressions needed the newly visible “Find another deal” link in their expected order. An intermediate 71-test run failed because its merchant-change setup used an unpinned fixture merchant and an older test expected fields removed from the safe commitment response; corrected checks assert a genuinely pinned merchant, minimal response and database authorization state. The latest run passes. A diagnostic shell also used unavailable `python`; rerun with `.venv/bin/python` succeeded. Repeated runs are not counted as additional distinct checks.
+
+An early model-only diagnostic imported cached `.env` settings before selecting its disposable schema, so it touched the existing **local fixture** database: additive migration/seeds and one simulated shopper request/quote. It stopped on the zero-operation-history assertion; no provider payment was initiated and no payment history was removed. A fail-early settings/isolation guard now prevents that invocation. All reported final model and database checks used disposable schemas. Existing obligations were preserved.
+
+The temporary review API/worker and dedicated review PostgreSQL container were stopped after verification; their data and logs were retained. The original local services were not restarted.
+
+### Genuine configured-model evidence
+
+[`docs/model-verification-prior-success.json`](docs/model-verification-prior-success.json) records the earlier real calls to the configured authenticated Qwen/Ollama gateway with payment credentials disabled in a disposable schema. Observed accepted tiers were:
+
+| Requirements | Observed 3 / 5 buyer totals |
+|---|---|
+| Noise cancellation/iPhone, under $100, seven days; Cabin One | $92 / $88 |
+| Bluetooth/iPhone, under $80, five days; Air Light | $75 / $69 |
+| Proven flight noise reduction, under $140, fourteen days; Travel Studio | $115 / $108 |
+| Maximum $66, five days; Air Light | No agreement; executable merchant-floor and buyer-budget checks prevented acceptance. |
+| “Headphones under $100” | Clarification about delivery timing; no invented deadline. |
+| Five distinct Maya/Leo/Aisha/Noah/Sam requirements; Cabin One | $89 / $85; all five request evaluations completed. |
+
+These buyers are simulated interests. **Zero payment operations and zero confirmed authorizations** were created by the model check. Compatible interest changes the negotiated context without becoming funding. The observed output is evidence of this run, not a guarantee of identical future model output.
+
+### Genuine PayPal evidence and documentation checks
+
+[`docs/paypal-connection-verification.json`](docs/paypal-connection-verification.json) records sandbox OAuth HTTP 200, registered webhook retrieval HTTP 200, its existing listener `https://paypalaihack26.onrender.com/api/paypal/webhook` and wildcard events. Deployed `/api/config` returned connected/configured. That is app/registration evidence only: **no genuine authorization, capture, void, refund or received/processed webhook was established**. The local merchant ID is absent; the available local operator token received HTTP 403 on Render. Secrets were not printed or added to evidence.
+
+Verified against official PayPal documentation:
+
+- Authorizations have a 29-day validity period and three-day honor period. This app conservatively requires timestamps plus a five-minute margin within both windows; expiry alone does not justify capture. [Authorize and capture](https://developer.paypal.com/v5/checkout/auth-capture/).
+- Final partial capture sends `final_capture=true`, preventing additional captures on that authorization. The application does not invent a separate void event or immediate bank-hold release. Void HTTP 204 is followed by retrieval of the actual authorization, whose identity, original amount and `VOIDED` state must match. [Capture](https://developer.paypal.com/api/payments/v2/authorizations-capture), [void](https://developer.paypal.com/api/payments/v2/authorizations-void).
+- Orders create/authorize document six-hour request-ID storage; the application uses a conservative five-hour automatic retry boundary. Payments endpoint documentation does not establish one universal retention duration, so unknown capture/refund outcomes default to reconciliation/manual recovery instead of a fresh mutation. [Create order](https://developer.paypal.com/sdk/orders/v2/orders-create/), [authorize order](https://developer.paypal.com/sdk/orders/v2/orders-authorize/).
+- Pending/declined/reversed/refunded capture and pending/failed/canceled/completed refund states remain explicit. Current provider resource observations cannot be overwritten by a delayed historical notification. [Refund capture](https://developer.paypal.com/api/payments/v2/captures-refund), [webhook event relationships](https://developer.paypal.com/api/rest/webhooks/event-names/).
+- Verification uses the configured app/webhook registration and preserves original bytes. Verified events are durable before success acknowledgement, deduplicated and relationship-checked before processing. Registration or simulated postbacks are not delivery proof. [REST webhooks](https://developer.paypal.com/api/rest/webhooks/rest/).
+
+Contract fixtures in `tests/fixtures/paypal_official.json` cite the official PayPal OpenAPI specifications and preserve realistic resource shapes, including empty void responses, related resources and refund links. Passing those contracts does not establish sandbox account behavior.
+
+### Remaining gates and exact human actions
+
+The full requested genuine payment completion standard has **not** been met. An authorized operator must supply the missing private merchant ID, make this same revision run on both existing Render services without replacing the database, and use the actual deployed operator token. No such deployment/configuration action was taken here.
+
+Follow [`docs/DEMO.md`](docs/DEMO.md): prepare small/1,800 seconds, open the five protected profiles, wait for five real evaluations, negotiate actual $89/$85 terms, obtain four distinct human sandbox approvals, and leave Sam's fifth PayPal approval to the judge. Wait for five confirmed $85 captures and a processed signature-verified webhook. Refresh the receipt after a worker restart. Separately cancel an authorized below-minimum run before capture and confirm its provider void, then explicitly refund the completed captures and await confirmation. Run `scripts/check_connected.py SUCCESS_RUN_ID VOID_RUN_ID` against that same connected database and retain its genuine output. Unknown outcomes remain unresolved. No human approvals or payment evidence may be substituted by interest, fixture preparation or a replay.
+
+
+---
+
 ## Required assessment keys — October 7, 2026
 
 The user's 18:15 UTC log confirms the prior coverage correction was deployed but both assessment attempts still failed exact-name coverage. HTTP 200 proves connectivity, not a valid assessment. The exact failed response was not retained. Protected evidence locates that request in the already-FAILED large run; its earlier requests also failed and have no stored parsed constraints.

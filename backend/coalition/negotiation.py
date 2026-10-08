@@ -3,6 +3,7 @@
 import json
 import time
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from typing import Literal
 from uuid import uuid4
 
@@ -10,11 +11,12 @@ from fastapi import HTTPException
 from psycopg.types.json import Jsonb
 from pydantic import BaseModel, ConfigDict, Field
 
-from .catalog import PRODUCTS
+from .catalog import PRODUCTS, SHOP_PRODUCTS
 from .config import settings
 from .db import enqueue
 from .matching import eligible_for_quote, latest_request
 from .model import complete
+from .shopping import buyer_for_run, draft, lock_owner
 
 
 class Tier(BaseModel):
@@ -76,6 +78,15 @@ def validate_proposal(p, context, policy):
     if any(price > context["public_product"]["price_minor"] for price in prices):
         raise ValueError("Quote exceeds the merchant's listed price.")
     if (
+        p.currency != policy["currency"]
+        or not policy["delivery_days"][0]
+        <= context["public_product"]["delivery_days"]
+        <= policy["delivery_days"][1]
+    ):
+        raise ValueError("Quote currency or delivery is outside merchant authority.")
+    if p.requested_units > context.get("inventory_available", p.requested_units):
+        raise ValueError("Quote exceeds currently available inventory.")
+    if (
         p.close_at <= datetime.now(timezone.utc)
         or p.reservation_expiry <= p.close_at
         or p.delivery_by < p.close_at
@@ -84,36 +95,107 @@ def validate_proposal(p, context, policy):
     return p
 
 
+def available_capacity(policy, profile):
+    if profile != "small":
+        raise ValueError(
+            "These merchant policies permit five-buyer groups; use a small run."
+        )
+    return policy["capacity"]
+
+
+def matching_group(db, buyer, current_group, product_id, lock=False):
+    """Read-only availability and locked selection share the same eligibility rules."""
+    from .groups import lock_group
+
+    for candidate in db.execute(
+        "SELECT g.*,o.terms FROM groups g JOIN runs r ON r.id=g.run_id JOIN offers o ON o.id=g.offer_id WHERE r.mode=%s AND (r.id=%s OR (r.shopping AND %s)) AND NOT r.archived AND g.status='OPEN' AND NOT g.closing AND g.deadline>clock_timestamp() AND o.product_id=%s ORDER BY g.deadline",
+        (settings.mode, buyer["run_id"], not current_group["demo"], product_id),
+    ).fetchall():
+        g = lock_group(db, candidate["id"]) if lock else candidate
+        used = db.execute(
+            "SELECT count(*) AS n FROM commitments WHERE group_id=%s AND active",
+            (g["id"],),
+        ).fetchone()["n"]
+        own = db.execute(
+            "SELECT 1 FROM commitments c JOIN buyers b ON b.id=c.buyer_id WHERE c.group_id=%s AND c.active AND b.owner_id=%s",
+            (g["id"], buyer["owner_id"]),
+        ).fetchone()
+        if (
+            g["status"] == "OPEN"
+            and not g["closing"]
+            and g["deadline"] > datetime.now(timezone.utc)
+            and (used < candidate["terms"]["capacity"] or own)
+            and eligible_for_quote(db, buyer["id"], candidate["terms"])
+        ):
+            return {
+                **g,
+                "available_slots": max(
+                    1 if own else 0, candidate["terms"]["capacity"] - used
+                ),
+            }
+    return None
+
+
 def start(db, buyer, product_id):
     from .groups import lock_group
 
-    g = db.execute(
-        "SELECT * FROM groups WHERE run_id=%s", (buyer["run_id"],)
-    ).fetchone()
-    g = lock_group(db, g["id"])
-    if g["status"] != "DRAFT":
+    if product_id not in {p["id"] for p in SHOP_PRODUCTS}:
         raise HTTPException(
-            409,
-            "This run already has fixed terms. Prepare a new run for another agreement.",
+            409, "This product is no longer offered. Find another deal."
         )
+    lock_owner(db, buyer["owner_id"])
     req = latest_request(db, buyer["id"])
     if (
         not req
         or req["status"] != "completed"
         or not db.execute(
             "SELECT 1 FROM compatibility_assessments WHERE request_id=%s AND product_id=%s AND eligible",
-            (req["id"], product_id),
+            (req["id"] if req else None, product_id),
         ).fetchone()
     ):
         raise HTTPException(
             409, "Resolve all mandatory requirements before negotiation."
         )
+    # Serialize admission/matching for this product, then reserve stock at acceptance.
+    db.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,1))", (product_id,))
+    current_group = db.execute(
+        "SELECT g.*,r.profile FROM groups g JOIN runs r ON r.id=g.run_id WHERE g.run_id=%s",
+        (buyer["run_id"],),
+    ).fetchone()
+    if current_group["profile"] != "small":
+        raise HTTPException(
+            409, "These merchant policies permit five-buyer groups; use a small run."
+        )
+    matched = matching_group(db, buyer, current_group, product_id, lock=True)
+    if matched:
+        buyer_for_run(db, buyer, matched["run_id"])
+        return {"id": None, "status": "accepted", "run_id": matched["run_id"]}
     existing = db.execute(
-        "SELECT id FROM negotiations WHERE group_id=%s AND status IN ('queued','running')",
-        (g["id"],),
+        "SELECT n.*,g.run_id FROM negotiations n JOIN groups g ON g.id=n.group_id JOIN runs r ON r.id=g.run_id WHERE n.request_id=%s AND n.product_id=%s AND n.status IN ('queued','running') AND r.mode=%s LIMIT 1",
+        (req["id"], product_id, settings.mode),
     ).fetchone()
     if existing:
-        return {"id": existing["id"], "status": "queued"}
+        buyer_for_run(db, buyer, existing["run_id"])
+        return {
+            "id": existing["id"],
+            "status": existing["status"],
+            "run_id": existing["run_id"],
+        }
+    g = db.execute(
+        "SELECT * FROM groups WHERE run_id=%s", (buyer["run_id"],)
+    ).fetchone()
+    occupied = db.execute(
+        "SELECT group_id FROM negotiations WHERE group_id=%s AND status IN ('queued','running')",
+        (g["id"],),
+    ).fetchone()
+    if g["status"] != "DRAFT" or occupied:
+        buyer = draft(db, buyer)
+        g = db.execute(
+            "SELECT * FROM groups WHERE run_id=%s", (buyer["run_id"],)
+        ).fetchone()
+        if occupied and g["id"] == occupied.get("group_id"):
+            raise HTTPException(409, "This draft is negotiating. Wait for its result.")
+    g = lock_group(db, g["id"])
     nid = uuid4()
     db.execute(
         "INSERT INTO negotiations(id,group_id,request_id,product_id,model) VALUES(%s,%s,%s,%s,%s)",
@@ -131,14 +213,18 @@ def start(db, buyer, product_id):
         {"negotiation_id": str(nid), "group_id": str(g["id"])},
         f"negotiate:{nid}",
     )
-    return {"id": nid, "status": "queued"}
+    return {"id": nid, "status": "queued", "run_id": g["run_id"]}
 
 
-def accept(db, n, product, proposal):
+def accept(db, n, product, proposal, policy):
     from .groups import lock_group, wake
 
     if settings.mode == "connected" and not settings.paypal_merchant_id:
         raise ValueError("Configure the sandbox merchant before accepting a quote.")
+    owner = db.execute(
+        "SELECT owner_id FROM buyers WHERE id=%s", (n["buyer_id"],)
+    ).fetchone()["owner_id"]
+    lock_owner(db, owner)
     g = lock_group(db, n["group_id"])
     if g["status"] != "DRAFT" or datetime.now(timezone.utc) >= proposal.close_at:
         raise ValueError("Offer state or quote expiry changed during negotiation.")
@@ -150,6 +236,21 @@ def accept(db, n, product, proposal):
     ).fetchone()
     if not stock or stock["available"] < proposal.requested_units:
         raise ValueError("Insufficient inventory for this quote.")
+    # Agent dates are validated first. Only this server-owned funding timestamp
+    # moves, before publication/consent; delivery remains exactly as negotiated.
+    close_at = datetime.now(timezone.utc).replace(microsecond=0) + timedelta(
+        seconds=n["close_seconds"]
+    )
+    proposal = proposal.model_copy(
+        update={
+            "close_at": close_at,
+            "reservation_expiry": close_at + timedelta(minutes=30),
+        }
+    )
+    if proposal.delivery_by < close_at or proposal.requested_units > available_capacity(
+        policy, n["profile"]
+    ):
+        raise ValueError("Accepted funding window or capacity is invalid.")
     quote_id = "quote-" + str(uuid4())
     version = 1
     terms = {
@@ -161,8 +262,8 @@ def accept(db, n, product, proposal):
         "title": product["title"],
         "variant": proposal.variant_id,
         "quantity": 1,
-        "merchant": "Commonplace Audio (fictional)",
-        "merchant_id": "commonplace",
+        "merchant": policy["merchant"] + " (fictional)",
+        "merchant_id": policy["merchant_id"],
         "payee_id": settings.paypal_merchant_id,
         "currency": "USD",
         "total_minor": proposal.tier_schedule[0].total_each_cents,
@@ -215,7 +316,7 @@ def accept(db, n, product, proposal):
 
 def run_negotiation(db, nid):
     n = db.execute(
-        "SELECT n.*,r.profile,r.close_seconds,b.id AS buyer_id,q.constraints FROM negotiations n JOIN groups g ON g.id=n.group_id JOIN runs r ON r.id=g.run_id JOIN buyer_requests q ON q.id=n.request_id JOIN buyers b ON b.id=q.buyer_id WHERE n.id=%s",
+        "SELECT n.*,g.demo,g.run_id,r.profile,r.close_seconds,b.id AS buyer_id,q.constraints FROM negotiations n JOIN groups g ON g.id=n.group_id JOIN runs r ON r.id=g.run_id JOIN buyer_requests q ON q.id=n.request_id JOIN buyers b ON b.id=q.buyer_id WHERE n.id=%s",
         (nid,),
     ).fetchone()
     if n["status"] in ("accepted", "failed"):
@@ -240,8 +341,15 @@ def run_negotiation(db, nid):
     available = db.execute(
         "SELECT available FROM catalog_stock WHERE product_id=%s", (product["id"],)
     ).fetchone()["available"]
-    thresholds, capacity = ([3, 5], 5) if n["profile"] == "small" else ([25, 50], 60)
-    close_at = now + timedelta(seconds=n["close_seconds"])
+    if n["profile"] != "small":
+        db.execute(
+            "UPDATE negotiations SET status='failed',error='These merchant policies permit five-buyer groups; use a small run.' WHERE id=%s",
+            (nid,),
+        )
+        return
+    thresholds = policy["thresholds"]
+    capacity = available_capacity(policy, n["profile"])
+    close_at = now + timedelta(seconds=120 + n["close_seconds"])
     delivery = (now + timedelta(days=product["delivery_days"])).replace(
         hour=23, minute=59, second=59, microsecond=0
     )
@@ -249,7 +357,7 @@ def run_negotiation(db, nid):
         "proposal_id": str(nid),
         "version": 1,
         "product_id": product["id"],
-        "variant_id": "Graphite",
+        "variant_id": product["variants"][0],
         "currency": "USD",
         "minimum_commitments": thresholds[0],
         "requested_units": capacity,
@@ -264,8 +372,8 @@ def run_negotiation(db, nid):
     }
     demand = []
     for b in db.execute(
-        "SELECT id FROM buyers WHERE run_id=(SELECT run_id FROM groups WHERE id=%s)",
-        (n["group_id"],),
+        "SELECT DISTINCT ON (b.owner_id) b.id FROM buyers b JOIN runs r ON r.id=b.run_id WHERE r.mode=%s AND (%s::uuid IS NULL OR b.run_id=%s) ORDER BY b.owner_id,b.run_id",
+        (settings.mode, n["run_id"] if n["demo"] else None, n["run_id"]),
     ).fetchall():
         r = latest_request(db, b["id"])
         if r and r["status"] == "completed":
@@ -273,12 +381,17 @@ def run_negotiation(db, nid):
                 "SELECT eligible FROM compatibility_assessments WHERE request_id=%s AND product_id=%s",
                 (r["id"], product["id"]),
             ).fetchone()
-            if assessment and assessment["eligible"]:
+            if (
+                assessment
+                and assessment["eligible"]
+                and r["constraints"]["latest_arrival"] >= delivery.date().isoformat()
+            ):
                 demand.append(r["constraints"])
     db.commit()
     clock = time.monotonic()
     merchant_quote = None
     last_bid = None
+    feedback = {}
     tokens = 0
     try:
         for i in range(6):
@@ -292,19 +405,34 @@ def run_negotiation(db, nid):
                 "thresholds": thresholds,
                 "public_product": product,
                 "compatible_request_count": len(demand),
+                "inventory_available": available,
                 "last_merchant_quote": merchant_quote.model_dump(mode="json")
                 if merchant_quote
                 else None,
             }
             payload = {
                 **context,
+                "validation_feedback": feedback.get(role),
                 **(
-                    {"constraints": n["constraints"], "candidate_constraints": demand}
+                    {
+                        "constraints": n["constraints"],
+                        "buyer_turn": i // 2 + 1,
+                        "remaining_buyer_turns": 2 - i // 2,
+                        "last_buyer_bid": last_bid,
+                        "compatible_demand": {
+                            "count": len(demand),
+                            "budgets_minor": [c["max_total_minor"] for c in demand],
+                        },
+                    }
                     if role == "buyer"
                     else {
                         "merchant_policy": policy,
                         "inventory_capacity": capacity,
                         "inventory_available": available,
+                        "aggregate_demand": {
+                            "count": len(demand),
+                            "budgets_minor": [c["max_total_minor"] for c in demand],
+                        },
                         "last_buyer_bid": last_bid if i else None,
                     }
                 ),
@@ -318,7 +446,13 @@ def run_negotiation(db, nid):
                         "tier_schedule": [
                             {
                                 "minimum_buyers": thresholds[j],
-                                "total_each_cents": [8900, 8500][j],
+                                "total_each_cents": max(
+                                    policy["ranges"][j][0], policy["floors"][j]
+                                )
+                                if len(demand) >= thresholds[0]
+                                or n["constraints"]["max_total_minor"]
+                                < policy["base"][0]
+                                else policy["base"][j],
                             }
                             for j in range(2)
                         ],
@@ -333,9 +467,12 @@ def run_negotiation(db, nid):
                 else:
                     reply, used = complete(
                         Reply,
-                        "You are the "
-                        + role
-                        + " agent. Seek 8900/8500 cents quantity tiers when feasible. Buyer may accept the last merchant quote, propose a bid, or decline. For buyer acceptance return action accept and proposal null. Merchant must counter an unacceptable bid rather than copy it: tier i must be within merchant_policy.ranges[i], inclusive, and at or above floors[i]. Prefer the requested target if allowed. Every NEW proposal must copy proposal_id, version and dates exactly from CURRENT template, even when responding to a previous bid. Only merchant quotes can be executed.",
+                        (
+                            "You are the buyer agent. Negotiate using your constraints, public prices and compatible demand. Template prices are examples, not required bids. Every proposed tier must be <= constraints.max_total_minor and within public_product.public_policy.ranges for that tier. Seek an affordable quantity discount when compatible demand supports it. Accept a suitable last_merchant_quote with action accept and proposal null, or counter/decline. Compare its TIER PRICES with last_buyer_bid: if they match and satisfy your requirements, accept instead of repeating the same prices. Proposal versions differ by round and do NOT prevent agreement. On your last turn, decide whether the existing merchant quote is acceptable or decline; no later buyer turn can accept another counter. Never accept an unaffordable maximum because a later tier is cheaper."
+                            if role == "buyer"
+                            else "You are the merchant agent. Return action propose with a complete structured quote, or decline with proposal null. Never return action accept: accepting a buyer bid still requires emitting the structured merchant quote. Each tier price must be within your own merchant_policy ranges and at or above its private floor. Counter bids below that authority or decline. Consider aggregated compatible demand when choosing explicitly permitted quantity concessions."
+                        )
+                        + " No universal target price. Interest is not funding. Do not change product, currency, quantity, variant or delivery. Every NEW proposal must copy proposal_id, version, dates and all other non-price fields exactly from the CURRENT template; only tier prices and concise explanation may change. Only validated merchant quotes can execute.",
                         payload,
                         timeout=min(40, remaining),
                         max_tokens=1000,
@@ -343,6 +480,23 @@ def run_negotiation(db, nid):
                         remaining_tokens=24000 - tokens,
                     )
                 tokens += used
+                if (
+                    role == "buyer"
+                    and reply.proposal
+                    and any(
+                        tier.total_each_cents > n["constraints"]["max_total_minor"]
+                        for tier in reply.proposal.tier_schedule
+                    )
+                ):
+                    raise ValueError("Buyer bid exceeds the supplied budget.")
+                if (
+                    role == "buyer"
+                    and reply.action == "accept"
+                    and merchant_quote
+                    and merchant_quote.tier_schedule[0].total_each_cents
+                    > n["constraints"]["max_total_minor"]
+                ):
+                    raise ValueError("Buyer acceptance exceeds the supplied budget.")
                 if role == "merchant" and reply.action != "decline":
                     if reply.action != "propose" or not reply.proposal:
                         raise ValueError("Merchant must issue a structured quote.")
@@ -357,7 +511,10 @@ def run_negotiation(db, nid):
                     raise ValueError("There is no validated merchant quote to accept.")
             except Exception as exc:
                 tokens += 1000
-                private_error = str(exc)[:400]
+                private_error = type(exc).__name__
+                feedback[role] = (
+                    "Correct the invalid response: match the schema and current template. Buyer bids and acceptance must respect max_total_minor; merchant proposals must respect its policy."
+                )
             summary = (
                 ("Buyer agent" if role == "buyer" else "Merchant agent")
                 + ": "
@@ -370,7 +527,7 @@ def run_negotiation(db, nid):
                     if reply.action == "accept"
                     else "Proposed "
                     + " / ".join(
-                        f"${t.total_each_cents / 100:.2f} at {t.minimum_buyers} buyers"
+                        f"${Decimal(t.total_each_cents) / 100:.2f} at {t.minimum_buyers} buyers"
                         for t in reply.proposal.tier_schedule
                     )
                     + "."
@@ -382,7 +539,17 @@ def run_negotiation(db, nid):
                     nid,
                     i + 1,
                     role,
-                    Jsonb(reply.model_dump(mode="json")) if reply else None,
+                    Jsonb(
+                        reply.model_dump(mode="json")
+                        | {
+                            "proposal": reply.proposal.model_dump(mode="json")
+                            | {"explanation": "Structured quantity offer."}
+                            if reply.proposal
+                            else None
+                        }
+                    )
+                    if reply
+                    else None,
                     not bool(private_error),
                     private_error,
                     summary,
@@ -394,6 +561,12 @@ def run_negotiation(db, nid):
             db.commit()
             if private_error:
                 continue
+            current = latest_request(db, n["buyer_id"])
+            db.commit()
+            if not current or current["id"] != n["request_id"]:
+                raise ValueError(
+                    "Buyer requirements changed; negotiate the updated request."
+                )
             if reply.action == "decline":
                 raise ValueError("Agent declined the proposed agreement.")
             if role == "buyer" and reply.action == "accept":
@@ -401,7 +574,7 @@ def run_negotiation(db, nid):
                     raise ValueError("No validated merchant quote exists to accept.")
                 if time.monotonic() - clock >= 120 or tokens > 24000:
                     raise ValueError("Negotiation budget exhausted.")
-                accept(db, n, product, merchant_quote)
+                accept(db, n, product, merchant_quote, policy)
                 return
             if role == "merchant":
                 merchant_quote = reply.proposal

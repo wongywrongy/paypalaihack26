@@ -75,17 +75,9 @@ test("buyer reviews exact terms, approves fixture, refreshes and sees completed 
     if (path === "/api/config")
       body = {
         mode: "fixture",
-        default_run_id: "test-run",
         paypal_client_id: null,
         paypal_configured: false,
         llm_configured: false,
-      };
-    else if (path === "/api/opportunity")
-      body = {
-        ...status(),
-        available:
-          JSON.parse(route.request().postData() || "{}").selected_variant ===
-          "Graphite",
       };
     else if (path === "/api/status") body = status();
     else if (path === "/api/commitments") {
@@ -97,11 +89,10 @@ test("buyer reviews exact terms, approves fixture, refreshes and sees completed 
     }
     await route.fulfill({ json: body });
   });
-  await page.goto("/shop");
+  await page.goto("/checkout?run=test-run");
   await expect(
     page.getByRole("heading", { name: catalog[0].title, exact: true }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Join for $65" }).click();
   const panel = page.getByRole("complementary", {
     name: "Coalition group purchase",
   });
@@ -128,33 +119,14 @@ test("buyer reviews exact terms, approves fixture, refreshes and sees completed 
   await expect(
     page.getByRole("heading", { name: "Your group made it." }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Return to merchant" }).click();
-  await page.getByRole("button", { name: "Cloud", exact: true }).click();
-  await expect(
-    page.getByText("No exact group offer for this selection."),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Desk & workspace", exact: true })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "Form Task Lamp", exact: true }),
-  ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Everyday carry", exact: true })
-    .click();
-  await expect(
-    page.getByRole("heading", {
-      name: "Rove Everyday Bottle · 750 ml",
-      exact: true,
-    }),
-  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Return to storefront" })).toHaveAttribute("href", /\/\?run=test-run/);
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > innerWidth,
   );
   expect(overflow).toBe(false);
 });
 
-test("connected payment demo shows an AI placeholder and keeps checkout available", async ({ page }) => {
+test("historical checkout needs no retired assistant; operator prepares only five-person headphones", async ({ page }) => {
   let assistantRequests = 0;
   const group = {
     id: "test-group", run_id: "test-run", mode: "connected", status: "OPEN",
@@ -171,7 +143,6 @@ test("connected payment demo shows an AI placeholder and keeps checkout availabl
     let body: unknown = {};
     if (path === "/api/config") body = { mode: "connected", paypal_configured: true, paypal_client_id: "test-client", llm_configured: false };
     else if (path === "/api/session") body = { run_id: "test-run" };
-    else if (path === "/api/opportunity") body = { ...status, available: true };
     else if (path === "/api/status") body = status;
     else if (path === "/api/assistant") assistantRequests++;
     else if (path === "/api/operator/runs") body = route.request().method() === "GET" ? [] : {
@@ -184,10 +155,9 @@ test("connected payment demo shows an AI placeholder and keeps checkout availabl
     };
     await route.fulfill({ json: body });
   });
-  await page.goto("/shop");
-  await page.getByRole("link", { name: "Join for $65" }).click();
+  await page.goto("/checkout?run=test-run");
   const panel = page.getByRole("complementary", { name: "Coalition group purchase" });
-  await expect(page.getByText("AI recommendations coming soon", { exact: true })).toBeVisible();
+  await expect(page.getByText("AI recommendations coming soon", { exact: true })).toHaveCount(0);
   await expect(panel.getByRole("textbox")).toHaveCount(0);
   await expect(panel.getByRole("button", { name: "Evaluate this offer" })).toHaveCount(0);
   await expect(panel.getByText("Live recommendation", { exact: true })).toHaveCount(0);
@@ -196,7 +166,7 @@ test("connected payment demo shows an AI placeholder and keeps checkout availabl
   await expect(panel.getByRole("button", { name: "Continue with PayPal" })).toBeEnabled();
   await page.screenshot({ path: `/tmp/coalition-placeholder-${test.info().project.name}.png` });
   await page.reload();
-  await expect(page.getByText("AI recommendations coming soon", { exact: true })).toBeVisible();
+  await expect(page.getByText("AI recommendations coming soon", { exact: true })).toHaveCount(0);
   expect(assistantRequests).toBe(0);
 
   await page.goto("/merchant");
@@ -209,5 +179,6 @@ test("connected payment demo shows an AI placeholder and keeps checkout availabl
   await expect(page.getByText("Not enabled", { exact: true })).toBeVisible();
   await expect(page.getByText(/Sam’s live recommendation/)).toHaveCount(0);
   await expect(page.getByText("Historical recommendation")).toHaveCount(0);
+  await expect(page.getByRole("option", { name: /Large illustrative|Preserved calculator/ })).toHaveCount(0);
   expect(assistantRequests).toBe(0);
 });

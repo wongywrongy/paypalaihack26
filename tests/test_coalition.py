@@ -18,7 +18,6 @@ from coalition.assistant import Decision, concerns, decide
 from coalition.catalog import TERMS, ProductContext, validate_context
 from coalition.config import settings
 from coalition.db import connect, init_db, seed
-from coalition.demo import create_run
 from coalition.groups import (
     group_plan,
     join,
@@ -38,6 +37,7 @@ from coalition.payments import (
     validate_order,
 )
 from fastapi import HTTPException
+from legacy_fixtures import create_run
 
 CONTEXT = ProductContext(
     product_id="arc-991",
@@ -70,7 +70,7 @@ def row(**changes):
 class Invariants(unittest.TestCase):
     def test_minor_units_and_untrusted_context(self):
         self.assertTrue(amount_matches({"currency_code": "USD", "value": "65.00"}))
-        for value in ("80.00", "65.001", "NaN", "invalid"):
+        for value in ("80.00", "65.001", "NaN", "invalid", 65.0):
             self.assertFalse(amount_matches({"currency_code": "USD", "value": value}))
         self.assertFalse(amount_matches({"currency_code": "EUR", "value": "65.00"}))
         for field, value in [
@@ -333,7 +333,9 @@ class PostgreSQLChecks(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         import psycopg
+        from coalition.db import engine
 
+        engine().dispose()
         object.__setattr__(settings, "database_url", cls.original_url)
         with psycopg.connect(cls.test_url, autocommit=True) as db:
             db.execute("DROP SCHEMA " + cls.schema + " CASCADE")

@@ -57,43 +57,56 @@ def init_db():
 
 
 def seed():
-    from .catalog import PRODUCTS, TERMS
+    from .catalog import PRODUCTS
 
     with connect() as db:
+        policies = {
+            "commuter-v2": {"floors": [8900, 8500], "inventory": 60},
+            "value-v2": {"floors": [6700, 6300], "inventory": 20},
+            "studio-v2": {"floors": [10800, 10000], "inventory": 24},
+            "commuter-real-v1": {"floors": [8900, 8500], "inventory": 60},
+            "value-real-v1": {"floors": [6700, 6300], "inventory": 20},
+            "studio-real-v1": {"floors": [28500, 26500], "inventory": 24},
+        }
         for product in PRODUCTS:
             db.execute(
-                "INSERT INTO products VALUES(%s,%s) ON CONFLICT DO NOTHING",
+                "INSERT INTO products VALUES(%s,%s) ON CONFLICT(id) DO UPDATE SET data=EXCLUDED.data",
                 (product["id"], Jsonb(product)),
             )
             if product["category"] == "Headphones":
                 db.execute(
-                    "INSERT INTO catalog_stock VALUES(%s,60) ON CONFLICT DO NOTHING",
-                    (product["id"],),
+                    "INSERT INTO catalog_stock VALUES(%s,%s) ON CONFLICT DO NOTHING",
+                    (
+                        product["id"],
+                        policies[product["policy_id"]]["inventory"],
+                    ),
                 )
-        db.execute(
-            "INSERT INTO merchant_policies VALUES('headphones-v1',1,%s) ON CONFLICT DO NOTHING",
-            (
-                Jsonb(
+        policies = {
+            p["policy_id"]: {
+                **p["public_policy"],
+                **policies[p["policy_id"]],
+                "variants": sorted(
                     {
-                        "base": [9200, 8800],
-                        "ranges": [[8900, 9200], [8500, 8800]],
-                        "floors": [8900, 8500],
-                        "variants": ["Graphite"],
-                        "currency": "USD",
-                        "delivery_concessions": False,
+                        v
+                        for other in PRODUCTS
+                        if other.get("policy_id") == p["policy_id"]
+                        for v in other["variants"]
                     }
                 ),
-            ),
-        )
-        db.execute(
-            "INSERT INTO offers(id,product_id,terms,price_minor,currency,minimum,capacity,inventory) VALUES(%s,%s,%s,6500,'USD',5,5,5) ON CONFLICT DO NOTHING",
-            (TERMS["offer_id"], TERMS["product_id"], Jsonb(TERMS)),
-        )
+            }
+            for p in PRODUCTS
+            if p["category"] == "Headphones"
+        }
+        for policy_id, policy in policies.items():
+            db.execute(
+                "INSERT INTO merchant_policies VALUES(%s,2,%s) ON CONFLICT DO NOTHING",
+                (policy_id, Jsonb(policy)),
+            )
 
 
 if __name__ == "__main__":
     init_db()
     seed()
     print(
-        "Migrations applied; six headphone offers and three legacy products seeded. Prepare a run in operator controls."
+        "Migrations applied; headphone catalog seeded. Open the storefront or operator controls."
     )

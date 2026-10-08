@@ -7,6 +7,11 @@ from pydantic import BaseModel, ConfigDict, Field
 PRODUCTS = json.loads(
     (Path(__file__).resolve().parents[2] / "catalog.json").read_text()
 )
+SHOP_PRODUCTS = [
+    p
+    for p in PRODUCTS
+    if p["category"] == "Headphones" and p.get("catalog_active", True)
+]
 TERMS = {
     "offer_id": "campus-calculator-v1",
     "product_id": "arc-991",

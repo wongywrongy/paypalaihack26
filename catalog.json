@@ -25,7 +25,8 @@
       "Power": "Solar + replaceable battery",
       "In the box": "Calculator, slide cover, quick guide"
     },
-    "delivery_days": 7
+    "delivery_days": 7,
+    "catalog_active": false
   },
   {
     "id": "form-lamp",
@@ -53,7 +54,8 @@
       "Material": "Powder-coated aluminum",
       "In the box": "Lamp, USB-C cable"
     },
-    "delivery_days": 4
+    "delivery_days": 4,
+    "catalog_active": false
   },
   {
     "id": "rove-bottle",
@@ -81,7 +83,8 @@
       "Material": "18/8 stainless steel",
       "Care": "Hand wash"
     },
-    "delivery_days": 5
+    "delivery_days": 5,
+    "catalog_active": false
   },
   {
     "id": "cabin-one",
@@ -103,15 +106,47 @@
       "Connection": "Bluetooth audio"
     },
     "delivery_days": 7,
-    "source_version": 1,
+    "source_version": 2,
     "evidence": {
       "anc": true,
       "bluetooth_audio": true,
       "iphone_12": true,
       "flight_effectiveness": null
     },
-    "policy_id": "headphones-v1",
-    "image_position": "0% 0%"
+    "policy_id": "commuter-v2",
+    "image_position": "0% 0%",
+    "public_policy": {
+      "base": [
+        9200,
+        8800
+      ],
+      "ranges": [
+        [
+          8900,
+          9200
+        ],
+        [
+          8500,
+          8800
+        ]
+      ],
+      "delivery_days": [
+        6,
+        7
+      ],
+      "merchant": "Commonplace Audio",
+      "merchant_id": "commonplace",
+      "currency": "USD",
+      "concessions": [
+        "quantity discount"
+      ],
+      "thresholds": [
+        3,
+        5
+      ],
+      "capacity": 5
+    },
+    "catalog_active": false
   },
   {
     "id": "cabin-pro",
@@ -133,15 +168,47 @@
       "Connection": "Bluetooth audio"
     },
     "delivery_days": 7,
-    "source_version": 1,
+    "source_version": 2,
     "evidence": {
       "anc": true,
       "bluetooth_audio": true,
       "iphone_12": true,
       "flight_effectiveness": true
     },
-    "policy_id": "headphones-v1",
-    "image_position": "50% 0%"
+    "policy_id": "commuter-v2",
+    "image_position": "50% 0%",
+    "public_policy": {
+      "base": [
+        9200,
+        8800
+      ],
+      "ranges": [
+        [
+          8900,
+          9200
+        ],
+        [
+          8500,
+          8800
+        ]
+      ],
+      "delivery_days": [
+        6,
+        7
+      ],
+      "merchant": "Commonplace Audio",
+      "merchant_id": "commonplace",
+      "currency": "USD",
+      "concessions": [
+        "quantity discount"
+      ],
+      "thresholds": [
+        3,
+        5
+      ],
+      "capacity": 5
+    },
+    "catalog_active": false
   },
   {
     "id": "quiet-wire",
@@ -163,15 +230,47 @@
       "Connection": "Lightning"
     },
     "delivery_days": 5,
-    "source_version": 1,
+    "source_version": 2,
     "evidence": {
       "anc": true,
       "bluetooth_audio": false,
       "iphone_12": true,
       "flight_effectiveness": null
     },
-    "policy_id": "headphones-v1",
-    "image_position": "100% 0%"
+    "policy_id": "value-v2",
+    "image_position": "100% 0%",
+    "public_policy": {
+      "base": [
+        7500,
+        6900
+      ],
+      "ranges": [
+        [
+          6500,
+          7500
+        ],
+        [
+          6100,
+          6900
+        ]
+      ],
+      "delivery_days": [
+        4,
+        5
+      ],
+      "merchant": "Everyday Audio",
+      "merchant_id": "everyday",
+      "currency": "USD",
+      "concessions": [
+        "quantity discount"
+      ],
+      "thresholds": [
+        3,
+        5
+      ],
+      "capacity": 5
+    },
+    "catalog_active": false
   },
   {
     "id": "air-light",
@@ -193,15 +292,47 @@
       "Connection": "Bluetooth audio"
     },
     "delivery_days": 4,
-    "source_version": 1,
+    "source_version": 2,
     "evidence": {
       "anc": false,
       "bluetooth_audio": true,
       "iphone_12": true,
       "flight_effectiveness": null
     },
-    "policy_id": "headphones-v1",
-    "image_position": "0% 100%"
+    "policy_id": "value-v2",
+    "image_position": "0% 100%",
+    "public_policy": {
+      "base": [
+        7500,
+        6900
+      ],
+      "ranges": [
+        [
+          6500,
+          7500
+        ],
+        [
+          6100,
+          6900
+        ]
+      ],
+      "delivery_days": [
+        4,
+        5
+      ],
+      "merchant": "Everyday Audio",
+      "merchant_id": "everyday",
+      "currency": "USD",
+      "concessions": [
+        "quantity discount"
+      ],
+      "thresholds": [
+        3,
+        5
+      ],
+      "capacity": 5
+    },
+    "catalog_active": false
   },
   {
     "id": "travel-studio",
@@ -223,15 +354,47 @@
       "Connection": "Bluetooth audio"
     },
     "delivery_days": 12,
-    "source_version": 1,
+    "source_version": 2,
     "evidence": {
       "anc": true,
       "bluetooth_audio": true,
       "iphone_12": true,
       "flight_effectiveness": true
     },
-    "policy_id": "headphones-v1",
-    "image_position": "50% 100%"
+    "policy_id": "studio-v2",
+    "image_position": "50% 100%",
+    "public_policy": {
+      "base": [
+        12000,
+        11000
+      ],
+      "ranges": [
+        [
+          10500,
+          12000
+        ],
+        [
+          9800,
+          11000
+        ]
+      ],
+      "delivery_days": [
+        12,
+        12
+      ],
+      "merchant": "Studio Collective",
+      "merchant_id": "studio",
+      "currency": "USD",
+      "concessions": [
+        "quantity discount"
+      ],
+      "thresholds": [
+        3,
+        5
+      ],
+      "capacity": 5
+    },
+    "catalog_active": false
   },
   {
     "id": "mystery-sound",
@@ -253,14 +416,514 @@
       "Connection": "Unknown"
     },
     "delivery_days": 6,
-    "source_version": 1,
+    "source_version": 2,
     "evidence": {
       "anc": null,
       "bluetooth_audio": null,
       "iphone_12": null,
       "flight_effectiveness": null
     },
-    "policy_id": "headphones-v1",
-    "image_position": "100% 100%"
+    "policy_id": "commuter-v2",
+    "image_position": "100% 100%",
+    "public_policy": {
+      "base": [
+        9200,
+        8800
+      ],
+      "ranges": [
+        [
+          8900,
+          9200
+        ],
+        [
+          8500,
+          8800
+        ]
+      ],
+      "delivery_days": [
+        6,
+        7
+      ],
+      "merchant": "Commonplace Audio",
+      "merchant_id": "commonplace",
+      "currency": "USD",
+      "concessions": [
+        "quantity discount"
+      ],
+      "thresholds": [
+        3,
+        5
+      ],
+      "capacity": 5
+    },
+    "catalog_active": false
+  },
+  {
+    "id": "sony-wh-ch720n",
+    "title": "Sony WH-CH720N",
+    "brand": "Sony",
+    "price_minor": 14900,
+    "currency": "USD",
+    "variants": [
+      "Black"
+    ],
+    "category": "Headphones",
+    "image": "/assets/sony-wh-ch720n.png",
+    "description": "Lightweight over-ear headphones with active noise cancellation, Bluetooth audio and multipoint pairing.",
+    "features": [
+      "Active noise cancellation",
+      "Bluetooth audio",
+      "Up to 35 hours with noise cancellation"
+    ],
+    "specs": {
+      "Model": "Sony WH-CH720N",
+      "ANC": "Yes",
+      "Connection": "Bluetooth audio",
+      "Battery": "Up to 35 hours with noise cancellation"
+    },
+    "delivery_days": 7,
+    "source_version": 1,
+    "evidence": {
+      "anc": true,
+      "bluetooth_audio": true,
+      "iphone_12": true,
+      "flight_effectiveness": null
+    },
+    "policy_id": "commuter-real-v1",
+    "public_policy": {
+      "base": [
+        9200,
+        8800
+      ],
+      "ranges": [
+        [
+          8900,
+          9200
+        ],
+        [
+          8500,
+          8800
+        ]
+      ],
+      "delivery_days": [
+        6,
+        7
+      ],
+      "merchant": "Commonplace Audio",
+      "merchant_id": "commonplace",
+      "currency": "USD",
+      "concessions": [
+        "quantity discount"
+      ],
+      "thresholds": [
+        3,
+        5
+      ],
+      "capacity": 5
+    },
+    "catalog_active": true,
+    "source_url": "https://www.sony.co.uk/store/product/whch720nb.ce7/WH-CH720N-Wireless-Noise-Cancelling-Headphones",
+    "photo_type": "product",
+    "evidence_sources": {
+      "anc": "https://www.sony.co.uk/store/product/whch720nb.ce7/WH-CH720N-Wireless-Noise-Cancelling-Headphones",
+      "bluetooth_audio": "https://www.sony.co.uk/store/product/whch720nb.ce7/WH-CH720N-Wireless-Noise-Cancelling-Headphones",
+      "iphone_12": "https://support.apple.com/guide/iphone/bluetooth-accessories-iph3c50f191/ios",
+      "flight_effectiveness": null
+    },
+    "evidence_notes": {
+      "iphone_12": "Basic Bluetooth audio only; advanced model-specific features are not assumed.",
+      "flight_effectiveness": "No quantified aircraft-cabin performance evidence is supplied."
+    },
+    "price_disclosure": "Simulated USD list price; not a current manufacturer or retailer offer."
+  },
+  {
+    "id": "bose-quietcomfort",
+    "title": "Bose QuietComfort",
+    "brand": "Bose",
+    "price_minor": 34900,
+    "currency": "USD",
+    "variants": [
+      "Black"
+    ],
+    "category": "Headphones",
+    "image": "/assets/bose-quietcomfort.png",
+    "description": "Comfortable over-ear headphones with active noise cancellation, Quiet and Aware modes, and adjustable EQ.",
+    "features": [
+      "Active noise cancellation",
+      "Bluetooth audio",
+      "Up to 24 hours"
+    ],
+    "specs": {
+      "Model": "Bose QuietComfort",
+      "ANC": "Yes",
+      "Connection": "Bluetooth audio",
+      "Battery": "Up to 24 hours"
+    },
+    "delivery_days": 7,
+    "source_version": 1,
+    "evidence": {
+      "anc": true,
+      "bluetooth_audio": true,
+      "iphone_12": true,
+      "flight_effectiveness": null
+    },
+    "policy_id": "commuter-real-v1",
+    "public_policy": {
+      "base": [
+        9200,
+        8800
+      ],
+      "ranges": [
+        [
+          8900,
+          9200
+        ],
+        [
+          8500,
+          8800
+        ]
+      ],
+      "delivery_days": [
+        6,
+        7
+      ],
+      "merchant": "Commonplace Audio",
+      "merchant_id": "commonplace",
+      "currency": "USD",
+      "concessions": [
+        "quantity discount"
+      ],
+      "thresholds": [
+        3,
+        5
+      ],
+      "capacity": 5
+    },
+    "catalog_active": true,
+    "source_url": "https://www.bose.com/p/headphones/quietcomfort-acoustic-noise-cancelling-headphones/QC-HEADPHONEARN.html?dwvar_QC-HEADPHONEARN_color=BLACK",
+    "photo_type": "product",
+    "evidence_sources": {
+      "anc": "https://www.bose.com/p/headphones/quietcomfort-acoustic-noise-cancelling-headphones/QC-HEADPHONEARN.html?dwvar_QC-HEADPHONEARN_color=BLACK",
+      "bluetooth_audio": "https://www.bose.com/p/headphones/quietcomfort-acoustic-noise-cancelling-headphones/QC-HEADPHONEARN.html?dwvar_QC-HEADPHONEARN_color=BLACK",
+      "iphone_12": "https://support.apple.com/guide/iphone/bluetooth-accessories-iph3c50f191/ios",
+      "flight_effectiveness": null
+    },
+    "evidence_notes": {
+      "iphone_12": "Basic Bluetooth audio only; advanced model-specific features are not assumed.",
+      "flight_effectiveness": "No quantified aircraft-cabin performance evidence is supplied."
+    },
+    "price_disclosure": "Simulated USD list price; not a current manufacturer or retailer offer."
+  },
+  {
+    "id": "sony-wh-ch520",
+    "title": "Sony WH-CH520",
+    "brand": "Sony",
+    "price_minor": 7900,
+    "currency": "USD",
+    "variants": [
+      "Black"
+    ],
+    "category": "Headphones",
+    "image": "/assets/sony-wh-ch520.png",
+    "description": "Lightweight on-ear Bluetooth headphones with multipoint pairing. This model does not have active noise cancellation.",
+    "features": [
+      "No active noise cancellation",
+      "Bluetooth audio",
+      "Up to 50 hours"
+    ],
+    "specs": {
+      "Model": "Sony WH-CH520",
+      "ANC": "No",
+      "Connection": "Bluetooth audio",
+      "Battery": "Up to 50 hours"
+    },
+    "delivery_days": 4,
+    "source_version": 1,
+    "evidence": {
+      "anc": false,
+      "bluetooth_audio": true,
+      "iphone_12": true,
+      "flight_effectiveness": null
+    },
+    "policy_id": "value-real-v1",
+    "public_policy": {
+      "base": [
+        7500,
+        6900
+      ],
+      "ranges": [
+        [
+          6500,
+          7500
+        ],
+        [
+          6100,
+          6900
+        ]
+      ],
+      "delivery_days": [
+        4,
+        5
+      ],
+      "merchant": "Everyday Audio",
+      "merchant_id": "everyday",
+      "currency": "USD",
+      "concessions": [
+        "quantity discount"
+      ],
+      "thresholds": [
+        3,
+        5
+      ],
+      "capacity": 5
+    },
+    "catalog_active": true,
+    "source_url": "https://electronics.sony.com/audio/headphones/headband/p/whch520-w",
+    "photo_type": "product",
+    "evidence_sources": {
+      "anc": "https://electronics.sony.com/audio/headphones/headband/p/whch520-w",
+      "bluetooth_audio": "https://electronics.sony.com/audio/headphones/headband/p/whch520-w",
+      "iphone_12": "https://support.apple.com/guide/iphone/bluetooth-accessories-iph3c50f191/ios",
+      "flight_effectiveness": null
+    },
+    "evidence_notes": {
+      "iphone_12": "Basic Bluetooth audio only; advanced model-specific features are not assumed.",
+      "flight_effectiveness": "No quantified aircraft-cabin performance evidence is supplied."
+    },
+    "price_disclosure": "Simulated USD list price; not a current manufacturer or retailer offer."
+  },
+  {
+    "id": "sony-wh-1000xm5",
+    "title": "Sony WH-1000XM5",
+    "brand": "Sony",
+    "price_minor": 39900,
+    "currency": "USD",
+    "variants": [
+      "Black"
+    ],
+    "category": "Headphones",
+    "image": "/assets/sony-wh-1000xm5.png",
+    "description": "Over-ear noise-canceling headphones with Auto NC Optimizer, Bluetooth multipoint and a carrying case.",
+    "features": [
+      "Active noise cancellation",
+      "Bluetooth audio",
+      "Up to 30 hours with noise cancellation"
+    ],
+    "specs": {
+      "Model": "Sony WH-1000XM5",
+      "ANC": "Yes",
+      "Connection": "Bluetooth audio",
+      "Battery": "Up to 30 hours with noise cancellation"
+    },
+    "delivery_days": 12,
+    "source_version": 1,
+    "evidence": {
+      "anc": true,
+      "bluetooth_audio": true,
+      "iphone_12": true,
+      "flight_effectiveness": null
+    },
+    "policy_id": "studio-real-v1",
+    "public_policy": {
+      "base": [
+        29900,
+        27900
+      ],
+      "ranges": [
+        [
+          28500,
+          31000
+        ],
+        [
+          26500,
+          29000
+        ]
+      ],
+      "delivery_days": [
+        12,
+        12
+      ],
+      "merchant": "Studio Collective",
+      "merchant_id": "studio",
+      "currency": "USD",
+      "concessions": [
+        "quantity discount"
+      ],
+      "thresholds": [
+        3,
+        5
+      ],
+      "capacity": 5
+    },
+    "catalog_active": true,
+    "source_url": "https://www.sony.co.uk/electronics/headband-headphones/wh-1000xm5",
+    "photo_type": "product",
+    "evidence_sources": {
+      "anc": "https://www.sony.co.uk/electronics/headband-headphones/wh-1000xm5",
+      "bluetooth_audio": "https://www.sony.co.uk/electronics/headband-headphones/wh-1000xm5",
+      "iphone_12": "https://support.apple.com/guide/iphone/bluetooth-accessories-iph3c50f191/ios",
+      "flight_effectiveness": null
+    },
+    "evidence_notes": {
+      "iphone_12": "Basic Bluetooth audio only; advanced model-specific features are not assumed.",
+      "flight_effectiveness": "No quantified aircraft-cabin performance evidence is supplied."
+    },
+    "price_disclosure": "Simulated USD list price; not a current manufacturer or retailer offer."
+  },
+  {
+    "id": "apple-airpods-max-usbc",
+    "title": "Apple AirPods Max (USB-C)",
+    "brand": "Apple",
+    "price_minor": 54900,
+    "currency": "USD",
+    "variants": [
+      "Starlight"
+    ],
+    "category": "Headphones",
+    "image": "/assets/apple-airpods-max-usbc.png",
+    "description": "The 2024 USB-C model: active noise cancellation, Transparency mode, Digital Crown controls and Bluetooth audio.",
+    "features": [
+      "Active noise cancellation",
+      "Bluetooth audio",
+      "Up to 20 hours with noise cancellation"
+    ],
+    "specs": {
+      "Model": "Apple AirPods Max (USB-C)",
+      "ANC": "Yes",
+      "Connection": "Bluetooth audio",
+      "Battery": "Up to 20 hours with noise cancellation"
+    },
+    "delivery_days": 12,
+    "source_version": 1,
+    "evidence": {
+      "anc": true,
+      "bluetooth_audio": true,
+      "iphone_12": true,
+      "flight_effectiveness": null
+    },
+    "policy_id": "studio-real-v1",
+    "public_policy": {
+      "base": [
+        29900,
+        27900
+      ],
+      "ranges": [
+        [
+          28500,
+          31000
+        ],
+        [
+          26500,
+          29000
+        ]
+      ],
+      "delivery_days": [
+        12,
+        12
+      ],
+      "merchant": "Studio Collective",
+      "merchant_id": "studio",
+      "currency": "USD",
+      "concessions": [
+        "quantity discount"
+      ],
+      "thresholds": [
+        3,
+        5
+      ],
+      "capacity": 5
+    },
+    "catalog_active": true,
+    "source_url": "https://support.apple.com/en-us/121205",
+    "photo_type": "product",
+    "evidence_sources": {
+      "anc": "https://support.apple.com/en-us/121205",
+      "bluetooth_audio": "https://support.apple.com/en-us/121205",
+      "iphone_12": "https://support.apple.com/guide/iphone/bluetooth-accessories-iph3c50f191/ios",
+      "flight_effectiveness": null
+    },
+    "evidence_notes": {
+      "iphone_12": "Basic Bluetooth audio only; advanced model-specific features are not assumed.",
+      "flight_effectiveness": "No quantified aircraft-cabin performance evidence is supplied."
+    },
+    "price_disclosure": "Simulated USD list price; not a current manufacturer or retailer offer."
+  },
+  {
+    "id": "bose-quietcomfort-ultra-2",
+    "title": "Bose QuietComfort Ultra (2nd Gen)",
+    "brand": "Bose",
+    "price_minor": 44900,
+    "currency": "USD",
+    "variants": [
+      "Black"
+    ],
+    "category": "Headphones",
+    "image": "/assets/bose-quietcomfort-ultra-2.png",
+    "description": "Over-ear headphones with active noise cancellation, CustomTune sound, Immersive Audio and USB-C audio.",
+    "features": [
+      "Active noise cancellation",
+      "Bluetooth audio",
+      "Up to 30 hours; 23 with Immersive Audio"
+    ],
+    "specs": {
+      "Model": "Bose QuietComfort Ultra (2nd Gen)",
+      "ANC": "Yes",
+      "Connection": "Bluetooth audio",
+      "Battery": "Up to 30 hours; 23 with Immersive Audio"
+    },
+    "delivery_days": 12,
+    "source_version": 1,
+    "evidence": {
+      "anc": true,
+      "bluetooth_audio": true,
+      "iphone_12": true,
+      "flight_effectiveness": null
+    },
+    "policy_id": "studio-real-v1",
+    "public_policy": {
+      "base": [
+        29900,
+        27900
+      ],
+      "ranges": [
+        [
+          28500,
+          31000
+        ],
+        [
+          26500,
+          29000
+        ]
+      ],
+      "delivery_days": [
+        12,
+        12
+      ],
+      "merchant": "Studio Collective",
+      "merchant_id": "studio",
+      "currency": "USD",
+      "concessions": [
+        "quantity discount"
+      ],
+      "thresholds": [
+        3,
+        5
+      ],
+      "capacity": 5
+    },
+    "catalog_active": true,
+    "source_url": "https://www.bose.com/p/headphones/bose-quietcomfort-ultra-headphones-2nd-gen/QCUH2-HEADPHONEARN.html?dwvar_QCUH2-HEADPHONEARN_color=BLACK",
+    "photo_type": "product",
+    "evidence_sources": {
+      "anc": "https://www.bose.com/p/headphones/bose-quietcomfort-ultra-headphones-2nd-gen/QCUH2-HEADPHONEARN.html?dwvar_QCUH2-HEADPHONEARN_color=BLACK",
+      "bluetooth_audio": "https://www.bose.com/p/headphones/bose-quietcomfort-ultra-headphones-2nd-gen/QCUH2-HEADPHONEARN.html?dwvar_QCUH2-HEADPHONEARN_color=BLACK",
+      "iphone_12": "https://support.apple.com/guide/iphone/bluetooth-accessories-iph3c50f191/ios",
+      "flight_effectiveness": null
+    },
+    "evidence_notes": {
+      "iphone_12": "Basic Bluetooth audio only; advanced model-specific features are not assumed.",
+      "flight_effectiveness": "No quantified aircraft-cabin performance evidence is supplied."
+    },
+    "price_disclosure": "Simulated USD list price; not a current manufacturer or retailer offer."
   }
 ]

@@ -1,7 +1,11 @@
 """Sandbox only. Every mutation has one durable logical operation and stable request ID."""
 
+import json
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
+from functools import lru_cache
+from threading import Lock
+from time import monotonic
 from uuid import uuid4
 
 import httpx
@@ -10,6 +14,36 @@ from psycopg.types.json import Jsonb
 from .config import settings
 
 BASE = "https://api-m.sandbox.paypal.com"
+_oauth_lock = Lock()
+_oauth_token = None
+_oauth_expires = 0
+_oauth_credentials = None
+
+
+@lru_cache(maxsize=1)
+def provider_client():
+    return httpx.Client(timeout=25, follow_redirects=False)
+
+
+def access_token(client):
+    global _oauth_token, _oauth_expires, _oauth_credentials
+    credentials = (settings.paypal_client_id, settings.paypal_client_secret)
+    with _oauth_lock:
+        if _oauth_credentials != credentials or monotonic() >= _oauth_expires:
+            token = client.post(
+                BASE + "/v1/oauth2/token",
+                auth=credentials,
+                data={"grant_type": "client_credentials"},
+            )
+            if token.status_code != 200:
+                raise RecoveryRequired(
+                    "PayPal OAuth failed; check sandbox credentials."
+                )
+            data = token.json()
+            _oauth_token = data["access_token"]
+            _oauth_expires = monotonic() + max(0, int(data["expires_in"]) - 60)
+            _oauth_credentials = credentials
+        return _oauth_token
 
 
 class ProviderError(RuntimeError):
@@ -26,6 +60,7 @@ def amount_matches(data, minor=6500):
     try:
         return (
             data["currency_code"] == "USD"
+            and isinstance(data["value"], str)
             and Decimal(data["value"]) == Decimal(minor) / 100
         )
     except (KeyError, InvalidOperation, TypeError, ValueError):
@@ -47,7 +82,7 @@ def operation_amount(c, kind):
 def provider_amount(c, kind):
     return {
         "currency_code": c.get("currency", "USD"),
-        "value": f"{operation_amount(c, kind) / 100:.2f}",
+        "value": f"{Decimal(operation_amount(c, kind)) / 100:.2f}",
     }
 
 
@@ -65,44 +100,53 @@ def fresh_authorization(c, deadline=None):
     ) > required + timedelta(minutes=5)
 
 
-def paypal(method, path, body=None, key=None):
+def paypal(method, path, body=None, key=None, raw_json=None):
     if not settings.paypal_client_id or not settings.paypal_client_secret:
         raise RecoveryRequired(
             "PayPal sandbox credentials missing; no fixture fallback."
         )
-    with httpx.Client(timeout=25) as client:
-        token = client.post(
-            BASE + "/v1/oauth2/token",
-            auth=(settings.paypal_client_id, settings.paypal_client_secret),
-            data={"grant_type": "client_credentials"},
-        )
-        if token.status_code != 200:
-            raise RecoveryRequired("PayPal OAuth failed; check sandbox credentials.")
-        headers = {
-            "Authorization": "Bearer " + token.json()["access_token"],
-            "Content-Type": "application/json",
-            "Prefer": "return=representation",
-        }
-        if key:
-            headers["PayPal-Request-Id"] = str(key)
-        response = client.request(method, BASE + path, headers=headers, json=body)
-        if response.status_code >= 400:
-            # Timeouts/conflicts/5xx remain ambiguous and must be reconciled.
-            definitive = response.status_code in (400, 403, 404, 422)
+    client = provider_client()
+    headers = {
+        "Authorization": "Bearer " + access_token(client),
+        "Content-Type": "application/json",
+        "Prefer": "return=representation",
+    }
+    if key:
+        headers["PayPal-Request-Id"] = str(key)
+    response = client.request(
+        method,
+        BASE + path,
+        headers=headers,
+        **({"content": raw_json} if raw_json is not None else {"json": body}),
+    )
+    if response.status_code >= 400:
+        # Timeouts/conflicts/5xx remain ambiguous and must be reconciled.
+        definitive = response.status_code in (400, 403, 404, 422)
+        try:
             data = response.json() if response.content else {}
-            codes = ",".join(x.get("issue", "") for x in data.get("details", []))
-            if codes in (
-                "PREVIOUS_REQUEST_IN_PROGRESS",
-                "ORDER_ALREADY_AUTHORIZED",
-                "AUTHORIZATION_ALREADY_CAPTURED",
-                "AUTHORIZATION_ALREADY_VOIDED",
-            ):
-                definitive = False
-            raise ProviderError(
-                f"PayPal HTTP {response.status_code}: {codes or data.get('name', 'request failed')}",
-                definitive,
-            )
-        return response.json() if response.content else {"status": "VOIDED"}
+        except ValueError:
+            data = {}
+        codes = ",".join(x.get("issue", "") for x in data.get("details", []))
+        if codes in (
+            "PREVIOUS_REQUEST_IN_PROGRESS",
+            "ORDER_ALREADY_AUTHORIZED",
+            "AUTHORIZATION_ALREADY_CAPTURED",
+            "AUTHORIZATION_ALREADY_VOIDED",
+        ):
+            definitive = False
+        raise ProviderError(
+            f"PayPal HTTP {response.status_code}: {codes or data.get('name', 'request failed')}",
+            definitive,
+        )
+    return (
+        response.json() if response.content else {"http_status": response.status_code}
+    )
+
+
+def approved_merchant(c):
+    return (c.get("accepted_terms") or {}).get(
+        "payee_id"
+    ) or settings.paypal_merchant_id
 
 
 def validate_order(data, c):
@@ -117,10 +161,9 @@ def validate_order(data, c):
         raise RecoveryRequired(
             "Provider order identity or amount mismatch; manual review required."
         )
-    if (
-        settings.mode == "connected"
-        and units[0].get("payee", {}).get("merchant_id") != settings.paypal_merchant_id
-    ):
+    if settings.mode == "connected" and units[0].get("payee", {}).get(
+        "merchant_id"
+    ) != approved_merchant(c):
         raise RecoveryRequired("Provider merchant identity mismatch.")
     return units[0]
 
@@ -136,11 +179,32 @@ def merge_status(old, new, kind):
             "DENIED",
             "DECLINED",
             "FAILED",
+            "PARTIALLY_REFUNDED",
         },
         "refund": {"COMPLETED", "FAILED", "CANCELLED"},
     }
+    allowed = terminals[kind] | (
+        {"CREATED", "PENDING", "PARTIALLY_CAPTURED"}
+        if kind == "authorization"
+        else {"PENDING"}
+    )
+    if new not in allowed:
+        raise RecoveryRequired(
+            "Unrecognized provider payment state; reconcile before executing further operations."
+        )
+    if kind == "authorization" and (
+        old == "CREATED"
+        and new == "PENDING"
+        or old == "PARTIALLY_CAPTURED"
+        and new in ("CREATED", "PENDING")
+    ):
+        return old
     if old in terminals[kind]:
-        if kind == "capture" and old == "COMPLETED" and new in ("REFUNDED", "REVERSED"):
+        if (
+            kind == "capture"
+            and old in ("COMPLETED", "PARTIALLY_REFUNDED")
+            and new in ("PARTIALLY_REFUNDED", "REFUNDED", "REVERSED")
+        ):
             return new
         return old
     return new or old
@@ -170,6 +234,28 @@ def observe(db, c, kind, data, source=None, event_id=None):
                 raise RecoveryRequired(
                     "Provider capture belongs to a different authorization."
                 )
+            if kind == "capture":
+                from urllib.parse import urlparse
+
+                parents = [
+                    urlparse(link.get("href", ""))
+                    for link in data.get("links", [])
+                    if link.get("rel") == "up"
+                ]
+                if parents and not any(
+                    parent.scheme == "https"
+                    and parent.hostname
+                    in ("api-m.sandbox.paypal.com", "api.sandbox.paypal.com")
+                    and parent.path
+                    in (
+                        f"/v2/payments/authorizations/{c['authorization_id']}",
+                        f"/v2/checkout/orders/{c['order_id']}",
+                    )
+                    for parent in parents
+                ):
+                    raise RecoveryRequired(
+                        "Provider capture parent does not match this purchase."
+                    )
             if kind == "refund":
                 from urllib.parse import urlparse
 
@@ -203,7 +289,7 @@ def observe(db, c, kind, data, source=None, event_id=None):
             settings.mode == "connected"
             and kind in ("authorize", "capture")
             and data.get("payee", {}).get("merchant_id")
-            not in (None, settings.paypal_merchant_id)
+            not in (None, approved_merchant(c))
         ):
             raise RecoveryRequired("Payment merchant mismatch.")
         if kind == "authorize":
@@ -220,12 +306,30 @@ def observe(db, c, kind, data, source=None, event_id=None):
             "capture": "captured_minor",
             "refund": "refunded_minor",
         }[kind]
-        if kind == "authorize" or status in ("COMPLETED", "REFUNDED", "REVERSED"):
+        if (
+            kind == "authorize"
+            and status
+            in ("CREATED", "PARTIALLY_CAPTURED", "CAPTURED", "VOIDED", "EXPIRED")
+            or kind != "authorize"
+            and status in ("COMPLETED", "REFUNDED", "REVERSED")
+        ):
             db.execute(
                 f"UPDATE commitments SET {amount_column}=%s WHERE id=%s",
                 (operation_amount(c, kind), c["id"]),
             )
     elif kind == "void":
+        if settings.mode == "connected" and (
+            data.get("id") != c["authorization_id"]
+            or data.get("status") != "VOIDED"
+            or not amount_matches(
+                data.get("amount", {}), operation_amount(c, "authorize")
+            )
+            or data.get("payee", {}).get("merchant_id")
+            not in (None, approved_merchant(c))
+        ):
+            raise RecoveryRequired(
+                "Provider void identity, amount or state is not confirmed."
+            )
         db.execute(
             "UPDATE commitments SET void_status='VOIDED',authorization_status=CASE WHEN authorization_status='CAPTURED' THEN authorization_status ELSE 'VOIDED' END,error=NULL WHERE id=%s",
             (c["id"],),
@@ -352,6 +456,14 @@ def perform(db, c, kind, scenario=None):
     ).fetchone()
     if not run or run["mode"] != settings.mode:
         raise RecoveryRequired("Payment mode does not match its isolated demo run.")
+    if (
+        settings.mode == "connected"
+        and kind in ("order", "authorize", "capture")
+        and approved_merchant(c) != settings.paypal_merchant_id
+    ):
+        raise RecoveryRequired(
+            "Configured merchant changed; fresh purchase consent required."
+        )
     db.execute(
         "INSERT INTO payment_operations(id,commitment_id,kind,amount_minor) VALUES(%s,%s,%s,%s) ON CONFLICT DO NOTHING",
         (uuid4(), c["id"], kind, operation_amount(c, kind)),
@@ -372,6 +484,28 @@ def perform(db, c, kind, scenario=None):
             op["error"]
             or "Provider declined this operation; operator review is required."
         )
+    if settings.mode == "connected" and op["status"] in ("inflight", "unknown"):
+        db.commit()
+        reconcile(db, c)
+        op = db.execute(
+            "SELECT * FROM payment_operations WHERE id=%s", (op["id"],)
+        ).fetchone()
+        db.commit()
+        if op["status"] == "completed":
+            return
+        if (
+            op["status"] == "inflight"
+            and op["lease_until"]
+            and op["lease_until"] > datetime.now(timezone.utc)
+        ):
+            raise ProviderError("Operation is still in progress; await reconciliation.")
+        if (
+            kind not in ("order", "authorize", "void")
+            and settings.payments_retry_hours <= 0
+        ):
+            raise RecoveryRequired(
+                "Mutation outcome is unresolved. Reconcile provider records before retrying; endpoint retention is unconfirmed."
+            )
     retry_hours = 5 if kind in ("order", "authorize") else settings.payments_retry_hours
     if (
         op["first_attempt_at"]
@@ -529,6 +663,17 @@ def perform(db, c, kind, scenario=None):
                 {"amount": provider_amount(c, kind)},
                 op["id"],
             )
+        if kind == "void" and result.get("http_status") == 204:
+            result = paypal(
+                "GET", f"/v2/payments/authorizations/{c['authorization_id']}"
+            )
+            if (
+                result.get("id") != c["authorization_id"]
+                or result.get("status") != "VOIDED"
+            ):
+                raise RecoveryRequired(
+                    "Void response received; provider state is not yet confirmed."
+                )
         observe(db, c, kind, result)
         db.execute(
             "UPDATE payment_operations SET status='completed',response=%s,error=NULL,updated_at=now() WHERE id=%s",
@@ -565,9 +710,31 @@ def perform(db, c, kind, scenario=None):
         raise
 
 
-def reconcile(db, c, source="reconciliation", event_id=None):
+def reconcile(db, c, source="reconciliation", event_id=None, force=True):
     if settings.mode == "fixture" or not c["order_id"]:
         return
+    if (
+        not force
+        and c.get("reconcile_after")
+        and c["reconcile_after"] > datetime.now(timezone.utc)
+    ):
+        return
+    db.commit()
+    unresolved = db.execute(
+        "SELECT 1 FROM payment_operations WHERE commitment_id=%s AND status IN ('unknown','inflight')",
+        (c["id"],),
+    ).fetchone()
+    pending = (
+        unresolved
+        or c.get("capture_status") == "PENDING"
+        or c.get("refund_status") == "PENDING"
+    )
+    attempts = min(c.get("reconcile_attempts", 0) + 1, 6) if pending else 0
+    delay = min(2**attempts, 60) if pending else 30
+    db.execute(
+        "UPDATE commitments SET reconcile_after=now()+(%s * interval '1 second'),reconcile_attempts=%s WHERE id=%s",
+        (delay, attempts, c["id"]),
+    )
     db.commit()
     data = paypal("GET", "/v2/checkout/orders/" + c["order_id"])
     unit = validate_order(data, c)
@@ -604,7 +771,7 @@ def reconcile(db, c, source="reconciliation", event_id=None):
     db.commit()
 
 
-def verify_webhook(headers, event):
+def verify_webhook(headers, event, raw_body=None):
     if settings.mode != "connected":
         raise RecoveryRequired("Real webhook processing is disabled in fixture mode.")
     if not settings.paypal_webhook_id:
@@ -619,6 +786,15 @@ def verify_webhook(headers, event):
     body = {key: headers.get(value) for key, value in names.items()}
     if not all(body.values()):
         return False
+    if raw_body is not None:
+        body["webhook_id"] = settings.paypal_webhook_id
+        raw = json.dumps(body).encode()[:-1] + b',"webhook_event":' + raw_body + b"}"
+        return (
+            paypal(
+                "POST", "/v1/notifications/verify-webhook-signature", raw_json=raw
+            ).get("verification_status")
+            == "SUCCESS"
+        )
     body.update(webhook_id=settings.paypal_webhook_id, webhook_event=event)
     return (
         paypal("POST", "/v1/notifications/verify-webhook-signature", body).get(
@@ -698,7 +874,7 @@ def validate_capture(c):
         data.get("id") != c["authorization_id"]
         or data.get("status") != "CREATED"
         or not amount_matches(data.get("amount", {}), c["amount_minor"])
-        or data.get("payee", {}).get("merchant_id") != settings.paypal_merchant_id
+        or data.get("payee", {}).get("merchant_id") != approved_merchant(c)
     ):
         raise RecoveryRequired("Authorization state, merchant or amount mismatch.")
     try:

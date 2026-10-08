@@ -1,0 +1,202 @@
+{
+  "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+  "protocol": "ollama",
+  "payment_operations": 0,
+  "cases": [
+    {
+      "request": "Noise-canceling headphones under $100 for my iPhone 12. I can wait a week.",
+      "status": "completed",
+      "constraints": {
+        "device": "iPhone 12",
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-14",
+        "max_total_minor": 9999,
+        "product_category": "Headphones",
+        "required_features": [
+          "Active noise cancellation",
+          "Bluetooth audio",
+          "Flight effectiveness"
+        ]
+      },
+      "error_kind": null,
+      "assessments": [
+        {
+          "product_id": "air-light",
+          "eligible": false
+        },
+        {
+          "product_id": "cabin-one",
+          "eligible": false
+        },
+        {
+          "product_id": "cabin-pro",
+          "eligible": true
+        },
+        {
+          "product_id": "mystery-sound",
+          "eligible": false
+        },
+        {
+          "product_id": "quiet-wire",
+          "eligible": false
+        },
+        {
+          "product_id": "travel-studio",
+          "eligible": false
+        }
+      ],
+      "negotiation_error_type": "HTTPException",
+      "seconds": 10.57
+    },
+    {
+      "request": "Bluetooth headphones under $80 for my iPhone 12. I can wait 5 days.",
+      "status": "completed",
+      "constraints": {
+        "device": "iPhone 12",
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-12",
+        "max_total_minor": 80,
+        "product_category": "Headphones",
+        "required_features": [
+          "Bluetooth audio",
+          "Active noise cancellation",
+          "Flight effectiveness"
+        ]
+      },
+      "error_kind": "no_matching_products",
+      "assessments": [
+        {
+          "product_id": "air-light",
+          "eligible": false
+        },
+        {
+          "product_id": "cabin-one",
+          "eligible": false
+        },
+        {
+          "product_id": "cabin-pro",
+          "eligible": false
+        },
+        {
+          "product_id": "mystery-sound",
+          "eligible": false
+        },
+        {
+          "product_id": "quiet-wire",
+          "eligible": false
+        },
+        {
+          "product_id": "travel-studio",
+          "eligible": false
+        }
+      ],
+      "negotiation_error_type": "HTTPException",
+      "seconds": 5.49
+    },
+    {
+      "request": "Headphones under $140 with proven noise reduction for flights. I can wait 14 days.",
+      "status": "completed",
+      "constraints": {
+        "device": null,
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-21",
+        "max_total_minor": 140,
+        "product_category": "Headphones",
+        "required_features": [
+          "Active noise cancellation",
+          "Flight effectiveness"
+        ]
+      },
+      "error_kind": "no_matching_products",
+      "assessments": [
+        {
+          "product_id": "air-light",
+          "eligible": false
+        },
+        {
+          "product_id": "cabin-one",
+          "eligible": false
+        },
+        {
+          "product_id": "cabin-pro",
+          "eligible": false
+        },
+        {
+          "product_id": "mystery-sound",
+          "eligible": false
+        },
+        {
+          "product_id": "quiet-wire",
+          "eligible": false
+        },
+        {
+          "product_id": "travel-studio",
+          "eligible": false
+        }
+      ],
+      "negotiation_error_type": "HTTPException",
+      "seconds": 3.58
+    },
+    {
+      "request": "Headphones maximum $66. I can wait 5 days.",
+      "status": "completed",
+      "constraints": {
+        "device": null,
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-12",
+        "max_total_minor": 66,
+        "product_category": "Headphones",
+        "required_features": []
+      },
+      "error_kind": "no_matching_products",
+      "assessments": [
+        {
+          "product_id": "air-light",
+          "eligible": false
+        },
+        {
+          "product_id": "cabin-one",
+          "eligible": false
+        },
+        {
+          "product_id": "cabin-pro",
+          "eligible": false
+        },
+        {
+          "product_id": "mystery-sound",
+          "eligible": false
+        },
+        {
+          "product_id": "quiet-wire",
+          "eligible": false
+        },
+        {
+          "product_id": "travel-studio",
+          "eligible": false
+        }
+      ],
+      "negotiation_error_type": "HTTPException",
+      "seconds": 1.82
+    },
+    {
+      "request": "Headphones under $100",
+      "status": "clarification",
+      "constraints": {
+        "device": null,
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": null,
+        "max_total_minor": 100,
+        "product_category": "Headphones",
+        "required_features": []
+      },
+      "error_kind": "missing_information",
+      "assessments": [],
+      "seconds": 0.66
+    }
+  ]
+}

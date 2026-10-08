@@ -14,7 +14,6 @@ import httpx
 import test_coalition as baseline
 from coalition.config import settings
 from coalition.db import connect, enqueue
-from coalition.demo import create_run
 from coalition.groups import (
     admit,
     freeze,
@@ -23,13 +22,24 @@ from coalition.groups import (
     members,
     safe_terminal,
     snapshot,
-    tick,
     unwind,
     withdraw,
+)
+from coalition.groups import (
+    tick as scheduled_tick,
 )
 from coalition.offers import terms_for
 from coalition.payments import ProviderError, RecoveryRequired, perform
 from fastapi import HTTPException
+from legacy_fixtures import create_run
+
+
+def tick(db, gid):
+    # Advance the reconciliation due time; these tests change provider state
+    # immediately rather than waiting through the application's backoff.
+    db.execute("UPDATE commitments SET reconcile_after=NULL WHERE group_id=%s", (gid,))
+    db.commit()
+    return scheduled_tick(db, gid)
 
 
 class Remote:
@@ -402,7 +412,9 @@ class RecoveryChecks(unittest.TestCase):
             observe(db, current, "authorize", {**auth, "status": "CREATED"}, "api")
             self.assertEqual(members(db, gid)[0]["authorization_status"], "VOIDED")
 
-    def test_assistant_unavailable_does_not_block_ordinary_checkout(self):
+    def test_retired_assistant_cannot_create_work_and_legacy_checkout_still_recovers(
+        self,
+    ):
         from dataclasses import replace
 
         from coalition.demo import digest
@@ -426,13 +438,13 @@ class RecoveryChecks(unittest.TestCase):
         ):
             client.cookies.set("coalition_session", "ordinary")
             headers = {"X-Coalition-Request": "1", "Origin": settings.public_url}
-            self.assertEqual(
+            self.assertIn(
                 client.post(
                     "/api/assistant",
                     json={"request_text": "Under $70"},
                     headers=headers,
                 ).status_code,
-                503,
+                (404, 405),
             )
             result = client.post(
                 "/api/commitments",
@@ -444,7 +456,14 @@ class RecoveryChecks(unittest.TestCase):
                 headers=headers,
             )
             self.assertEqual(result.status_code, 200)
-            self.assertIsNone(result.json()["authorization_id"])
+            self.assertEqual(set(result.json()), {"id", "amount_minor", "currency"})
+            with connect() as db:
+                self.assertIsNone(
+                    db.execute(
+                        "SELECT authorization_id FROM commitments WHERE id=%s",
+                        (result.json()["id"],),
+                    ).fetchone()["authorization_id"]
+                )
 
     def test_missing_model_key_finishes_ai_jobs_without_blocking_payment_jobs(self):
         from dataclasses import replace
@@ -455,7 +474,7 @@ class RecoveryChecks(unittest.TestCase):
             db.execute("UPDATE jobs SET status='done' WHERE mode='connected'")
         # Model jobs created before disabling AI remain tracked and finish safely.
         with patch(
-            "coalition.demo.settings", replace(settings, llm_api_key="configured")
+            "legacy_fixtures.settings", replace(settings, llm_api_key="configured")
         ):
             gid, _ = self.group(count=0)
         with (
@@ -489,7 +508,7 @@ class RecoveryChecks(unittest.TestCase):
     def test_blank_model_key_publishes_payment_demo_without_ai_jobs(self):
         from dataclasses import replace
 
-        with patch("coalition.demo.settings", replace(settings, llm_api_key="")):
+        with patch("legacy_fixtures.settings", replace(settings, llm_api_key="")):
             gid, _ = self.group(count=0)
         with connect() as db:
             buyers = db.execute(

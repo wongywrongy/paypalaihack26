@@ -14,7 +14,6 @@ async function setup(page: any) {
     let body: unknown = {};
     if (path === "/api/config") body = { mode: "connected", paypal_configured: true, paypal_client_id: "test-client", llm_configured: false };
     else if (path === "/api/session") body = { run_id: "test-run" };
-    else if (path === "/api/opportunity") body = { ...state, available: true };
     else if (path === "/api/status") body = state;
     else if (path === "/api/commitments") {
       expect(route.request().postDataJSON().accepted_terms).toEqual(offer);
@@ -34,15 +33,7 @@ test("persistent checkout restores owned approval, verifies every capture, and k
   const { state, members } = await setup(page);
   mkdirSync("../.impeccable/review", { recursive: true });
   const screen = async (name: string) => page.screenshot({ path: `../.impeccable/review/${name}-${info.project.name}.png`, fullPage: true });
-  await page.goto("/shop");
-  const widget = page.getByRole("region", { name: "Coalition group offer" });
-  await expect(widget.getByText("3 of 5 committed")).toBeVisible();
-  await expect(widget.getByText("Save $15")).toBeVisible();
-  const join = widget.getByRole("link", { name: "Join for $65" });
-  const bounds = await join.boundingBox(); expect(bounds!.y + bounds!.height).toBeLessThan(page.viewportSize()!.height);
-  await screen("merchant");
-  await join.focus(); await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/\/checkout\?run=test-run$/);
+  await page.goto("/checkout?run=test-run");
   const checkout = page.getByRole("complementary", { name: "Coalition group purchase" });
   await expect(page.getByRole("heading", { name: catalog[0].title, exact: true })).toBeVisible();
   await expect(page.getByText("Graphite · Quantity 1", { exact: true })).toBeVisible();
@@ -164,7 +155,7 @@ test("failed PayPal loading has a working retry without another commitment", asy
   expect(loads).toBe(2); expect(state.commitment.id).toBe(original);
 });
 
-test("optional assistant follows payment controls in keyboard order", async ({ page }) => {
+test("payment and recovery navigation remain in keyboard order", async ({ page }) => {
   await setup(page);
   await page.route("**/api/config", route => route.fulfill({ json: { mode: "fixture", paypal_configured: false, llm_configured: false } }));
   await page.goto("/checkout?run=test-run");
@@ -172,7 +163,8 @@ test("optional assistant follows payment controls in keyboard order", async ({ p
   await consent.check(); await consent.focus();
   await page.keyboard.press("Tab");
   await expect(page.getByRole("button", { name: "Simulate $65 authorization" })).toBeFocused();
+  await page.keyboard.press("Tab"); await expect(page.getByRole("link", { name: "Find another deal" })).toBeFocused();
   await page.keyboard.press("Tab"); await expect(page.getByRole("link", { name: "How group pricing works" })).toBeFocused();
   await page.keyboard.press("Tab"); await expect(page.getByText("Activity & payment evidence", { exact: true })).toBeFocused();
-  await page.keyboard.press("Tab"); await expect(page.getByText("Optional · Does this fit my needs?", { exact: true })).toBeFocused();
+  await expect(page.getByText("Optional · Does this fit my needs?", { exact: true })).toHaveCount(0);
 });

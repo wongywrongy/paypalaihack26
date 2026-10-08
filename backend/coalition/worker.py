@@ -1,8 +1,9 @@
 """Run one persistent worker. PostgreSQL leases survive restarts; no network call holds a group lock."""
 
 import logging
-import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+from threading import Event
 from uuid import uuid4
 
 from psycopg.types.json import Jsonb
@@ -25,12 +26,12 @@ from .payments import (
 log = logging.getLogger("coalition.worker")
 
 
-def claim(db):
+def claim(db, lane=None):
     job = db.execute(
         """UPDATE jobs SET status='running',lease_until=now()+interval '10 minutes',lease_token=%s,attempts=attempts+1
-      WHERE id=(SELECT id FROM jobs WHERE mode=%s AND ((status='ready' AND available_at<=now()) OR (status='running' AND lease_until<now()))
+      WHERE id=(SELECT id FROM jobs WHERE mode=%s AND (%s::text IS NULL OR (kind IN ('ai','match','negotiate'))=%s) AND ((status='ready' AND available_at<=now()) OR (status='running' AND lease_until<now()))
       ORDER BY CASE WHEN kind IN ('order','authorize','capture','void','refund','event') THEN 0 ELSE 1 END,available_at,id FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING *""",
-        (uuid4(), settings.mode),
+        (uuid4(), settings.mode, lane, lane == "ai"),
     ).fetchone()
     db.commit()
     return job
@@ -44,7 +45,9 @@ def handle_event(db, event_id):
     if event["processed_at"]:
         return
     if not event["verified"]:
-        verified = verify_webhook(event["headers"], event["payload"])
+        verified = verify_webhook(
+            event["headers"], event["payload"], event.get("raw_body")
+        )
         saved = db.execute(
             "UPDATE webhook_events SET verified=%s,processed_at=CASE WHEN %s THEN NULL ELSE now() END WHERE id=%s AND payload=%s AND headers=%s RETURNING id",
             (
@@ -113,12 +116,31 @@ def handle_event(db, event_id):
                 if "/captures/" in path
                 else "authorize"
             )
+            if (
+                resource.get("id") != path.rsplit("/", 1)[-1]
+                or (
+                    kind != "authorize"
+                    and payload["event_type"].startswith("PAYMENT.AUTHORIZATION.")
+                )
+                or (
+                    kind == "authorize"
+                    and payload["event_type"].startswith("PAYMENT.CAPTURE.")
+                )
+            ):
+                raise RecoveryRequired(
+                    "Webhook event and resource relationship mismatch."
+                )
             observed = paypal("GET", path)
             if observed.get("id") != path.rsplit("/", 1)[-1]:
                 raise RecoveryRequired("Webhook GET resource identity mismatch.")
-            observe(db, c, kind, observed, "webhook", event_id)
+            # Signature-verified event supplies historical provenance. GET verifies
+            # ownership and supplies the current state separately.
+            observe(db, c, kind, resource, "webhook", event_id)
+            if kind == "authorize" and resource.get("status") == "VOIDED":
+                observe(db, c, "void", resource, "webhook", event_id)
+            observe(db, c, kind, observed, "reconciliation", event_id)
             db.commit()
-        reconcile(db, c, "webhook", event_id)
+        reconcile(db, c, "reconciliation", event_id)
         from .groups import wake
 
         wake(db, group_id)
@@ -196,10 +218,23 @@ def handle(db, job):
     return None
 
 
-def run_once():
+def run_once(lane=None):
     with connect() as db:
-        job = claim(db)
+        job = claim(db, lane)
         if not job:
+            return False
+        # A session advisory lock survives transaction commits, but disappears on
+        # crash. Lease expiry cannot start a second handler while the first lives.
+        lock_key = "coalition-job:" + str(job["id"])
+        held = db.execute(
+            "SELECT pg_try_advisory_lock(hashtextextended(%s,2)) AS held", (lock_key,)
+        ).fetchone()["held"]
+        db.commit()
+        if not held:
+            db.execute(
+                "UPDATE jobs SET lease_until=now()+interval '30 seconds' WHERE id=%s AND lease_token=%s",
+                (job["id"], job["lease_token"]),
+            )
             return False
         gid = job["payload"].get("group_id")
         try:
@@ -261,11 +296,29 @@ def run_once():
                     (str(exc)[:400], gid),
                 )
             db.commit()
+        finally:
+            db.execute("SELECT pg_advisory_unlock(hashtextextended(%s,2))", (lock_key,))
+            db.commit()
     return True
+
+
+def run_lane(lane, stop):
+    while not stop.is_set():
+        if not run_once(lane):
+            stop.wait(0.5)
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    while True:
-        if not run_once():
-            time.sleep(0.5)
+    stop = Event()
+    # One worker service: one model job and two reserved payment/deadline lanes.
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = [pool.submit(run_lane, lane, stop) for lane in ("ai", "payment")]
+        try:
+            run_lane("payment", stop)
+        except KeyboardInterrupt:
+            stop.set()
+        finally:
+            stop.set()
+        for future in futures:
+            future.result()

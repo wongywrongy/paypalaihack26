@@ -97,7 +97,7 @@ components:
 
 **Creative North Star: "Coalition storefront"**
 
-Coalition brings shopping and group purchasing into a white storefront with precise Archivo typography, fine neutral dividers and solid indigo actions. Large graphite headphone photographs make the catalog immediately browsable; intelligent search supports product choice. Commonplace Audio is the fictional headphone merchant. The retained Commonplace Supply calculator storefront remains a regression surface. The user-approved composition extends the incumbent neutral/indigo system.
+Coalition brings shopping and group purchasing into a white storefront with precise Archivo typography, fine neutral dividers and solid indigo actions. Sourced Apple, Sony and Bose product photographs make the catalog immediately browsable; intelligent search supports product choice. Commonplace Audio is the fictional headphone merchant. Historical calculator purchases retain their dedicated checkout and recovery controls. The user-approved composition extends the incumbent neutral/indigo system.
 
 Editable needs unfold on demand. Product evidence and a bounded buyer/merchant negotiation lead to a concise deal summary and persistent checkout, where the full payment explanation remains visible. Financial outcomes use restrained text, tabular amounts and explicit provenance. Generated product photographs are illustrations, never evidence of specifications or fulfillment.
 
@@ -138,19 +138,19 @@ The storefront is browsable before a request is submitted. A centered container 
 
 At (700px) and below, horizontal padding becomes (16px), navigation wraps below the wordmark and demo badge, and the search action fills its own row. The catalog becomes two columns with gaps (28px vertically, 16px horizontally); the selected photograph stacks before the deal and is capped at (400px). Requirement fields become a single column. Buyer and merchant roles stay embedded in the selected-product journey.
 
-The retained storefront keeps its product gallery and ordinary demo purchase controls alongside a compact Coalition widget. The widget shows backend price, savings, confirmed count and one checkout link; full consent and payment live at `/checkout?run=<run UUID>`.
+The sole storefront is the headphone shopping journey. Old `/shop` links open it; dedicated consent and payment live at `/checkout?run=<run UUID>`.
 
-Desktop checkout allocates 40% to the order summary and 60% to group progress and payment, using a centered container with a (22px) gap. Summary and payment surfaces have (26px) padding, reduced at narrower widths. At (700px) and below, they form one focused white surface: item, delivered price, shipping/tax, logistics, payment status, commitment positions, conditional terms, consent and payment controls, payment outcomes, latest event and evidence, then optional assistance. Catalog browsing stays on the merchant page. The assistant follows payment in both DOM and visual keyboard order.
+Desktop checkout allocates 40% to the order summary and 60% to group progress and payment, using a centered container with a (22px) gap. Summary and payment surfaces have (26px) padding, reduced at narrower widths. At (700px) and below, they form one focused white surface: item, delivered price, shipping/tax, logistics, payment status, commitment positions, conditional terms, consent and payment controls, payment outcomes, latest event and evidence. Catalog browsing stays on the headphone storefront. Payment and recovery links remain in keyboard order.
 
 ## Elevation & Depth
 
-Checkout and merchant widget surfaces use thin neutral borders and tonal separation rather than prominent shadows. Keep the receipt's restrained green tint subordinate to the verified payment outcome. Focus outlines remain visible on links, buttons, native disclosures and form controls.
+Checkout surfaces use thin neutral borders and tonal separation rather than prominent shadows. Keep the receipt's restrained green tint subordinate to the verified payment outcome. Focus outlines remain visible on links, buttons, native disclosures and form controls.
 
-Shopping tiles are unboxed; selected content and negotiation use dividers and pale proposal material. The incumbent ambient shadow is reserved for floating legacy search and bag surfaces. Visible keyboard focus uses a solid indigo outline (3px) with offset (4px). The search wrapper also changes its border to indigo on focus. Selected product photographs use an indigo outline (2px) with offset (4px).
+Shopping tiles are unboxed; selected content and negotiation use dividers and pale proposal material. Visible keyboard focus uses a solid indigo outline (3px) with offset (4px). The search wrapper also changes its border to indigo on focus. Selected product photographs use an indigo outline (2px) with offset (4px).
 
 ## Shapes
 
-Photographs and the wide search wrapper share the media radius; checkout and merchant-widget panels retain the panel radius. Native fields, role labels, proposal rows and receipts use the smaller field radius. The compact demo badge is outlined. Numbered commitment positions are circles joined by thin connectors. Preserve these established forms rather than introducing avatars or ornamental shapes.
+Photographs and the wide search wrapper share the media radius; checkout panels retain the panel radius. Native fields, role labels, proposal rows and receipts use the smaller field radius. The compact demo badge is outlined. Numbered commitment positions are circles joined by thin connectors. Preserve these established forms rather than introducing avatars or ornamental shapes.
 
 ## Components
 
@@ -164,7 +164,7 @@ The labeled search input and “Find deals” action evaluate the shopper's need
 
 ### Buttons and navigation
 
-The full-width solid indigo primary control retains the incumbent rounded shape and minimum height (50px), with a deeper hover and visible focus. The search control uses a minimum height (48px desktop, 42px mobile). Secondary buttons use a neutral stroke and minimum height (42px); text actions use an underline. The Coalition wordmark accompanies “Shop,” session-owned “My purchases,” and a compact “Sandbox demo” disclosure. Mobile navigation wraps onto its own row. Purchase history uses divided rows for item, recorded payment state, amount and one checkout link. The retained merchant widget links to persistent checkout, with labels for joining, viewing the buyer's checkout or viewing group progress.
+The full-width solid indigo primary control retains the incumbent rounded shape and minimum height (50px), with a deeper hover and visible focus. The search control uses a minimum height (48px desktop, 42px mobile). Secondary buttons use a neutral stroke and minimum height (42px); text actions use an underline. The Coalition wordmark accompanies “Shop,” session-owned “My purchases,” and a compact “Sandbox demo” disclosure. Mobile navigation wraps onto its own row. Purchase history uses divided rows for item, recorded payment state, amount and one checkout link. Current and historical purchases link to persistent owned checkout.
 
 ### Accepted quote and negotiation
 

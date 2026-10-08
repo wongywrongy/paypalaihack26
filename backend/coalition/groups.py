@@ -9,7 +9,14 @@ from .db import enqueue
 from .offers import terms_for
 from .payments import RecoveryRequired, fresh_authorization, perform, reconcile
 
-FAILURES = {"DECLINED", "DENIED", "FAILED", "REVERSED", "REFUNDED"}
+FAILURES = {
+    "DECLINED",
+    "DENIED",
+    "FAILED",
+    "REVERSED",
+    "REFUNDED",
+    "PARTIALLY_REFUNDED",
+}
 
 
 def lock_group(db, group_id):
@@ -78,10 +85,13 @@ def expire_reservations(db, group_id):
 
 def join(db, buyer, group_id, context, accepted_terms):
     validate_context(context, offer=True)
+    from .shopping import lock_owner
+
+    lock_owner(db, buyer["owner_id"])
     group = lock_group(db, group_id)
-    terms = terms_for(db, group_id)
     if not group or str(group["run_id"]) != str(buyer["run_id"]):
         raise HTTPException(404, "Group not found.")
+    terms = terms_for(db, group_id)
     if accepted_terms != terms:
         raise HTTPException(409, "Offer terms changed. Review the exact offer again.")
     if (context.product_id, context.selected_variant, context.quantity) != (
@@ -90,8 +100,23 @@ def join(db, buyer, group_id, context, accepted_terms):
         1,
     ):
         raise HTTPException(422, "Selection does not match the exact quote.")
+    existing = db.execute(
+        "SELECT * FROM commitments WHERE buyer_id=%s AND group_id=%s AND active",
+        (buyer["id"], group_id),
+    ).fetchone()
+    if existing:
+        return existing
+    previous = db.execute(
+        "SELECT * FROM commitments WHERE buyer_id=%s AND group_id=%s AND NOT active",
+        (buyer["id"], group_id),
+    ).fetchall()
+    if any(not safe_terminal(db, c) for c in previous):
+        raise HTTPException(
+            409,
+            "Your previous checkout is still resolving. Wait for provider reconciliation before another payment attempt.",
+        )
     if terms.get("pricing_model") == "tiers":
-        from .matching import eligible_for_quote
+        from .matching import eligible_for_quote, latest_request
 
         db.execute("SELECT id FROM buyers WHERE id=%s FOR UPDATE", (buyer["id"],))
         if not eligible_for_quote(db, buyer["id"], terms):
@@ -99,12 +124,6 @@ def join(db, buyer, group_id, context, accepted_terms):
                 409, "This quote does not satisfy your current evaluated requirements."
             )
     expire_reservations(db, group_id)
-    existing = db.execute(
-        "SELECT * FROM commitments WHERE buyer_id=%s AND group_id=%s AND active",
-        (buyer["id"], group_id),
-    ).fetchone()
-    if existing:
-        return existing
     if (
         group["status"] != "OPEN"
         or group["closing"]
@@ -123,8 +142,17 @@ def join(db, buyer, group_id, context, accepted_terms):
         )
     cid = uuid4()
     db.execute(
-        "INSERT INTO commitments(id,buyer_id,group_id,accepted_terms,amount_minor,currency) VALUES(%s,%s,%s,%s,%s,'USD')",
-        (cid, buyer["id"], group_id, Jsonb(terms), terms["total_minor"]),
+        "INSERT INTO commitments(id,buyer_id,group_id,accepted_terms,amount_minor,currency,request_id) VALUES(%s,%s,%s,%s,%s,'USD',%s)",
+        (
+            cid,
+            buyer["id"],
+            group_id,
+            Jsonb(terms),
+            terms["total_minor"],
+            latest_request(db, buyer["id"])["id"]
+            if terms.get("pricing_model") == "tiers"
+            else None,
+        ),
     )
     enqueue(
         db,
@@ -159,9 +187,9 @@ def admit(db, cid):
         from .matching import eligible_for_quote
         from .payments import fresh_authorization
 
-        eligible = eligible_for_quote(db, c["buyer_id"], terms) and fresh_authorization(
-            c, group["deadline"]
-        )
+        eligible = eligible_for_quote(
+            db, c["buyer_id"], terms, c.get("request_id")
+        ) and fresh_authorization(c, group["deadline"])
     if (
         group["status"] != "OPEN"
         or group["closing"]
@@ -224,7 +252,7 @@ def freeze(db, group_id):
             and c["active"]
             and c["authorized_minor"] == terms["total_minor"]
             and fresh_authorization(c)
-            and eligible_for_quote(db, c["buyer_id"], terms)
+            and eligible_for_quote(db, c["buyer_id"], terms, c.get("request_id"))
         ]
         if len(selected) < terms["minimum"]:
             unwind(
@@ -457,7 +485,7 @@ def tick(db, group_id):
     db.commit()
     for c in members(db, group_id):
         db.commit()
-        reconcile(db, c)
+        reconcile(db, c, force=group["status"] == "OPEN" and group["closing"])
     group = refresh_transition(db, group_id)
     rows = members(db, group_id)
     db.commit()
@@ -571,6 +599,10 @@ def tick(db, group_id):
         release_inventory(db, group)
     if group["status"] == "FAILED":
         return None
+    if group["status"] == "SUCCEEDED" and all(
+        safe_terminal(db, c) for c in members(db, group_id) if not c["locked"]
+    ):
+        return None
     return 30 if group["status"] == "SUCCEEDED" else 2
 
 
@@ -606,6 +638,12 @@ def snapshot(db, buyer):
     ).fetchone()
     rows = members(db, group["id"])
     commitment = next((c for c in reversed(rows) if c["buyer_id"] == buyer["id"]), None)
+    if commitment:
+        commitment = {k: v for k, v in commitment.items() if k != "provider_payer_id"}
+        if commitment["error"]:
+            commitment["error"] = (
+                "Your payment needs review. Its saved outcome will update after verification."
+            )
     decision = db.execute(
         "SELECT status,result,error,mode FROM ai_decisions WHERE buyer_id=%s AND group_id=%s ORDER BY created_at DESC LIMIT 1",
         (buyer["id"], group["id"]),
@@ -643,6 +681,11 @@ def snapshot(db, buyer):
             (f"authorize:{commitment['id']}",),
         ).fetchone()
     )
+    if group["failure_reason"]:
+        group = {
+            **group,
+            "failure_reason": "This group could not complete. Payment outcomes remain in your record.",
+        }
     return {
         "group": group,
         "offer": offer,

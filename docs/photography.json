@@ -1,6 +1,62 @@
 {
-  "asset": "frontend/public/assets/headphones-studio.png",
-  "source": "Built-in image_gen tool",
-  "purpose": "Illustrative fictional headphone studio photographs, six equal tiles, displayed by CSS background positions; no claimed merchant product photography or specification evidence.",
-  "prompt": "Use case: product-mockup. Asset type: six-product photography contact sheet for a fictional headphone storefront. Create a photorealistic premium e-commerce studio photograph sheet, exact equal 3 columns by 2 rows, 1536x1024 landscape, each tile 512x512 square with no gaps or borders. Every tile has a pale warm-gray seamless background and one centered pair of unbranded graphite headphones, entirely within its own tile, generous 12% clear margins. Top left: rounded wireless over-ear travel headphones, matte graphite. Top middle: premium wireless over-ear headphones, sculpted graphite metal hinges and thick cushions, three-quarter view. Top right: graphite wired over-ear headphones with visible coiled cable confined to tile. Bottom left: lightweight slim wireless graphite on-ear headphones. Bottom middle: robust over-ear studio graphite headphones with broad headband. Bottom right: simple graphite over-ear headphones front three-quarter view. Soft real studio directional light, believable detailed materials, subtle contact shadows, product occupies 70% width and height, consistent scales, sophisticated photography. No text, no labels, no logos, no extra objects, no hands, no page interface. Precise six separate products centered one per equal tile. These are illustrative fictional products, not actual merchant photos."
+  "real_product_catalog": {
+    "checked_at": "2026-10-08",
+    "disclosure": "Real models and sourced product photography; merchants, USD list/group prices, inventory and delivery are simulated. Not affiliated with Apple, Sony or Bose.",
+    "products": [
+      {
+        "id": "sony-wh-ch720n",
+        "title": "Sony WH-CH720N",
+        "specification_source": "https://www.sony.co.uk/store/product/whch720nb.ce7/WH-CH720N-Wireless-Noise-Cancelling-Headphones",
+        "image_source": "https://www.did.ie/cdn/shop/products/2_0aaa9c42-2be3-4811-a3b8-2ec8f14adcfb_1200x.png?v=1681812957",
+        "local_asset": "/assets/sony-wh-ch720n.png",
+        "photo_note": "Matching Black product photograph."
+      },
+      {
+        "id": "bose-quietcomfort",
+        "title": "Bose QuietComfort",
+        "specification_source": "https://www.bose.com/p/headphones/quietcomfort-acoustic-noise-cancelling-headphones/QC-HEADPHONEARN.html?dwvar_QC-HEADPHONEARN_color=BLACK",
+        "image_source": "https://assets.bosecreative.com/transform/3b5bc648-2312-46dc-892e-53372caea648/QCH_Black_400x300_x2?io=width:816,height:667,transform:fit",
+        "local_asset": "/assets/bose-quietcomfort.png",
+        "photo_note": "Matching Black product photograph."
+      },
+      {
+        "id": "sony-wh-ch520",
+        "title": "Sony WH-CH520",
+        "specification_source": "https://electronics.sony.com/audio/headphones/headband/p/whch520-w",
+        "image_source": "https://sony.scene7.com/is/image/sonyglobalsolutions/00-7?$large360ViewerImage$=",
+        "local_asset": "/assets/sony-wh-ch520.png",
+        "photo_note": "Matching Black product photograph."
+      },
+      {
+        "id": "sony-wh-1000xm5",
+        "title": "Sony WH-1000XM5",
+        "specification_source": "https://www.sony.co.uk/electronics/headband-headphones/wh-1000xm5",
+        "image_source": "https://cdn.uniquephoto.com/resources/uniquephoto/images/products/processed/SYCD3506.detail.a.png",
+        "local_asset": "/assets/sony-wh-1000xm5.png",
+        "photo_note": "Matching Black product photograph."
+      },
+      {
+        "id": "apple-airpods-max-usbc",
+        "title": "Apple AirPods Max (USB-C)",
+        "specification_source": "https://support.apple.com/en-us/121205",
+        "image_source": "https://cdsassets.apple.com/live/7WUAS350/images/tech-specs/121205-airpods-max.png",
+        "local_asset": "/assets/apple-airpods-max-usbc.png",
+        "photo_note": "Official color-range image; selected demo variant is Starlight."
+      },
+      {
+        "id": "bose-quietcomfort-ultra-2",
+        "title": "Bose QuietComfort Ultra (2nd Gen)",
+        "specification_source": "https://www.bose.com/p/headphones/bose-quietcomfort-ultra-headphones-2nd-gen/QCUH2-HEADPHONEARN.html?dwvar_QCUH2-HEADPHONEARN_color=BLACK",
+        "image_source": "https://assets.bosecreative.com/transform/dbd0f72b-d68f-4bef-9d38-88132ffa0048/QCUHII26-BoseBlack_SF_PDP_E-Comm_Gallery_1_1500x1120?format=png&io=width:816,height:667,transform:fit",
+        "local_asset": "/assets/bose-quietcomfort-ultra-2.png",
+        "photo_note": "Matching Black product photograph."
+      }
+    ]
+  },
+  "historical_illustrations": {
+    "asset": "frontend/public/assets/headphones-studio.png",
+    "source": "Built-in image_gen tool",
+    "purpose": "Illustrative fictional headphone studio photographs, six equal tiles, displayed by CSS background positions; no claimed merchant product photography or specification evidence.",
+    "prompt": "Use case: product-mockup. Asset type: six-product photography contact sheet for a fictional headphone storefront. Create a photorealistic premium e-commerce studio photograph sheet, exact equal 3 columns by 2 rows, 1536x1024 landscape, each tile 512x512 square with no gaps or borders. Every tile has a pale warm-gray seamless background and one centered pair of unbranded graphite headphones, entirely within its own tile, generous 12% clear margins. Top left: rounded wireless over-ear travel headphones, matte graphite. Top middle: premium wireless over-ear headphones, sculpted graphite metal hinges and thick cushions, three-quarter view. Top right: graphite wired over-ear headphones with visible coiled cable confined to tile. Bottom left: lightweight slim wireless graphite on-ear headphones. Bottom middle: robust over-ear studio graphite headphones with broad headband. Bottom right: simple graphite over-ear headphones front three-quarter view. Soft real studio directional light, believable detailed materials, subtle contact shadows, product occupies 70% width and height, consistent scales, sophisticated photography. No text, no labels, no logos, no extra objects, no hands, no page interface. Precise six separate products centered one per equal tile. These are illustrative fictional products, not actual merchant photos."
+  }
 }

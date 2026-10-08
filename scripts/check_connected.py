@@ -8,7 +8,7 @@ import sys
 
 from coalition.config import settings
 from coalition.db import connect
-from coalition.payments import amount_matches, operation_amount, paypal
+from coalition.payments import amount_matches, operation_amount, paypal, validate_order
 
 if settings.mode != "connected":
     raise SystemExit("Connected mode required; test doubles are not external proof.")
@@ -21,7 +21,7 @@ captured = set()
 refunded = set()
 with connect() as db:
     rows = db.execute(
-        "SELECT c.*,r.mode,g.locked_at FROM commitments c JOIN groups g ON g.id=c.group_id JOIN runs r ON r.id=g.run_id WHERE g.run_id=ANY(%s::uuid[])",
+        "SELECT c.*,r.mode,g.locked_at,g.status AS group_status,g.fulfillment_released FROM commitments c JOIN groups g ON g.id=c.group_id JOIN runs r ON r.id=g.run_id WHERE g.run_id=ANY(%s::uuid[])",
         (sys.argv[1:],),
     ).fetchall()
     ops = db.execute(
@@ -63,18 +63,24 @@ for op in ops:
     data = paypal("GET", resource + pid)
     assert data.get("id") == pid, "Wrong provider identity"
     if kind == "order":
-        unit = data["purchase_units"][0]
-        assert (
-            data["intent"] == "AUTHORIZE"
-            and unit["custom_id"] == str(c["id"])
-            and amount_matches(unit["amount"], c["amount_minor"])
-        )
-        assert unit["payee"]["merchant_id"] == settings.paypal_merchant_id
+        validate_order(data, c)
         confirmed.add("order")
     else:
-        expected = operation_amount(c, "refund" if kind == "refund_recovery" else kind)
+        expected = operation_amount(
+            c,
+            "refund"
+            if kind == "refund_recovery"
+            else "authorize"
+            if kind == "void"
+            else kind,
+        )
         assert amount_matches(data["amount"], expected), "Amount/currency mismatch"
-        if kind == "authorize" and data["status"] in ("CREATED", "CAPTURED", "VOIDED"):
+        if kind == "authorize" and data["status"] in (
+            "CREATED",
+            "PARTIALLY_CAPTURED",
+            "CAPTURED",
+            "VOIDED",
+        ):
             confirmed.add("authorize")
             authorization_results.append(
                 {
@@ -103,7 +109,11 @@ assert any(
     == 5
     and len({c["provider_payer_id"] for c in selected}) == 5
     and all(
-        c["amount_minor"] == 8900 and c["settlement_minor"] == 8500 for c in selected
+        c["amount_minor"] == 8900
+        and c["settlement_minor"] == 8500
+        and c["group_status"] == "SUCCEEDED"
+        and c["fulfillment_released"]
+        for c in selected
     )
     and all(c["id"] in captured and c["id"] in refunded for c in selected)
     for gid in {c["group_id"] for c in rows}

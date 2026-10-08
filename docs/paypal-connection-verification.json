@@ -1,0 +1,17 @@
+{
+  "checked_at_utc": "2026-10-07T20:55:17.201311+00:00",
+  "environment": "PayPal sandbox",
+  "payment_mutations": 0,
+  "local_merchant_configured": false,
+  "verified_webhook_delivery": false,
+  "oauth_http_status": 200,
+  "webhook_registration_http_status": 200,
+  "registered_listener": "https://paypalaihack26.onrender.com/api/paypal/webhook",
+  "registered_events": [
+    "*"
+  ],
+  "deployed_config_http_status": 200,
+  "deployed_mode": "connected",
+  "deployed_paypal_configured": true,
+  "operator_read_http_status": 403
+}

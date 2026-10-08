@@ -9,10 +9,9 @@ from unittest.mock import patch
 from uuid import uuid4
 
 import test_coalition as legacy_tests
-from coalition.catalog import PRODUCTS, ProductContext
+from coalition.catalog import PRODUCTS, SHOP_PRODUCTS, ProductContext
 from coalition.config import settings
 from coalition.db import connect
-from coalition.demo import create_run
 from coalition.groups import freeze, join, members, snapshot, tick
 from coalition.matching import (
     Assessment,
@@ -30,6 +29,7 @@ from coalition.negotiation import run_negotiation, start
 from coalition.offers import terms_for
 from coalition.payments import amount_matches, operation_amount, perform
 from fastapi import HTTPException
+from legacy_fixtures import create_run
 from psycopg.errors import UniqueViolation
 
 
@@ -45,7 +45,7 @@ class VariableAmountChecks(unittest.TestCase):
             ],
             device="iPhone 12",
         )
-        products = [p for p in PRODUCTS if p["category"] == "Headphones"]
+        products = SHOP_PRODUCTS
         schema = assessment_schema(c, products)
         self.assertEqual(
             requirements_for(c),
@@ -64,6 +64,7 @@ class VariableAmountChecks(unittest.TestCase):
             "missing requirement",
             "renamed requirement",
             "extra requirement",
+            "URL instead of catalog evidence",
         ):
             with self.subTest(defect=defect), self.assertRaises(ValueError):
                 invalid = schema.model_validate(data).model_dump()
@@ -75,6 +76,10 @@ class VariableAmountChecks(unittest.TestCase):
                     invalid[products[0]["id"]]["iPhone"] = invalid[
                         products[0]["id"]
                     ].pop("r2")
+                elif defect == "URL instead of catalog evidence":
+                    invalid[products[0]["id"]]["r0"]["source"] = products[0][
+                        "source_url"
+                    ]
                 else:
                     invalid[products[0]["id"]]["r3"] = invalid[products[0]["id"]]["r2"]
                 schema.model_validate(invalid)
@@ -86,7 +91,7 @@ class VariableAmountChecks(unittest.TestCase):
             required_features=["Active noise cancellation", "Flight effectiveness"],
             device="iPhone 12",
         )
-        product = next(p for p in PRODUCTS if p["id"] == "cabin-one")
+        product = next(p for p in PRODUCTS if p["id"] == "sony-wh-ch720n")
         original = fixture_assessment(c, product)
         for order in permutations(original.requirements):
             a = original.model_copy(deep=True)
@@ -120,7 +125,7 @@ class VariableAmountChecks(unittest.TestCase):
             required_features=["Flight effectiveness"],
         )
         a = Assessment(
-            product_id="cabin-one",
+            product_id="sony-wh-ch720n",
             requirements=[
                 Requirement(
                     requirement="Flight effectiveness",
@@ -192,7 +197,7 @@ class NegotiatedChecks(unittest.TestCase):
             required_features=["Active noise cancellation", "Flight effectiveness"],
             device="iPhone 12",
         )
-        products = [p for p in PRODUCTS if p["category"] == "Headphones"]
+        products = SHOP_PRODUCTS
         schema = assessment_schema(c, products)
         valid = schema.model_validate(
             {
@@ -214,7 +219,11 @@ class NegotiatedChecks(unittest.TestCase):
             ).fetchone()
             for corrected in (True, False):
                 request = submit_request(
-                    db, buyer, RequestInput(raw_text="Explicit requirements", edits=c)
+                    db,
+                    buyer,
+                    RequestInput(
+                        raw_text="Explicit requirements " + str(corrected), edits=c
+                    ),
                 )
                 db.commit()
                 with (
@@ -252,7 +261,7 @@ class NegotiatedChecks(unittest.TestCase):
                 )
                 if corrected:
                     assessment = db.execute(
-                        "SELECT requirements FROM compatibility_assessments WHERE request_id=%s AND product_id='cabin-one'",
+                        "SELECT requirements FROM compatibility_assessments WHERE request_id=%s AND product_id='sony-wh-ch720n'",
                         (request["id"],),
                     ).fetchone()["requirements"]
                     self.assertEqual(
@@ -289,7 +298,7 @@ class NegotiatedChecks(unittest.TestCase):
                 (run["run_id"],),
             ).fetchall():
                 run_match(db, r["id"])
-            n = start(db, hero, "cabin-one")
+            n = start(db, hero, "sony-wh-ch720n")
             db.commit()
             run_negotiation(db, n["id"])
             db.commit()
@@ -298,7 +307,7 @@ class NegotiatedChecks(unittest.TestCase):
             context = ProductContext(
                 product_id=p["id"],
                 title=p["title"],
-                selected_variant="Graphite",
+                selected_variant=p["variants"][0],
                 displayed_price_minor=p["price_minor"],
                 currency="USD",
                 quantity=1,
@@ -405,7 +414,7 @@ class NegotiatedChecks(unittest.TestCase):
         run, hero, terms, _ = self.prepare(5)
         with connect() as db:
             db.execute(
-                "UPDATE catalog_stock SET available=0 WHERE product_id='cabin-one'"
+                "UPDATE catalog_stock SET available=0 WHERE product_id='sony-wh-ch720n'"
             )
             second = create_run(db, "success", profile="small")
             b = db.execute(
@@ -416,7 +425,7 @@ class NegotiatedChecks(unittest.TestCase):
                 (second["run_id"],),
             ).fetchall():
                 run_match(db, r["id"])
-            n = start(db, b, "cabin-one")
+            n = start(db, b, "sony-wh-ch720n")
             db.commit()
             run_negotiation(db, n["id"])
             self.assertEqual(
@@ -427,7 +436,7 @@ class NegotiatedChecks(unittest.TestCase):
             )
         with connect() as db:
             db.execute(
-                "UPDATE catalog_stock SET available=55 WHERE product_id='cabin-one'"
+                "UPDATE catalog_stock SET available=55 WHERE product_id='sony-wh-ch720n'"
             )
         self.close(run)
         with self.assertRaises(Exception), connect() as db:
@@ -483,35 +492,52 @@ class NegotiatedChecks(unittest.TestCase):
         from fastapi.testclient import TestClient
 
         with connect() as db:
-            legacy = create_run(db, 'success')
-            row = db.execute('SELECT * FROM buyers WHERE run_id=%s LIMIT 1', (legacy['run_id'],)).fetchone()
-            small = create_run(db, 'success', profile='small')
+            legacy = create_run(db, "success")
+            row = db.execute(
+                "SELECT * FROM buyers WHERE run_id=%s LIMIT 1", (legacy["run_id"],)
+            ).fetchone()
+            small = create_run(db, "success", profile="small")
         app.dependency_overrides[buyer] = lambda: row
         try:
             with TestClient(app) as client:
-                data = client.get('/api/journey').json()
-                self.assertIsNone(data['status'])
-                self.assertFalse(data['eligible'])
-                result = client.post('/api/session',json={'run_id':str(legacy['run_id']),'shopping':True},headers={'X-Coalition-Request':'1'})
+                data = client.get("/api/journey").json()
+                self.assertIsNone(data["status"])
+                self.assertFalse(data["eligible"])
+                result = client.post(
+                    "/api/session",
+                    json={"run_id": str(legacy["run_id"]), "shopping": True},
+                    headers={"X-Coalition-Request": "1"},
+                )
                 self.assertEqual(result.status_code, 200)
-                self.assertEqual(result.json()['run_id'],str(small['run_id']))
-                self.assertEqual(client.get('/api/purchases').json(), [])
+                self.assertNotEqual(result.json()["run_id"], str(small["run_id"]))
+                self.assertNotEqual(result.json()["run_id"], str(legacy["run_id"]))
+                self.assertEqual(client.get("/api/purchases").json(), [])
                 from urllib.parse import parse_qs, urlsplit
 
-                invite = parse_qs(urlsplit(legacy['preparation_links'][0]['url']).query)['invite'][0]
-                invited = client.post('/api/session',json={'run_id':str(legacy['run_id']),'invite':invite,'shopping':True},headers={'X-Coalition-Request':'1'})
-                self.assertEqual(invited.status_code,200)
-                self.assertEqual(invited.json()['run_id'],str(legacy['run_id']))
+                invite = parse_qs(
+                    urlsplit(legacy["preparation_links"][0]["url"]).fragment
+                )["invite"][0]
+                invited = client.post(
+                    "/api/session",
+                    json={
+                        "run_id": str(legacy["run_id"]),
+                        "invite": invite,
+                        "shopping": True,
+                    },
+                    headers={"X-Coalition-Request": "1"},
+                )
+                self.assertEqual(invited.status_code, 200)
+                self.assertEqual(invited.json()["run_id"], str(legacy["run_id"]))
         finally:
             app.dependency_overrides.clear()
         run, hero, _, _ = self.prepare(5)
         app.dependency_overrides[buyer] = lambda: hero
         try:
             with TestClient(app) as client:
-                items = client.get('/api/purchases').json()
-                self.assertEqual(len(items),1)
-                self.assertEqual(items[0]['run_id'],str(run['run_id']))
+                items = client.get("/api/purchases").json()
+                self.assertEqual(len(items), 1)
+                self.assertEqual(items[0]["run_id"], str(run["run_id"]))
         finally:
             app.dependency_overrides.clear()
         with TestClient(app) as client:
-            self.assertEqual(client.get('/api/purchases').status_code,401)
+            self.assertEqual(client.get("/api/purchases").status_code, 401)

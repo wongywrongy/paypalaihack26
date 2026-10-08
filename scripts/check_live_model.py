@@ -1,212 +1,178 @@
-"""Isolated GPU model check: live eligibility and negotiation, no payment operations.
-COALITION_TEST_DATABASE_URL=... PYTHONPATH=backend python scripts/check_live_model.py
-Requires Ollama, plus PostgreSQL permission to create/drop a disposable schema.
+"""Configured-provider evidence in a disposable schema; no payment credentials or mutations.
+Load backend environment, set COALITION_TEST_DATABASE_URL, then run this script.
 """
 
 import json
 import os
-import secrets
-import subprocess
-import tempfile
 import time
 from pathlib import Path
-from urllib.parse import urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from uuid import uuid4
 
-import httpx
 import psycopg
 
-base = os.environ.get(
-    "COALITION_TEST_DATABASE_URL",
-    "postgresql://coalition:coalition@localhost:5432/coalition",
-)
-upstream = os.environ.get("OLLAMA_UPSTREAM", os.environ.get("OLLAMA_HOST", ""))
-if not upstream:
-    raise SystemExit("Set OLLAMA_UPSTREAM to this server's Ollama origin.")
-if not upstream.startswith("http"):
-    upstream = "http://" + upstream
+base = os.environ["COALITION_TEST_DATABASE_URL"]
 schema = "coalition_model_" + uuid4().hex
 parts = urlsplit(base)
+query = dict(parse_qsl(parts.query)) | {"options": "-csearch_path=" + schema}
 os.environ.update(
-    DATABASE_URL=urlunsplit(
-        (*parts[:3], urlencode({"options": "-csearch_path=" + schema}), parts.fragment)
-    ),
+    DATABASE_URL=urlunsplit((*parts[:3], urlencode(query), parts.fragment)),
     COALITION_MODE="connected",
-    PUBLIC_URL="http://127.0.0.1:8015",
-    LLM_BASE_URL="http://127.0.0.1:8015/api/model",
-    LLM_API_KEY=secrets.token_urlsafe(32),
-    LLM_MODEL="qwen3:30b-a3b-instruct-2507-q4_K_M",
-    LLM_PROTOCOL="ollama",
-    OLLAMA_UPSTREAM=upstream,
     PAYPAL_CLIENT_ID="",
     PAYPAL_CLIENT_SECRET="",
+    # Explicit marker for model-only offers, never an actual sandbox merchant.
     PAYPAL_MERCHANT_ID="MODEL-CHECK-NO-PAYMENTS",
     PAYPAL_WEBHOOK_ID="",
 )
-from coalition.db import connect, init_db, seed
+from coalition.config import settings
+from coalition.db import connect, engine, init_db, seed
 from coalition.demo import create_run
-from coalition.matching import Constraints, RequestInput, run_match, submit_request
+from coalition.matching import RequestInput, latest_request, run_match, submit_request
 from coalition.negotiation import run_negotiation, start
+from coalition.offers import terms_for
+from coalition.shopping import draft
 
+if (
+    settings.database_url != os.environ["DATABASE_URL"]
+    or settings.mode != "connected"
+    or settings.paypal_client_id
+    or settings.paypal_client_secret
+):
+    raise RuntimeError(
+        "Model check must load its disposable, payment-disabled environment before coalition imports."
+    )
+
+cases = [
+    (
+        "Noise-canceling headphones under $100 for my iPhone 12. I can wait a week.",
+        "sony-wh-ch720n",
+    ),
+    (
+        "Bluetooth headphones under $80 for my iPhone 12. I can wait 5 days.",
+        "sony-wh-ch520",
+    ),
+    (
+        "Noise-canceling headphones under $350. I can wait 14 days.",
+        "sony-wh-1000xm5",
+    ),
+    ("Headphones maximum $66. I can wait 5 days.", "sony-wh-ch520"),
+    ("Headphones under $100", None),
+    ("Headphones under $90 for my iPhone 12. I can wait 10 days.", "sony-wh-ch720n"),
+]
+record = {
+    "model": settings.llm_model,
+    "protocol": settings.llm_protocol,
+    "payment_operations": 0,
+    "cases": [],
+}
 with psycopg.connect(base, autocommit=True) as db:
     db.execute("CREATE SCHEMA " + schema)
-server = None
 try:
     init_db()
     seed()
-    with tempfile.TemporaryFile() as log:
-        server = subprocess.Popen(
-            [
-                ".venv/bin/python",
-                "-m",
-                "uvicorn",
-                "coalition.main:app",
-                "--host",
-                "127.0.0.1",
-                "--port",
-                "8015",
-            ],
-            stdout=log,
-            stderr=log,
-            cwd=Path(__file__).resolve().parents[1],
-        )
-        for _ in range(100):
-            try:
-                if httpx.get("http://127.0.0.1:8015/api/health", timeout=1).is_success:
-                    break
-            except httpx.HTTPError:
-                pass
-            time.sleep(0.1)
-        else:
-            raise RuntimeError("Model gateway did not start.")
-        assert (
-            httpx.post(
-                "http://127.0.0.1:8015/api/model/v1/chat/completions", json={}
-            ).status_code
-            == 401
-        )
+    for index, (raw, product) in enumerate(cases):
+        begun = time.monotonic()
         with connect() as db:
-            run = create_run(db, "success", profile="small")
-            bid = uuid4()
-            db.execute(
-                "INSERT INTO buyers(id,run_id,name,persona) VALUES(%s,%s,'Model check','{}')",
-                (bid, run["run_id"]),
-            )
-            buyer = db.execute("SELECT * FROM buyers WHERE id=%s", (bid,)).fetchone()
-            submit_request(
-                db,
-                buyer,
-                RequestInput(
-                    raw_text="Noise-canceling headphones for flights, under $100, works with my iPhone 12. I can wait a week."
-                ),
-            )
-            requests = db.execute(
-                "SELECT q.id FROM buyer_requests q JOIN buyers b ON b.id=q.buyer_id WHERE b.run_id=%s ORDER BY (q.buyer_id=%s) DESC",
-                (run["run_id"], bid),
-            ).fetchall()
-            db.commit()
-            for r in requests:
-                begun = time.monotonic()
-                run_match(db, r["id"])
+            if index == 5:
+                run = create_run(db, "success", profile="small")
                 db.commit()
-                status = db.execute(
-                    "SELECT status,error FROM buyer_requests WHERE id=%s", (r["id"],)
+                for request in db.execute(
+                    "SELECT q.id FROM buyer_requests q JOIN buyers b ON b.id=q.buyer_id WHERE b.run_id=%s",
+                    (run["run_id"],),
+                ).fetchall():
+                    run_match(db, request["id"])
+                    db.commit()
+                buyer = db.execute(
+                    "SELECT * FROM buyers WHERE run_id=%s AND name='Sam'",
+                    (run["run_id"],),
                 ).fetchone()
-                print(
-                    {
-                        "live_matching": status["status"],
-                        "seconds": round(time.monotonic() - begun, 2),
-                    },
-                    flush=True,
-                )
-                assert status["status"] == "completed", status["error"]
-                print(
-                    db.execute(
-                        "SELECT constraints FROM buyer_requests WHERE id=%s", (r["id"],)
-                    ).fetchone(),
-                    flush=True,
-                )
-                checks = db.execute(
-                    "SELECT product_id,eligible,requirements FROM compatibility_assessments WHERE request_id=%s",
-                    (r["id"],),
+            else:
+                buyer = draft(db)
+                request = submit_request(db, buyer, RequestInput(raw_text=raw))
+                db.commit()
+                run_match(db, request["id"])
+            db.commit()
+            result = latest_request(db, buyer["id"])
+            case = {
+                "request": raw,
+                "status": result["status"],
+                "constraints": result["constraints"],
+                "error_kind": result["error_kind"],
+            }
+            case["assessments"] = db.execute(
+                "SELECT product_id,eligible,requirements FROM compatibility_assessments WHERE request_id=%s ORDER BY product_id",
+                (result["id"],),
+            ).fetchall()
+            if index == 5:
+                case["simulated_personas"] = db.execute(
+                    "SELECT b.name,q.status,q.constraints FROM buyers b JOIN buyer_requests q ON q.buyer_id=b.id WHERE b.run_id=%s ORDER BY b.name",
+                    (buyer["run_id"],),
                 ).fetchall()
-                if not any(a["eligible"] for a in checks):
-                    print(checks, flush=True)
-                    raise AssertionError("No eligible offer for the canonical request")
-            req = db.execute(
-                "SELECT id FROM buyer_requests WHERE buyer_id=%s", (bid,)
-            ).fetchone()["id"]
-            results = db.execute(
-                "SELECT product_id,eligible FROM compatibility_assessments WHERE request_id=%s ORDER BY product_id",
-                (req,),
-            ).fetchall()
-            print({"live_eligibility": results}, flush=True)
-            assert not next(r for r in results if r["product_id"] == "mystery-sound")[
-                "eligible"
-            ]
-            original = db.execute(
-                "SELECT raw_text,constraints FROM buyer_requests WHERE id=%s", (req,)
-            ).fetchone()
-            constraints = Constraints.model_validate_json(
-                json.dumps(original["constraints"])
-            )
-            for maximum in (8600, constraints.max_total_minor):
-                edited = constraints.model_copy(update={"max_total_minor": maximum})
-                change = submit_request(
-                    db, buyer, RequestInput(raw_text=original["raw_text"], edits=edited)
-                )
-                db.commit()
-                run_match(db, change["id"])
-                db.commit()
-                evaluated = db.execute(
-                    "SELECT status FROM buyer_requests WHERE id=%s", (change["id"],)
-                ).fetchone()
-                eligible = db.execute(
-                    "SELECT count(*) AS n FROM compatibility_assessments WHERE request_id=%s AND eligible",
-                    (change["id"],),
-                ).fetchone()["n"]
-                assert evaluated["status"] == "completed"
-                assert (eligible == 0) == (maximum == 8600)
-                print(
-                    {"live_edited_maximum": maximum, "eligible_offers": eligible},
-                    flush=True,
-                )
-            selected = next(r["product_id"] for r in results if r["eligible"])
-            n = start(db, buyer, selected)
-            db.commit()
-            begun = time.monotonic()
-            run_negotiation(db, n["id"])
-            db.commit()
-            result = db.execute(
-                "SELECT status,error,token_count FROM negotiations WHERE id=%s",
-                (n["id"],),
-            ).fetchone()
-            print(
-                {
-                    "live_negotiation": result,
-                    "seconds": round(time.monotonic() - begun, 2),
-                },
-                flush=True,
-            )
-            rounds = db.execute(
-                "SELECT ordinal,role,valid,public_summary,private_error FROM negotiation_rounds WHERE negotiation_id=%s ORDER BY ordinal",
-                (n["id"],),
-            ).fetchall()
-            print({"rounds": rounds}, flush=True)
-            assert result["status"] == "accepted", result["error"]
+                case["confirmed_authorizations"] = 0
+            if product and result["status"] == "completed":
+                try:
+                    n = start(db, buyer, product)
+                    db.commit()
+                    if n["id"]:
+                        run_negotiation(db, n["id"])
+                        db.commit()
+                        case["negotiation"] = db.execute(
+                            "SELECT status,error,token_count FROM negotiations WHERE id=%s",
+                            (n["id"],),
+                        ).fetchone()
+                        case["rounds"] = db.execute(
+                            "SELECT ordinal,role,valid,public_summary FROM negotiation_rounds WHERE negotiation_id=%s ORDER BY ordinal",
+                            (n["id"],),
+                        ).fetchall()
+                    group = db.execute(
+                        "SELECT id,offer_id FROM groups WHERE run_id=%s", (n["run_id"],)
+                    ).fetchone()
+                    if group["offer_id"]:
+                        terms = terms_for(db, group["id"])
+                        case["agreement"] = {
+                            k: terms[k]
+                            for k in (
+                                "product_id",
+                                "total_minor",
+                                "tier_schedule",
+                                "delivery_by",
+                                "close_at",
+                                "policy_id",
+                            )
+                        }
+                except Exception as exc:
+                    db.rollback()
+                    case["negotiation_error_type"] = type(exc).__name__
+            case["seconds"] = round(time.monotonic() - begun, 2)
             assert (
                 db.execute("SELECT count(*) AS n FROM payment_operations").fetchone()[
                     "n"
                 ]
                 == 0
             )
-            print(
-                "Live structured matching and merchant-authorized agreement passed; no payment operations.",
-                flush=True,
-            )
+            record["cases"].append(case)
+            print(json.dumps(case), flush=True)
+    if output := os.environ.get("COALITION_MODEL_RECORD"):
+        Path(output).write_text(json.dumps(record, indent=2) + "\n")
+    assert record["cases"][4]["status"] == "clarification", (
+        "Incomplete request must clarify"
+    )
+    assert all(
+        c["status"] == "completed" for i, c in enumerate(record["cases"]) if i != 4
+    ), "Configured-provider evaluation failed"
+    assert all(c.get("agreement") for c in record["cases"][:3]), (
+        "Feasible negotiation did not agree; inspect record"
+    )
+    assert not record["cases"][3].get("agreement"), (
+        "Merchant floor must prevent this agreement"
+    )
+    assert record["cases"][5].get("agreement") and all(
+        p["status"] == "completed" for p in record["cases"][5]["simulated_personas"]
+    ), "Five simulated live-evaluated requests did not produce a valid agreement"
+    print(
+        "Configured-provider variation and no-agreement checks passed; no PayPal operations."
+    )
 finally:
-    if server:
-        server.terminate()
-        server.wait(timeout=10)
+    engine().dispose()
     with psycopg.connect(base, autocommit=True) as db:
         db.execute("DROP SCHEMA " + schema + " CASCADE")

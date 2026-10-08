@@ -1,0 +1,522 @@
+{
+  "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+  "protocol": "ollama",
+  "payment_operations": 0,
+  "cases": [
+    {
+      "request": "Noise-canceling headphones under $100 for my iPhone 12. I can wait a week.",
+      "status": "completed",
+      "constraints": {
+        "device": "iPhone 12",
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-14",
+        "max_total_minor": 9999,
+        "product_category": "Headphones",
+        "required_features": [
+          "Active noise cancellation"
+        ]
+      },
+      "error_kind": null,
+      "assessments": [
+        {
+          "product_id": "air-light",
+          "eligible": false
+        },
+        {
+          "product_id": "cabin-one",
+          "eligible": true
+        },
+        {
+          "product_id": "cabin-pro",
+          "eligible": true
+        },
+        {
+          "product_id": "mystery-sound",
+          "eligible": false
+        },
+        {
+          "product_id": "quiet-wire",
+          "eligible": true
+        },
+        {
+          "product_id": "travel-studio",
+          "eligible": false
+        }
+      ],
+      "negotiation": {
+        "status": "accepted",
+        "error": null,
+        "token_count": 5651
+      },
+      "rounds": [
+        {
+          "ordinal": 1,
+          "role": "buyer",
+          "valid": true,
+          "public_summary": "Buyer agent: Proposed $92.00 at 3 buyers / $88.00 at 5 buyers."
+        },
+        {
+          "ordinal": 2,
+          "role": "merchant",
+          "valid": true,
+          "public_summary": "Merchant agent: Proposed $92.00 at 3 buyers / $88.00 at 5 buyers."
+        },
+        {
+          "ordinal": 3,
+          "role": "buyer",
+          "valid": true,
+          "public_summary": "Buyer agent: Accepted the validated merchant quote."
+        }
+      ],
+      "agreement": {
+        "product_id": "cabin-one",
+        "total_minor": 9200,
+        "tier_schedule": [
+          {
+            "minimum_buyers": 3,
+            "total_each_cents": 9200
+          },
+          {
+            "minimum_buyers": 5,
+            "total_each_cents": 8800
+          }
+        ],
+        "delivery_by": "2026-10-14T23:59:59+00:00",
+        "close_at": "2026-10-07T20:48:43+00:00",
+        "policy_id": "commuter-v2"
+      },
+      "seconds": 9.15
+    },
+    {
+      "request": "Bluetooth headphones under $80 for my iPhone 12. I can wait 5 days.",
+      "status": "completed",
+      "constraints": {
+        "device": "iPhone 12",
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-12",
+        "max_total_minor": 7999,
+        "product_category": "Headphones",
+        "required_features": [
+          "Bluetooth audio"
+        ]
+      },
+      "error_kind": null,
+      "assessments": [
+        {
+          "product_id": "air-light",
+          "eligible": true
+        },
+        {
+          "product_id": "cabin-one",
+          "eligible": false
+        },
+        {
+          "product_id": "cabin-pro",
+          "eligible": false
+        },
+        {
+          "product_id": "mystery-sound",
+          "eligible": false
+        },
+        {
+          "product_id": "quiet-wire",
+          "eligible": false
+        },
+        {
+          "product_id": "travel-studio",
+          "eligible": false
+        }
+      ],
+      "negotiation": {
+        "status": "accepted",
+        "error": null,
+        "token_count": 5601
+      },
+      "rounds": [
+        {
+          "ordinal": 1,
+          "role": "buyer",
+          "valid": true,
+          "public_summary": "Buyer agent: Proposed $75.00 at 3 buyers / $69.00 at 5 buyers."
+        },
+        {
+          "ordinal": 2,
+          "role": "merchant",
+          "valid": true,
+          "public_summary": "Merchant agent: Proposed $75.00 at 3 buyers / $69.00 at 5 buyers."
+        },
+        {
+          "ordinal": 3,
+          "role": "buyer",
+          "valid": true,
+          "public_summary": "Buyer agent: Accepted the validated merchant quote."
+        }
+      ],
+      "agreement": {
+        "product_id": "air-light",
+        "total_minor": 7500,
+        "tier_schedule": [
+          {
+            "minimum_buyers": 3,
+            "total_each_cents": 7500
+          },
+          {
+            "minimum_buyers": 5,
+            "total_each_cents": 6900
+          }
+        ],
+        "delivery_by": "2026-10-11T23:59:59+00:00",
+        "close_at": "2026-10-07T20:48:52+00:00",
+        "policy_id": "value-v2"
+      },
+      "seconds": 9.58
+    },
+    {
+      "request": "Headphones under $140 with proven noise reduction for flights. I can wait 14 days.",
+      "status": "completed",
+      "constraints": {
+        "device": null,
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-21",
+        "max_total_minor": 13999,
+        "product_category": "Headphones",
+        "required_features": [
+          "Active noise cancellation",
+          "Flight effectiveness"
+        ]
+      },
+      "error_kind": null,
+      "assessments": [
+        {
+          "product_id": "air-light",
+          "eligible": false
+        },
+        {
+          "product_id": "cabin-one",
+          "eligible": false
+        },
+        {
+          "product_id": "cabin-pro",
+          "eligible": true
+        },
+        {
+          "product_id": "mystery-sound",
+          "eligible": false
+        },
+        {
+          "product_id": "quiet-wire",
+          "eligible": false
+        },
+        {
+          "product_id": "travel-studio",
+          "eligible": true
+        }
+      ],
+      "negotiation": {
+        "status": "accepted",
+        "error": null,
+        "token_count": 5631
+      },
+      "rounds": [
+        {
+          "ordinal": 1,
+          "role": "buyer",
+          "valid": true,
+          "public_summary": "Buyer agent: Proposed $120.00 at 3 buyers / $110.00 at 5 buyers."
+        },
+        {
+          "ordinal": 2,
+          "role": "merchant",
+          "valid": true,
+          "public_summary": "Merchant agent: Proposed $120.00 at 3 buyers / $110.00 at 5 buyers."
+        },
+        {
+          "ordinal": 3,
+          "role": "buyer",
+          "valid": true,
+          "public_summary": "Buyer agent: Accepted the validated merchant quote."
+        }
+      ],
+      "agreement": {
+        "product_id": "travel-studio",
+        "total_minor": 12000,
+        "tier_schedule": [
+          {
+            "minimum_buyers": 3,
+            "total_each_cents": 12000
+          },
+          {
+            "minimum_buyers": 5,
+            "total_each_cents": 11000
+          }
+        ],
+        "delivery_by": "2026-10-19T23:59:59+00:00",
+        "close_at": "2026-10-07T20:49:00+00:00",
+        "policy_id": "studio-v2"
+      },
+      "seconds": 8.14
+    },
+    {
+      "request": "Headphones maximum $66. I can wait 5 days.",
+      "status": "completed",
+      "constraints": {
+        "device": null,
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-12",
+        "max_total_minor": 6600,
+        "product_category": "Headphones",
+        "required_features": []
+      },
+      "error_kind": null,
+      "assessments": [
+        {
+          "product_id": "air-light",
+          "eligible": true
+        },
+        {
+          "product_id": "cabin-one",
+          "eligible": false
+        },
+        {
+          "product_id": "cabin-pro",
+          "eligible": false
+        },
+        {
+          "product_id": "mystery-sound",
+          "eligible": false
+        },
+        {
+          "product_id": "quiet-wire",
+          "eligible": true
+        },
+        {
+          "product_id": "travel-studio",
+          "eligible": false
+        }
+      ],
+      "negotiation": {
+        "status": "failed",
+        "error": "No agreement reached within three exchanges.",
+        "token_count": 13692
+      },
+      "rounds": [
+        {
+          "ordinal": 1,
+          "role": "buyer",
+          "valid": false,
+          "public_summary": "Buyer agent: Invalid output; no executable quote."
+        },
+        {
+          "ordinal": 2,
+          "role": "merchant",
+          "valid": true,
+          "public_summary": "Merchant agent: Proposed $75.00 at 3 buyers / $69.00 at 5 buyers."
+        },
+        {
+          "ordinal": 3,
+          "role": "buyer",
+          "valid": false,
+          "public_summary": "Buyer agent: Invalid output; no executable quote."
+        },
+        {
+          "ordinal": 4,
+          "role": "merchant",
+          "valid": true,
+          "public_summary": "Merchant agent: Proposed $75.00 at 3 buyers / $69.00 at 5 buyers."
+        },
+        {
+          "ordinal": 5,
+          "role": "buyer",
+          "valid": false,
+          "public_summary": "Buyer agent: Invalid output; no executable quote."
+        },
+        {
+          "ordinal": 6,
+          "role": "merchant",
+          "valid": true,
+          "public_summary": "Merchant agent: Proposed $75.00 at 3 buyers / $69.00 at 5 buyers."
+        }
+      ],
+      "seconds": 10.73
+    },
+    {
+      "request": "Headphones under $100",
+      "status": "clarification",
+      "constraints": {
+        "device": null,
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": null,
+        "max_total_minor": 9999,
+        "product_category": "Headphones",
+        "required_features": []
+      },
+      "error_kind": "missing_information",
+      "assessments": [],
+      "seconds": 0.81
+    },
+    {
+      "request": "Headphones under $90 for my iPhone 12. I can wait 10 days.",
+      "status": "completed",
+      "constraints": {
+        "device": "iPhone 12",
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-17",
+        "max_total_minor": 8999,
+        "product_category": "Headphones",
+        "required_features": []
+      },
+      "error_kind": null,
+      "assessments": [
+        {
+          "product_id": "air-light",
+          "eligible": false
+        },
+        {
+          "product_id": "cabin-one",
+          "eligible": true
+        },
+        {
+          "product_id": "cabin-pro",
+          "eligible": false
+        },
+        {
+          "product_id": "mystery-sound",
+          "eligible": false
+        },
+        {
+          "product_id": "quiet-wire",
+          "eligible": true
+        },
+        {
+          "product_id": "travel-studio",
+          "eligible": false
+        }
+      ],
+      "simulated_personas": [
+        {
+          "name": "Aisha",
+          "status": "completed",
+          "constraints": {
+            "device": "iPhone 12",
+            "quantity": 1,
+            "flexibility": [],
+            "latest_arrival": "2026-10-16",
+            "max_total_minor": 9499,
+            "product_category": "Headphones",
+            "required_features": [
+              "Bluetooth audio"
+            ]
+          }
+        },
+        {
+          "name": "Leo",
+          "status": "completed",
+          "constraints": {
+            "device": null,
+            "quantity": 1,
+            "flexibility": [],
+            "latest_arrival": "2026-10-15",
+            "max_total_minor": 9200,
+            "product_category": "Headphones",
+            "required_features": [
+              "Active noise cancellation"
+            ]
+          }
+        },
+        {
+          "name": "Maya",
+          "status": "completed",
+          "constraints": {
+            "device": "iPhone 12",
+            "quantity": 1,
+            "flexibility": [],
+            "latest_arrival": "2026-10-14",
+            "max_total_minor": 9999,
+            "product_category": "Headphones",
+            "required_features": [
+              "Active noise cancellation"
+            ]
+          }
+        },
+        {
+          "name": "Noah",
+          "status": "completed",
+          "constraints": {
+            "device": null,
+            "quantity": 1,
+            "flexibility": [],
+            "latest_arrival": "2026-10-14",
+            "max_total_minor": 11999,
+            "product_category": "Headphones",
+            "required_features": [
+              "Active noise cancellation"
+            ]
+          }
+        },
+        {
+          "name": "Sam",
+          "status": "completed",
+          "constraints": {
+            "device": "iPhone 12",
+            "quantity": 1,
+            "flexibility": [],
+            "latest_arrival": "2026-10-17",
+            "max_total_minor": 8999,
+            "product_category": "Headphones",
+            "required_features": []
+          }
+        }
+      ],
+      "confirmed_authorizations": 0,
+      "negotiation": {
+        "status": "accepted",
+        "error": null,
+        "token_count": 5697
+      },
+      "rounds": [
+        {
+          "ordinal": 1,
+          "role": "buyer",
+          "valid": true,
+          "public_summary": "Buyer agent: Proposed $89.00 at 3 buyers / $88.00 at 5 buyers."
+        },
+        {
+          "ordinal": 2,
+          "role": "merchant",
+          "valid": true,
+          "public_summary": "Merchant agent: Proposed $89.00 at 3 buyers / $88.00 at 5 buyers."
+        },
+        {
+          "ordinal": 3,
+          "role": "buyer",
+          "valid": true,
+          "public_summary": "Buyer agent: Accepted the validated merchant quote."
+        }
+      ],
+      "agreement": {
+        "product_id": "cabin-one",
+        "total_minor": 8900,
+        "tier_schedule": [
+          {
+            "minimum_buyers": 3,
+            "total_each_cents": 8900
+          },
+          {
+            "minimum_buyers": 5,
+            "total_each_cents": 8800
+          }
+        ],
+        "delivery_by": "2026-10-14T23:59:59+00:00",
+        "close_at": "2026-10-07T20:49:33+00:00",
+        "policy_id": "commuter-v2"
+      },
+      "seconds": 21.28
+    }
+  ]
+}

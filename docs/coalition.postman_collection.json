@@ -206,36 +206,6 @@
       }
     },
     {
-      "name": "Evaluate need",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          },
-          {
-            "key": "Origin",
-            "value": "{{origin}}"
-          },
-          {
-            "key": "X-Coalition-Request",
-            "value": "1"
-          }
-        ],
-        "url": "{{base_url}}/api/assistant",
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"request_text\": \"Below $70, delivery within 2 days, exact Arc 991 in Graphite.\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        }
-      }
-    },
-    {
       "name": "Prepare small request-first run",
       "request": {
         "method": "POST",

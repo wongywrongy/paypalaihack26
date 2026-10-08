@@ -90,7 +90,7 @@ interface Created {
 export default function Operator({ config }: { config: Config | null }) {
   const assistantEnabled = config?.mode === "fixture" || !!config?.llm_configured;
   const [demo, setDemo] = useState(true);
-  const [profile,setProfile]=useState("small"),[closeSeconds,setCloseSeconds]=useState(600);
+  const [closeSeconds,setCloseSeconds]=useState(600);
   const [token, setToken] = useState(""),
     [runs, setRuns] = useState<Run[]>([]),
     [selected, setSelected] = useState(""),
@@ -209,7 +209,7 @@ export default function Operator({ config }: { config: Config | null }) {
                 required
               />
             </label>
-            <button className="add-to-bag" type="submit">
+            <button className="operator-button" type="submit">
               Open operator controls
               <Icon name="arrow" size={17} />
             </button>
@@ -232,8 +232,7 @@ export default function Operator({ config }: { config: Config | null }) {
                 />{" "}
                 Prepare sandbox participants before activation
               </label>
-              <label>Profile<select value={profile} onChange={e=>setProfile(e.target.value)}><option value="small">Small live · capacity 5 · tiers 3/5</option><option value="large">Large illustrative · capacity 60 · tiers 25/50</option><option value="legacy">Preserved calculator · fixed $65</option></select></label>
-              {profile!=="legacy" && <label>Closing window · seconds<input className="operator-deadline" type="number" min={90} max={1800} value={closeSeconds} onChange={e=>setCloseSeconds(Number(e.target.value))}/></label>}
+              <label>Closing window · seconds<input className="operator-deadline" type="number" min={90} max={1800} value={closeSeconds} onChange={e=>setCloseSeconds(Number(e.target.value))}/></label>
               <label>
                 Scenario
                 <select
@@ -255,13 +254,13 @@ export default function Operator({ config }: { config: Config | null }) {
                 </select>
               </label>
               <button
-                className="add-to-bag"
+                className="operator-button"
                 disabled={busy}
                 onClick={() =>
                   action(async () => {
                     const r = await api<Created>(
                       "/operator/runs",
-                      { scenario, demo, profile, close_seconds: closeSeconds },
+                      { scenario, demo, profile: "small", close_seconds: closeSeconds },
                       token,
                     );
                     setCreated(r);

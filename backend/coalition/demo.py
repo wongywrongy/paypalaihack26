@@ -5,74 +5,15 @@ from uuid import uuid4
 from psycopg.types.json import Jsonb
 
 from .config import settings
-from .db import enqueue
-
-PERSONAS = [
-    ("Maya", 7000, 10),
-    ("Leo", 6800, 8),
-    ("Aisha", 7500, 9),
-    ("Noah", 6500, 7),
-    ("Sam", 7000, 2),
-]
 
 
 def digest(token):
     return hashlib.sha256(token.encode()).hexdigest()
 
 
-def create_run(db, scenario, demo=True, profile="legacy"):
-    if profile != "legacy":
-        return create_request_run(db, scenario, demo, profile)
-    from .offers import publish
-
-    terms = publish(db)
-    run_id, group_id = uuid4(), uuid4()
-    db.execute(
-        "INSERT INTO runs(id,mode,scenario) VALUES(%s,%s,%s)",
-        (run_id, settings.mode, scenario),
-    )
-    db.execute(
-        "INSERT INTO groups(id,run_id,offer_id,demo,activated,deadline) VALUES(%s,%s,%s,%s,%s,CASE WHEN %s THEN NULL ELSE now()+interval '24 hours' END)",
-        (group_id, run_id, terms["offer_id"], demo, not demo, demo),
-    )
-    invites = []
-    for name, budget, days in PERSONAS:
-        buyer_id, token = uuid4(), secrets.token_urlsafe(32)
-        persona = {
-            "budget_minor": budget,
-            "delivery_days": days,
-            "product_id": "arc-991",
-            "variant": "Graphite",
-            "needs": "Required exact calculator for introductory engineering; no substitutions.",
-        }
-        db.execute(
-            "INSERT INTO buyers(id,run_id,name,persona,invite_hash,prepared) VALUES(%s,%s,%s,%s,%s,true)",
-            (buyer_id, run_id, name, Jsonb(persona), digest(token)),
-        )
-        if settings.mode == "fixture" or settings.llm_api_key:
-            decision_id = uuid4()
-            db.execute(
-                "INSERT INTO ai_decisions(id,buyer_id,group_id,mode) VALUES(%s,%s,%s,%s)",
-                (decision_id, buyer_id, group_id, settings.mode),
-            )
-            enqueue(db, "ai", {"decision_id": str(decision_id)}, f"ai:{decision_id}")
-        invites.append(
-            {
-                "name": name,
-                "buyer_id": str(buyer_id),
-                "url": f"{settings.public_url}/?run={run_id}&invite={token}",
-            }
-        )
-    enqueue(db, "tick", {"group_id": str(group_id)}, f"tick:{group_id}")
-    return {
-        "run_id": str(run_id),
-        "group_id": str(group_id),
-        "judge_url": f"{settings.public_url}/?run={run_id}",
-        "preparation_links": invites,
-    }
-
-
-def create_request_run(db, scenario, demo, profile):
+def create_run(db, scenario, demo=True, profile="small"):
+    if profile != "small":
+        raise ValueError("Only five-person headphone runs can be prepared.")
     run_id, group_id = uuid4(), uuid4()
     db.execute(
         "INSERT INTO runs(id,mode,scenario,profile) VALUES(%s,%s,%s,%s)",
@@ -83,31 +24,33 @@ def create_request_run(db, scenario, demo, profile):
         (group_id, run_id, demo),
     )
     invites = []
-    count = 4 if profile == "small" else 61
     from .matching import RequestInput, submit_request
 
-    for i in range(count):
+    for i in range(5):
         bid, token = uuid4(), secrets.token_urlsafe(32)
-        name = (
-            ["Maya", "Leo", "Aisha", "Noah"][i] if i < 4 else f"Simulated buyer {i + 1}"
-        )
+        name = ["Maya", "Leo", "Aisha", "Noah", "Sam"][i]
         db.execute(
             "INSERT INTO buyers(id,run_id,name,persona,invite_hash,prepared) VALUES(%s,%s,%s,%s,%s,true)",
             (bid, run_id, name, Jsonb({}), digest(token)),
         )
         b = {"id": bid, "run_id": run_id}
+        requests = [
+            "Noise-canceling headphones under $100 for my iPhone 12. I can wait a week.",
+            "Noise-canceling headphones, maximum $92. I can wait 8 days.",
+            "Bluetooth headphones under $95 for my iPhone 12. I can wait 9 days.",
+            "Noise-canceling headphones under $120. I can wait 7 days.",
+            "Headphones under $90 for my iPhone 12. I can wait 10 days.",
+        ]
         submit_request(
             db,
             b,
-            RequestInput(
-                raw_text="Noise-canceling headphones for flights, under $100, works with my iPhone 12. I can wait a week."
-            ),
+            RequestInput(raw_text=requests[i]),
         )
         invites.append(
             {
                 "name": name,
                 "buyer_id": str(bid),
-                "url": f"{settings.public_url}/?run={run_id}&invite={token}",
+                "url": f"{settings.public_url}/?run={run_id}#invite={token}",
             }
         )
     return {

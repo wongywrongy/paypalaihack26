@@ -1,0 +1,209 @@
+{
+  "source": "https://developer.paypal.com/api/payments/v2/",
+  "retrieved_utc": "2026-10-07",
+  "note": "Official example bodies preserved verbatim; contract tests adapt only IDs, amounts, dates and sandbox hosts. These are fixtures, not sandbox transactions.",
+  "examples": {
+    "authorization": {
+      "id": "0T620041CK889853A",
+      "status": "CREATED",
+      "amount": {
+        "currency_code": "USD",
+        "value": "100.00"
+      },
+      "invoice_id": "OrderInvoice-23_10_2024_12_27_32_pm",
+      "seller_protection": {
+        "status": "ELIGIBLE",
+        "dispute_categories": [
+          "ITEM_NOT_RECEIVED",
+          "UNAUTHORIZED_TRANSACTION"
+        ]
+      },
+      "supplementary_data": {
+        "related_ids": {
+          "order_id": "25M43554V9523650M"
+        }
+      },
+      "payee": {
+        "email_address": "merchant@example.com",
+        "merchant_id": "YXZY75W2GKDQE"
+      },
+      "expiration_time": "2024-11-21T17:27:36Z",
+      "create_time": "2024-10-23T17:27:36Z",
+      "update_time": "2024-10-23T17:27:36Z",
+      "links": [
+        {
+          "href": "https://api-m.sandbox.paypal.com/v2/payments/authorizations/0T620041CK889853A",
+          "rel": "self",
+          "method": "GET"
+        },
+        {
+          "href": "https://api-m.sandbox.paypal.com/v2/payments/authorizations/0T620041CK889853A/capture",
+          "rel": "capture",
+          "method": "POST"
+        },
+        {
+          "href": "https://api-m.sandbox.paypal.com/v2/payments/authorizations/0T620041CK889853A/void",
+          "rel": "void",
+          "method": "POST"
+        },
+        {
+          "href": "https://api-m.sandbox.paypal.com/v2/payments/authorizations/0T620041CK889853A/reauthorize",
+          "rel": "reauthorize",
+          "method": "POST"
+        },
+        {
+          "href": "https://api-m.sandbox.paypal.com/v2/checkout/orders/25M43554V9523650M",
+          "rel": "up",
+          "method": "GET"
+        }
+      ]
+    },
+    "capture": {
+      "id": "2GG279541U471931P",
+      "status": "COMPLETED",
+      "status_details": {},
+      "amount": {
+        "value": "10.99",
+        "currency_code": "USD"
+      },
+      "final_capture": true,
+      "seller_protection": {
+        "status": "ELIGIBLE",
+        "dispute_categories": [
+          "ITEM_NOT_RECEIVED",
+          "UNAUTHORIZED_TRANSACTION"
+        ]
+      },
+      "seller_receivable_breakdown": {
+        "gross_amount": {
+          "value": "10.99",
+          "currency_code": "USD"
+        },
+        "paypal_fee": {
+          "value": "0.33",
+          "currency_code": "USD"
+        },
+        "net_amount": {
+          "value": "10.66",
+          "currency_code": "USD"
+        }
+      },
+      "invoice_id": "INV-123",
+      "create_time": "2017-09-11T23:24:01Z",
+      "update_time": "2017-09-11T23:24:01Z",
+      "links": [
+        {
+          "rel": "self",
+          "method": "GET",
+          "href": "https://api-m.paypal.com/v2/payments/captures/2GG279541U471931P"
+        },
+        {
+          "rel": "refund",
+          "method": "POST",
+          "href": "https://api-m.paypal.com/v2/payments/captures/2GG279541U471931P/refund"
+        },
+        {
+          "rel": "up",
+          "method": "GET",
+          "href": "https://api-m.paypal.com/v2/payments/authorizations/0VF52814937998046"
+        }
+      ]
+    },
+    "pending_capture": {
+      "id": "7TK53561YB803214S",
+      "amount": {
+        "currency_code": "USD",
+        "value": "100.00"
+      },
+      "final_capture": true,
+      "seller_protection": {
+        "status": "ELIGIBLE",
+        "dispute_categories": [
+          "ITEM_NOT_RECEIVED",
+          "UNAUTHORIZED_TRANSACTION"
+        ]
+      },
+      "seller_receivable_breakdown": {
+        "gross_amount": {
+          "currency_code": "USD",
+          "value": "100.00"
+        },
+        "paypal_fee": {
+          "currency_code": "USD",
+          "value": "3.98"
+        },
+        "net_amount": {
+          "currency_code": "USD",
+          "value": "96.02"
+        },
+        "exchange_rate": {}
+      },
+      "invoice_id": "OrderInvoice-10_10_2024_12_58_20_pm",
+      "status": "PENDING",
+      "status_details": {
+        "reason": "OTHER"
+      },
+      "create_time": "2024-10-14T21:37:10Z",
+      "update_time": "2024-10-14T21:37:10Z",
+      "links": [
+        {
+          "href": "https://api.msmaster.qa.paypal.com/v2/payments/captures/7TK53561YB803214S",
+          "rel": "self",
+          "method": "GET"
+        },
+        {
+          "href": "https://api.msmaster.qa.paypal.com/v2/payments/captures/7TK53561YB803214S/refund",
+          "rel": "refund",
+          "method": "POST"
+        },
+        {
+          "href": "https://api.msmaster.qa.paypal.com/v2/payments/authorizations/6DR965477U7140544",
+          "rel": "up",
+          "method": "GET"
+        }
+      ]
+    },
+    "refund": {
+      "id": "1JU08902781691411",
+      "amount": {
+        "value": "10.99",
+        "currency_code": "USD"
+      },
+      "status": "COMPLETED",
+      "note": "Defective product",
+      "seller_payable_breakdown": {
+        "gross_amount": {
+          "value": "10.99",
+          "currency_code": "USD"
+        },
+        "paypal_fee": {
+          "value": "0",
+          "currency_code": "USD"
+        },
+        "net_amount": {
+          "value": "10.99",
+          "currency_code": "USD"
+        },
+        "total_refunded_amount": {
+          "value": "10.99",
+          "currency_code": "USD"
+        }
+      },
+      "invoice_id": "INVOICE-123",
+      "create_time": "2018-09-11T23:24:19Z",
+      "update_time": "2018-09-11T23:24:19Z",
+      "links": [
+        {
+          "rel": "self",
+          "method": "GET",
+          "href": "https://api-m.paypal.com/v2/payments/refunds/1JU08902781691411"
+        },
+        {
+          "rel": "up",
+          "method": "GET",
+          "href": "https://api-m.paypal.com/v2/payments/captures/2GG279541U471931P"
+        }
+      ]
+    }
+  }
+}

@@ -1,3 +1,5 @@
+"""Complete historical calculator decision jobs; new shopping uses matching/negotiation."""
+
 import re
 from datetime import date, datetime, timedelta, timezone
 from typing import Literal

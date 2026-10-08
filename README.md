@@ -9,7 +9,7 @@ Coalition turns headphone requirements into a compatible group purchase. Buyers 
 Python 3.12+, Node 22+ and PostgreSQL 16 are required. Existing dependencies and the single API/worker architecture are retained.
 
 ```bash
-cp .env.example .env
+cp -n .env.example .env
 # Configure DATABASE_URL, PUBLIC_URL and a private OPERATOR_TOKEN.
 docker compose up --build
 ```
@@ -25,15 +25,15 @@ npm run dev --prefix frontend
 
 Load your private environment into **both** API and worker. Use `PUBLIC_URL=http://localhost:5173` for Vite, or the integrated server origin for a built frontend. Do not delete database volumes or payment history to reset a demo.
 
-Open `/operator`, enter the private token and prepare a **small** run. Share its request URL. `/` is the Coalition storefront with six products visible before search, `/purchases` lists the session owner’s saved purchases, `/shop` preserves the optional merchant widget, `/checkout?run=…` is buyer-owned persistent checkout, and `/how-group-pricing-works` explains pricing. Old calculator runs retain their fixed $65 terms and settlement behavior.
+Open `/` and shop directly; operator preparation is optional. A shopper cookie retains identity across selected deals and purchase history, while the URL selects a particular owned group. **Find another deal** starts/reuses a draft without moving existing commitments. Operator-prepared **small** runs provide five distinct simulated requests and protected buyer links; they never create connected authorizations. `/` is the Coalition storefront with six products visible before search, `/purchases` lists the session owner’s saved purchases, `/shop` is a compatibility link to the headphone storefront, `/checkout?run=…` is buyer-owned persistent checkout, and `/how-group-pricing-works` explains pricing. Old calculator runs retain their fixed $65 terms and settlement behavior.
 
-The storefront folds editable requirements into a disclosure and keeps the accepted product, maximum price and group progress together. Failed evaluations show a retry state; legacy calculator quotes remain in their dedicated checkout. Illustrative AI-generated product photographs are disclosed in the sandbox badge and footer; their source prompt is recorded in `docs/photography.json`.
+The storefront folds editable requirements into a disclosure and keeps the accepted product, maximum price and group progress together. Missing budget or delivery timing opens a short clarification question and editable requirements. Unsupported requests, no matching products, provider failures and invalid model output have distinct saved states; legacy calculator quotes remain in their dedicated checkout. The active catalog uses real product photographs with manufacturer specification links. Models include Apple AirPods Max (2024 USB-C), Sony WH-CH720N, WH-CH520 and WH-1000XM5, Bose QuietComfort and QuietComfort Ultra (2nd Gen). List/group prices, merchant inventory and delivery remain simulated; these are not current brand offers or an affiliation. Photo/specification provenance is recorded in `docs/photography.json`. Retired fictional model identities and their images remain available for existing purchases.
 
 ## Model and payment configuration
 
 The model adapter supports authenticated OpenAI-compatible `/v1/chat/completions` with `LLM_PROTOCOL=openai`. Set backend-only `LLM_BASE_URL`, `LLM_MODEL` and `LLM_API_KEY`. HTTPS is required outside localhost. Responses are validated against Pydantic schemas; provider schema constraints are used for fixed quotes. `LLM_PROTOCOL=anthropic` retains support for an Anthropic-compatible endpoint through the same adapter. There is no connected fallback to cached or fixture output.
 
-For this GPU server, use the installed **qwen3:30b-a3b-instruct-2507-q4_K_M** with `LLM_PROTOCOL=ollama`. The model runs entirely on the RTX PRO 4000 GPU. Extraction uses JSON-only generation with local schema validation. Assessments use a required JSON-schema field for every product and indexed requirement; the server supplies the requirement names instead of relying on the model to copy them. Fixed negotiation proposals also use provider JSON-schema constraints. Thinking is disabled. The private `.env` is configured; API and worker must reload it to apply changes. Warm the model before a live demonstration: the observed cold load took about 47 seconds and exceeded the request timeout; an unavailable result remains visible and requires a retry.
+For this GPU server, use the installed **qwen3:30b-a3b-instruct-2507-q4_K_M** with `LLM_PROTOCOL=ollama`. The model runs entirely on the RTX PRO 4000 GPU. Extraction uses a fully required provider schema with explicit nulls and grounded request-source spans, followed by local validation. Explicit numerical USD budgets are converted with Decimal; no unstated budget or arrival date is invented. Assessments use a required JSON-schema field for every product and indexed requirement; the server supplies the requirement names instead of relying on the model to copy them. Fixed negotiation proposals also use provider JSON-schema constraints. Thinking is disabled. The private `.env` is configured; API and worker must reload it to apply changes. Warm the model before a live demonstration: the observed cold load took about 47 seconds and exceeded the request timeout; an unavailable result remains visible and requires a retry.
 
 Native Ollama does not enforce bearer authentication. The existing API provides `POST /api/model/v1/chat/completions`, authenticated with `LLM_API_KEY`, restricted to the configured model and bounded input/output. Set `OLLAMA_UPSTREAM` to the same server's native origin, `LLM_BASE_URL=http://127.0.0.1:8000/api/model` for host development, and `LLM_CONTAINER_BASE_URL=http://api:8000/api/model` for Compose's private network. The native listener must be local/private; the authenticated route does not change an existing daemon's network exposure. No daemon configuration or GPU drivers were changed. For Render, use the host gateway's HTTPS origin plus `/api/model`, the same private bearer key and `LLM_PROTOCOL=ollama`; leave `OLLAMA_UPSTREAM` empty on Render. Configure authenticated private connectivity or a restricted HTTPS gateway before deployment.
 
@@ -50,22 +50,29 @@ COALITION_TEST_DATABASE_URL=postgresql://coalition:coalition@localhost:5432/coal
 
 Connected payments require `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MERCHANT_ID` and `PAYPAL_WEBHOOK_ID`. Register public HTTPS `POST /api/paypal/webhook` on the same sandbox REST app. The retrieved registration points to `https://paypalaihack26.onrender.com/api/paypal/webhook`; that API must run this revision and share the checkout database before connected verification. Registration is not delivery proof. Only the client ID reaches the browser. Sandbox account creation is separate from human buyer approval.
 
-The October 7 inspection found sandbox app credentials, but no merchant ID. The existing sandbox webhook registration was retrieved from PayPal and its ID configured; delivery is still unverified. The installed GPU model is configured through the authenticated local gateway. Genuine lower capture, final-authorization behavior, separate void/refund and webhook delivery remain external gates. See [VERIFICATION.md](VERIFICATION.md).
+The October 7 inspection found working sandbox app credentials, but the local configuration lacks the merchant ID. The existing sandbox webhook registration was retrieved read-only from PayPal; delivery is still unverified. No external configuration was changed during this review. The installed GPU model is configured through the authenticated local gateway. Genuine lower capture, final-authorization behavior, separate void/refund and webhook delivery remain external gates. See [VERIFICATION.md](VERIFICATION.md).
 
 ## Agreements and lifecycle
 
-Six fictional headphone offers have versioned evidence. A live model extracts explicit requirements and assesses each candidate. Numeric budget/delivery constraints are independently enforced. Required unknowns block eligibility; explicit edits can relax a requirement. A model recommendation never approves a payment.
+Six real headphone models with simulated merchant offers have versioned evidence. A live model extracts explicit requirements and assesses each candidate. Numeric budget/delivery constraints are independently enforced. Required unknowns block eligibility; explicit edits can relax a requirement. A model recommendation never approves a payment.
 
-Buyer and merchant roles share one adapter and separate contexts. At most three exchanges (six calls), 120 seconds, at most 6,000 output tokens and 24,000 total tokens are allowed per attempt. A crash terminates that attempt; retries create a visibly new one. Merchant policy permits first-tier prices $89–$92 and second-tier prices $85–$88, with base prices $92/$88. The canonical target is $89/$85; actual authorized alternate agreements are retained honestly. Private policy never enters the public transcript.
+Buyer and merchant roles share one adapter with separate contexts. Only the merchant receives its private policy. At most three exchanges (six calls), 120 seconds, 6,000 output tokens and 24,000 total tokens are allowed per attempt. A crash terminates that attempt; an explicit retry creates a new bounded one. Public transcripts contain structured prices and server-written decisions, without private reasoning or floors.
 
-Acceptance reserves shared inventory atomically and creates an immutable quote. Stock is not recreated per run. Final matching applies to the maximum amount and agreed delivery date. Approval preserves exact product, variant, quote version and maximum total.
+Three materially different fictional merchants govern their own products:
 
-| Profile | Capacity | Canonical tiers | Below minimum |
-|---|---:|---|---|
-| Small live | 5 | 3–4 buyers: $89; 5 buyers: $85 | Unwind below 3 |
-| Large illustrative | 60 | 25–49: $89; 50–60: $85 | Unwind below 25 |
+| Policy | Products | 3-buyer permitted total | 5-buyer permitted total | Delivery | Initial inventory per product |
+|---|---|---|---|---|---:|
+| Commuter | Sony WH-CH720N, Bose QuietComfort | $89–$92 | $85–$88 | 6–7 days | 60 |
+| Value | Sony WH-CH520 | $65–$75 | $61–$69 | 4–5 days | 20 |
+| Studio | AirPods Max USB-C, Sony WH-1000XM5, Bose QuietComfort Ultra (2nd Gen) | $285–$310 | $265–$290 | 12 days | 24 |
 
-Compatible requests and verified authorizations are separate counts. The large profile never multiplies five payments into fifty.
+Private floors narrow those public envelopes. Only quantity discounts are permitted; product, currency, variant and delivery changes are rejected. Different valid input can yield different prices or no agreement. The October 8 real-product model check negotiated Sony WH-CH720N **$92/$88**, WH-CH520 **$75/$69**, and WH-1000XM5 **$299/$279**, reached no agreement for a **$66 maximum**, clarified an incomplete request, and negotiated **$89/$88** from five distinct simulated requirements. It created **zero payment operations**. See `docs/model-verification-real-products.json`. Earlier fictional-catalog checks, including a $89/$85 observation, remain in `docs/model-verification-current.json` and `docs/model-verification-prior-success.json`; those prices are not a guarantee for a new negotiation.
+
+Ordinary shopping first matches an eligible open group with compatible immutable terms and capacity, otherwise starts a bounded draft. Duplicate matching submissions and in-flight negotiations reuse their existing work. Acceptance reserves shared inventory atomically and creates an immutable quote. Stock is never recreated per run; remaining stock returns only after safe lifecycle resolution. Consent retains its evaluated request and exact product, variant, quote version, maximum, USD currency, delivery, closing deadline and tier schedule.
+
+The primary profile has capacity five, minimum three and the actually negotiated two-tier schedule. New preparation accepts only five-person headphone runs. Existing large and calculator purchases retain their original immutable obligations and recovery paths; their regression setup is isolated in `tests/legacy_fixtures.py`.
+
+Compatible requests and verified authorizations are separate counts.
 
 The **new quote's closing time is fixed on acceptance**. Operator controls configure its window before negotiation (90–1,800 seconds; default 600). Activation retains that deadline rather than altering approved terms. Prepared approvals must refer to the same quote and remain fresh. Legacy calculator activation retains its original 90-second behavior.
 
@@ -73,7 +80,7 @@ The **new quote's closing time is fixed on acceptance**. Operator controls confi
 
 Approved maximum, settlement amount and verified capture/refund amounts are distinct. Lower captures use `final_capture=true`. No remainder-void event is fabricated. “$4 not captured” does not claim a bank balance update. Refunds use the actual captured amount.
 
-The existing durable operation keys, PostgreSQL leases, retries, reconciliation, signature verification, event deduplication, buyer sessions, CSRF checks and rate limits remain. Unknown payment responses require reconciliation; late confirmed captures during unwind are compensated. Unresolved operations keep cleanup visible. Inventory remains reserved until the relevant workflow resolves.
+The existing durable operation keys, PostgreSQL leases, recovery controls, signature verification, event deduplication, buyer sessions and CSRF protections remain. One worker process runs one bounded model lane and two reserved payment/webhook/deadline lanes with independent connections and session job locks. Transactions and row locks end before provider calls. Verified webhook bytes and events are persisted before acknowledgement; current provider GET observations are labeled separately from signature-verified historical events. OAuth tokens are cached until a minute before expiry and HTTP connections are reused. Reconciliation uses bounded backoff and settled groups stop periodic payment fetching. Expensive mutations have a tighter rate limit. Access logging is disabled to protect invite/approval query tokens; API responses are private and referrers suppressed. Unknown payment responses require reconciliation; late confirmed captures during unwind are compensated. Unresolved operations keep cleanup visible. Inventory remains reserved until the relevant workflow resolves.
 
 ## Verification
 
@@ -82,13 +89,18 @@ COALITION_TEST_DATABASE_URL=postgresql://coalition:coalition@localhost:5432/coal
   PYTHONPATH=backend .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/ruff check --isolated --select E4,E7,E9,F,I --ignore E402 backend tests scripts
 npm run build --prefix frontend
-npm run test:browser --prefix frontend -- --grep 'buyer|persistent checkout|PayPal'
+npm run test:browser --prefix frontend -- tests/buyer.spec.ts tests/checkout.spec.ts tests/storefront.spec.ts
 # Use an isolated fixture API/worker database for this real-stack test:
 COALITION_E2E_URL=http://127.0.0.1:8014 COALITION_OPERATOR_TOKEN=... \
-  npm run test:browser --prefix frontend -- --grep 'negotiated stack' --workers=2
+  npm run test:browser --prefix frontend -- --grep 'negotiated stack|ordinary shopping' --workers=1
+# The four additional fixture settlement/recovery scenarios (desktop):
+COALITION_E2E_URL=http://127.0.0.1:8014 COALITION_OPERATOR_TOKEN=... \
+  npm run test:browser --prefix frontend -- tests/stack.spec.ts --project=desktop --workers=1
 ```
 
-Tests create disposable schemas and preserve existing history. Payment/model doubles prove application behavior, not external account behavior. [docs/DEMO.md](docs/DEMO.md) describes the live preparation and video gates.
+October 8 checks: **77 PostgreSQL tests, zero skips**, build and focused lint passed. All 18 desktop/mobile browser regressions passed after correcting a test selector; the final four storefront checks passed again. Four desktop/mobile ordinary-shopping application cases passed with the real-product catalog and fixture payments. A historical Cabin One $85 receipt retained its original identity after the catalog change. Earlier checks also covered four desktop settlement/recovery cases and owned receipts surviving an API/worker restart. Genuine payment acceptance remains blocked; [VERIFICATION.md](VERIFICATION.md) records failures, limits and the Ponytail audit.
+
+The automated `.github/workflows/verify.yml` gate runs PostgreSQL backend checks, focused lint, the frontend build and desktop/mobile fixture browser checks. Tests create disposable schemas and preserve existing history. Payment/model doubles prove application behavior, not external account behavior. [docs/DEMO.md](docs/DEMO.md) describes the live preparation and video gates.
 
 ## Deployment
 

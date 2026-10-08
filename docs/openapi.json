@@ -73,42 +73,6 @@
         }
       }
     },
-    "/api/opportunity": {
-      "post": {
-        "summary": "Opportunity",
-        "operationId": "opportunity_api_opportunity_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProductContext"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/status": {
       "get": {
         "summary": "Status",
@@ -317,34 +281,12 @@
       "post": {
         "summary": "Webhook",
         "operationId": "webhook_api_paypal_webhook_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "additionalProperties": true,
-                "type": "object",
-                "title": "Event"
-              }
-            }
-          },
-          "required": true
-        },
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
               }
             }
           }
@@ -768,42 +710,6 @@
         }
       }
     },
-    "/api/assistant": {
-      "post": {
-        "summary": "Assistant",
-        "operationId": "assistant_api_assistant_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AssistantBody"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/commitments/{commitment_id}/leave": {
       "post": {
         "summary": "Leave",
@@ -972,22 +878,6 @@
         ],
         "title": "ApprovalBody"
       },
-      "AssistantBody": {
-        "properties": {
-          "request_text": {
-            "type": "string",
-            "maxLength": 1200,
-            "minLength": 3,
-            "title": "Request Text"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "request_text"
-        ],
-        "title": "AssistantBody"
-      },
       "Constraints": {
         "properties": {
           "max_total_minor": {
@@ -1035,6 +925,15 @@
             "type": "array",
             "maxItems": 8,
             "title": "Flexibility"
+          },
+          "product_category": {
+            "type": "string",
+            "enum": [
+              "Headphones",
+              "unsupported"
+            ],
+            "title": "Product Category",
+            "default": "Headphones"
           }
         },
         "additionalProperties": false,
@@ -1097,6 +996,82 @@
           "product_id"
         ],
         "title": "NegotiationBody"
+      },
+      "PartialConstraints": {
+        "properties": {
+          "max_total_minor": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Total Minor"
+          },
+          "quantity": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Quantity",
+            "default": 1
+          },
+          "latest_arrival": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Arrival"
+          },
+          "required_features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "title": "Required Features"
+          },
+          "device": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device"
+          },
+          "flexibility": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "title": "Flexibility"
+          },
+          "product_category": {
+            "type": "string",
+            "enum": [
+              "Headphones",
+              "unsupported"
+            ],
+            "title": "Product Category",
+            "default": "Headphones"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PartialConstraints"
       },
       "ProductContext": {
         "properties": {
@@ -1168,9 +1143,13 @@
                 "$ref": "#/components/schemas/Constraints"
               },
               {
+                "$ref": "#/components/schemas/PartialConstraints"
+              },
+              {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Edits"
           }
         },
         "additionalProperties": false,
@@ -1184,6 +1163,12 @@
         "properties": {
           "scenario": {
             "type": "string",
+            "enum": [
+              "success",
+              "deadline",
+              "partial",
+              "refund_pending"
+            ],
             "title": "Scenario",
             "default": "success"
           },
@@ -1194,6 +1179,7 @@
           },
           "profile": {
             "type": "string",
+            "const": "small",
             "title": "Profile",
             "default": "small"
           },
@@ -1205,6 +1191,7 @@
             "default": 600
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "title": "RunBody"
       },
@@ -1237,6 +1224,11 @@
           "shopping": {
             "type": "boolean",
             "title": "Shopping",
+            "default": false
+          },
+          "new_deal": {
+            "type": "boolean",
+            "title": "New Deal",
             "default": false
           }
         },

@@ -1,22 +1,23 @@
 import { test, expect } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 
 const url=process.env.COALITION_E2E_URL,token=process.env.COALITION_OPERATOR_TOKEN;
 test.skip(!url||!token,"Requires isolated fixture API/worker/PostgreSQL stack.");
-test("negotiated stack: edited budget, genuine fixture workflow, lower receipt and refresh",async({page,request},info)=>{
+test("negotiated stack: edited budget, fixture payment workflow, lower receipt and refresh",async({page,request},info)=>{
   test.setTimeout(150000);
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   const headers={"X-Coalition-Request":"1","X-Operator-Token":token!,Origin:url!};
   async function op(path:string,body?:unknown){const r=await request.fetch("/api/operator"+path,{method:body===undefined?"GET":"POST",data:body,headers});expect(r.ok(),await r.text()).toBeTruthy();return r.json();}
   expect((await (await request.get('/api/config')).json()).mode).toBe('fixture');
   const run=await op('/runs',{profile:'small',scenario:'success',close_seconds:90});
-  await page.goto(run.judge_url);
-  await expect(page.getByRole('button',{name:'Explore Cabin One'})).toBeVisible();
-  await page.getByLabel('What are you shopping for?').fill('Noise-canceling headphones for flights, under $100, works with my iPhone 12. I can wait a week.');
+  await page.goto(run.preparation_links.find((b:any)=>b.name==='Sam').url);
+  await expect.poll(()=>new URL(page.url()).hash).toBe('');
+  await expect(page.getByRole('button',{name:'Explore Sony WH-CH720N'})).toBeVisible();
+  await page.getByLabel('What are you shopping for?').fill('Noise-canceling headphones under $100 for my iPhone 12. I can wait a week.');
   await page.getByRole('button',{name:'Find deals'}).click();
   await expect(page.getByText('Your requirements · $99.99')).toBeVisible();
   await page.getByText('Your requirements · $99.99').click();
-  await page.getByLabel('Maximum delivered total · USD').fill('86');
+  await page.getByLabel('Maximum delivered total · USD').fill('60');
   await page.getByRole('button',{name:'Update deals'}).click();
   await expect(page.getByText('No offers meet all your requirements. Edit your requirements to try again.')).toBeVisible();
   await page.getByLabel('Maximum delivered total · USD').fill('100');
@@ -46,6 +47,51 @@ test("negotiated stack: edited budget, genuine fixture workflow, lower receipt a
   await page.emulateMedia({reducedMotion:'reduce'});
   await page.waitForFunction(()=>[".checkout-summary",".checkout-payment"].every(s=>getComputedStyle(document.querySelector(s)!).opacity==="1"));
   await page.screenshot({path:`../.impeccable/review/negotiated-receipt-${info.project.name}.png`,fullPage:true});
+  writeFileSync(`/tmp/coalition-receipt-${info.project.name}.json`,JSON.stringify({url:page.url(),storage:await page.context().storageState()}),{mode:0o600});
   await expect(page.getByRole('region',{name:'Payment receipt'})).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test("ordinary shopping: clarify, keep purchase, and choose another product",async({page},info)=>{
+  test.setTimeout(60000);
+  await page.goto('/');
+  await page.getByLabel('What are you shopping for?').fill('Headphones under $100');
+  await page.getByRole('button',{name:'Find deals',exact:true}).click();
+  await expect(page.getByText('When do you need delivery? Choose a latest arrival date.')).toBeVisible();
+  await expect(page.getByLabel('Maximum delivered total · USD')).toHaveValue('99.99');
+  await expect(page.getByLabel('Latest arrival · UTC')).toHaveValue('');
+  const arrival=new Date(Date.now()+7*86400000).toISOString().slice(0,10);
+  await page.getByLabel('Latest arrival · UTC').fill(arrival);
+  await page.getByRole('button',{name:'Update deals'}).click();
+  await expect(page.getByRole('button',{name:'Get group price'})).toBeEnabled();
+  await page.getByRole('button',{name:'Explore Sony WH-CH720N'}).click();
+  await page.getByRole('button',{name:'Get group price'}).click();
+  await expect(page.getByRole('heading',{name:'Your group deal'})).toBeVisible();
+  const original=new URL(page.url()).searchParams.get('run');
+  await page.getByRole('link',{name:'Review deal',exact:true}).click();
+  await page.getByRole('checkbox').first().check();
+  await page.getByRole('button',{name:/Simulate \$.* authorization/}).click();
+  await expect(page.getByText('Your place is confirmed.')).toBeVisible();
+  await page.goto('/?run='+original);
+  await page.getByRole('button',{name:'Find another deal',exact:true}).click();
+  await expect.poll(()=>new URL(page.url()).searchParams.get('run')).not.toBe(original);
+  await expect(page.getByRole('button',{name:'Find deals',exact:true})).toBeEnabled();
+  await page.getByLabel('What are you shopping for?').fill('Headphones under $80. I can wait 7 days.');
+  await page.getByRole('button',{name:'Find deals',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Explore Sony WH-CH520'})).toBeVisible();
+  await page.getByRole('button',{name:'Explore Sony WH-CH520'}).click();
+  await page.getByRole('button',{name:'Get group price'}).click();
+  await expect(page.getByRole('heading',{name:'Your group deal'})).toBeVisible();
+  await expect(page.locator('#selected-product').getByRole('heading',{name:'Sony WH-CH520'})).toBeVisible();
+  await page.goto('/purchases');
+  await expect(page.getByRole('heading',{name:'Sony WH-CH720N'})).toBeVisible();
+  await page.getByRole('link',{name:'View purchase'}).click();
+  await expect(page.getByText('Your place is confirmed.')).toBeVisible();
+  await page.getByRole('button',{name:'Leave group'}).click();
+  await expect(page.getByText('Authorization canceled.',{exact:true})).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('Authorization canceled.',{exact:true})).toBeVisible();
+  mkdirSync('../.impeccable/review',{recursive:true});
+  await page.screenshot({path:`../.impeccable/review/repeat-shopping-${info.project.name}.png`,fullPage:true});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
 });

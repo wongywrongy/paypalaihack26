@@ -8,6 +8,8 @@ export interface Product {
   category: string;
   image: string;
   image_position?: string;
+  catalog_active?: boolean;
+  source_url?: string;
   description: string;
   features: string[];
   specs: Record<string, string>;
@@ -135,15 +137,16 @@ export interface Config {
   paypal_client_id: string | null;
   paypal_configured: boolean;
   llm_configured: boolean;
-  default_run_id: string | null;
 }
 export async function api<T>(
   path: string,
   body?: unknown,
   operatorToken?: string,
 ): Promise<T> {
+  const run = new URLSearchParams(location.search).get("run");
+  const scoped = run && !path.startsWith("/operator") && path !== "/session" && path !== "/config" && path !== "/catalog";
   const response = await fetch(
-    (import.meta.env.VITE_API_URL || "") + "/api" + path,
+    (import.meta.env.VITE_API_URL || "") + "/api" + path + (scoped ? (path.includes("?") ? "&" : "?") + new URLSearchParams({ run }) : ""),
     {
       method: body === undefined ? "GET" : "POST",
       credentials: "include",
