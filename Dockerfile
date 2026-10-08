@@ -12,6 +12,7 @@ COPY backend/requirements.txt backend/requirements.txt
 RUN pip install --no-cache-dir -r backend/requirements.txt
 COPY catalog.json .
 COPY backend backend
+COPY scripts/check_connected.py scripts/check_connected.py
 COPY alembic.ini .
 COPY LICENSE THIRD_PARTY_NOTICES.md README.md VERIFICATION.md ./
 COPY --from=frontend /app/frontend/dist frontend/dist

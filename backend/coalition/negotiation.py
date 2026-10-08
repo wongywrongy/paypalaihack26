@@ -376,7 +376,7 @@ def accept(db, n, product, proposal, policy):
 
 def run_negotiation(db, nid):
     n = db.execute(
-        "SELECT n.*,g.demo,g.run_id,r.profile,r.close_seconds,b.id AS buyer_id,q.constraints FROM negotiations n JOIN groups g ON g.id=n.group_id JOIN runs r ON r.id=g.run_id JOIN buyer_requests q ON q.id=n.request_id JOIN buyers b ON b.id=q.buyer_id WHERE n.id=%s",
+        "SELECT n.*,g.demo,g.run_id,r.profile,r.close_seconds,b.id AS buyer_id,q.constraints,q.raw_text FROM negotiations n JOIN groups g ON g.id=n.group_id JOIN runs r ON r.id=g.run_id JOIN buyer_requests q ON q.id=n.request_id JOIN buyers b ON b.id=q.buyer_id WHERE n.id=%s",
         (nid,),
     ).fetchone()
     if n["status"] in ("accepted", "failed"):
@@ -462,6 +462,7 @@ def run_negotiation(db, nid):
                 **(
                     {
                         "constraints": n["constraints"],
+                        "request": n["raw_text"],
                         "buyer_turn": i // 2 + 1,
                         "remaining_buyer_turns": 2 - i // 2,
                         "last_buyer_bid": last_bid,
@@ -515,7 +516,7 @@ def run_negotiation(db, nid):
                     reply, used = complete(
                         Reply,
                         (
-                            "You are the buyer agent. Negotiate using your constraints, public prices and compatible demand. Template prices are examples, not required bids. Every proposed tier must be <= constraints.max_total_minor and within public_product.public_policy.ranges for that tier. Seek an affordable quantity discount when compatible demand supports it. Accept a suitable last_merchant_quote with action accept and proposal null, or counter/decline. Compare its TIER PRICES with last_buyer_bid: if they match and satisfy your requirements, accept instead of repeating the same prices. Proposal versions differ by round and do NOT prevent agreement. On your last turn, decide whether the existing merchant quote is acceptable or decline; no later buyer turn can accept another counter. Never accept an unaffordable maximum because a later tier is cheaper."
+                            "You are the buyer agent. Negotiate using your constraints, public prices and compatible demand. The original request may include price preferences omitted from extraction; consider them within permitted prices. Validated constraints and the current template are authoritative when shopper edits differ from the original request. Template prices are examples, not required bids. Every proposed tier must be <= constraints.max_total_minor and within public_product.public_policy.ranges for that tier. Seek an affordable quantity discount when compatible demand supports it. Accept a suitable last_merchant_quote with action accept and proposal null, or counter/decline. Compare its TIER PRICES with last_buyer_bid: if they match and satisfy your requirements, accept instead of repeating the same prices. Proposal versions differ by round and do NOT prevent agreement. On your last turn, decide whether the existing merchant quote is acceptable or decline; no later buyer turn can accept another counter. Never accept an unaffordable maximum because a later tier is cheaper."
                             if role == "buyer"
                             else "You are the merchant agent. Return action propose with a complete structured quote, or decline with proposal null. Never return action accept: accepting a buyer bid still requires emitting the structured merchant quote. Each tier price must be within your own merchant_policy ranges and at or above its private floor. Counter bids below that authority or decline. Consider aggregated compatible demand when choosing explicitly permitted quantity concessions."
                         )

@@ -1,0 +1,35 @@
+{
+  "checked_at_utc": "2026-10-08T04:37:44.196435+00:00",
+  "environment": "PayPal sandbox",
+  "payment_mutations": 0,
+  "local_merchant_configured": false,
+  "deployed_config_http_status": 200,
+  "deployed_mode": "connected",
+  "deployed_llm_configured": true,
+  "deployed_paypal_configured": true,
+  "operator_read_http_status": 403,
+  "operator_read_reason": "A valid operator token is required.",
+  "saved_buyer_history_http_status": 200,
+  "saved_buyer_purchases": [],
+  "saved_buyer_runs": [
+    {
+      "saved_run": "production-keyed-run.json",
+      "http_status": 401
+    },
+    {
+      "saved_run": "production-test-run.json",
+      "http_status": 200,
+      "group_status": "FAILED",
+      "confirmed_count": 0,
+      "completed_captures": 0,
+      "has_commitment": false,
+      "verified_webhooks": 0
+    }
+  ],
+  "oauth_http_status": 200,
+  "webhook_registration_http_status": 200,
+  "registered_listener": "https://paypalaihack26.onrender.com/api/paypal/webhook",
+  "registered_events": [
+    "*"
+  ]
+}

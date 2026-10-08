@@ -1,0 +1,285 @@
+{
+  "observed_at_utc": "2026-10-08T04:54:54.775646+00:00",
+  "model": "qwen3:30b-a3b-instruct-2507-q4_K_M",
+  "protocol": "ollama",
+  "scope": "model-only disposable schema; provider payment credentials disabled",
+  "payment_operations": 0,
+  "confirmed_authorizations": 0,
+  "input_mode": "raw storefront request; no structured edits",
+  "request": {
+    "raw_text": "Headphones under $90 for my iPhone 12. I can wait 10 days. My preferred group prices are $89 each at three authorizations and $85 each at five authorizations. These are preferences; keep my product and delivery requirements fixed.",
+    "status": "completed",
+    "constraints": {
+      "device": "iPhone 12",
+      "quantity": 1,
+      "flexibility": [],
+      "latest_arrival": "2026-10-18",
+      "max_total_minor": 8999,
+      "product_category": "Headphones",
+      "required_features": []
+    },
+    "error_kind": null
+  },
+  "five_latest_requests": [
+    {
+      "name": "Aisha",
+      "status": "completed",
+      "constraints": {
+        "device": "iPhone 12",
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-17",
+        "max_total_minor": 9499,
+        "product_category": "Headphones",
+        "required_features": [
+          "Bluetooth audio"
+        ]
+      }
+    },
+    {
+      "name": "Leo",
+      "status": "completed",
+      "constraints": {
+        "device": null,
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-16",
+        "max_total_minor": 9200,
+        "product_category": "Headphones",
+        "required_features": [
+          "Active noise cancellation"
+        ]
+      }
+    },
+    {
+      "name": "Maya",
+      "status": "completed",
+      "constraints": {
+        "device": "iPhone 12",
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-15",
+        "max_total_minor": 9999,
+        "product_category": "Headphones",
+        "required_features": [
+          "Active noise cancellation"
+        ]
+      }
+    },
+    {
+      "name": "Noah",
+      "status": "completed",
+      "constraints": {
+        "device": null,
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-15",
+        "max_total_minor": 11999,
+        "product_category": "Headphones",
+        "required_features": [
+          "Active noise cancellation"
+        ]
+      }
+    },
+    {
+      "name": "Sam",
+      "status": "completed",
+      "constraints": {
+        "device": "iPhone 12",
+        "quantity": 1,
+        "flexibility": [],
+        "latest_arrival": "2026-10-18",
+        "max_total_minor": 8999,
+        "product_category": "Headphones",
+        "required_features": []
+      }
+    }
+  ],
+  "negotiation": {
+    "status": "accepted",
+    "error_kind": null,
+    "token_count": 12720
+  },
+  "rounds": [
+    {
+      "id": 1,
+      "ordinal": 1,
+      "role": "buyer",
+      "valid": true,
+      "public_event": {
+        "tiers": [
+          {
+            "minimum_buyers": 3,
+            "total_each_cents": 8900
+          },
+          {
+            "minimum_buyers": 5,
+            "total_each_cents": 8500
+          }
+        ],
+        "valid": true,
+        "action": "offered",
+        "changes": [],
+        "speaker": "buyer",
+        "currency": "USD",
+        "explanation": "Quantity prices proposed within your maximum; authorizations are still required.",
+        "proposal_reference": {
+          "id": "8152d09b-5ac0-4da1-98e1-06c370df92f8",
+          "version": 1
+        },
+        "accepted_quote_reference": null
+      },
+      "created_at": "2026-10-08 04:55:37.125997+00:00"
+    },
+    {
+      "id": 2,
+      "ordinal": 2,
+      "role": "merchant",
+      "valid": true,
+      "public_event": {
+        "tiers": [
+          {
+            "minimum_buyers": 3,
+            "total_each_cents": 9200
+          },
+          {
+            "minimum_buyers": 5,
+            "total_each_cents": 8800
+          }
+        ],
+        "valid": true,
+        "action": "countered",
+        "changes": [
+          {
+            "field": "tier_price",
+            "to_minor": 9200,
+            "from_minor": 8900,
+            "minimum_buyers": 3
+          },
+          {
+            "field": "tier_price",
+            "to_minor": 8800,
+            "from_minor": 8500,
+            "minimum_buyers": 5
+          }
+        ],
+        "speaker": "merchant",
+        "currency": "USD",
+        "explanation": "Tier prices changed; product, delivery and currency stay fixed. Within the merchant's published quantity-price ranges.",
+        "proposal_reference": {
+          "id": "8152d09b-5ac0-4da1-98e1-06c370df92f8",
+          "version": 2
+        },
+        "accepted_quote_reference": null
+      },
+      "created_at": "2026-10-08 04:55:39.814267+00:00"
+    },
+    {
+      "id": 3,
+      "ordinal": 3,
+      "role": "buyer",
+      "valid": false,
+      "public_event": {
+        "tiers": [],
+        "valid": false,
+        "action": "invalid",
+        "changes": [],
+        "speaker": "buyer",
+        "currency": "USD",
+        "explanation": "Response could not be validated. No terms changed.",
+        "proposal_reference": {
+          "id": "8152d09b-5ac0-4da1-98e1-06c370df92f8",
+          "version": 2
+        },
+        "accepted_quote_reference": null
+      },
+      "created_at": "2026-10-08 04:55:40.814807+00:00"
+    },
+    {
+      "id": 4,
+      "ordinal": 4,
+      "role": "merchant",
+      "valid": true,
+      "public_event": {
+        "tiers": [
+          {
+            "minimum_buyers": 3,
+            "total_each_cents": 8900
+          },
+          {
+            "minimum_buyers": 5,
+            "total_each_cents": 8500
+          }
+        ],
+        "valid": true,
+        "action": "accepted",
+        "changes": [],
+        "speaker": "merchant",
+        "currency": "USD",
+        "explanation": "Matches your agent's offer within the merchant's published quantity-price ranges.",
+        "proposal_reference": {
+          "id": "8152d09b-5ac0-4da1-98e1-06c370df92f8",
+          "version": 4
+        },
+        "accepted_quote_reference": null
+      },
+      "created_at": "2026-10-08 04:55:43.438735+00:00"
+    },
+    {
+      "id": 5,
+      "ordinal": 5,
+      "role": "buyer",
+      "valid": true,
+      "public_event": {
+        "tiers": [
+          {
+            "minimum_buyers": 3,
+            "total_each_cents": 8900
+          },
+          {
+            "minimum_buyers": 5,
+            "total_each_cents": 8500
+          }
+        ],
+        "valid": true,
+        "action": "accepted",
+        "changes": [],
+        "speaker": "buyer",
+        "currency": "USD",
+        "explanation": "Within your maximum and delivery requirement. Human payment approval is still needed.",
+        "proposal_reference": {
+          "id": "8152d09b-5ac0-4da1-98e1-06c370df92f8",
+          "version": 4
+        },
+        "accepted_quote_reference": {
+          "id": "quote-0dbe30c5-863c-4bd3-aedb-4174c6949bd0",
+          "version": 1
+        }
+      },
+      "created_at": "2026-10-08 04:55:44.476145+00:00"
+    }
+  ],
+  "agreement": {
+    "product_id": "sony-wh-ch720n",
+    "variant": "Black",
+    "currency": "USD",
+    "total_minor": 8900,
+    "tier_schedule": [
+      {
+        "minimum_buyers": 3,
+        "total_each_cents": 8900
+      },
+      {
+        "minimum_buyers": 5,
+        "total_each_cents": 8500
+      }
+    ],
+    "minimum": 3,
+    "capacity": 5,
+    "delivery_by": "2026-10-15T23:59:59+00:00",
+    "close_at": "2026-10-08T05:05:44+00:00",
+    "offer_id": "quote-0dbe30c5-863c-4bd3-aedb-4174c6949bd0",
+    "version": 1
+  },
+  "seconds": 49.75
+}

@@ -64,6 +64,8 @@ Six real headphone models with simulated merchant offers have versioned evidence
 
 Buyer and merchant roles share one adapter with separate contexts. Only the merchant receives its private policy. At most three exchanges (six calls), 120 seconds, 6,000 output tokens and 24,000 total tokens are allowed per attempt. A crash terminates that attempt; an explicit retry creates a new bounded one. Public transcripts contain structured prices and server-written decisions, without private reasoning or floors.
 
+The buying agent also receives the original request so optional price preferences can survive imperfect extraction. Validated shopper edits and the current template remain authoritative. The merchant receives aggregated demand rather than that original text. A current model-only five-request check negotiated the buyer's explicitly preferred **$89/$85** after a **$92/$88** counter, with zero payment operations; `docs/model-verification-tier-preference.json` records the actual rounds. This does not establish PayPal approval or settlement.
+
 Three materially different fictional merchants govern their own products:
 
 | Policy | Products | 3-buyer permitted total | 5-buyer permitted total | Delivery | Initial inventory per product |
@@ -115,3 +117,5 @@ The negotiation feature's remote CI passed. A fresh connected Render journey als
 `render.yaml` retains the static frontend, API, single worker and private PostgreSQL topology. Configure the model and PayPal values in the shared backend environment, `PUBLIC_URL` to the frontend origin, and `VITE_API_URL` to the public API. Use same-site custom domains so browser session cookies remain dependable. Deploy API and worker with the same code/configuration. Keep provider retry retention at its conservative default unless verified for the actual endpoints.
 
 No new microservices, brokers, Redis, agent frameworks, wallets, escrow, split payouts or physical fulfillment integration are introduced. Hosting spend includes each configured service. Deployment and commercial readiness are not established by local tests.
+
+The image includes `scripts/check_connected.py` for the read-only provider evidence gate in a Render shell. Private `.runtime` artifacts are excluded from the Docker build context. Current read-only PayPal readiness is recorded in `docs/paypal-completion-readiness.json`: OAuth/registration succeed, the available operator token is rejected, and the inspected saved session has no purchase. Human approvals and genuine lifecycle verification remain required.

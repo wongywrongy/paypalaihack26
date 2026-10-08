@@ -741,7 +741,8 @@ class ShoppingChecks(unittest.TestCase):
             self.assertEqual(commitment["amount_minor"], 29900)
 
     def test_buyer_budget_validation_feedback_preserves_private_merchant_context(self):
-        b = self.shopper("Headphones under $90. I can wait 7 days.")
+        raw = "Headphones under $90. I can wait 7 days. I prefer $85 at five authorizations."
+        b = self.shopper(raw)
         with connect() as db:
             n = start(db, b, "sony-wh-ch720n")
             db.commit()
@@ -751,6 +752,7 @@ class ShoppingChecks(unittest.TestCase):
                 calls.append(payload)
                 if "constraints" in payload:
                     self.assertNotIn("floors", json.dumps(payload))
+                    self.assertEqual(payload["request"], raw)
                     if len(calls) == 3:
                         self.assertIn(
                             "invalid response", payload["validation_feedback"]
@@ -758,6 +760,7 @@ class ShoppingChecks(unittest.TestCase):
                         return Reply(action="accept"), 10
                 else:
                     self.assertIn("floors", payload["merchant_policy"])
+                    self.assertNotIn("request", payload)
                 proposal = dict(payload["template"])
                 if len(calls) == 2:
                     proposal["tier_schedule"] = [
