@@ -27,6 +27,42 @@ async function setup(page: any) {
   return { state, members, commands };
 }
 
+test("historical checkout returns to home without restoring its retired product", async ({ page }) => {
+  const { state } = await setup(page);
+  const historical = catalog.find(p => p.id === "cabin-one")!;
+  state.offer = { ...state.offer, product_id: historical.id, title: historical.title };
+  const sessions: any[] = [];
+  await page.route("**/api/session", route => {
+    const body = route.request().postDataJSON(); sessions.push(body);
+    return route.fulfill({ json: { run_id: body.run_id || (body.shopping ? "home-run" : "test-run") } });
+  });
+  await page.route("**/api/journey*", route => route.fulfill({ json: {
+    request: { id: "historical-request", raw_text: "Headphones under $100", status: "completed", constraints: { max_total_minor: 10000, latest_arrival: "2026-10-14", required_features: [], device: null, flexibility: [] } },
+    group: { id: "draft", run_id: "home-run", profile: "small", status: "DRAFT" },
+    products: [historical, ...catalog.filter(p => p.category === "Headphones" && p.catalog_active)],
+    assessments: [], rounds: [], negotiation: null, status: null, eligible: false, compatible_count: 0,
+  } }));
+  await page.route("**/api/purchases*", route => route.fulfill({ json: [{ run_id: "test-run", group_status: "OPEN", terms: state.offer, created_at: "2026-10-07T00:00:00Z" }] }));
+  await page.goto("/checkout?run=test-run");
+  await expect(page.getByRole("heading", { name: "Cabin One", exact: true })).toBeVisible();
+  const home = page.getByRole("link", { name: "Return to storefront" });
+  await expect(home).toHaveAttribute("href", "/");
+  await home.click();
+  await expect(page.getByRole("heading", { name: "Shop together. Pay less." })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Explore / })).toHaveCount(6);
+  await expect(page.getByText("Cabin One", { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("What are you shopping for?")).toBeEnabled();
+  expect(sessions.at(-1)).toEqual({ shopping: true });
+  await page.reload();
+  await page.getByRole("button", { name: "Explore Apple AirPods Max (USB-C)" }).click();
+  await expect(page.locator("#selected-product").getByRole("heading", { name: "Apple AirPods Max (USB-C)", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "My purchases", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Cabin One", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "View purchase" }).click();
+  await expect(page.getByRole("heading", { name: "Cabin One", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Return to storefront" })).toHaveAttribute("href", "/");
+});
+
 test("persistent checkout restores owned approval, verifies every capture, and keeps controls stable", async ({ page }, info) => {
   test.setTimeout(60_000);
   const errors: string[] = []; page.on("pageerror", e => errors.push(e.message));

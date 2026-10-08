@@ -44,7 +44,7 @@ export default function RequestDeal() {
   useEffect(()=>{if(data?.request){setRaw(data.request.raw_text);if(data.request.constraints)setEdits(data.request.constraints);}},[data?.request?.id,data?.request?.status]);
   useEffect(()=>{const match=data?.assessments.find(a=>a.product_id===data.status?.offer.product_id&&a.eligible)??data?.assessments.find(a=>a.eligible&&a.available>0);if(match&&!data?.assessments.some(a=>a.product_id===selected&&a.eligible&&a.available>0))setSelected(match.product_id);},[data?.assessments]);
   useEffect(()=>{const count=data?.rounds.length??0;if(previous.current!==null&&count>previous.current&&!reduced){const emitted=data?.rounds.slice(previous.current).filter(r=>r.valid&&r.public_summary.includes(': Proposed ')).at(-1);if(emitted)setBeam(emitted.role);}previous.current=count;const timer=setTimeout(()=>setBeam(false),800);return()=>clearTimeout(timer);},[data?.rounds.length,reduced]);
-  const products=data?.products.length?data.products:headphones;
+  const products=(data?.products.length?data.products:headphones).filter(p=>p.catalog_active!==false);
   const evaluating=busy||['queued','running'].includes(data?.request?.status||''),negotiating=['queued','running'].includes(data?.negotiation?.status||'');
   const failed=data?.request?.status==='failed';
   const clarification=data?.request?.status==='clarification';
@@ -52,7 +52,7 @@ export default function RequestDeal() {
   const locked=!!data?.status?.commitment?.active;
   // A run's quote is a search result only when this completed request fits that exact headphone offer.
   const candidate=data?.status?.offer;
-  const currentResult=!error&&!evaluating&&data?.request?.status==='completed'&&data.request.raw_text===raw&&JSON.stringify(edits)===JSON.stringify(data.request.constraints);
+  const currentResult=!error&&!evaluating&&data?.request?.status==='completed'&&data.assessments.some(a=>products.some(p=>p.id===a.product_id))&&data.request.raw_text===raw&&JSON.stringify(edits)===JSON.stringify(data.request.constraints);
   const acceptedQuote=currentResult&&candidate?.pricing_model==='tiers'&&data.eligible&&products.some(p=>p.id===candidate.product_id)&&data.assessments.some(a=>a.product_id===candidate.product_id&&a.eligible)?candidate:null;
   const offer=acceptedQuote?.product_id===selected?acceptedQuote:null;
   const product=products.find(p=>p.id===selected);

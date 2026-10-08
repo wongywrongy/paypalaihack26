@@ -110,7 +110,7 @@ export default function Checkout({ status, config, onStatus, products, initialEr
       }
     } catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   }
-  const storeURL = "/?" + new URLSearchParams({ ...(status ? { run: status.group.run_id, product: status.offer.product_id } : {}) });
+  const storeURL = "/";
   return <div className="checkout-page">
     <header className="checkout-header">
       <a className="coalition-brand" href={storeURL}><span className="coalition-symbol"><Icon name="users" size={20} /></span><strong>Coalition <span className="header-checkout">checkout</span></strong></a>

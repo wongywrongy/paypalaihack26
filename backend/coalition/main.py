@@ -228,7 +228,9 @@ def session(body: SessionBody, request: Request, response: Response):
         ).fetchone()
         if owner:
             lock_owner(db, owner["owner_id"])
-        if body.new_deal:
+        if body.new_deal or (
+            body.shopping and not body.run_id and not body.invite
+        ):
             row = draft(db, owner)
         else:
             run_id = body.run_id or (owner["run_id"] if owner else None)
@@ -238,8 +240,17 @@ def session(body: SessionBody, request: Request, response: Response):
             ).fetchone()
             if body.run_id and not run:
                 raise HTTPException(404, "This deal is unavailable. Find another deal.")
-            if body.shopping and not body.invite and run and run["profile"] == "legacy":
-                run = None
+            if body.shopping and not body.invite and run:
+                selected_product = db.execute(
+                    "SELECT o.product_id FROM groups g JOIN offers o ON o.id=g.offer_id WHERE g.run_id=%s",
+                    (run["id"],),
+                ).fetchone()
+                if run["profile"] == "legacy" or (
+                    selected_product
+                    and selected_product["product_id"]
+                    not in {p["id"] for p in SHOP_PRODUCTS}
+                ):
+                    run = None
             if body.invite:
                 row = db.execute(
                     "SELECT * FROM buyers WHERE invite_hash=%s AND run_id=%s FOR UPDATE",
@@ -330,6 +341,14 @@ def journey(b=Depends(buyer)):
             "SELECT a.*,s.available FROM compatibility_assessments a JOIN catalog_stock s ON s.product_id=a.product_id WHERE request_id=%s",
             (req["id"] if req else None,),
         ).fetchall()
+        active_products = {p["id"]: p for p in SHOP_PRODUCTS}
+        assessments = [
+            a
+            for a in assessments
+            if a["product_id"] in active_products
+            and a["source_version"]
+            == active_products[a["product_id"]]["source_version"]
+        ]
         n = db.execute(
             "SELECT id,status,error,created_at FROM negotiations WHERE group_id=%s ORDER BY created_at DESC LIMIT 1",
             (g["id"],),
@@ -400,12 +419,7 @@ def journey(b=Depends(buyer)):
             "eligible": eligible_for_quote(db, b["id"], offer)
             if offer and offer.get("pricing_model") == "tiers"
             else False,
-            "products": SHOP_PRODUCTS
-            + [
-                p
-                for p in PRODUCTS
-                if offer and p["id"] == offer["product_id"] and p not in SHOP_PRODUCTS
-            ],
+            "products": SHOP_PRODUCTS,
         }
 
 

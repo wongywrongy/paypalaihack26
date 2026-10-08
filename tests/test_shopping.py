@@ -186,6 +186,75 @@ class ShoppingChecks(unittest.TestCase):
                     )
                 )
 
+    def test_home_and_old_storefront_links_keep_historical_purchase_out_of_new_shopping(self):
+        historical = next(p for p in PRODUCTS if p["id"] == "cabin-one")
+        headers = {"X-Coalition-Request": "1"}
+        with TestClient(app) as client:
+            original = client.post(
+                "/api/session", json={"shopping": True}, headers=headers
+            ).json()
+            submitted = client.post(
+                "/api/requests?run=" + original["run_id"],
+                json={"raw_text": "Headphones under $100. I can wait 7 days."},
+                headers=headers,
+            ).json()
+            # Reproduce a persisted pre-catalog-change purchase, using only fixtures.
+            with connect() as db, patch(
+                "coalition.matching.SHOP_PRODUCTS", [historical]
+            ):
+                run_match(db, submitted["id"])
+                b = db.execute(
+                    "SELECT * FROM buyers WHERE id=%s", (original["buyer_id"],)
+                ).fetchone()
+            with patch("coalition.negotiation.SHOP_PRODUCTS", [historical]):
+                b, g, terms = self.negotiate(b, historical["id"])
+            consent = client.post(
+                "/api/commitments?run=" + str(g["run_id"]),
+                headers=headers,
+                json={
+                    "group_id": str(g["id"]),
+                    "accepted_terms": terms,
+                    "context": {
+                        "product_id": historical["id"],
+                        "title": historical["title"],
+                        "displayed_price_minor": historical["price_minor"],
+                        "currency": "USD",
+                        "selected_variant": historical["variants"][0],
+                        "quantity": 1,
+                    },
+                },
+            )
+            self.assertEqual(consent.status_code, 200, consent.text)
+            home = client.post(
+                "/api/session", json={"shopping": True}, headers=headers
+            ).json()
+            self.assertNotEqual(home["run_id"], original["run_id"])
+            for body in (
+                {"shopping": True},
+                {"shopping": True, "run_id": original["run_id"]},
+            ):
+                self.assertEqual(
+                    client.post("/api/session", json=body, headers=headers).json(),
+                    home,
+                )
+            journey = client.get("/api/journey?run=" + home["run_id"]).json()
+            self.assertEqual(journey["group"]["status"], "DRAFT")
+            self.assertIsNone(journey["status"])
+            self.assertEqual(journey["assessments"], [])
+            self.assertEqual(len(journey["products"]), 6)
+            self.assertEqual(journey["request"]["raw_text"], "Headphones under $100. I can wait 7 days.")
+            self.assertNotIn(historical["id"], [p["id"] for p in journey["products"]])
+            checkout = client.post(
+                "/api/session", json={"run_id": original["run_id"]}, headers=headers
+            ).json()
+            self.assertEqual(checkout["run_id"], original["run_id"])
+            saved = client.get("/api/status?run=" + original["run_id"]).json()
+            self.assertEqual(saved["commitment"]["id"], consent.json()["id"])
+            self.assertEqual(saved["offer"], terms)
+            history = client.get("/api/purchases?run=" + home["run_id"]).json()
+            self.assertEqual(len(history), 1)
+            self.assertEqual(history[0]["terms"], terms)
+
     def test_sessions_need_no_operator_and_keep_history_in_owned_tabs(self):
         headers = {"X-Coalition-Request": "1"}
         with TestClient(app) as first, TestClient(app) as other:

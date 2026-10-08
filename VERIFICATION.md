@@ -1,5 +1,23 @@
 # Coalition — verification record
 
+## Returning-shopper navigation fix — October 8, 2026
+
+A fresh browser on the deployed Render home showed all six current models, and the public catalog matched. The reported Cabin One behavior had an independent session/navigation cause: shopping without an explicit run restored the session cookie's original purchase; checkout's “Return to storefront” also carried that run and product back into shopping. Journey responses exposed retired products and their old matching assessments alongside the current catalog. This could pull a returning shopper back into the historical deal and disable new shopping.
+
+Home shopping now opens/reuses a bounded draft under the same owner. Explicit retired-product storefront links also select a draft; explicit current-group links and protected preparation invitations retain their existing behavior. Checkout returns to `/`. Journey products/assessments are restricted to the active catalog and current source version. A saved request without current assessments remains editable and does not display an old quote as a new search result. Historical checkout, consent, payment operations and purchase history are unchanged.
+
+Executed:
+
+- **78 backend tests passed, zero failures/skips**, disposable PostgreSQL 16, 24.394 seconds; `/tmp/coalition-navigation-backend.log`. The new regression creates a historical Cabin One fixture commitment, opens/reuses home and an old storefront link, preserves the request/owner, excludes retired assessments, and verifies the original checkout/consent/history remain intact.
+- TypeScript/Vite build and focused Ruff lint passed; `/tmp/coalition-navigation-build.log`, `/tmp/coalition-navigation-lint.log`.
+- **20 desktop/mobile browser checks passed**, 43.8 seconds; `/tmp/coalition-navigation-browser-final.log`. Includes historical checkout → home → refresh → Apple selection → purchase history → original checkout. The first run passed 18 and failed two copies of the existing assertion that the return link should carry the old run; that obsolete expectation was updated to `/` before the complete successful rerun.
+- Two manual desktop/mobile journeys used the actual isolated fixture API/worker/database and the previously retained **Cabin One, Paid $85.00 USD** receipt. Both reached a usable six-product home, retained the same draft after refresh, selected AirPods Max, then reopened the unchanged receipt through history. Screenshots: `/tmp/coalition-navigation-debug/recovered-home-{desktop,mobile}.png` and `preserved-receipt-{desktop,mobile}.png`.
+- The design detector reported no deterministic findings. The existing layout was preserved.
+
+No connected PayPal operation or model call was initiated. No external configuration was changed. The fix is prepared for the already-authorized normal push/redeploy; the pre-fix live home check does not establish deployment of this fix. Genuine payment acceptance blockers below remain unresolved.
+
+---
+
 ## Real-product catalog update — October 8, 2026
 
 The storefront now offers six real models: Sony WH-CH720N, WH-CH520 and WH-1000XM5; Apple AirPods Max (2024 USB-C, Starlight); Bose QuietComfort and QuietComfort Ultra (2nd Gen). Locally served product photographs and manufacturer specification links are recorded in `docs/photography.json`. Two Sony photographs are retailer-sourced; the other four are manufacturer-sourced. The Apple photograph shows the official color range with Starlight foremost. Merchants, USD list/group prices, inventory and delivery remain simulated, with buyer-facing disclosure. This is not brand affiliation or current retail pricing.

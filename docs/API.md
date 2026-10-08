@@ -7,10 +7,10 @@ Buyer commands require an owned HttpOnly session, exact allowed origin and `X-Co
 | Endpoint | Purpose |
 |---|---|
 | `GET /api/config` | Public configuration/disclosures, without secrets |
-| `POST /api/session` | Restore/create shopper identity; optional owned `run_id` or protected preparation invite; `shopping:true` creates an independent draft; `new_deal:true` starts/reuses another draft |
+| `POST /api/session` | Restore/create shopper identity; optional owned `run_id` or protected preparation invite; `shopping:true` without a run/invite opens/reuses an independent draft; retired-product storefront links also open a draft; `new_deal:true` starts/reuses another draft |
 | `GET /api/catalog` | Six real-model headphone products with simulated offers; retired models and private policies excluded |
 | `POST /api/requests` | `{raw_text, edits?}` creates an owner-scoped version and durable matching job; identical active work is reused |
-| `GET /api/journey` | Owned request, assessments, safe rounds, quote and verified progress |
+| `GET /api/journey` | Owned request, current-catalog assessments/products, safe rounds, quote and verified progress; historical purchases remain available through owned checkout/history |
 | `GET /api/purchases` | Latest purchase per group for the authenticated owner across runs; no other buyer’s records |
 | `POST /api/negotiations` | `{product_id}` matches a compatible open shopping group or queues a bounded draft; returns the selected `run_id` |
 | `GET /api/status` | Buyer-owned commitment, immutable terms and provider evidence; 409 before a quote exists |

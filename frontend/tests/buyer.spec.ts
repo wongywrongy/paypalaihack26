@@ -119,7 +119,7 @@ test("buyer reviews exact terms, approves fixture, refreshes and sees completed 
   await expect(
     page.getByRole("heading", { name: "Your group made it." }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: "Return to storefront" })).toHaveAttribute("href", /\/\?run=test-run/);
+  await expect(page.getByRole("link", { name: "Return to storefront" })).toHaveAttribute("href", "/");
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > innerWidth,
   );
