@@ -38,51 +38,57 @@ a{color:#B4235A}a:hover{color:#8E1A47}
         <tbody>
           
             <tr style="border-bottom: 1px solid #EEEAE4">
-              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Turn a person’s words into items, rules and a max</th>
+              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Turn a request into a routine</th>
               <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #EFE8FB; color: #5B21B6">LLM</span></td>
-              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Every field ties back to their words; at most one question. Can’t set prices or charge anyone.</td>
+              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Picks only from the catalog and explains each pick. Can’t set prices or charge anyone.</td>
             </tr>
           
             <tr style="border-bottom: 1px solid #EEEAE4">
-              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Approve the max as a PayPal hold</th>
-              <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #FFF1D6; color: #7A4F00">PAYPAL</span></td>
-              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Orders v2 authorization for the max. The max is also enforced in code, because PayPal lets a capture exceed a hold (up to 115% or +$75).</td>
-            </tr>
-          
-            <tr style="border-bottom: 1px solid #EEEAE4">
-              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Assign people to variants and split shared costs</th>
+              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Pick a shop for each item and build one box</th>
               <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #E2F2EA; color: #0B5A3C">SOLVER</span></td>
-              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Respects every rule and max. One price per item per order, so stating a higher max never raises your price.</td>
+              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Cheapest all-in combination across shops, free-shipping lines and stock. Skips items a shop won’t send to that country.</td>
             </tr>
           
             <tr style="border-bottom: 1px solid #EEEAE4">
-              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Pick the next offer and suggest new terms</th>
+              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Price the box for the destination</th>
+              <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #E6ECFB; color: #1D3FAF">CODE</span></td>
+              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Duty, tax and shipping from a dated rate table with sources. Shown before payment, never after.</td>
+            </tr>
+          
+            <tr style="border-bottom: 1px solid #EEEAE4">
+              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Approve the total as a PayPal hold</th>
+              <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #FFF1D6; color: #7A4F00">PAYPAL</span></td>
+              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Orders v2 authorization in the shopper’s currency. The hold is the ceiling; code also enforces it, since PayPal allows captures above a hold.</td>
+            </tr>
+          
+            <tr style="border-bottom: 1px solid #EEEAE4">
+              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Suggest offers and read the shop’s replies</th>
               <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #EFE8FB; color: #5B21B6">LLM</span></td>
-              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Ideas only. The solver re-checks every proposal before it is sent.</td>
+              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Ideas and words only. Replies are parsed into a fixed offer format; text like “ignore your rules” changes nothing.</td>
             </tr>
           
             <tr style="border-bottom: 1px solid #EEEAE4">
-              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Read the other side’s message</th>
-              <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #EFE8FB; color: #5B21B6">LLM</span></td>
-              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Parsed into a fixed offer format and treated as data, so “ignore your rules” changes nothing.</td>
+              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Check every offer</th>
+              <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #E2F2EA; color: #0B5A3C">SOLVER</span></td>
+              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Recomputes the all-in total. Swaps and extras pass only if the shopper turned that rule on and the total drops.</td>
             </tr>
           
             <tr style="border-bottom: 1px solid #EEEAE4">
-              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Score offers for the shop</th>
+              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Score offers for each shop</th>
               <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #E6ECFB; color: #1D3FAF">CODE</span></td>
               <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Lowest prices live in code. The shop’s language model sees scores, never the floor.</td>
             </tr>
           
             <tr style="border-bottom: 1px solid #EEEAE4">
-              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Accept or reject</th>
+              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Accept or stop</th>
               <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #E6ECFB; color: #1D3FAF">CODE</span></td>
-              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Accept only if everyone is under their max and the group beats its threshold. The language model never accepts.</td>
+              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Accept only below the hold and above every floor. At most 3 replies per shop. The language model never accepts.</td>
             </tr>
           
             <tr style="border-bottom: 1px solid #EEEAE4">
-              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Charge, release, pay the shop, track</th>
+              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Charge, release, pay shops, track</th>
               <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #FFF1D6; color: #7A4F00">PAYPAL</span></td>
-              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Capture each share at deal close; void every hold if no deal; pay the shop once it ships; add tracking to each payment.</td>
+              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Capture the final total; the rest of the hold is released. Shops paid by PayPal Payouts; tracking added to the payment.</td>
             </tr>
           
         </tbody>

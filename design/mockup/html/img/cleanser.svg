@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EAF1F4"/><stop offset="1" stop-color="#D7E4EA"/></linearGradient>
+    <linearGradient id="tube" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#E9F0F2"/><stop offset="0.45" stop-color="#FFFFFF"/><stop offset="1" stop-color="#D6E1E6"/></linearGradient>
+    <linearGradient id="cap" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5F8796"/><stop offset="0.5" stop-color="#7FA5B3"/><stop offset="1" stop-color="#557C8B"/></linearGradient>
+  </defs>
+  <rect width="600" height="600" fill="url(#bg)"/>
+  <ellipse cx="300" cy="520" rx="96" ry="14" fill="#2F5664" opacity="0.18"/>
+  <path d="M222 92 L378 92 L362 430 L238 430 Z" fill="url(#tube)"/>
+  <rect x="216" y="80" width="168" height="22" rx="4" fill="#E2EBEE"/>
+  <rect x="244" y="428" width="112" height="90" rx="14" fill="url(#cap)"/>
+  <rect x="240" y="140" width="10" height="250" rx="5" fill="#FFFFFF" opacity="0.8"/>
+  <rect x="262" y="210" width="76" height="7" rx="3.5" fill="#3E6C7C"/>
+  <rect x="272" y="228" width="56" height="5" rx="2.5" fill="#94B4BF"/>
+  <circle cx="300" cy="180" r="13" fill="none" stroke="#3E6C7C" stroke-width="3"/>
+</svg>

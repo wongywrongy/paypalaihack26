@@ -1,7 +1,7 @@
 """Rally reference scenario (Korean skincare), the source of every number in design/mockup and PLAN.md.
 
 Run:  python3 design/scenario/kbeauty.py
-Writes design/scenario/scenario.json (members, per-member breakdowns, baselines, pool totals, shop gain).
+Retired group-order scenario (pre Oct 22 v2). Writes scenario.json next to this file (members, per-member breakdowns, baselines, pool totals, shop gain).
 Shop, brand and products are fictional. Duty 12.5% is the 2026 total on Korean cosmetics (HTS 3304);
 the customs fee and tax rate are illustrative. Money uses Decimal here; the app uses integer cents.
 Shared freight is split by weight and the customs fee by goods value, with largest-remainder rounding.

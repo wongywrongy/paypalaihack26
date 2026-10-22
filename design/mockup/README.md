@@ -1,28 +1,28 @@
-# Rally mockup
+# Rally mockup (version 2)
 
-Reference screens for the design track, exported from the mockup canvas. They show the intended flow, copy, hierarchy and numbers; the build should look better than this, not identical.
+Reference screens for the design track, exported from the mockup canvas on Oct 22, 2026. They set the flow, copy, hierarchy and numbers. The build should look better than this, not identical.
 
-![Member flow: invite, tell us, review, negotiating, deal reached, receipt](flow.png)
+![Shopper flow: shop, ship to, ask Rally, bag, deal, paid, track](flow.png)
 
-- `screens/*.png` — renders at 2x (member screens 390 px wide, pages 1280 px wide).
-- `html/*.html` — static HTML for each screen; open `html/index.html`. Fonts load from Google Fonts.
-- `html/img/*.svg` — placeholder product illustrations. Replace them with better product imagery (see PLAN.md "Design direction"); keep them only as a fallback.
-- Every number comes from `design/scenario/kbeauty.py` (output: `design/scenario/scenario.json`).
+- `screens/*.png`: renders at 2x (shopper screens 390 px wide, pages 1280 px wide).
+- `html/*.html`: static HTML for each screen; open `html/index.html`. Fonts load from Google Fonts.
+- `html/img/*.svg`: fallback product illustrations. Replace them with real product imagery (PLAN.md, "Design direction").
+- Every number comes from `design/scenario/seoul.py` (output: `design/scenario/scenario.json`).
+- The copy is product copy. Keep it real: no "Example", "preview", "fixture", "simulated" or "demo" in the UI. The only sandbox marker is the "Test mode" pill.
 
 | Screen | File | Who sees it |
 | --- | --- | --- |
-| 1 · Invite | `1-invite` | Member |
-| 2 · Tell us what you want | `2-tell-us` | Member |
-| 3 · Review and approve the hold | `3-review` | Member |
-| 4 · Negotiating | `4-negotiating` | Member |
-| 4b · Quick question | `4b-quick-question` | Member (Aisha's case) |
-| 5 · Deal reached | `5-deal-reached` | Member |
-| 6 · Receipt | `6-receipt` | Member |
-| How the deal was made | `deal-room` | Member (one tap away), judges |
-| Organizer order sheet | `organizer-sheet` | Organizer |
-| Shop agent console | `shop-console` | Shop (private) |
-| Deal scorecard | `scorecard` | Judges |
-| Benchmark | `benchmark` | Judges (empty until the benchmark runs) |
+| 1 · Shop | `1-shop` | Shopper |
+| 1b · Ship to (sheet) | `1b-ship-to` | Shopper |
+| 2 · Ask Rally | `2-ask-rally` | Shopper |
+| 3 · Bag and checkout | `3-bag` | Shopper |
+| 4 · Deal | `4-deal` | Shopper |
+| 5 · Paid | `5-paid` | Shopper |
+| 6 · Track | `6-track` | Shopper |
+| How the deal was made | `deal-room` | Shopper (one tap away), judges |
+| Shop console | `shop-console` | Shop (private), judges read-only |
+| Scorecard | `scorecard` | Judges |
 | Who decides what | `who-decides` | Judges |
+| Benchmark | `benchmark` | Judges (empty until the benchmark runs) |
 
-All brands, products and people are fictional.
+Shops, brands and products are fictional. The retired group-order mockup is in git history before commit `0576a61`.

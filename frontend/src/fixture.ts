@@ -1,4 +1,4 @@
-import scenario from '../../design/scenario/scenario.json' with { type: 'json' };
+import scenario from '../../design/scenario/retired-group-order/scenario.json' with { type: 'json' };
 
 export type ProductId = 'ess_new' | 'ess_old' | 'ton' | 'msk';
 export type Product = { id: ProductId; name: string; detail: string; photo: number; list: number; agreed: number };

@@ -1,483 +1,740 @@
 {
- "note": "Illustrative. Fictional shop Haneul Beauty and product line Dalbit.",
- "rates": {
-  "duty": "0.125",
-  "tax": "0.0925",
-  "customs_fee": "10"
+ "note": "Illustrative. Fictional shops, brands and products. FX, rate cards, carrier fee and US sales tax are illustrative; country rules must be verified.",
+ "fx_usd": {
+  "USD": "1",
+  "CAD": "1.38",
+  "GBP": "0.75",
+  "EUR": "0.86",
+  "AUD": "1.52"
  },
- "prices": {
-  "list": {
-   "ess_new": "25",
-   "ess_old": "25",
-   "ton": "24",
-   "msk": "18"
+ "rally_fee_usd": "3",
+ "shops": {
+  "haneul": {
+   "name": "Haneul Beauty",
+   "city": "Seoul",
+   "kind": "Multi-brand shop",
+   "ships_abroad": true,
+   "abroad_flat": "18",
+   "domestic": "3.00",
+   "free_over": "40"
   },
-  "listed_bulk": {
-   "ess_new": "22",
-   "ess_old": "22",
-   "ton": "21",
-   "msk": "16"
+  "bada": {
+   "name": "Bada Market",
+   "city": "Busan",
+   "kind": "Drugstore",
+   "ships_abroad": false,
+   "abroad_flat": null,
+   "domestic": "3.50",
+   "free_over": "33"
   },
-  "round1_shop": {
-   "ess_new": "23",
-   "ess_old": "18",
-   "ton": "21",
-   "msk": "15"
-  },
-  "agreed": {
-   "ess_new": "22",
-   "ess_old": "17",
-   "ton": "20",
-   "msk": "14"
+  "dalbit": {
+   "name": "Dalbit Official",
+   "city": "Seoul",
+   "kind": "Brand store",
+   "ships_abroad": true,
+   "abroad_flat": "16",
+   "domestic": "2.50",
+   "free_over": "30"
   }
  },
- "freight": {
-  "agreed_shared": "25",
-  "listed_express": "105",
-  "pool_kg": "6.25"
- },
- "members": [
+ "brands": [
+  "Byeolbit",
+  "Dalbit",
+  "Gureum",
+  "Hayan",
+  "Mulgyeol",
+  "Saebom"
+ ],
+ "catalog": [
   {
-   "name": "You",
-   "essence": 1,
-   "toner": 1,
-   "masks": 1,
-   "bottle_rule": "old if $4+ cheaper",
-   "max": "75"
+   "id": "mul-gel-cleanser",
+   "brand": "Mulgyeol",
+   "name": "Low-pH Gel Cleanser",
+   "size": "150 ml",
+   "category": "Cleanser",
+   "weight_kg": "0.20",
+   "prices": {
+    "haneul": "14",
+    "bada": "12"
+   }
   },
   {
-   "name": "Leo",
-   "essence": 2,
-   "toner": 0,
-   "masks": 0,
-   "bottle_rule": "either",
-   "max": "50"
+   "id": "mul-oil-cleanser",
+   "brand": "Mulgyeol",
+   "name": "Green Tea Cleansing Oil",
+   "size": "200 ml",
+   "category": "Cleanser",
+   "weight_kg": "0.26",
+   "prices": {
+    "haneul": "19",
+    "bada": "17"
+   }
   },
   {
-   "name": "Aisha",
-   "essence": 1,
-   "toner": 1,
-   "masks": 0,
-   "bottle_rule": "new only",
-   "max": "62"
+   "id": "hay-foam",
+   "brand": "Hayan",
+   "name": "Rice Foam Cleanser",
+   "size": "120 ml",
+   "category": "Cleanser",
+   "weight_kg": "0.16",
+   "prices": {
+    "haneul": "11",
+    "bada": "10"
+   }
   },
   {
-   "name": "Noah",
-   "essence": 0,
-   "toner": 1,
-   "masks": 1,
-   "bottle_rule": null,
-   "max": "56"
+   "id": "dal-rice-toner",
+   "brand": "Dalbit",
+   "name": "Rice Toner",
+   "size": "150 ml",
+   "category": "Toner",
+   "weight_kg": "0.25",
+   "prices": {
+    "haneul": "24",
+    "bada": "22",
+    "dalbit": "21"
+   }
   },
   {
-   "name": "Sam",
-   "essence": 1,
-   "toner": 0,
-   "masks": 2,
-   "bottle_rule": "either",
-   "max": "70"
+   "id": "mul-hydro-toner",
+   "brand": "Mulgyeol",
+   "name": "Hyaluronic Water Toner",
+   "size": "200 ml",
+   "category": "Toner",
+   "weight_kg": "0.28",
+   "prices": {
+    "haneul": "18",
+    "bada": "16"
+   }
   },
   {
-   "name": "Priya",
-   "essence": 2,
-   "toner": 0,
-   "masks": 0,
-   "bottle_rule": "old if $4+ cheaper",
-   "max": "50"
+   "id": "byeol-pad",
+   "brand": "Byeolbit",
+   "name": "Exfoliating Toner Pads",
+   "size": "70 pads",
+   "category": "Toner",
+   "weight_kg": "0.22",
+   "prices": {
+    "haneul": "21",
+    "bada": "19"
+   }
   },
   {
-   "name": "Jun",
-   "essence": 0,
-   "toner": 2,
-   "masks": 0,
-   "bottle_rule": null,
-   "max": "62"
+   "id": "dal-snail-essence",
+   "brand": "Dalbit",
+   "name": "Snail Essence",
+   "size": "100 ml",
+   "category": "Essence",
+   "weight_kg": "0.20",
+   "prices": {
+    "haneul": "25",
+    "dalbit": "23"
+   },
+   "old_packaging": "dalbit"
   },
   {
-   "name": "Elena",
-   "essence": 0,
-   "toner": 1,
-   "masks": 1,
-   "bottle_rule": null,
-   "max": "52"
+   "id": "gur-ferment-essence",
+   "brand": "Gureum",
+   "name": "Ferment Essence",
+   "size": "150 ml",
+   "category": "Essence",
+   "weight_kg": "0.27",
+   "prices": {
+    "haneul": "32",
+    "bada": "29"
+   }
   },
   {
-   "name": "Omar",
-   "essence": 0,
-   "toner": 0,
-   "masks": 3,
-   "bottle_rule": null,
-   "max": "78"
+   "id": "byeol-vitc",
+   "brand": "Byeolbit",
+   "name": "Vitamin C Serum",
+   "size": "30 ml",
+   "category": "Serum",
+   "weight_kg": "0.10",
+   "prices": {
+    "haneul": "26",
+    "bada": "24"
+   }
   },
   {
-   "name": "Kai",
-   "essence": 1,
-   "toner": 1,
-   "masks": 0,
-   "bottle_rule": "either",
-   "max": "62"
+   "id": "byeol-niacin",
+   "brand": "Byeolbit",
+   "name": "Niacinamide Serum",
+   "size": "30 ml",
+   "category": "Serum",
+   "weight_kg": "0.10",
+   "prices": {
+    "haneul": "22"
+   }
+  },
+  {
+   "id": "sae-propolis",
+   "brand": "Saebom",
+   "name": "Propolis Ampoule",
+   "size": "30 ml",
+   "category": "Serum",
+   "weight_kg": "0.11",
+   "prices": {
+    "haneul": "27",
+    "bada": "25"
+   }
+  },
+  {
+   "id": "dal-ginseng",
+   "brand": "Dalbit",
+   "name": "Ginseng Serum",
+   "size": "50 ml",
+   "category": "Serum",
+   "weight_kg": "0.15",
+   "prices": {
+    "dalbit": "34",
+    "haneul": "37"
+   }
+  },
+  {
+   "id": "sae-cica-cream",
+   "brand": "Saebom",
+   "name": "Cica Barrier Cream",
+   "size": "50 ml",
+   "category": "Moisturizer",
+   "weight_kg": "0.12",
+   "prices": {
+    "haneul": "22",
+    "bada": "19"
+   }
+  },
+  {
+   "id": "gur-water-gel",
+   "brand": "Gureum",
+   "name": "Water Gel Cream",
+   "size": "75 ml",
+   "category": "Moisturizer",
+   "weight_kg": "0.14",
+   "prices": {
+    "haneul": "20",
+    "bada": "18"
+   }
+  },
+  {
+   "id": "hay-rice-cream",
+   "brand": "Hayan",
+   "name": "Rice Ceramide Cream",
+   "size": "60 ml",
+   "category": "Moisturizer",
+   "weight_kg": "0.13",
+   "prices": {
+    "haneul": "24"
+   }
+  },
+  {
+   "id": "dal-snail-cream",
+   "brand": "Dalbit",
+   "name": "Snail Repair Cream",
+   "size": "50 ml",
+   "category": "Moisturizer",
+   "weight_kg": "0.12",
+   "prices": {
+    "dalbit": "26",
+    "haneul": "28"
+   }
+  },
+  {
+   "id": "hay-eye",
+   "brand": "Hayan",
+   "name": "Retinal Eye Cream",
+   "size": "20 ml",
+   "category": "Eye",
+   "weight_kg": "0.06",
+   "prices": {
+    "haneul": "23",
+    "bada": "21"
+   }
+  },
+  {
+   "id": "dal-cica-mask",
+   "brand": "Dalbit",
+   "name": "Cica Sheet Mask",
+   "size": "1 sheet",
+   "category": "Mask",
+   "weight_kg": "0.03",
+   "prices": {
+    "haneul": "2.50",
+    "bada": "2",
+    "dalbit": "2"
+   }
+  },
+  {
+   "id": "dal-mask-box",
+   "brand": "Dalbit",
+   "name": "Cica Sheet Masks",
+   "size": "Box of 10",
+   "category": "Mask",
+   "weight_kg": "0.30",
+   "prices": {
+    "haneul": "18",
+    "bada": "16",
+    "dalbit": "16"
+   }
+  },
+  {
+   "id": "gur-sleep",
+   "brand": "Gureum",
+   "name": "Overnight Sleeping Mask",
+   "size": "80 ml",
+   "category": "Mask",
+   "weight_kg": "0.15",
+   "prices": {
+    "haneul": "21",
+    "bada": "19"
+   }
+  },
+  {
+   "id": "byeol-clay",
+   "brand": "Byeolbit",
+   "name": "Volcanic Clay Mask",
+   "size": "100 ml",
+   "category": "Mask",
+   "weight_kg": "0.18",
+   "prices": {
+    "bada": "15"
+   }
+  },
+  {
+   "id": "sae-lip",
+   "brand": "Saebom",
+   "name": "Honey Lip Sleeping Mask",
+   "size": "20 g",
+   "category": "Lip",
+   "weight_kg": "0.04",
+   "prices": {
+    "haneul": "15",
+    "bada": "13"
+   }
+  },
+  {
+   "id": "hay-tint",
+   "brand": "Hayan",
+   "name": "Water Lip Tint",
+   "size": "4 g",
+   "category": "Lip",
+   "weight_kg": "0.03",
+   "prices": {
+    "haneul": "12",
+    "bada": "11"
+   }
+  },
+  {
+   "id": "mul-sun-essence",
+   "brand": "Mulgyeol",
+   "name": "Watery Sun Essence SPF 50+",
+   "size": "50 ml",
+   "category": "Sun",
+   "weight_kg": "0.09",
+   "prices": {
+    "haneul": "19",
+    "bada": "17"
+   },
+   "not_to": [
+    "US"
+   ]
+  },
+  {
+   "id": "gur-sun-stick",
+   "brand": "Gureum",
+   "name": "Sun Stick SPF 50+",
+   "size": "19 g",
+   "category": "Sun",
+   "weight_kg": "0.05",
+   "prices": {
+    "haneul": "18"
+   },
+   "not_to": [
+    "US"
+   ]
+  },
+  {
+   "id": "sae-mist-spray",
+   "brand": "Saebom",
+   "name": "Toner Mist, aerosol",
+   "size": "120 ml",
+   "category": "Mist",
+   "weight_kg": "0.18",
+   "prices": {
+    "bada": "14"
+   },
+   "aerosol": true
+  },
+  {
+   "id": "sae-mist-pump",
+   "brand": "Saebom",
+   "name": "Toner Mist, pump",
+   "size": "120 ml",
+   "category": "Mist",
+   "weight_kg": "0.17",
+   "prices": {
+    "haneul": "16",
+    "bada": "15"
+   }
+  },
+  {
+   "id": "dal-travel-kit",
+   "brand": "Dalbit",
+   "name": "Snail Travel Kit",
+   "size": "4 minis",
+   "category": "Set",
+   "weight_kg": "0.20",
+   "prices": {
+    "dalbit": "19",
+    "haneul": "22"
+   }
+  },
+  {
+   "id": "mul-starter",
+   "brand": "Mulgyeol",
+   "name": "Hydration Starter Set",
+   "size": "3 items",
+   "category": "Set",
+   "weight_kg": "0.40",
+   "prices": {
+    "haneul": "39",
+    "bada": "36"
+   }
+  },
+  {
+   "id": "byeol-spot",
+   "brand": "Byeolbit",
+   "name": "Spot Patches",
+   "size": "36 patches",
+   "category": "Care",
+   "weight_kg": "0.02",
+   "prices": {
+    "haneul": "7",
+    "bada": "6"
+   }
   }
  ],
- "deal": [
-  {
-   "n": "You",
-   "ess": "ess_old",
-   "goods": "51",
-   "ship": "3.26",
-   "duty": "6.38",
-   "fee": "1.3",
-   "tax": "4.72",
-   "total": "66.66",
-   "cap": "75",
-   "solo": "121.58"
+ "hero": {
+  "country": "US",
+  "request": "Dry, sensitive skin. A simple routine: cleanser, toner, essence and a cream. Under $120 all in.",
+  "cart": [
+   "mul-gel-cleanser",
+   "dal-rice-toner",
+   "dal-snail-essence",
+   "sae-cica-cream"
+  ],
+  "rules": {
+   "old_packaging_ok": true,
+   "add_small_extras_if_cheaper": true
   },
-  {
-   "n": "Leo",
-   "ess": "ess_old",
-   "goods": "34",
-   "ship": "1.74",
-   "duty": "4.25",
-   "fee": "0.87",
-   "tax": "3.15",
-   "total": "44.01",
-   "cap": "50",
-   "solo": "100.88"
+  "listed": {
+   "lines": [
+    {
+     "id": "mul-gel-cleanser",
+     "shop": "bada",
+     "unit": "12"
+    },
+    {
+     "id": "dal-rice-toner",
+     "shop": "dalbit",
+     "unit": "21"
+    },
+    {
+     "id": "dal-snail-essence",
+     "shop": "dalbit",
+     "unit": "23"
+    },
+    {
+     "id": "sae-cica-cream",
+     "shop": "bada",
+     "unit": "19"
+    }
+   ],
+   "breakdown": {
+    "goods": "75",
+    "domestic": "3.50",
+    "shipping": "21",
+    "duty": "9.38",
+    "tax": "6.94",
+    "fee": "3",
+    "total": "118.82",
+    "kg": "1.07"
+   }
   },
-  {
-   "n": "Aisha",
-   "ess": "ess_new",
-   "goods": "42",
-   "ship": "1.96",
-   "duty": "5.25",
-   "fee": "1.07",
-   "tax": "3.89",
-   "total": "54.17",
-   "cap": "62",
-   "solo": "99.66"
-  },
-  {
-   "n": "Noah",
-   "ess": "None",
-   "goods": "34",
-   "ship": "2.39",
-   "duty": "4.25",
-   "fee": "0.87",
-   "tax": "3.15",
-   "total": "44.66",
-   "cap": "56",
-   "solo": "91.14"
-  },
-  {
-   "n": "Sam",
-   "ess": "ess_old",
-   "goods": "45",
-   "ship": "3.48",
-   "duty": "5.63",
-   "fee": "1.14",
-   "tax": "4.16",
-   "total": "59.41",
-   "cap": "70",
-   "solo": "114.27"
-  },
-  {
-   "n": "Priya",
-   "ess": "ess_old",
-   "goods": "34",
-   "ship": "1.74",
-   "duty": "4.25",
-   "fee": "0.86",
-   "tax": "3.15",
-   "total": "44.00",
-   "cap": "50",
-   "solo": "100.88"
-  },
-  {
-   "n": "Jun",
-   "ess": "None",
-   "goods": "40",
-   "ship": "2.17",
-   "duty": "5.00",
-   "fee": "1.02",
-   "tax": "3.70",
-   "total": "51.89",
-   "cap": "62",
-   "solo": "98.44"
-  },
-  {
-   "n": "Elena",
-   "ess": "None",
-   "goods": "34",
-   "ship": "2.39",
-   "duty": "4.25",
-   "fee": "0.86",
-   "tax": "3.15",
-   "total": "44.65",
-   "cap": "52",
-   "solo": "91.14"
-  },
-  {
-   "n": "Omar",
-   "ess": "None",
-   "goods": "42",
-   "ship": "3.91",
-   "duty": "5.25",
-   "fee": "1.07",
-   "tax": "3.89",
-   "total": "56.12",
-   "cap": "78",
-   "solo": "117.75"
-  },
-  {
-   "n": "Kai",
-   "ess": "ess_old",
-   "goods": "37",
-   "ship": "1.96",
-   "duty": "4.63",
-   "fee": "0.94",
-   "tax": "3.42",
-   "total": "47.95",
-   "cap": "62",
-   "solo": "99.66"
-  }
- ],
- "listed_if_all_bought": [
-  {
-   "n": "You",
-   "ess": "ess_new",
-   "goods": "59",
-   "ship": "13.7",
-   "duty": "7.38",
-   "fee": "1.31",
-   "tax": "5.46",
-   "total": "86.85",
-   "cap": "75",
-   "solo": "121.58"
-  },
-  {
-   "n": "Leo",
-   "ess": "ess_new",
-   "goods": "44",
-   "ship": "7.3",
-   "duty": "5.50",
-   "fee": "0.98",
-   "tax": "4.07",
-   "total": "61.85",
-   "cap": "50",
-   "solo": "100.88"
-  },
-  {
-   "n": "Aisha",
-   "ess": "ess_new",
-   "goods": "43",
-   "ship": "8.22",
-   "duty": "5.38",
-   "fee": "0.95",
-   "tax": "3.98",
-   "total": "61.53",
-   "cap": "62",
-   "solo": "99.66"
-  },
-  {
-   "n": "Noah",
-   "ess": "None",
-   "goods": "37",
-   "ship": "10.04",
-   "duty": "4.63",
-   "fee": "0.82",
-   "tax": "3.42",
-   "total": "55.91",
-   "cap": "56",
-   "solo": "91.14"
-  },
-  {
-   "n": "Sam",
-   "ess": "ess_new",
-   "goods": "54",
-   "ship": "14.61",
-   "duty": "6.75",
-   "fee": "1.2",
-   "tax": "5.00",
-   "total": "81.56",
-   "cap": "70",
-   "solo": "114.27"
-  },
-  {
-   "n": "Priya",
-   "ess": "ess_new",
-   "goods": "44",
-   "ship": "7.3",
-   "duty": "5.50",
-   "fee": "0.98",
-   "tax": "4.07",
-   "total": "61.85",
-   "cap": "50",
-   "solo": "100.88"
-  },
-  {
-   "n": "Jun",
-   "ess": "None",
-   "goods": "42",
-   "ship": "9.13",
-   "duty": "5.25",
-   "fee": "0.93",
-   "tax": "3.89",
-   "total": "61.20",
-   "cap": "62",
-   "solo": "98.44"
-  },
-  {
-   "n": "Elena",
-   "ess": "None",
-   "goods": "37",
-   "ship": "10.04",
-   "duty": "4.63",
-   "fee": "0.82",
-   "tax": "3.42",
-   "total": "55.91",
-   "cap": "52",
-   "solo": "91.14"
-  },
-  {
-   "n": "Omar",
-   "ess": "None",
-   "goods": "48",
-   "ship": "16.44",
-   "duty": "6.00",
-   "fee": "1.06",
-   "tax": "4.44",
-   "total": "75.94",
-   "cap": "78",
-   "solo": "117.75"
-  },
-  {
-   "n": "Kai",
-   "ess": "ess_new",
-   "goods": "43",
-   "ship": "8.22",
-   "duty": "5.38",
-   "fee": "0.95",
-   "tax": "3.98",
-   "total": "61.53",
-   "cap": "62",
-   "solo": "99.66"
-  }
- ],
- "alone": {
-  "You": {
-   "goods": "67",
-   "ship": "30",
-   "duty": "8.38",
-   "fee": "10",
-   "tax": "6.20",
-   "total": "121.58"
-  },
-  "Leo": {
-   "goods": "50",
-   "ship": "30",
-   "duty": "6.25",
-   "fee": "10",
-   "tax": "4.63",
-   "total": "100.88"
-  },
-  "Aisha": {
-   "goods": "49",
-   "ship": "30",
-   "duty": "6.13",
-   "fee": "10",
-   "tax": "4.53",
-   "total": "99.66"
-  },
-  "Noah": {
-   "goods": "42",
-   "ship": "30",
-   "duty": "5.25",
-   "fee": "10",
-   "tax": "3.89",
-   "total": "91.14"
-  },
-  "Sam": {
-   "goods": "61",
-   "ship": "30",
-   "duty": "7.63",
-   "fee": "10",
-   "tax": "5.64",
-   "total": "114.27"
-  },
-  "Priya": {
-   "goods": "50",
-   "ship": "30",
-   "duty": "6.25",
-   "fee": "10",
-   "tax": "4.63",
-   "total": "100.88"
-  },
-  "Jun": {
-   "goods": "48",
-   "ship": "30",
-   "duty": "6.00",
-   "fee": "10",
-   "tax": "4.44",
-   "total": "98.44"
-  },
-  "Elena": {
-   "goods": "42",
-   "ship": "30",
-   "duty": "5.25",
-   "fee": "10",
-   "tax": "3.89",
-   "total": "91.14"
-  },
-  "Omar": {
-   "goods": "54",
-   "ship": "42",
-   "duty": "6.75",
-   "fee": "10",
-   "tax": "5.00",
-   "total": "117.75"
-  },
-  "Kai": {
-   "goods": "49",
-   "ship": "30",
-   "duty": "6.13",
-   "fee": "10",
-   "tax": "4.53",
-   "total": "99.66"
-  }
- },
- "totals": {
-  "deal": "513.52",
-  "listed_if_all_bought": "664.13",
-  "alone": "1035.40",
-  "held": "617"
- },
- "listed_after_dropouts": [],
- "shop": {
   "deal": {
-   "units": {
-    "ess_old": 7,
-    "ton": 7,
-    "msk": 8,
-    "ess_new": 1
-   },
-   "item_gain": "97",
-   "freight": "15",
-   "samples": "-15",
-   "gain": "97",
-   "profit": "217",
-   "rev": "393"
+   "lines": [
+    {
+     "id": "mul-gel-cleanser",
+     "shop": "bada",
+     "unit": "12"
+    },
+    {
+     "id": "dal-rice-toner",
+     "shop": "dalbit",
+     "unit": "19"
+    },
+    {
+     "id": "dal-snail-essence",
+     "shop": "dalbit",
+     "unit": "16",
+     "variant": "old packaging"
+    },
+    {
+     "id": "sae-cica-cream",
+     "shop": "bada",
+     "unit": "19"
+    },
+    {
+     "id": "dal-cica-mask",
+     "shop": "bada",
+     "unit": "2",
+     "added_by_agent": true
+    }
+   ],
+   "extras": [
+    {
+     "id": "dalbit-sample-kit",
+     "shop": "dalbit",
+     "name": "Sample kit, 5 minis",
+     "unit": "0"
+    }
+   ],
+   "breakdown": {
+    "goods": "68",
+    "domestic": "0",
+    "shipping": "21",
+    "duty": "8.50",
+    "tax": "6.29",
+    "fee": "3",
+    "total": "106.79",
+    "kg": "1.15"
+   }
   },
-  "listed_if_all_bought": {
-   "units": {
-    "ess_new": 8,
-    "ton": 7,
-    "msk": 8
+  "hold": "118.82",
+  "charged": "106.79",
+  "released": "12.03",
+  "mask_saves": "1.07",
+  "direct": {
+   "goods": "80",
+   "shipping": "34",
+   "duty": "10.00",
+   "tax": "7.40",
+   "carrier_fees": "20",
+   "total": "151.40",
+   "due_at_door": "37.40",
+   "parcels": 2
+  },
+  "saved_vs_listed": "12.03",
+  "saved_vs_direct": "44.61",
+  "rounds": {
+   "dalbit": [
+    {
+     "actor": "agent",
+     "terms": "Toner $17, essence $18 (or old packaging $14), sample kit"
+    },
+    {
+     "actor": "shop",
+     "terms": "Toner $20, essence $22 or old packaging $16, sample kit with 2+ items"
+    },
+    {
+     "actor": "agent",
+     "terms": "Toner $18, old-packaging essence $15, sample kit"
+    },
+    {
+     "actor": "shop",
+     "terms": "Toner $19, old-packaging essence $16, sample kit"
+    },
+    {
+     "actor": "code",
+     "terms": "Accept: every line at or above what the shopper allowed, total under the hold"
+    }
+   ],
+   "bada": [
+    {
+     "actor": "agent",
+     "terms": "Cleanser $11, cream $17"
+    },
+    {
+     "actor": "shop",
+     "terms": "No price change; free shipping over $33"
+    },
+    {
+     "actor": "agent",
+     "terms": "Add one $2 sheet mask; ship free"
+    },
+    {
+     "actor": "shop",
+     "terms": "Accepted"
+    },
+    {
+     "actor": "code",
+     "terms": "Accept: the mask lowers the shopper's total, so their rule allows it"
+    }
+   ]
+  },
+  "shop_gain": {
+   "dalbit": {
+    "listed": "10",
+    "deal": "5.50"
    },
-   "item_gain": "92",
-   "freight": "0",
-   "samples": "0",
-   "gain": "92",
-   "profit": "275",
-   "rev": "451"
+   "bada": {
+    "listed": "7.00",
+    "deal": "4.30"
+   }
+  },
+  "private": {
+   "dalbit/dal-rice-toner": {
+    "floor": "16",
+    "cost": "7"
+   },
+   "dalbit/dal-snail-essence": {
+    "floor": "18",
+    "cost": "8"
+   },
+   "dalbit/dal-snail-essence:old": {
+    "floor": "12",
+    "cost": "8",
+    "stock": "40",
+    "days_on_shelf": "150"
+   },
+   "bada/mul-gel-cleanser": {
+    "floor": "10",
+    "cost": "6"
+   },
+   "bada/sae-cica-cream": {
+    "floor": "16",
+    "cost": "9"
+   },
+   "bada/dal-cica-mask": {
+    "floor": "1.20",
+    "cost": "0.60"
+   }
+  }
+ },
+ "countries": {
+  "US": {
+   "name": "United States",
+   "region": "California",
+   "currency": "USD",
+   "tax_name": "Sales tax (est.)",
+   "duty_note": "12.5% on Korean cosmetics (Section 301, since Jul 24, 2026); no low-value exemption",
+   "deal": {
+    "goods": "68.00",
+    "domestic": "0.00",
+    "shipping": "21.00",
+    "duty": "8.50",
+    "tax": "6.29",
+    "fee": "3.00",
+    "total": "106.79"
+   },
+   "listed": {
+    "goods": "75.00",
+    "domestic": "3.50",
+    "shipping": "21.00",
+    "duty": "9.38",
+    "tax": "6.94",
+    "fee": "3.00",
+    "total": "118.82"
+   }
+  },
+  "CA": {
+   "name": "Canada",
+   "region": "Ontario",
+   "currency": "CAD",
+   "tax_name": "HST",
+   "duty_note": "No duty under the Korea-Canada FTA (verify)",
+   "deal": {
+    "goods": "93.84",
+    "domestic": "0.00",
+    "shipping": "30.36",
+    "duty": "0.00",
+    "tax": "16.15",
+    "fee": "4.14",
+    "total": "144.49"
+   },
+   "listed": {
+    "goods": "103.50",
+    "domestic": "4.83",
+    "shipping": "30.36",
+    "duty": "0.00",
+    "tax": "18.04",
+    "fee": "4.14",
+    "total": "160.87"
+   }
+  },
+  "GB": {
+   "name": "United Kingdom",
+   "region": null,
+   "currency": "GBP",
+   "tax_name": "VAT",
+   "duty_note": "No duty under the UK-Korea FTA; VAT collected at checkout up to GBP 135 (verify)",
+   "deal": {
+    "goods": "51.00",
+    "domestic": "0.00",
+    "shipping": "17.25",
+    "duty": "0.00",
+    "tax": "13.65",
+    "fee": "2.25",
+    "total": "84.15"
+   },
+   "listed": {
+    "goods": "56.25",
+    "domestic": "2.63",
+    "shipping": "17.25",
+    "duty": "0.00",
+    "tax": "15.23",
+    "fee": "2.25",
+    "total": "93.61"
+   }
+  },
+  "DE": {
+   "name": "Germany",
+   "region": null,
+   "currency": "EUR",
+   "tax_name": "VAT",
+   "duty_note": "EUR 3 per customs line on parcels up to EUR 150 since Jul 1, 2026; VAT via IOSS (verify)",
+   "deal": {
+    "goods": "58.48",
+    "domestic": "0.00",
+    "shipping": "20.64",
+    "duty": "3.00",
+    "tax": "15.60",
+    "fee": "2.58",
+    "total": "100.30"
+   },
+   "listed": {
+    "goods": "64.50",
+    "domestic": "3.01",
+    "shipping": "20.64",
+    "duty": "3.00",
+    "tax": "17.32",
+    "fee": "2.58",
+    "total": "111.05"
+   }
+  },
+  "AU": {
+   "name": "Australia",
+   "region": null,
+   "currency": "AUD",
+   "tax_name": "GST",
+   "duty_note": "No duty under the Korea-Australia FTA; GST collected at checkout up to AUD 1,000 (verify)",
+   "deal": {
+    "goods": "103.36",
+    "domestic": "0.00",
+    "shipping": "33.44",
+    "duty": "0.00",
+    "tax": "13.68",
+    "fee": "4.56",
+    "total": "155.04"
+   },
+   "listed": {
+    "goods": "114.00",
+    "domestic": "5.32",
+    "shipping": "33.44",
+    "duty": "0.00",
+    "tax": "15.28",
+    "fee": "4.56",
+    "total": "172.60"
+   }
   }
  }
 }

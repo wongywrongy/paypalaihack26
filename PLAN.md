@@ -1,19 +1,18 @@
 # Rally — build plan
 
-Source of truth for coding agents. Mirrors the shared plan doc as of Oct 22, 2026. Reference screens: [`design/mockup/`](design/mockup/README.md). Reference numbers: [`design/scenario/`](design/scenario/).
+Source of truth for coding agents. Mirrors the shared plan doc as of Oct 22, 2026 (version 2: international shopping). Reference screens: [`design/mockup/`](design/mockup/README.md). Reference numbers: [`design/scenario/`](design/scenario/).
 
 ## Summary
 
-Rally turns a group-chat order into one negotiated, prepaid group order. Each person says what they want and their max, approves a PayPal hold, and agents negotiate the whole order with the shop. Everyone pays their max or less; the shop is paid when it ships.
+Rally lets anyone outside Korea buy Korean skincare from Korean shops, including shops that only ship inside Korea, as one box with one price in their own currency, duty and tax prepaid, paid with PayPal. An agent builds the routine, picks the cheapest shop for each item, and bargains with each shop's agent. The PayPal hold is the checkout price; the final charge is that or less.
 
-- **Deadline:** Nov 12, 2026, 12:00 PM PT on Devpost. Judging runs Dec 1–15, so the hosted demo must stay up and free to test until then.
-- **Pass/fail first:** the project must fit the theme, use the PayPal developer platform (sandbox) centrally, and use an AI tool.
-- **Then five equal criteria:** technological implementation, design, potential impact, innovation, presentation.
-- **Submission:** hosted working demo with test logins, public repo with an open-source license visible in the About section, a YouTube video under 3 minutes with no third-party trademarks or unlicensed music, and a text description.
-- **Prize targets:** grand prize; honorable mentions Best Use of Agentic Commerce and Best Use of PayPal + AI; sponsor prize AG Grid for the organizer order sheet. A project can win one grand or honorable mention plus one sponsor prize.
-- **Scope:** one market (Korean skincare), one fictional shop (plus an optional second), pools of up to about 30 people, USD, PayPal sandbox only. Real shops, real customs filing, multi-shop pools and other currencies are out.
-
-Rules: [Devpost rules](https://paypalaihackathon.devpost.com/rules), [resources](https://paypalaihackathon.devpost.com/resources).
+- **Why now:** K-beauty exports hit a record $11.43B in 2025, sold to 202 countries, with the US the largest market ([Personal Care Magazine](https://www.personalcaremagazine.com/story/50378/korean-cosmetics-exports-hit-11-billion-record-high-in-2025)). Buying from Korea is still hard. Foreign cards fail on Korean sites, checkout is in Korean and many shops don't ship abroad ([Delivered Korea](https://blog.delivered.co.kr/k-shopping/olive-young-korea-online-shopping-guide-2026-shop-ship-worldwide/), a forwarding service's own account). Import fees now surprise buyers at the door: the US ended its low-value exemption in Aug 2025 and charges 12.5% on Korean cosmetics since Jul 24, 2026 ([Zonos](https://zonos.com/docs/guides/us-tariff-changes), [Koala Gains](https://koalagains.com/industry-tariff-report/chapters/33-essential-oils-and-cosmetics/tariff-updates)); the EU added €3 per customs line on parcels up to €150 from Jul 1, 2026 ([DHL](https://www.dhl.com/discover/en-cz/logistics-advice/import-export-advice/eu-2026-duty-de-minimis-removal)).
+- **Why PayPal:** PayPal's REST API takes 25 currencies, and the Korean won isn't one of them ([PayPal](https://developer.paypal.com/api/rest/reference/currency-codes/)). Rally is the bridge: the shopper pays in their own currency, and each Korean shop is paid out by PayPal.
+- **Deadline:** Nov 12, 2026, 12:00 PM PT on Devpost. Judging runs Dec 1–15; the hosted app must stay up and free to test until then.
+- **Pass/fail first:** fits the theme, uses the PayPal developer platform (sandbox) centrally, uses an AI tool. **Then five equal criteria:** technological implementation, design, potential impact, innovation, presentation.
+- **Submission:** hosted working app with test logins, public repo with a visible open-source license, a public YouTube video under 3 minutes with no third-party trademarks or unlicensed music, and a text description ([rules](https://paypalaihackathon.devpost.com/rules)).
+- **Prize targets:** grand prize; honorable mentions Best Use of Agentic Commerce and Best Use of PayPal + AI; sponsor prize AG Grid (shop console). One grand or honorable mention plus one sponsor prize can be won.
+- **Scope:** 3 fictional Korean shops, about 30 products from 6 fictional brands, 5 destinations (US, Canada, UK, Germany, Australia), PayPal sandbox only. Out: real shops, real customs filing, returns, group orders (future work), other countries.
 
 ## Decisions locked
 
@@ -21,248 +20,237 @@ These are settled; ask before reopening any of them.
 
 | Area | Decision | Why |
 | --- | --- | --- |
-| Market | Korean skincare. Fictional shop Haneul Beauty (Seoul) and product line Dalbit. No sunscreen. | Recognizable; free samples and old-packaging stock are natural trade chips. Video rules ban real brands. The US regulates sunscreen as an OTC drug. |
-| Codebase | New app in the same repo. Salvage only the adapters listed under Architecture. | The old code assumes one product, one unit per buyer, fixed 3/5 tiers. |
-| Money flow | Rally is the merchant of record in sandbox. Per member: Orders v2 authorize for their max, capture their share at deal close with final capture, void on no deal. Shop paid by Payouts after tracking is added. Full refund if not shipped by the ship-by date. | Offers are binding, buyers are protected, and it avoids PayPal partner-only features (delayed disbursement, platform fees). |
-| Max | Enforced in code on every capture, not only by the hold. | PayPal allows capturing up to 115% of a hold or $75 more, whichever is less. |
-| Timing | Holds lock and the deal closes within 72 hours of the first authorization. Reauthorize only if a run slips. | PayPal's 3-day honor period. |
-| Pricing rule | One price per item variant per pool. A member's max can only exclude them, never raise their price. | Nobody gains by understating their max. |
-| Flexibility | Members who accept a cheaper variant pay that variant's price. | Rewards the flexibility that unlocks the deal. |
-| Decision rights | LLM: language and ideas. CP-SAT solver: assignment and cost splits. Code: acceptance and every limit. PayPal: money. | The LLM never accepts a deal and never sees the shop's lowest prices. |
-| Customs | Duty estimated at 12.5% (current total on Korean cosmetics) and held as a reserve. Overestimates refunded; underestimates absorbed by Rally. Customs fee and tax are configurable estimates. | Keeps the max a hard ceiling. |
-| Terms traded | Item prices, variant swaps (old bottle), shipping option (express or the shop's shared freight), extras (sample kits). At most 3 rounds. | Enough to show real trading while staying explainable in a 3-minute video. |
-| Model | A hosted model API for the deployed demo; self-hosted only for development. Keep the provider-agnostic adapter. | The demo must stay up through Dec 15. |
-| Hosting | Render (existing render.yaml) with Postgres. | Already set up; Render is also a sponsor. |
+| Shopper | One shopper, solo. No group buying. | Judges can play the whole flow alone in about 90 seconds. |
+| Shops | Haneul Beauty (Seoul, multi-brand, ships abroad), Bada Market (Busan drugstore, ships inside Korea only), Dalbit Official (Seoul brand store, ships abroad). All fictional. | Different prices, policies and stock make sourcing and bargaining real. A Korea-only shop shows what Rally unlocks. |
+| Catalog | About 30 products from 6 fictional brands (Dalbit, Mulgyeol, Saebom, Byeolbit, Gureum, Hayan). Some items can't go everywhere (sunscreens not to the US, aerosols not by air). | A shop judges can browse; restrictions show the agent handling rules. |
+| Product feel | A real product. No "Example", "preview", "fixture", "simulated" or "demo" anywhere in the UI. One small "Test mode" pill, as real payment products show for sandbox. | Judges should see a product, not a prototype. |
+| Destinations | US (USD), Canada (CAD), UK (GBP), Germany (EUR), Australia (AUD). | Largest markets, distinct import rules, all PayPal currencies. |
+| Logistics | Shops send to Rally's Seoul hub; one box goes to the shopper, duty and tax prepaid. | One parcel, one customs entry, nothing due at the door. |
+| Money flow | Rally is the merchant of record. Orders v2 AUTHORIZE for the checkout total in the shopper's currency; capture the final total with final capture right after the deal; void if the shopper cancels. Shops paid by PayPal Payouts in USD when their parcel reaches the hub. Full refund if the box hasn't left Seoul by the ship-by date. | Offers are backed by held funds; no partner-only PayPal features needed. |
+| Ceiling | The hold is the ceiling. Code asserts every capture is at or below it. | PayPal allows captures up to 115% of a hold or $75 more. |
+| No-deal path | If a shop won't move, the shopper pays the checkout price. There is no failed order. | The shopper never pays more than checkout and never waits on a failed deal. |
+| Shopper rules | Two switches on the bag: "Older packaging is fine" and "Add a small extra if it lowers my total". No mid-deal questions. | Streamlined; the agent acts only within what the shopper allowed. |
+| Decision rights | LLM: language and ideas. Search and solver: sourcing and costs. Code: acceptance and every limit. PayPal: money. | The LLM never accepts a deal, never sees a shop's lowest prices, never moves money. |
+| Customs | Duty and import tax from a dated rate table with sources, shown before payment. Overestimates refunded; underestimates absorbed by Rally. | Keeps the hold a hard ceiling and the door fee-free. |
+| Currency | Shop prices stored in KRW and USD; quotes priced in USD and shown and charged in the destination currency at a rate locked for 15 minutes. | One price the shopper can trust at checkout. |
+| Terms traded | Unit price, older packaging, bundle discount, free sample kit, free shipping inside Korea (including a small add-on to reach a threshold). At most 3 replies per shop; whole deal under 30 seconds. | Enough to show real trading; fast enough to watch live. |
+| Model | Hosted model API for the deployed app; self-hosted only for development. | Must stay up through Dec 15. |
+| Hosting | Render with Postgres (existing render.yaml). | Already set up; Render is a sponsor. |
 
-## Member flow and simplicity rules
+## Shopper flow and simplicity rules
 
-A member sees six screens and one optional question. All bargaining detail lives behind one link, "See how the deal is going." Screens: [`design/mockup/screens/`](design/mockup/screens/).
+Six screens and one sheet. Screens: [`design/mockup/screens/`](design/mockup/screens/).
 
-1. **Invite** — shop name, product photos with list prices, "9 friends are in," one line on how it works, button: Join the order.
-2. **Tell us** — free-text box ("Snail essence, the rice toner and a box of cica masks. Under $75 all in."), parsed items shown as product tiles, the max as a chip, and at most one question with tap answers ("Would you take the old bottle if it's cheaper?").
-3. **Review and approve** — basket, two plain-language toggles ("Take the old bottle if $4+ cheaper," "Use slower shipping"), the max field, "Ordering alone: about $121.58," and the PayPal button for a hold of the max.
-4. **Negotiating** — a three-step progress bar, one highlighted card when a rule is applied ("Old bottle is $5 cheaper. You said that's fine, so we switched you."), and "Still under your max."
-5. **Deal reached** — one big number ("You pay $66.66"), the saving vs ordering alone, item list with photos and the free extra, and the full cost breakdown behind a toggle.
-6. **Receipt** — four-step timeline (hold, charge, ships, pick up) and two protections (refund if not shipped; customs difference refunded).
+1. **Shop** — "Ship to United States · USD" chip, a one-line promise, an "Ask for a routine" bar, category chips, product grid (photo, brand, name, "from $12", "2 shops").
+2. **Ship to** (sheet) — 5 countries, each with the bag's all-in price in local currency and its import rule ("No duty · 13% HST"). Changing it updates every price.
+3. **Ask Rally** — the shopper's words, a 4-step routine with one reason per item, the shop for each item, the all-in total, "Add routine to bag".
+4. **Bag** — items grouped by shop (Bada Market "Ships inside Korea"), "One box from Seoul to California · arrives Oct 30 to Nov 2", the two switches, the all-in total with a breakdown toggle, the PayPal button. Copy: "PayPal holds $118.82. You're charged after Rally's deal, never more than this."
+5. **Deal** — "Deal done · 14 seconds", the new total over the struck-through checkout total, one card per change (older packaging $23 → $16; toner $21 → $19 plus a sample kit; a $2 mask that unlocks free shipping; "Prices held. The shop said no."). Cards for applied shopper rules use the butter color.
+6. **Paid** — "You paid $106.79", "$12.03 less than at checkout", "Saved vs buying from each shop yourself $44.61", items with photos, breakdown toggle, "Nothing to pay at your door."
+7. **Track** — Paid → shops shipped to our Seoul hub → packed into one box → leaves Seoul → customs cleared, duty paid → delivered; plus "You're covered" refunds.
 
-**Quick question** (only when needed): two product photos side by side, two buttons, and "No answer in 10 minutes keeps your choice."
-
-Simplicity rules for every member screen:
+Simplicity rules for every shopper screen:
 
 - One primary action and one big number per screen.
 - Products and photos lead; numbers support them.
-- Breakdowns, rounds and agent logs are one tap away, never on the main path.
-- Plain words only: "max," "hold," "charged," "old bottle." Never "mandate," "utility," "authorization," "walk-away" or "round" in member copy.
-- At most one question per screen; every question has a safe default.
+- Breakdowns and agent logs are one tap away, never on the main path.
+- Real product copy: Bag, Checkout, Pay with PayPal, hold, charged, Order RL-24817, Track order. Never "Example", "preview", "fixture", "simulated" or "demo". Never "mandate", "utility", "authorization", "floor" or "round" in shopper copy.
+- The only sandbox marker is the "Test mode" pill in the header.
 
-Behind-the-scenes screens (organizer, shop, judges): How the deal was made, Organizer order sheet, Shop agent console, Deal scorecard, Benchmark, Who decides what. These may be denser but follow the same visual system.
+Behind the scenes (judges, shops): How the deal was made, Shop console, Scorecard, Who decides what, Benchmark. Reached from a small "Behind the scenes" link in the footer and from the Deal screen.
 
 ## Architecture and repo changes
 
-Keep the current stack and hosting; rebuild the domain. One FastAPI API, one worker process, Postgres, React + Vite + TypeScript, deployed on Render.
+Keep the stack and what's already built: the PayPal payments package, the LLM adapter, the design tokens and components, the Playwright setup. Replace the group-order domain (pools, members, allocations).
 
 ![Architecture: agents propose, code decides, PayPal moves money](docs/plan/architecture.png)
 
 The language model only reaches the model API; only the code-owned acceptance step reaches PayPal's money calls.
 
-Added dependencies: OR-Tools (CP-SAT solver), the PayPal Agent Toolkit (Python), AG Grid (React, organizer sheet). Nothing else new.
+**Keep:** `backend/rally/payments/` (paypal.py, ledger.py, webhooks.py), `backend/rally/llm.py`, `db.py`, `worker.py`, `config.py`, `scripts/paypal_sandbox.py`, `frontend/src/components/` (PayPalApproval.tsx, magicui), `frontend/src/styles.css` tokens, Playwright config and CI.
 
-**Keep (copy into the new layout, then adapt):**
+**Replace:** the group-order routes (Invite, Tell, Review, Live, Ask, Done, Receipt), `frontend/src/fixture.ts`, pool and member tables, and the old scenario (moved to `design/scenario/retired-group-order/`).
 
-- `backend/coalition/model.py` → `rally/llm.py`: provider-agnostic structured-output adapter with schema validation.
-- From `payments.py`: OAuth token caching, the request helper with `PayPal-Request-Id` idempotency, webhook signature verification. Drop its commitment-coupled state machine.
-- `tests/fixtures/paypal_official.json` contract fixtures.
-- The worker's job-claim and lease pattern (`worker.py`, `db.enqueue`), collapsed to one lane.
-- Frontend: `PayPalApproval.tsx`, the Magic UI pieces (animated list, number ticker, blur fade), Playwright config.
-- `render.yaml`, `Dockerfile`, `compose.yaml`, `.github/workflows/verify.yml` (adapted), `LICENSE`.
-
-**Delete:** headphone catalog and photos, calculator and legacy runs, `tests/legacy_fixtures.py`, all six migrations, `docs/model-verification-*.json`, the long `VERIFICATION.md` (replace with a short `EVIDENCE.md`), operator persona preparation, and `assistant.py`, `demo.py`, `groups.py`, `matching.py`, `negotiation.py`, `shopping.py`, `offers.py`.
+**Dependencies:** none new for sourcing. Bags have at most 8 items and 3 shops, so exact search over shop choices (at most 3^8 = 6,561 combinations) replaces CP-SAT. AG Grid (React) for the shop console. PayPal Agent Toolkit (Python) for shipment tracking.
 
 **New layout:**
 
 ```text
 backend/rally/
-  config.py          settings, feature flags (fixture vs connected)
-  db.py              connection, migration runner, job queue
-  migrations/001_init.sql
-  llm.py             structured JSON output, schema-validated, bounded tokens
-  catalog.py         shops, products, variants, extras, freight options, seed
-  elicit.py          free text -> items, rules, max; at most one question
-  pools.py           pool state machine
-  landed.py          deterministic costs, rate table, exact cent splits
-  solver.py          CP-SAT: variant assignment, inclusion, offer candidates
+  catalog.py         shops, brands, products, per-shop offers, policies, private floors; seed
+  countries.py       destinations, currencies, rate table (duty, tax, base), shipping rate cards
+  fx.py              KRW->USD and USD->local rates, locked per quote for 15 minutes
+  landed.py          one box: goods, shipping in Korea, shipping to you, duty, tax, fee; exact cents
+  sourcing.py        best shop per item: restrictions, stock, free-shipping lines, add-ons
+  assistant.py       LLM: request -> routine from the catalog, one reason per item
   negotiation/
-    schema.py        Offer, Line, Freight, Extra (strict pydantic)
-    buyer.py         group agent: solver candidates + LLM move choice
-    seller.py        shop agent: utility in code, LLM sees scores only
-    engine.py        rounds, acceptance, questions, deadlines
-  payments/
-    paypal.py        OAuth, orders, authorize, capture, void, refund, payouts
-    ledger.py        payment operations, idempotency, reconciliation
-    webhooks.py
-  toolkit.py         Agent Toolkit: shipment tracking, transaction list
-  worker.py
-  api.py
-  sim/generator.py   random pools for the benchmark
+    schema.py        Offer, Line, Extra (strict pydantic)
+    rally_agent.py   candidates from code, LLM picks one and writes the note
+    shop_agent.py    utility in code; LLM sees scores and goals only
+    engine.py        per-shop rounds in parallel, acceptance, deadline
+  orders.py          order state machine, quotes, receipts
+  payments/          (exists) paypal.py, ledger.py, webhooks.py
+  toolkit.py         Agent Toolkit: shipment tracking
+  worker.py  api.py  db.py  llm.py  config.py
+  sim/generator.py   random bags and shop situations
   sim/benchmark.py   strategies A-D, metrics
 frontend/src/routes/
-  Invite Tell Review Live Ask Done Receipt
-  DealRoom OrderSheet ShopConsole Scorecard Benchmark WhoDecides
-AGENTS.md  PRODUCT.md  DESIGN.md  README.md  EVIDENCE.md
+  Shop ShipTo Ask Bag Deal Paid Track
+  DealRoom ShopConsole Scorecard WhoDecides Benchmark
 ```
 
 **API surface:**
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| POST | /api/pools | Organizer creates a pool (shop, lock time, ship-by date) |
-| GET | /api/pools/{id} | Public invite: shop, products, member count |
-| POST | /api/pools/{id}/members | Join with free text; returns parsed items, rules, max, question |
-| PATCH | /api/members/{id} | Edit items, rules, max before lock |
-| POST | /api/members/{id}/hold | Create the PayPal order (intent AUTHORIZE, amount = max) |
-| POST | /api/members/{id}/hold/approve | Authorize after buyer approval |
-| GET | /api/pools/{id}/live | Member view: progress, applied rules, still under max |
-| POST | /api/questions/{id}/answer | Answer a quick question |
-| GET | /api/pools/{id}/deal | How the deal was made: rounds by term, log |
-| GET | /api/pools/{id}/sheet | Organizer order sheet |
-| GET | /api/shops/{id}/console | Shop agent console (shop auth) |
-| POST | /api/pools/{id}/ship | Shop adds tracking; triggers payout |
+| GET | /api/countries | Destinations, currency, import rule summary |
+| GET | /api/catalog?country=US | Products with best price per shop and ship-to flags |
+| POST | /api/assist | Shopper text + country → routine (items, reasons) |
+| POST | /api/bags | Create a bag (country, items, rules) |
+| PATCH | /api/bags/{id} | Change items, rules or country → new quote |
+| GET | /api/bags/{id}/quote | Sourcing plan and all-in breakdown in local currency |
+| POST | /api/bags/{id}/checkout | Create the PayPal order (AUTHORIZE, amount = quote total) |
+| POST | /api/bags/{id}/checkout/approve | Authorize, create the order, start the deal |
+| GET | /api/orders/{id}/deal | Live deal status and result cards |
+| GET | /api/orders/{id} | Order, receipt, tracking |
+| GET | /api/orders/{id}/log | How the deal was made |
+| GET | /api/shops/{id}/console | Shop console (shop login; read-only judge view) |
+| POST | /api/shops/{id}/orders/{order}/handoff | Shop's parcel reached the hub → payout |
+| POST | /api/hub/orders/{id}/ship | Box leaves Seoul → tracking on the PayPal capture |
 | POST | /api/paypal/webhook | Verified PayPal events |
-| POST | /api/demo/seed | Seed 9 simulated members so a judge is the 10th |
+| POST | /api/reset | Judge "Start over": clears the session's bag |
 | GET | /api/bench | Benchmark results |
 
 ## Data model
 
-One fresh migration, `001_init.sql`. Money is integer cents everywhere. Columns marked private are readable only through shop-scoped endpoints and the seller utility code, never by any LLM prompt.
+Money is integer minor units with an explicit currency on every amount. Private columns are readable only by shop-scoped endpoints and the shop agent's utility code, never by any LLM prompt.
 
 | Table | Key columns | Notes |
 | --- | --- | --- |
-| shops | id, name, country, payout_email | Haneul Beauty, Seoul, KR |
-| products | id, shop_id, name, hts_code, origin, image_url, list_price | HTS 3304 for skincare |
-| variants | id, product_id, label, weight_g, stock, days_on_shelf, unit_cost (private), lowest_price (private) | "new bottle" and "old bottle" are two variants |
-| shop_extras | id, shop_id, name, unit_cost (private), stock | Sample kit of 5 minis |
-| freight_options | id, shop_id, kind, departs_on, transit_days, price_rule, cost_rule (private) | Express (any day, at cost) and shared freight (fixed departure) |
-| communities | id, name | Glass Skin Club |
-| pools | id, community_id, shop_id, organizer_id, state, lock_at, deal_deadline, ship_by, deliver_to | One delivery address per pool |
-| members | id, pool_id, display_name, raw_text, max_cents, state | raw_text kept for the source spans |
-| member_items | id, member_id, product_id, qty, preferred_variant_id | |
-| member_rules | id, member_id, kind, params, source_span | kinds: variant_swap {from, to, min_discount}, slow_shipping {arrive_by} |
-| holds | id, member_id, order_id, authorization_id, amount_cents, status, honor_until, expires_at | One active hold per member |
-| rounds | id, pool_id, n, actor, offer, message, valid, created_at | offer = the strict JSON schema below |
-| questions | id, member_id, round_id, payload, answer, default_answer, deadline | |
-| deals | id, pool_id, terms, version, accepted_at | Immutable once written |
-| allocations | id, deal_id, member_id, lines, freight, duty, fee, tax, total | total <= member max, checked in code before insert |
-| payment_ops | id, kind, member_id, pool_id, request_id (unique), status, provider_ref, request, response | Every PayPal mutation goes through here |
-| payouts | id, pool_id, batch_id, amount_cents, status | |
-| shipments | id, pool_id, carrier, tracking_number, shipped_at | |
-| webhook_events | id, event_id (unique), type, raw, verified, processed_at | Persist before acknowledging |
-| jobs | id, kind, payload, run_at, lease_until, attempts | Worker queue |
-| rate_table | id, origin, hts_prefix, duty_bp, source_url, as_of | KR, 3304 → 1250 bp, as of 2026-10-12 |
-| bench_runs | id, strategy, seed, metrics | Benchmark output |
+| shops | id, name, city, kind, ships_abroad, payout_email | 3 seeded shops |
+| shop_policies | shop_id, domestic_ship_usd, free_over_usd, extras (json) | Free shipping inside Korea over a threshold |
+| brands | id, name | 6 fictional brands |
+| products | id, brand_id, name, size, category, hts_code, weight_g, image_url, flags | flags: not_to [countries], aerosol |
+| offers | id, shop_id, product_id, variant, list_krw, list_usd, stock, days_on_shelf, floor_usd (private), cost_usd (private) | "older packaging" is its own variant |
+| countries | code, name, currency, region, tax_name | US, CA, GB, DE, AU |
+| rate_table | country, hts_prefix, duty_bp, duty_flat_minor, tax_bp, tax_on_shipping, source_url, as_of | Every row cites a source and date |
+| shipping_rates | country, max_grams, price_usd | Hub to shopper, by weight |
+| fx_rates | pair, rate, fetched_at, source | Snapshot; quotes lock one |
+| bags | id, session_id, country, items, rules | Rules: older_packaging_ok, small_extras_ok |
+| quotes | id, bag_id, lines (shop per item), breakdown, currency, fx_rate, total_minor, expires_at | Immutable |
+| orders | id, quote_id, state, hold_id, charged_minor, ship_by | State machine below |
+| holds, payment_ops, webhook_events, payouts | (exist in the payments package) | Every PayPal mutation goes through payment_ops |
+| negotiations | id, order_id, shop_id, n, actor, offer, chosen_by, valid, created_at | Feeds "How the deal was made" |
+| deals | id, order_id, shop_id, terms, accepted_at | Immutable once written |
+| shipments | id, order_id, leg (shop_to_hub, hub_to_shopper), carrier, tracking, at | |
+| true_ups | id, order_id, estimated_minor, actual_minor, refund_minor | Refunds only |
+| jobs, bench_runs | | Worker queue, benchmark output |
 
-Pool states: OPEN → LOCKED → NEGOTIATING → AGREED → CHARGED → SHIPPED → DELIVERED. Failure paths: NEGOTIATING → NO_DEAL → VOIDED, and CHARGED → NOT_SHIPPED → REFUNDED.
+Order states: QUOTED → HELD → NEGOTIATING → CHARGED → AT_HUB → SHIPPED → DELIVERED. Other paths: HELD → VOIDED (shopper cancels), CHARGED → REFUNDED (box not out of Seoul by ship_by).
 
 ## Negotiation engine
 
-The engine is code with an LLM inside it, not an LLM chat. Offers are strict JSON, the solver builds and scores them, code accepts or rejects, and the LLM chooses among scored options and writes the words.
+The engine is code with an LLM inside it. Offers are strict JSON, code builds and checks them, code accepts, and the LLM chooses among scored options and writes the words. Each shop in the sourcing plan gets its own negotiation, run in parallel, all within 30 seconds.
 
 **Offer schema** (both sides send exactly this; anything else is rejected):
 
 ```json
 {
-  "round": 2,
-  "actor": "buyer",
+  "shop_id": "dalbit",
+  "reply": 2,
+  "actor": "rally",
   "lines": [
-    {"variant_id": "essence-old", "qty": 7, "unit_cents": 1600},
-    {"variant_id": "essence-new", "qty": 1, "unit_cents": 2100},
-    {"variant_id": "rice-toner", "qty": 7, "unit_cents": 1900},
-    {"variant_id": "cica-masks", "qty": 8, "unit_cents": 1300}
+    {"offer_id": "dalbit/dal-rice-toner", "qty": 1, "unit_usd_cents": 1800},
+    {"offer_id": "dalbit/dal-snail-essence:older", "qty": 1, "unit_usd_cents": 1500}
   ],
-  "freight": {"option_id": "shared-nov14", "price_cents": 2500},
-  "extras": [{"extra_id": "sample-kit", "qty": 10, "price_cents": 0}],
-  "expires_at": "2026-10-23T19:30:00-07:00",
+  "extras": [{"extra_id": "dalbit/sample-kit", "qty": 1, "unit_usd_cents": 0}],
+  "domestic_shipping_usd_cents": 0,
+  "expires_at": "2026-10-22T15:30:30-07:00",
   "note": "Public message, 240 characters max"
 }
 ```
 
 **Protocol:**
 
-1. At `lock_at` the pool locks. Only members with a valid authorization are in. Demand is snapshotted.
-2. Rounds alternate: group agent offers, shop agent counters, accepts or declines. Three rounds maximum, ending no later than `deal_deadline`.
-3. Every incoming offer is validated (known ids, quantities within demand and stock, positive integer prices), then scored by the receiver's code.
-4. Acceptance is code only. The group side accepts when every included member is at or under their max and either it is the final round or the shop's last move was below a set step (default $1 per item). The shop side accepts when every line is at or above its lowest price and utility clears its threshold.
-5. No agreement by round 3 or the deadline: NO_DEAL, void every hold.
+1. The PayPal hold is authorized. The quote (lines, prices, total) is the starting point.
+2. For each shop: Rally offers, the shop counters, accepts or declines; at most 3 replies each.
+3. Every incoming offer is validated (known offer ids, quantities within the bag and stock, positive integer cents), then scored by the receiver's code.
+4. Rally side accepts only if the whole order's all-in total is at or below the hold, and every swap or add-on is allowed by the shopper's rules and lowers the total. Shop side accepts only if every line is at or above its floor and its utility clears its threshold.
+5. A shop that won't move keeps its checkout prices. Code then recomputes the whole quote (shipping tiers, duty, tax) and captures that total.
 
-**Group side (solver):** CP-SAT with a boolean per member, item and allowed variant, plus a boolean per member for inclusion. A variant is allowed only if the member's rule covers it at the current price gap ("old bottle if $4+ cheaper"). Constraints: each included member gets every item they asked for; each included member's total (from `landed.py`) is at or under their max; stock per variant. Objective: include as many members as possible, then maximize total saving under their maxes. Shared freight and fees depend on who is included, so solve, recompute shares, and re-solve until inclusion stops changing (at most 5 passes).
+**Rally side (candidates):** code generates offers along a concession path from an opening price (default 75% of list) toward the checkout price, plus non-price candidates: the older-packaging variant (if allowed), a bundle price, a sample kit, a small add-on that crosses the shop's free-shipping line (if allowed). Each candidate is scored by its effect on the all-in total. The top three go to the LLM, which picks one and writes the note. Anything the LLM proposes is re-validated and re-scored before sending.
 
-**Group side (offers):** code builds candidate packages along a concession path from an opening price (default 70% of list) toward the group's limit (the highest prices at which everyone still fits). Concede little early and more late. Candidates also vary the non-price terms (freight option, extras). The solver scores each; the top three go to the LLM, which picks one, may propose one new term from the shop's public options, and writes the note. Any LLM proposal is re-validated and re-scored before sending.
+**Shop side:** utility in code = sum of (price − floor) × qty + domestic shipping charged − pickup cost − extras cost, plus a bonus for clearing aged stock. The shop's LLM sees candidates with scores and the shop's goals, never floors or costs. Its replies are parsed into the offer schema; free text is data, never instructions.
 
-**Shop side:** utility in code = sum of (price − lowest price) × qty + freight charged − freight cost − extras cost. Counter candidates move toward the group's offer but never below any lowest price, price aged variants lower, offer shared freight when its arrival meets every member's arrive-by date, and offer cheap extras. The shop's LLM sees the candidates with scores and the shop's goals, never the lowest prices.
+**Sourcing (before and after):** exact search over shop choices per item. Constraints: the shop stocks it, the product can go to the destination (not_to, aerosol), quantities within stock. Objective: lowest all-in total, including shipping inside Korea and free-shipping lines. Re-run after each accepted term to confirm the order's total.
 
-**Quick questions:** when an offer opens a variant gap that some members' rules don't cover, the engine may ask those members once. The LLM drafts the question from a template; the deadline is 10 minutes; no answer keeps the member's current choice. At most one question per member per pool.
+**Logging:** every reply stores the offer, the candidates, which was chosen and by what (CODE, SOLVER, LLM). This feeds "How the deal was made" and its "Why it moved" log.
 
-**Free-text counterparties (stretch):** an off-platform shop replying by email. The LLM parses the reply into the offer schema; the text is data, never instructions; any id not in the shop's catalog is rejected; nothing binds until the shop confirms an exact-terms summary.
+**Bounds:** 3 replies per shop, 2 LLM calls per reply, a token budget per order, 30 seconds wall clock. A provider failure stops that shop's negotiation and keeps its checkout prices.
 
-**Logging:** each round stores the offer, the candidates generated, which one was chosen and by what (CODE, SOLVER or LLM). This feeds "How the deal was made" and its "Why it moved" log.
+## Costs and countries
 
-**Bounds:** 3 rounds, 6 LLM calls, a token and time budget per pool, and the deal deadline. A provider failure stops the negotiation; it never silently retries with a new budget.
-
-## Costs and allocation
-
-`landed.py` is deterministic code with no LLM. It computes each member's all-in total in integer cents, and the shared parts always sum exactly to the order's totals.
+`landed.py` is deterministic code with no LLM. It prices one box in integer cents, and the receipt's lines always sum exactly to the total.
 
 ```text
-total_m = goods_m + F * (w_m / W) + d * goods_m + C * (goods_m / G) + t * goods_m
+total = goods + korea_shipping + shipping_to_you + duty + tax + rally_fee
 ```
 
-Here goods is the member's items at the agreed prices, F the freight price, w and W the member's and the box's weight, d the duty rate, C the customs fee per shipment, G the order's goods total, and t the tax rate.
+- **Goods:** each line at its agreed USD price; converted to local currency at the quote's locked rate (round each line, then sum).
+- **Shipping inside Korea:** each shop's fee unless its subtotal reaches its free-shipping line.
+- **Shipping to you:** hub rate card by box weight (items + 300 g packaging).
+- **Duty and tax:** from `rate_table`, by destination and HTS prefix (skincare: 3304).
+- **Rally fee:** $3 per order (illustrative), converted.
+- **Buying direct (baseline):** each shop that ships abroad sends its own parcel at its flat rate; Korea-only shops are replaced by the cheapest shop that ships abroad; duty, tax and a per-parcel carrier fee are due at the door.
 
-- **Shared parts:** freight split by weight, customs fee by goods value, both with largest-remainder rounding so the cents add up. Ties go by join order, so identical baskets can differ by one cent; show that as normal.
-- **Duty:** from `rate_table` by origin and HTS prefix, versioned with source and as-of date. Korean cosmetics (HTS 3304): 12.5% total under Section 301 since Jul 24, 2026; the KORUS free rate does not remove it ([Koala Gains, Oct 12, 2026](https://koalagains.com/industry-tariff-report/chapters/33-essential-oils-and-cosmetics/tariff-updates)).
-- **Customs fee ($10 per shipment) and tax (9.25%):** illustrative config values, labeled "est." in the UI.
-- **Customs reserve:** duty and fee are held by Rally. After delivery, if the real bill is lower, refund each member's share of the difference; if higher, Rally absorbs it. A member is never charged above their max.
-- **Ordering alone (baseline):** list prices + express shipping for the member's own parcel (weight rate card) + the full customs fee + duty + tax.
-- **Listed prices (baseline):** the shop's public bulk prices + express shipping for the whole box split by weight. Then drop everyone over their max, recompute shares, and repeat until stable. That loop is what actually happens without bargaining.
+| Destination | Duty | Import tax | Status |
+| --- | --- | --- | --- |
+| United States | 12.5% total on Korean cosmetics (Section 301, since Jul 24, 2026); no low-value exemption | Sales tax, California 9.25% (est.) | Duty sourced; tax illustrative |
+| Canada | None under the Korea–Canada FTA | 13% HST (Ontario) on goods + shipping | Verify with CBSA before submission |
+| United Kingdom | None under the UK–Korea FTA | 20% VAT collected at checkout up to £135 | Verify with HMRC |
+| Germany | €3 per customs line on parcels up to €150 (from Jul 1, 2026) | 19% VAT via IOSS | Sourced to DHL; verify with EU guidance |
+| Australia | None under the Korea–Australia FTA | 10% GST collected at checkout up to A$1,000 | Verify with the ATO |
 
-**Golden test** (must match the mockup to the cent; reference implementation and full numbers in [`design/scenario/`](design/scenario/)):
+FX for the seed (illustrative, label as "rate as of"): 1 USD = 1.38 CAD, 0.75 GBP, 0.86 EUR, 1.52 AUD.
+
+**Golden test** (must match the mockup to the cent; reference implementation in [`design/scenario/seoul.py`](design/scenario/seoul.py)):
 
 | Check | Expected |
 | --- | --- |
-| "You": items / freight / duty / fee / tax | $51.00 / $3.26 / $6.38 / $1.30 / $4.72 |
-| "You": total | $66.66 (max $75.00) |
-| Pool total, negotiated | $513.52 (goods $393, freight $25, fee $10, duty $49.14, tax $36.38) |
-| Pool total, each ordering alone | $1,035.40 |
-| Pool total, listed prices if all 10 bought | $664.13 |
-| Listed prices after dropouts | 10 → 5 → 0 members (order fails) |
-| Shop gain over lowest prices | negotiated +$97.00, listed (all 10) +$92.00 |
+| Checkout (US): goods / Korea shipping / shipping / duty / tax / fee | $75.00 / $3.50 / $21.00 / $9.38 / $6.94 / $3.00 |
+| Checkout total = PayPal hold | $118.82 |
+| After the deal: goods / Korea shipping / shipping / duty / tax / fee | $68.00 / $0.00 / $21.00 / $8.50 / $6.29 / $3.00 |
+| Charged | $106.79 (released $12.03) |
+| The $2 mask move on its own | lowers the total by $1.07 |
+| Buying direct | $151.40 in 2 parcels, $37.40 due at the door |
+| Shops over their floors | Dalbit Official +$5.50, Bada Market +$4.30 |
+| Same bag after the deal: CA / UK / DE / AU | C$144.49 / £84.15 / €100.30 / A$155.04 |
+| Same bag at checkout: CA / UK / DE / AU | C$160.87 / £93.61 / €111.05 / A$172.60 |
 
 ## PayPal integration
 
-PayPal is the backbone, not a checkout button: every member's money is held, charged, released, refunded or paid out through it, and agents never touch money directly. Prove the whole lifecycle in sandbox in week 1; the old repo never completed a real authorize-and-capture.
+PayPal is the backbone: every shopper payment is held, charged, released or refunded through it, every shop is paid by it, and agents never touch money. G1 has not passed yet; the payments code exists but has never reached the real sandbox, because the build host had no network.
 
-**Sandbox accounts:** Rally business account (app credentials, merchant of record), Haneul Beauty business account (receives payouts), at least four personal buyer accounts (demo plus judges). Confirm Payouts is enabled for the sandbox app.
+**Sandbox setup:** Rally business account (app credentials, merchant of record) with Payment Receiving Preferences set to accept CAD, GBP, EUR and AUD (otherwise those payments sit pending, per [PayPal](https://developer.paypal.com/api/rest/reference/currency-codes/)); three shop business accounts for payouts; personal buyer accounts for the demo and judges, at least one per currency. Payouts enabled for the app.
 
 | Step | Call | Guard |
 | --- | --- | --- |
-| Hold | `POST /v2/checkout/orders` with intent AUTHORIZE, amount = max; buyer approves in the JS SDK v6 button; then `POST /v2/checkout/orders/{id}/authorize` | `PayPal-Request-Id` = hold:{member}:{version}. Store authorization id, expiry, honor_until (+3 days). |
-| Lock check | `GET /v2/payments/authorizations/{id}` | Only CREATED authorizations count as in. |
-| Charge | `POST /v2/payments/authorizations/{id}/capture` with the allocation total and `final_capture: true` | Code asserts amount ≤ max and ≤ authorized amount before calling. Request id = capture:{allocation}. |
-| Release | `POST /v2/payments/authorizations/{id}/void` | For excluded members and NO_DEAL. Confirm VOIDED with a GET. |
-| Tracking | Agent Toolkit `create_shipment_tracking` on each member's capture | Runs when the shop submits tracking. |
-| Pay the shop | `POST /v1/payments/payouts`, one item: items + freight to the shop's sandbox email | Only after tracking exists. |
-| Not shipped | `POST /v2/payments/captures/{id}/refund` (full) | Triggered at ship_by if no tracking. |
-| Customs true-up | `POST /v2/payments/captures/{id}/refund` with the member's share of the difference | Only refunds, never extra charges. |
-| Webhooks | `POST /v1/notifications/verify-webhook-signature`; events: authorization created and voided, capture completed, denied and refunded, payouts batch and item | Persist raw event before returning 200, dedupe by event id, reconcile with a GET. |
+| Hold | `POST /v2/checkout/orders` (intent AUTHORIZE, amount = quote total, currency = destination); buyer approves in the JS SDK v6 button; `POST /v2/checkout/orders/{id}/authorize` | `PayPal-Request-Id` = hold:{quote}. Store authorization id and expiry. |
+| Charge | `POST /v2/payments/authorizations/{id}/capture` with the final total and `final_capture: true` | Code asserts amount ≤ hold before calling. Request id = capture:{order}. |
+| Cancel | `POST /v2/payments/authorizations/{id}/void` | Shopper cancels before the deal finishes. Confirm VOIDED with a GET. |
+| Pay a shop | `POST /v1/payments/payouts`, one item per shop, USD | Only after that shop's parcel reaches the hub. |
+| Tracking | Agent Toolkit `create_shipment_tracking` on the capture | When the box leaves Seoul. |
+| Not shipped | `POST /v2/payments/captures/{id}/refund` (full) | At ship_by if the box hasn't left Seoul. |
+| Customs true-up | `POST /v2/payments/captures/{id}/refund` (partial) | Only refunds, never extra charges. |
+| Webhooks | `POST /v1/notifications/verify-webhook-signature` | Persist the raw event before 200, dedupe by event id, reconcile with a GET. |
 
-Agent Toolkit scope: shipment tracking and the organizer ledger (`list_transactions`). The toolkit has no authorize, capture, void or payout tools, so money movement stays in `payments/paypal.py`, behind code checks. That split is also the pitch: agents negotiate, code and PayPal move money.
-
-Fixture mode (recorded responses from the contract fixtures) exists only for tests and CI. The hosted demo always runs against the real sandbox.
+Fixture mode (recorded contract responses) is for tests and CI only. The hosted app always runs against the real sandbox.
 
 ## Design direction
 
-Design is a scored criterion and the video sells the idea, so every UI task uses the Impeccable and taste skills, and products lead every member screen.
+Design is a scored criterion and the video sells the idea. Every UI task uses the Impeccable and taste skills, and the app must look and read like a real product.
 
-**Install in Codex before any UI work:**
+**Install in Codex before UI work:**
 
 ```bash
 npx skills add pbakaus/impeccable
@@ -271,206 +259,188 @@ codex plugin add taste-skill@taste-skill
 # then start a new Codex session so the skills load
 ```
 
-**How to use them:**
+**How to use them:** refine `PRODUCT.md` and `DESIGN.md` with Impeccable first; build each screen with taste's `design-taste-frontend` (or `gpt-taste`), then refine with Impeccable's commands; run an Impeccable critique before each gate and fix what it finds.
 
-- `PRODUCT.md` and `DESIGN.md` (Impeccable's context files) are drafts written from the mockup. Refine them with Impeccable before the first screen.
-- Build each screen with taste's `design-taste-frontend` skill (`gpt-taste` is its stricter variant for GPT-based agents), then refine with Impeccable's commands (for example layout, typeset, colorize, quieter).
-- Before each milestone demo, run an Impeccable critique and fix what it finds before adding features.
+**Real product, not a prototype:**
 
-**Keep from the mockup:** warm off-white ground (#F7F4F0), near-black ink (#17161A), one berry accent for actions (#B4235A), butter (#FFE9A8) only for "your rule was applied" moments, mint (#E2F2EA on #0B5A3C) only for savings. Schibsted Grotesk for text, IBM Plex Mono for money. The skills may refine this; they should not add a second accent.
+- No "Example", "preview", "fixture", "simulated" or "demo" labels anywhere in the product UI. Seeded shops and products are presented as a real catalog.
+- The only sandbox marker is a small "Test mode" pill in the header.
+- Use the real PayPal JS SDK button, not a look-alike.
+- Real order numbers, dates, delivery windows and receipts. Explanations of what is simulated live in the README and the Devpost text, not in the product.
 
-**Images:** product photos make or break the first screen.
+**Keep from the mockup:** warm off-white ground (#F7F4F0), near-black ink (#17161A), one berry accent for actions (#B4235A), butter (#FFE9A8) only for "your rule was applied", mint (#E2F2EA on #0B5A3C) only for savings. Schibsted Grotesk for text, IBM Plex Mono for money. No second accent.
 
-- Products are fictional (Dalbit), so no image may show a real brand or logo; the video rules ban third-party trademarks.
-- Best option: photograph unbranded amber pump bottles, frosted toner bottles and a mask box, then add a simple "Dalbit" label.
-- Second option: generate product renders with an image model (taste's image skills live in `Leonxlnx/imagegen-skills`). Check every render for stray logos or text.
-- Openly licensed photos (CC0 or CC BY with credit) are fine for mood and backgrounds, never as product shots.
-- The mockup's illustrations (`design/mockup/html/img/`) are the fallback, not the target.
+**Images:** about 30 product images in one consistent art direction (same lighting, angle, background family), each an unbranded container with its fictional brand label. Generate them (taste's image skills live in `Leonxlnx/imagegen-skills`) or photograph unbranded bottles. Check every image for stray real logos or text. The mockup's illustrations are the fallback.
 
-**Non-negotiables:** mobile first at 390 px; contrast at least 4.5:1; touch targets at least 44 px; reduced motion respected; real buttons, links and labels; no emoji, gradient washes or left-border cards. Motion is limited to the final price counting up and a calm progress bar; no confetti.
+**Non-negotiables:** mobile first at 390 px, desktop as a centered app; contrast at least 4.5:1; touch targets at least 44 px; reduced motion respected; real buttons, links and labels; no emoji, gradient washes or left-border cards. Motion: the deal cards arriving one by one and the total counting down; no confetti.
 
 ## Seed data, demo and judge access
 
-Seed exactly the mockup scenario so the golden test, the demo and the video tell one story. Machine-readable version: `design/scenario/scenario.json`.
+Seed exactly the scenario in `design/scenario/scenario.json` (shops, 30 products, per-shop prices, countries, the hero bag).
 
-**Shop catalog** (Haneul Beauty, Seoul; prices in USD; private columns never leave shop-scoped code):
+**Hero bag (US, California):** "Dry, sensitive skin. A simple routine: cleanser, toner, essence and a cream. Under $120 all in."
 
-| Variant | List | Listed bulk | Lowest (private) | Cost (private) | Stock | Days on shelf | Weight |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Dalbit Snail Essence 100 ml, new bottle | $25 | $22 | $19 | $9 | 120 | 20 | 200 g |
-| Dalbit Snail Essence 100 ml, old bottle | $25 | $22 | $10 | $9 | 40 | 150 | 200 g |
-| Dalbit Rice Toner 150 ml | $24 | $21 | $17 | $8 | 200 | 45 | 250 g |
-| Dalbit Cica Sheet Masks, box of 10 | $18 | $16 | $11 | $6 | 150 | 60 | 300 g |
-
-Extras: sample kit of 5 minis, costs the shop $1.50, 300 on hand. Freight: express at cost by weight (up to 0.5 kg $24, 1 kg $30, 2 kg $42, 5 kg $68, 10 kg $105; parcel packaging 0.15 kg, box packaging 0.5 kg); shared freight leaves Nov 14, costs the shop about $10 for this box, arrives around Nov 21.
-
-**Members** (all accept slower shipping that arrives by Nov 28):
-
-| Person | Items | Bottle rule | Max |
-| --- | --- | --- | --- |
-| You | essence, toner, masks | old if $4+ cheaper | $75 |
-| Leo | essence ×2 | either | $50 |
-| Aisha | essence, toner | new only | $62 |
-| Noah | toner, masks | — | $56 |
-| Sam | essence, masks ×2 | either | $70 |
-| Priya | essence ×2 | old if $4+ cheaper | $50 |
-| Jun | toner ×2 | — | $62 |
-| Elena | toner, masks | — | $52 |
-| Omar | masks ×3 | — | $78 |
-| Kai | essence, toner | either | $62 |
+| Item | Checkout | After the deal |
+| --- | --- | --- |
+| Mulgyeol Low-pH Gel Cleanser | Bada Market $12 | $12 |
+| Dalbit Rice Toner | Dalbit Official $21 | $19 + free sample kit |
+| Dalbit Snail Essence | Dalbit Official $23 | $16, older packaging |
+| Saebom Cica Barrier Cream | Bada Market $19 | $19 |
+| Dalbit Cica Sheet Mask (added) | — | $2, unlocks free shipping inside Korea |
 
 **Video beats** (under 3 minutes, no real brands, no unlicensed music):
 
-1. 0:00–0:15 — The problem: group orders in a group chat, a spreadsheet, chasing payments, surprise customs.
-2. 0:15–0:45 — Join: invite, type the request, one question, approve the PayPal hold (real sandbox popup).
-3. 0:45–1:25 — Negotiation: the deal room beside the phone; the old-bottle rule applies, Aisha's question, shared freight and sample kits, code accepts.
-4. 1:25–1:50 — Result: "You pay $66.66," saved $54.92; scorecard shows both sides ahead and listed prices failing.
-5. 1:50–2:20 — Money: captures with the hold released, tracking added, shop paid by payout, organizer sheet.
-6. 2:20–2:50 — Under the hood: who decides what, and the benchmark result.
+1. 0:00–0:15 — K-beauty is global; buying from Korea isn't: cards fail, shops don't ship abroad, fees at the door.
+2. 0:15–0:35 — Shop: 30 products, switch Ship to from the US to Canada and watch prices change.
+3. 0:35–1:00 — Ask Rally for a routine; the bag shows Bada Market ships only inside Korea, so Rally routes it through Seoul.
+4. 1:00–1:30 — Pay with PayPal (real sandbox popup); the deal runs live: older packaging, toner discount, the $2 mask, "Prices held".
+5. 1:30–1:55 — Paid $106.79; $44.61 less than buying direct; track; nothing at the door.
+6. 1:55–2:30 — Behind the scenes: the deal log, the shop console, who decides what.
+7. 2:30–2:50 — PayPal flow (hold, capture, payouts, tracking) and the benchmark result.
 
 **Judge access:**
 
-- Hosted URL plus a "Try it as the 10th member" button that seeds the other 9 and compresses the timers (lock 2 minutes after the judge joins, deal window 5 minutes).
-- The judge's hold is a real sandbox authorization; give sandbox buyer logins in the Devpost testing notes.
-- The 9 seeded members use fixture holds, labeled "simulated" in the organizer sheet. The video shows a run where every hold is a real sandbox approval.
-- Shop console and organizer sheet reachable from a small "Behind the scenes" menu, with a read-only shop login.
+- Hosted URL, no sign-up to browse. Sandbox buyer logins (one per currency) in the Devpost testing notes.
+- Every judge checkout is a real sandbox hold and capture; the deal runs live with the hosted model.
+- "Start over" in the footer resets the session. Shop console opens read-only from "Behind the scenes".
+- Hub steps (shops hand off, box leaves Seoul, delivered) advance on a schedule after payment, so judges can see payouts and tracking within minutes.
 
 ## Benchmark
 
-The benchmark decides whether the bargaining is real: the full engine must beat listed prices on completed orders and combined gain, with zero over-max charges. If it does not, fix the engine before polishing the UI.
+The benchmark decides whether the bargaining is real: the full engine must save more than no-bargaining sourcing, keep every shop above its floor, and never charge above a hold.
 
-- **Generator** (`sim/generator.py`, seeded and published): 200 pools of 5–30 members. Random shop situations (stock age, costs, lowest prices, a shared-freight date, extras cost) and random members (items, bottle rule, shipping rule, max drawn around their ordering-alone total). No LLM calls inside the generator.
-- **Same pools for every strategy.** The LLM step in strategies B and D uses the real hosted model; cache responses by prompt hash so reruns are free and repeatable.
+- **Generator** (`sim/generator.py`, seeded and published): 500 bags of 3–8 products across the 5 countries; random shop situations (stock age, floors, free-shipping lines, extras cost). No LLM calls in the generator.
+- **Same bags for every strategy.** Strategies B and D use the hosted model; cache responses by prompt hash so reruns are free and repeatable.
 
 | Strategy | What it does |
 | --- | --- |
-| A · Listed prices | Shop's public bulk prices and express shipping; members over their max drop out until stable. |
-| B · Chatbot haggling | One price per item, two LLMs haggle, the LLM decides acceptance (what the old repo did). |
-| C · Engine without rules | Solver and code acceptance, but no bottle or shipping flexibility collected. |
-| D · Full engine | Rules, quick questions (answered by the generator's hidden preference), solver, code acceptance. |
+| A · Cheapest shop, no bargaining | Exact sourcing and one box at listed prices |
+| B · Chatbot haggling | Two LLMs trade one price per item; the LLM decides |
+| C · Engine without shopper rules | Candidates, code acceptance; no older packaging or add-ons |
+| D · Full engine | Shopper rules, candidates, solver checks, code acceptance |
 
-Metrics per strategy: orders completed, buyer savings vs ordering alone, shop gain over lowest prices, combined gain, over-max charges (must be 0), rounds and LLM calls per pool. Publish results on `/bench` and in the README, with the seed and generator so anyone can rerun them.
+Metrics: saved vs buying direct, saved vs checkout, shops above floor (must be 100%), charges above hold (must be 0), seconds per deal. Publish on `/bench` and in the README with the seed.
 
 ## Milestones
 
-Six milestones and a parallel design track in 23 days, each ending in a gate. The real PayPal lifecycle and the design work both start now, in separate Codex sessions; submission is targeted a day early.
+Six milestones in 21 days, each ending in a gate. Real PayPal proof and the redesign start now in parallel; submission is targeted a day early.
 
-![Build timeline, Oct 21 to Nov 12](docs/plan/timeline.png)
+![Build timeline, Oct 22 to Nov 12](docs/plan/timeline.png)
 
-Milestones overlap by a day so the next one can start while a gate is being verified; the next milestone's main work waits for the gate.
-
-- [ ] G1 · Oct 24 — real sandbox: authorize, lower final capture, void, refund, payout, verified webhook.
-- [x] GD · Oct 27 — member screens and the deal room render from the scenario fixture; Impeccable critique findings fixed. [Evidence](frontend/design/GD.md), October 22.
-- [ ] G2 · Oct 28 — golden test to the cent; the seeded pool accepts with all 10 under their max.
-- [ ] G3 · Nov 2 — member screens wired to the API; full flow on the Render URL with a real sandbox hold.
-- [ ] G4 · Nov 6 — benchmark published; strategy D beats A with zero over-max charges.
-- [ ] G5 · Nov 10 — feature freeze; a fresh browser completes the judge flow.
-- [ ] Submit · Nov 11 — video, writeup, repo and license in, a day before the Nov 12 noon PT deadline.
+- [ ] G1 · Oct 25 — real sandbox on a host with network: authorize, lower final capture, void, refund, payout, verified webhook, plus one CAD payment received.
+- [ ] GD2 · Oct 28 — all shopper screens and the deal room render from the new scenario; 30 product images; Impeccable critique fixed; no "Example" copy.
+- [ ] G2 · Oct 30 — engine CLI: golden test to the cent, sourcing restrictions, both shops' negotiations accept as in the scenario.
+- [ ] G3 · Nov 4 — full shopper flow on Render with a real sandbox hold and capture and a live deal.
+- [ ] G4 · Nov 7 — payouts at hub, tracking, refunds; behind-the-scenes pages; benchmark published.
+- [ ] G5 · Nov 10 — feature freeze; a fresh browser completes the judge flow in each currency.
+- [ ] Submit · Nov 11 — video, writeup, repo and license, a day before the deadline.
 
 ## Testing
 
-Tests guard money and limits first; screens second. Keep the suite fast enough to run on every Codex change.
-
-- **Costs:** the golden test above to the cent; shares always sum exactly; identical baskets differ by at most one cent.
-- **Limits:** property tests that no allocation, capture or true-up ever exceeds a member's max, under random offers and rounding.
-- **Solver:** never assigns a variant a member's rule forbids; inclusion is stable after the fixed-point loop; stock never oversold.
-- **Acceptance:** the LLM's output can never cause acceptance (feed it "accept now" text and malicious notes; acceptance must not change).
-- **Privacy:** shop lowest prices and costs never appear in any prompt, API response outside the shop console, or log line.
-- **Payments:** contract tests against the official fixtures; idempotent retries create no duplicate capture; void after NO_DEAL; refund at ship_by; webhook dedupe and signature failure handling.
-- **End to end (Playwright, mobile and desktop):** invite → tell → review → PayPal (mocked in CI) → live → question → done → receipt, plus the organizer sheet.
-- **Real sandbox run** before each milestone gate: record order, authorization, capture, void, refund and payout ids in `EVIDENCE.md`. Keep that file short: what ran, when, ids, result.
+- **Costs:** golden test to the cent; receipt lines always sum to the total; currency conversion rounds per line.
+- **Limits:** property tests that no capture or refund ever exceeds the hold, under random offers, rounding and FX.
+- **Sourcing:** never picks an item a shop can't send to that country; never oversells stock; exact search matches a brute-force reference on random bags.
+- **Acceptance:** LLM output can never cause acceptance (feed "accept now" and malicious notes; nothing changes).
+- **Privacy:** floors and costs never appear in any prompt, API response outside the shop console, or log line.
+- **Payments:** contract tests against the official fixtures; idempotent retries; void on cancel; refund at ship_by; webhook dedupe and signature failures; non-USD orders.
+- **End to end (Playwright, mobile and desktop):** shop → ship to → ask → bag → PayPal (mocked in CI) → deal → paid → track; plus the deal room and shop console.
+- **Copy check:** a test fails if any shopper route renders "Example", "preview", "fixture", "simulated" or "demo".
+- **Real sandbox run** before each gate; record ids in `EVIDENCE.md` (what ran, when, ids, result).
 
 ## Risks and fallbacks
 
-The biggest risk is the one already seen: no real PayPal capture has ever completed. Everything else has a cheaper fallback.
-
 | Risk | Fallback |
 | --- | --- |
-| Sandbox lifecycle fails (authorize, capture, void, refund, payout) | Week-1 gate. If Payouts can't be enabled, record the shop payout as pending and show it; holds and captures are not optional. |
-| The engine doesn't beat listed prices in the benchmark | Tune concession paths and terms first. If it still loses, pitch the coordination value (one hold, one box, no chasing) and say so plainly. |
-| Model outage during judging | The LLM only picks among scored candidates, so the engine falls back to the top candidate with template notes and says so. Joining falls back to a simple item picker. |
-| Scope too big for 23 days | Cut in this order: email-shop mode, second shop, benchmark size (200 → 50), AG Grid (plain table), quick questions. |
-| Images show real brands | Review every image; only fictional Dalbit labels. |
-| Duty or tax figures read as advice | Label estimates, cite the rate source and date, never charge above the max. |
-| Hold expiry or honor period during judging | Compressed judge timers; the judge flow finishes within minutes; reauthorize path exists. |
-| Video breaks the rules | No real brands, no unlicensed music, under 3 minutes, uploaded public on YouTube. |
-| Codex over-builds (the old repo's 459-line verification log) | AGENTS.md rules: small commits, short evidence, no new services, ask before adding dependencies. |
+| Sandbox lifecycle still unproven | G1 first, on a host with network (Kyle's machine or a Codex environment with network on). Holds and captures are not optional. |
+| Non-USD payments sit pending in sandbox | Set Payment Receiving Preferences on the Rally account; if still blocked, charge in USD and show local currency as an estimate. |
+| Payouts can't be enabled | Show shop payouts as pending in the shop console; holds, captures and refunds still real. |
+| Savings look small for one shopper | The headline is buying direct vs Rally ($44.61); the deal adds the last 10%. The benchmark reports both honestly. |
+| Import rules wrong for a country | Rate table cites a source and date per row; anything unverified is labeled est.; cut to fewer countries rather than guess. |
+| Model outage during judging | The engine falls back to the top-scored candidate with template notes; the assistant falls back to category picks. |
+| 30 product images take too long | 12 hero products with final images first; the rest use the fallback illustrations. |
+| Scope too big | Cut in this order: benchmark size (500 → 100), Germany and Australia, AG Grid (plain table), the routine assistant (bag built by hand). |
+| Video breaks the rules | No real brands, no unlicensed music, under 3 minutes, public on YouTube. |
 
 ## Codex prompts
 
-This plan, `AGENTS.md`, draft `PRODUCT.md` and `DESIGN.md`, the mockup (`design/mockup/`) and the scenario numbers (`design/scenario/`) are on branch `rally`. Run the design track and the backend track (M1, then M2) in separate Codex sessions at the same time; each owns its own folders. After that, paste one prompt per milestone, and don't start a milestone until the previous gate passes.
+This plan, `AGENTS.md`, `PRODUCT.md`, `DESIGN.md`, the mockup (`design/mockup/`) and the scenario (`design/scenario/`) are on branch `rally`. Run the design track and the backend track in separate Codex sessions at the same time; each owns its own folders. Don't start a milestone's main work until the previous gate passes.
 
-**Design track — start now, owns `frontend/`:**
+**Design track — now, owns `frontend/`:**
 
 ```text
-Design track. You own frontend/ only; the backend track owns backend/, tests/ and scripts/.
-Install the skills first (PLAN.md "Design direction"), then start a new session.
+Design track, version 2. You own frontend/ only; the backend track owns backend/, tests/ and scripts/.
+PLAN.md changed direction: Rally is now a solo international shopping app over 3 Korean shops.
 1) Read PLAN.md, AGENTS.md, PRODUCT.md, DESIGN.md and every image in design/mockup/screens.
-   PRODUCT.md and DESIGN.md are drafts from the mockup: refine them with Impeccable before building.
-2) Remove the old Coalition storefront UI from frontend/src and the browser tests it makes obsolete.
-   Keep components/PayPalApproval.tsx, components/magicui/ and the Playwright setup.
-3) Build the member screens (Invite, Tell, Review, Live, Ask, Done, Receipt) as routes that read
-   design/scenario/scenario.json through one typed fixture module, so M3 can swap in the API later.
-   Use taste's design-taste-frontend skill, then refine with Impeccable's commands.
-4) Keep every member screen simple: one primary action, one big number, products and photos lead,
-   breakdowns one tap away, plain words only. Improve the product imagery per "Design direction";
-   the mockup's illustrations are the fallback.
-5) Then build How the deal was made the same way.
-Add Playwright screenshots at 390 px for every member screen and run an Impeccable critique.
-Gate GD: all member screens and the deal room render from the fixture; critique findings fixed.
+   Refine PRODUCT.md and DESIGN.md with Impeccable before building.
+2) Replace the group-order routes with Shop, ShipTo (sheet), Ask, Bag, Deal, Paid, Track and the deal
+   room. Read design/scenario/scenario.json through one typed module so M3 can swap in the API.
+   Keep components/PayPalApproval.tsx, the magicui pieces, tokens and the Playwright setup.
+3) Make it a real product: no "Example", "preview", "fixture", "simulated" or "demo" copy anywhere;
+   only a small "Test mode" pill. Add a Playwright check that fails on those words.
+4) Make the shop interactive: category chips filter, Ship to changes every price and currency,
+   bag switches recompute the shown total from the fixture.
+5) Produce about 30 product images in one art direction with fictional labels (check for real logos).
+Use taste's design-taste-frontend skill, then Impeccable's commands. Capture 390 px and 1440 px
+screenshots and run an Impeccable critique.
+Gate GD2: every route renders from the new scenario, images in place, critique findings fixed.
 ```
 
-**M0 + M1 — backend track, start now, owns `backend/`, `tests/`, `scripts/`:**
+**G1 — backend track, now, on a host with network:**
 
 ```text
-Backend track. Read PLAN.md and AGENTS.md. You are on branch rally. You own backend/, tests/ and
-scripts/; the design track owns frontend/.
-1) Apply "Architecture and repo changes" for the backend: copy the salvaged adapters into
-   backend/rally/, delete the listed old backend code and tests, create migrations/001_init.sql from
-   "Data model", and keep CI green (update .github/workflows/verify.yml as needed).
-2) Build payments/paypal.py, ledger.py and webhooks.py from "PayPal integration".
-3) Add a script that runs, against the real sandbox: create order (AUTHORIZE) -> I approve in
-   the browser -> authorize -> capture a lower amount with final_capture -> a second order voided
-   -> refund a capture -> payout to the shop sandbox account -> receive and verify a webhook.
+Backend track. Read PLAN.md and AGENTS.md. You own backend/, tests/ and scripts/.
+Finish G1 with scripts/paypal_sandbox.py on a host that can reach PayPal and Postgres:
+authorize, lower final capture, void, refund, payout, verified webhook, then one CAD order
+authorized and captured (set the Rally account's Payment Receiving Preferences first).
 Stop and tell me exactly what to approve. Record ids in EVIDENCE.md. Gate G1: every step succeeds.
 ```
 
 **M2 — engine without UI:**
 
 ```text
-Implement catalog.py (seed from "Seed data"), landed.py, solver.py (OR-Tools CP-SAT) and
-negotiation/ from "Negotiation engine" and "Costs and allocation". Use a fixture LLM first.
-Add a CLI that runs the seeded pool end to end and prints rounds, allocations and the scorecard.
-Gate G2: the golden test passes to the cent, every property test in "Testing" passes, and the
-CLI run accepts a deal with all 10 members under their max.
+Replace the group-order domain with catalog.py, countries.py, fx.py, landed.py, sourcing.py,
+assistant.py and negotiation/ from PLAN.md. Seed from design/scenario/scenario.json. Use a fixture LLM
+first. Add a CLI that runs the hero bag end to end and prints the quote, each shop's replies, the
+final breakdown and the scorecard.
+Gate G2: the golden test passes to the cent, sourcing honors not_to and aerosol flags, and both
+shops accept exactly as in the scenario.
 ```
 
-**M3 — wire the member app:**
+**M3 — wire the app:**
 
 ```text
-Wire the member screens from the design track to the real API: elicit.py on the hosted model for
-Tell, the PayPal JS SDK v6 button (reuse PayPalApproval.tsx) to the hold endpoints on Review, and
-polling for Live. Keep the fixture module for tests. Use the impeccable and taste skills for any UI
-change and run an Impeccable critique before the gate.
-Gate G3: the full member flow works on the hosted Render URL with a real sandbox hold.
+Wire the design track's screens to the API: catalog and countries, assist on the hosted model,
+bag quotes, the PayPal JS SDK v6 button (reuse PayPalApproval.tsx) to checkout and approve, live
+deal polling, receipt and tracking. Keep the fixture module for tests. Use the impeccable and taste
+skills for any UI change and run a critique before the gate.
+Gate G3: the full flow works on Render with a real sandbox hold, a live deal and a lower capture.
 ```
 
-**M4 — behind the scenes, payouts, benchmark:**
+**M4 — operations, behind the scenes, benchmark:**
 
 ```text
-Use the impeccable and taste skills for UI. Build How the deal was made, Organizer order sheet
-(AG Grid), Shop console, Scorecard, Who decides what. Add shipment tracking via the PayPal Agent
-Toolkit, payout after tracking, refund at ship_by, customs true-up. Build sim/generator.py and
-sim/benchmark.py and the /bench page.
-Gate G4: benchmark published; strategy D beats A on orders completed and combined gain with zero
-over-max charges. If not, stop and report before touching UI.
+Add shop handoff to the hub with a PayPal payout per shop, the hub ship step with Agent Toolkit
+tracking, refunds at ship_by and the customs true-up. Build How the deal was made, Shop console
+(AG Grid), Scorecard, Who decides what. Build sim/generator.py, sim/benchmark.py and /bench.
+Gate G4: payouts and tracking recorded in EVIDENCE.md; benchmark published; D beats A with every
+shop above floor and zero charges above a hold.
 ```
 
 **M5 — judge-ready:**
 
 ```text
-Add judge mode ("Try it as the 10th member", compressed timers, labeled simulated holds), the
-model-outage fallback, final product images per "Design direction", README with setup and test
-logins, and a final Impeccable critique on every screen. Make the LICENSE visible in the GitHub
-About section. Gate G5: feature freeze; a fresh browser completes the judge flow on Render.
+Add Start over, scheduled hub steps, the model-outage fallback, final images, README with setup and
+sandbox logins per currency, and a final Impeccable critique on every screen. Make the LICENSE
+visible in the GitHub About section. Gate G5: a fresh browser completes the flow in each currency.
 ```
+
+## Sources
+
+- [Korean cosmetics exports hit $11 billion record high in 2025](https://www.personalcaremagazine.com/story/50378/korean-cosmetics-exports-hit-11-billion-record-high-in-2025) — Personal Care Magazine, Jan 12, 2026
+- [US import tariff tracker](https://zonos.com/docs/guides/us-tariff-changes) — Zonos, updated Oct 14, 2026
+- [HTS chapter 33 tariff updates](https://koalagains.com/industry-tariff-report/chapters/33-essential-oils-and-cosmetics/tariff-updates) — Koala Gains, Oct 12, 2026
+- [EU 2026 duty de minimis removal](https://www.dhl.com/discover/en-cz/logistics-advice/import-export-advice/eu-2026-duty-de-minimis-removal) — DHL
+- [Currency codes](https://developer.paypal.com/api/rest/reference/currency-codes/) — PayPal Developer
+- [Authorization and honor period](https://developer.paypal.com/docs/checkout/standard/customize/authorization-honor/) — PayPal Developer
+- [Olive Young Korea online shopping guide 2026](https://blog.delivered.co.kr/k-shopping/olive-young-korea-online-shopping-guide-2026-shop-ship-worldwide/) — Delivered Korea (a forwarding service)
+- [Devpost rules](https://paypalaihackathon.devpost.com/rules), [resources](https://paypalaihackathon.devpost.com/resources)

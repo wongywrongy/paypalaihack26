@@ -1,24 +1,20 @@
 # Rally
 
-**One group order. Everyone stays under their max.** Friends describe their skincare basket and budget, approve their own PayPal sandbox hold, and let the group bargain with a fictional Korean shop. Code enforces every limit; each person pays their agreed share, and the shop is paid after tracking is recorded.
+**Korean skincare from Korean shops, shipped to you as one box.** Rally lets shoppers outside Korea buy from several Korean shops, including shops that only ship inside Korea, with one all-in price in their own currency, duty and tax prepaid, paid with PayPal. An agent builds the routine, picks the cheapest shop for each item and bargains with each shop's agent after checkout. PayPal holds the checkout price; the shopper is charged that or less.
 
-[PLAN.md](PLAN.md) is the source of truth, dated October 22, 2026. It replaces the retired Coalition product. [AGENTS.md](AGENTS.md) defines track ownership and payment boundaries. [Design references](design/mockup/README.md) and the [scenario](design/scenario/scenario.json) describe one fictional shop, Haneul Beauty, and Dalbit skincare.
+[PLAN.md](PLAN.md) is the source of truth (version 2, October 22, 2026). It replaces the group-order version, which replaced Coalition. [AGENTS.md](AGENTS.md) defines track ownership and payment boundaries. [Design references](design/mockup/README.md) and the [scenario](design/scenario/seoul.py) describe three fictional shops (Haneul Beauty, Bada Market, Dalbit Official), about 30 products and five destinations.
 
-## Current gates
+## Current state
 
-The **Design track** builds Invite, Tell, Review, Live, Ask, Done and Receipt, then the deal room, from one typed scenario fixture. **M0 + M1** rebuilds the backend and proves authorize, lower final capture, void, refund, payout and verified webhook in the real sandbox. Neither fixture screenshots nor contract doubles satisfy the real-payment gate. Milestones M2–M5 remain gated by PLAN.md; do not treat a prepared adapter as a completed lifecycle.
-
-**GD passed:** all fixture screens render, actual screenshots were reviewed, and the Impeccable findings were fixed. [Original screenshots and review](frontend/design/GD.md); [Taste, Impeccable and Emil refinement record](frontend/design/polish-review.md). The owner-reviewed Rootlane preview serves this clearly labeled example; no money moves. **G1 remains open:** both merchant identifiers are configured privately, but the current execution host cannot reach PostgreSQL or PayPal. The connected payment demo is not ready until its gates pass. [EVIDENCE.md](EVIDENCE.md) records executed checks and blockers; fixture browser tests do not establish genuine PayPal execution.
-
-**See the bargaining:** the progress screen's main action opens the group offer, shop counter, revised group offer and final shop counter, with price changes, shared shipping and sample terms. These are illustrative proposals reconstructed from the seeded term columns. The current preview does **not** call buyer or merchant models; live negotiation and API wiring remain M2/M3. Final totals are checked from the saved scenario, with no invented intermediate all-in quotes or payment approval. [Demo, actual screenshots and executed checks](frontend/design/bartering.md).
+The frontend in `frontend/src/` and the notes in `frontend/design/` and `docs/DEMO.md` still show the retired group-order version. Its scenario lives in `design/scenario/retired-group-order/` so the build stays green until the design track replaces the routes (gate GD2). **G1 remains open:** the payments code exists, but no real sandbox authorize, capture, void, refund, payout or verified webhook has run yet, because the previous build host could not reach PostgreSQL or PayPal. [EVIDENCE.md](EVIDENCE.md) records executed checks and blockers.
 
 ## Real and simulated
 
-- **Real when verified in connected mode:** buyer-approved PayPal sandbox orders, holds, captures, voids, refunds and payouts; signed webhooks and durable reconciliation. Sandbox uses test money. Actual hosted model decisions are identified separately from test fixtures.
-- **Simulated:** Haneul Beauty, Dalbit products, shop stock and commercial terms, seeded community members, shipping/customs assumptions and fulfillment. Estimates are labeled; the buyer's max remains a hard ceiling.
-- **Test-only fixtures:** the frontend scenario prototype and provider/model doubles. They do not move money and never establish payment success.
+- **Real when verified:** buyer-approved PayPal sandbox orders, holds, lower final captures, voids, refunds and payouts to shop sandbox accounts; signed webhooks and reconciliation; hosted model calls during each deal. Sandbox uses test money.
+- **Simulated:** the three shops, six brands and their products, stock, prices and lowest prices; the Seoul hub, parcels and delivery; FX rates and shipping rate cards. Duty and import tax come from a dated rate table with sources; rows not yet verified are labeled estimates.
+- **Test-only:** fixture data and provider doubles in tests and CI. They never establish payment success.
 
-Rally is the sandbox merchant of record under this plan. Money movement belongs to deterministic code and the payment ledger. The LLM never accepts a deal, sees private lowest prices, or approves a payment. No guaranteed savings or measured social impact is claimed. The reference scenario includes a listed-price order that fails after members drop out.
+Rally is the sandbox merchant of record. Money movement belongs to deterministic code and the payment ledger. The LLM never accepts a deal, never sees a shop's lowest prices or costs, and never moves money. The product UI reads as a real shop; the only sandbox marker is a "Test mode" pill, and this section is where simulation is disclosed.
 
 ## Development
 
@@ -31,7 +27,7 @@ npm ci --prefix frontend
 npm run dev --prefix frontend
 ```
 
-The frontend design track is explicitly a scenario preview until M3 wires the real API. For the backend, use the new modules:
+The frontend reads the scenario through one typed module until M3 wires the real API. Backend modules:
 
 ```bash
 PYTHONPATH=backend .venv/bin/python -m rally.db

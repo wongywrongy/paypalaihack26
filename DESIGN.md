@@ -1,6 +1,6 @@
 ---
 name: Rally
-description: Product-led group ordering. One hold, one big number, bargaining one tap away.
+description: Product-led international shopping. One box, one all-in price, the deal one tap away.
 colors:
   ground: "#F7F4F0"
   surface: "#FFFFFF"
@@ -83,79 +83,83 @@ components:
 
 # Design System: Rally
 
-Refined from the mockup in `design/mockup/` for the fixture milestone. The locked palette and type choices remain the visual authority.
+Version 2 (Oct 22, 2026): solo international shopping across three Korean shops. Reference screens in `design/mockup/`. The palette and type choices in the front matter remain the visual authority; layout, typography, elevation, shape and motion rules below carry over from the first design milestone.
 
 ## Overview
 
-Rally feels like a calm, product-led shopping app. A member sees six screens and one optional question; each has one primary action and one leading number. The progress screen prominently opens "See the example bargaining"; a secondary link still goes straight to the final deal. The example fixture is labeled at every step. The separate deal room gives the exchange room without crowding the basket or payment review.
+Rally feels like a calm, product-led shopping app that happens to ship from Seoul. A shopper sees six screens and one sheet: Shop, Ship to, Ask Rally, Bag, Deal, Paid, Track. Each has one primary action and one leading number. It reads as a real product: real shopping words, real order numbers and dates, the real PayPal button, and a single small "Test mode" pill in the header as the only sandbox marker. Behind-the-scenes pages (How the deal was made, Shop console, Scorecard, Who decides what, Benchmark) give the agent detail room without crowding the shopper's path.
 
 ## Colors
 
 ### Primary
 
-Berry (`accent`) is the action color for primary buttons, links, checked rules and focus outlines. Bottle-choice selection uses near-black. The wordmark dot also uses berry; keep other uses functional.
+Berry (`accent`) is the action color for primary buttons, links, checked switches and focus outlines. The wordmark dot also uses berry; keep other uses functional. The PayPal button uses PayPal's own SDK styling, not berry.
 
 ### Secondary
 
-Butter (`rule-applied`) appears only when a member's own rule changed their order ("Old bottle is $5 cheaper. You said that's fine, so we switched you."). Mint (`saving`, `saving-tint`) marks money saved, "still under your max", and the agreed terms in the deal table. Savings use mint rather than a berry banner, reserving berry for the primary action.
+Butter (`rule-applied`) appears only when the shopper's own rule changed the order ("Older packaging, same formula. You said that's fine." / "Added a $2 sheet mask. It unlocks free shipping in Korea."). Mint (`saving`, `saving-tint`) marks money saved: "$12.03 less than at checkout", "Saved vs buying from each shop yourself". Reserve berry for actions.
 
 ### Neutral
 
-Warm off-white ground, white grouped rows and cards, near-black ink. Warm lines separate rows and timelines or outline the max field; most cards have no outer border. Secondary text uses `muted`, with at least 4.5:1 contrast on the ground.
+Warm off-white ground, white grouped rows and cards, near-black ink. Warm lines separate rows and timelines; most cards have no outer border. Secondary text uses `muted`, with at least 4.5:1 contrast on the ground.
 
 ## Typography
 
-Schibsted Grotesk for all text; heavy (800) for main headings, 700 for section titles and 650 for product names and primary actions. Body text defaults to 15 px with a 1.5 line height. Ordinary type uses root-relative units so browser text preferences can enlarge it; decision-bearing metadata stays at least 12 px, product names 14 px and item prices 13 px at the default size. Rows grow and wrap rather than truncate bottle details. IBM Plex Mono for every money amount, with tabular figures, so totals line up and read as exact. The 58 px hero amount appears on both "Deal reached" and the receipt and is the largest type in the product; its viewport bound keeps the complete amount readable on narrow screens.
+Schibsted Grotesk for all text; heavy (800) for main headings, 700 for section titles and product names, 600 for labels and primary actions. Body text defaults to 15 px with a 1.5 line height. Ordinary type uses root-relative units so browser text preferences can enlarge it; decision-bearing metadata stays at least 12 px, product names 14 px and item prices 13 px. Rows grow and wrap rather than truncate product details. IBM Plex Mono for every money amount, with tabular figures. The 58 px hero amount appears on Deal and Paid and is the largest type in the product; its viewport bound keeps the complete amount readable on narrow screens. Local currency symbols (C$, £, €, A$) sit in the same mono face.
 
 ## Layout
 
-Mobile first at 390 px with a 20 px gutter. One column; the primary action follows the content and settles at the bottom when space permits, without covering content. Member pages remain a comfortable 460 px column on desktop. Desktop deal pages use a 1272 px outer max width (1232 px of content after gutters), wrap the decision log below the terms at 800 px and below, and put the 720 px minimum-width table in a labeled horizontal scroll box.
+Mobile first at 390 px with a 20 px gutter. One column; the primary action follows the content and settles at the bottom when space permits, without covering content. Shopper pages remain a comfortable 460 px column on desktop; the shop grid can widen to 3 or 4 columns. Behind-the-scenes pages use a 1272 px outer max width and put wide tables in labeled horizontal scroll boxes.
 
 ## Elevation & Depth
 
-Flat. Separation comes from white cards on the warm ground, semantic tints and fine dividers. No shadows, gradients or glass.
+Flat. Separation comes from white cards on the warm ground, semantic tints and fine dividers. No shadows, gradients or glass. The Ship to sheet may use a scrim over the shop.
 
 ## Shapes
 
-Rounded but not bubbly: 12 px max fields and savings bands, 10 px product photos (6 px in the deal table), 16 px cards, request fields and buttons, full pills for example badges.
+Rounded but not bubbly: 12 px fields and bands, 10 px product photos (12 px in the shop grid), 16 px cards and buttons, 18 px shop tiles, full pills for chips and the Test mode marker.
 
 ## Components
 
+### Header
+
+Wordmark, "Test mode" pill, bag icon with count. Below it on the shop: a "Ship to United States · USD" chip that opens the Ship to sheet.
+
 ### Product tiles and photos
 
-Each skincare item appears with its photo; the free sample kit uses a small gift icon. Photos sit on a quiet surface in a rounded frame. Product art is fictional (Dalbit) and must never show a real brand or logo. The checked generated contact sheet uses consistent light and materials; white pump and black cap distinguish new and old essence packaging. Images remain understandable with their text labels.
+Photo, brand, name, "from $12", "2 shops". Photos sit on a quiet tinted surface in a rounded frame, one art direction across all ~30 products. Product art is fictional and must never show a real brand or logo. Older packaging is shown as its own photo so the shopper sees exactly what they get. Images remain understandable with their text labels.
 
-### Request and rules
+### Ask Rally
 
-The member's own words appear as a dark chat bubble; what Rally understood appears as product tiles plus a max amount. Rules are plain-language checkboxes ("Take the old bottle if $4+ cheaper"). At most one question, with tap answers.
+The shopper's words in a dark bubble; the routine as numbered steps (Cleanse, Tone, Treat, Moisturize) with one reason per item and the shop under it; a note when a shop ships only inside Korea; the all-in total and "Add routine to bag".
 
-### Hold and money
+### Bag and checkout
 
-The example action previews a hold of the max without contacting PayPal. Copy distinguishes the proposed hold, charge and release; receipt amounts and timeline remain labeled as examples. Breakdowns (items, shared shipping, duty, customs fee, tax) sit behind a "See full breakdown" toggle.
+Items grouped by shop with the shop's city and shipping note ("Ships inside Korea", "Free shipping in Korea"). One line for the box ("One box from Seoul to California · arrives Oct 30 to Nov 2"). The two shopper rules as switches with one-line explanations. "Total, all in" with a "See breakdown" toggle (items, shipping in Korea, shipping to you, duty, tax, Rally fee). The PayPal SDK button, then: "PayPal holds $118.82. You're charged after Rally's deal, never more than this."
 
-### Negotiation status
+### Deal
 
-A three-step progress bar and a single highlighted card for applied rules remain on the member progress screen. Its primary action opens the bargaining exchange. The deal room leads with four visible proposals: group opening, shop counter, group revision, shop final counter. Named sides, exact unit-price changes, whole-group shipping and sample-kit terms explain what each side traded. Aisha's choice appears at the relevant counteroffer; the complete final share and saved-allocation code checks follow the history. The full term matrix remains available below.
+Status pill ("Deal done · 14 seconds"), the new total over the struck-through checkout total, one card per change, butter for changes made under the shopper's rules, a plain card for "Prices held. The shop said no." Primary: "See your order". Link: "How the deal was made".
 
-The public example events have stable IDs and explicit sequence numbers derived from the canonical term columns. They reconstruct the scenario; they are not recorded model output or database-persisted negotiation events. State that near the heading. Do not animate invented typing, ongoing work or financial success, and do not invent complete intermediate totals. Item prices are labeled per unit before shared costs; only the final saved allocation is presented as the complete share. Desktop can place adjacent proposals side by side; mobile follows the same chronological DOM order. Completed proposals remain visible after refresh.
+### Paid and Track
 
-On small screens, offer history stays chronological with pinned product labels. "Show agreed terms" and "Show opening offer" move the existing comparison instantly; position feedback follows actual scrolling. Confirming the optional question focuses the continuation link; changing the answer returns focus to the selected radio. A persistent, initially empty status region announces the answer.
+Hero "You paid $106.79", the release line, the saved-vs-direct band in mint, items with photos, a breakdown toggle, "Nothing to pay at your door". Track is a vertical timeline (paid, shops shipped to our Seoul hub, packed into one box, leaves Seoul, customs cleared, delivered) with a "You're covered" card listing refund protections.
+
+### Behind the scenes
+
+How the deal was made: per-shop replies in order with what changed, and a "Why it moved" log tagged CODE, SOLVER, LLM or PAYPAL. Shop console: the shop's products, stock, floors and costs (private to that shop), extras, code rules and payouts. Scorecard: buying direct vs checkout vs deal, checks, shop gains, every destination. Who decides what: one row per step with its owner.
 
 ### Interaction and motion
 
-Apply Emil Kowalski's purpose and frequency test before adding motion. Primary hover feedback changes only `background-color` over 160 ms with `ease`, and only for a fine pointer that supports hover. Press and keyboard focus feedback are immediate. Reduced motion keeps state colors with a shorter 80 ms color transition. Table jumps are instant for every input method. Financial figures remain immediately readable; the static example never animates fabricated progress or financial success. No entrance staggers, bouncing controls, looping activity or additional motion dependency.
-
-The plan permits a final-price count and calm progress when they clarify real state. That permission is not a requirement to animate this immutable example. Review a future counter's currency, cents, accessible final value and reduced-motion formatting before using the retained Magic UI component.
-
-### Receipt
-
-A vertical timeline (hold, charged, ships, pick up) and a "You're covered" card listing the refund protections.
+Apply Emil Kowalski's purpose and frequency test before adding motion. Primary hover changes only `background-color` over 160 ms with `ease`, and only for a fine pointer that supports hover. Press and keyboard focus feedback are immediate. On Deal, cards arrive one by one as the live deal returns them and the total counts down to the charged amount; with reduced motion, show the final state at once. Never animate progress or savings that have not happened. No entrance staggers elsewhere, bouncing controls, looping activity or confetti.
 
 ## Do's and Don'ts
 
-- Do keep one primary action and one big number per member screen.
-- Do label estimates as estimates and show the max as a hard ceiling.
+- Do keep one primary action and one big number per shopper screen.
+- Do write real product copy: Bag, Checkout, Pay with PayPal, hold, charged, Order RL-24817, Track order.
+- Do show the all-in price in the shopper's currency before payment.
 - Do use real buttons, links and labels; 44 px minimum touch targets; visible focus.
+- Don't write "Example", "preview", "fixture", "simulated" or "demo" anywhere in the UI.
 - Don't use emoji, gradient washes, left-border cards, confetti or decorative agent avatars.
-- Don't show rounds, utilities, walk-away prices or agent jargon on member screens.
+- Don't show rounds, utilities, floors or agent jargon on shopper screens.
 - Don't add a second accent color.

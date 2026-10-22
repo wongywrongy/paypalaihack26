@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Rally — seller agent console</title>
+<title>Rally — shop console</title>
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
 <style>
 body{margin:0}
@@ -12,76 +12,108 @@ a{color:#B4235A}a:hover{color:#8E1A47}
 
 </head>
 <body>
-<div style="min-height: 900px; box-sizing: border-box; background: #F7F4F0; color: #17161A; font-family: 'Schibsted Grotesk', system-ui, sans-serif; padding: 32px 24px">
+<div style="min-height: 1000px; box-sizing: border-box; background: #F7F4F0; color: #17161A; font-family: 'Schibsted Grotesk', system-ui, sans-serif; padding: 32px 24px">
   <div style="max-width: 1232px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px">
     <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px">
       <div style="display: flex; flex-direction: column; gap: 6px">
-        <span style="font-size: 14px; color: #5C5A60">Haneul Beauty · Seoul</span>
+        <span style="font-size: 14px; color: #5C5A60">Dalbit Official · Seoul · shop console</span>
         <h1 style="margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -0.025em">Your selling agent</h1>
-        <span style="font-size: 15px; color: #3E3C42">Private to you. Buyers never see this page.</span>
+        <span style="font-size: 15px; color: #3E3C42">Set your lowest prices once. Your agent answers Rally shoppers around the clock.</span>
       </div>
-      <div style="display: flex; align-items: center; gap: 10px; background: #FFFFFF; border: 1px solid #E4DFD8; border-radius: 14px; padding: 12px 14px; max-width: 420px">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#17161A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
-        <span style="font-size: 13px; line-height: 1.4">Your agent's language model sees scores and goals, <b>never your lowest prices</b>.</span>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+        <span style="font-size: 13px; font-weight: 700; padding: 8px 12px; border-radius: 999px; background: #E2F2EA; color: #0B5A3C">Agent on</span>
+        <span style="font-size: 13px; padding: 8px 12px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E4DFD8">Payouts: PayPal, USD</span>
       </div>
     </div>
 
+    <div style="display: flex; align-items: center; gap: 10px; background: #FFFFFF; border: 1px solid #E4DFD8; border-radius: 14px; padding: 12px 14px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#17161A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+      <span style="font-size: 14px; line-height: 1.4">Lowest prices and costs stay on this page. Your agent's language model sees scores and goals, never these numbers.</span>
+    </div>
+
     <div style="background: #FFFFFF; border: 1px solid #E4DFD8; border-radius: 18px; overflow-x: auto">
-      <table style="width: 100%; min-width: 860px; border-collapse: collapse; font-size: 14px">
+      <table style="width: 100%; min-width: 900px; border-collapse: collapse; font-size: 14px">
         <thead>
           <tr style="text-align: left; border-bottom: 1px solid #E4DFD8; background: #FBF9F6">
-            <th scope="col" style="padding: 12px 16px; font-size: 12px; color: #5C5A60; font-weight: 600">Item</th>
+            <th scope="col" style="padding: 12px 16px; font-size: 12px; color: #5C5A60; font-weight: 600">Product</th>
+            <th scope="col" style="padding: 12px; font-size: 12px; color: #5C5A60; font-weight: 600; text-align: right">Listed</th>
+            <th scope="col" style="padding: 12px; font-size: 12px; color: #5C5A60; font-weight: 600; text-align: right">Lowest price</th>
+            <th scope="col" style="padding: 12px; font-size: 12px; color: #5C5A60; font-weight: 600; text-align: right">Your cost</th>
             <th scope="col" style="padding: 12px; font-size: 12px; color: #5C5A60; font-weight: 600; text-align: right">In stock</th>
             <th scope="col" style="padding: 12px; font-size: 12px; color: #5C5A60; font-weight: 600; text-align: right">Days on shelf</th>
-            <th scope="col" style="padding: 12px; font-size: 12px; color: #5C5A60; font-weight: 600; text-align: right">Your cost</th>
-            <th scope="col" style="padding: 12px; font-size: 12px; color: #5C5A60; font-weight: 600; text-align: right">Lowest price</th>
             <th scope="col" style="padding: 12px 16px; font-size: 12px; color: #5C5A60; font-weight: 600">Goal</th>
           </tr>
         </thead>
         <tbody>
           
             <tr style="border-bottom: 1px solid #EEEAE4">
-              <th scope="row" style="padding: 10px 16px; text-align: left; font-weight: 700">
-                <span style="display: flex; align-items: center; gap: 12px"><img src="img/essence.svg" alt="" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover"><span>Snail Essence · new bottle</span></span>
-              </th>
-              <td style="padding: 10px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">120</td>
-              <td style="padding: 10px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">20</td>
-              <td style="padding: 10px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">$9</td>
-              <td style="padding: 10px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 600">$19</td>
-              <td style="padding: 10px 16px; color: #3E3C42">Hold price</td>
+              <th scope="row" style="padding: 9px 16px; text-align: left; font-weight: 700"><span style="display: flex; align-items: center; gap: 12px"><img src="img/toner.svg" alt="" style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover"><span>Rice Toner, 150 ml</span></span></th>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">$21.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 600">$16.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; color: #5C5A60">$7.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">180</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">40</td>
+              <td style="padding: 9px 16px; color: #3E3C42">Volume</td>
             </tr>
           
             <tr style="border-bottom: 1px solid #EEEAE4">
-              <th scope="row" style="padding: 10px 16px; text-align: left; font-weight: 700">
-                <span style="display: flex; align-items: center; gap: 12px"><img src="img/essence-old.svg" alt="" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover"><span>Snail Essence · old bottle</span></span>
-              </th>
-              <td style="padding: 10px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">40</td>
-              <td style="padding: 10px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">150</td>
-              <td style="padding: 10px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">$9</td>
-              <td style="padding: 10px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 600">$10</td>
-              <td style="padding: 10px 16px; color: #3E3C42">Clear before old packaging is delisted</td>
+              <th scope="row" style="padding: 9px 16px; text-align: left; font-weight: 700"><span style="display: flex; align-items: center; gap: 12px"><img src="img/essence.svg" alt="" style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover"><span>Snail Essence, 100 ml</span></span></th>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">$23.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 600">$18.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; color: #5C5A60">$8.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">120</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">20</td>
+              <td style="padding: 9px 16px; color: #3E3C42">Hold price</td>
             </tr>
           
             <tr style="border-bottom: 1px solid #EEEAE4">
-              <th scope="row" style="padding: 10px 16px; text-align: left; font-weight: 700">
-                <span style="display: flex; align-items: center; gap: 12px"><img src="img/toner.svg" alt="" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover"><span>Rice Toner</span></span>
-              </th>
-              <td style="padding: 10px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">200</td>
-              <td style="padding: 10px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">45</td>
-              <td style="padding: 10px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">$8</td>
-              <td style="padding: 10px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 600">$17</td>
-              <td style="padding: 10px 16px; color: #3E3C42">Volume</td>
+              <th scope="row" style="padding: 9px 16px; text-align: left; font-weight: 700"><span style="display: flex; align-items: center; gap: 12px"><img src="img/essence-old.svg" alt="" style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover"><span>Snail Essence, older packaging</span></span></th>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">$23.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 600">$12.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; color: #5C5A60">$8.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">40</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">150</td>
+              <td style="padding: 9px 16px; color: #3E3C42">Clear before the relabel</td>
             </tr>
           
             <tr style="border-bottom: 1px solid #EEEAE4">
-              <th scope="row" style="padding: 10px 16px; text-align: left; font-weight: 700">
-                <span style="display: flex; align-items: center; gap: 12px"><img src="img/masks.svg" alt="" style="width: 40px; height: 40px; border-radius: 8px; object-fit: cover"><span>Cica Sheet Masks · box of 10</span></span>
-              </th>
-              <td style="padding: 10px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">150</td>
-              <td style="padding: 10px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">60</td>
-              <td style="padding: 10px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">$6</td>
-              <td style="padding: 10px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 600">$11</td>
-              <td style="padding: 10px 16px; color: #3E3C42">Volume</td>
+              <th scope="row" style="padding: 9px 16px; text-align: left; font-weight: 700"><span style="display: flex; align-items: center; gap: 12px"><img src="img/cream.svg" alt="" style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover"><span>Snail Repair Cream, 50 ml</span></span></th>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">$26.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 600">$20.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; color: #5C5A60">$9.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">90</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">50</td>
+              <td style="padding: 9px 16px; color: #3E3C42">Volume</td>
+            </tr>
+          
+            <tr style="border-bottom: 1px solid #EEEAE4">
+              <th scope="row" style="padding: 9px 16px; text-align: left; font-weight: 700"><span style="display: flex; align-items: center; gap: 12px"><img src="img/serum.svg" alt="" style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover"><span>Ginseng Serum, 50 ml</span></span></th>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">$34.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 600">$28.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; color: #5C5A60">$12.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">60</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">35</td>
+              <td style="padding: 9px 16px; color: #3E3C42">Hold price</td>
+            </tr>
+          
+            <tr style="border-bottom: 1px solid #EEEAE4">
+              <th scope="row" style="padding: 9px 16px; text-align: left; font-weight: 700"><span style="display: flex; align-items: center; gap: 12px"><img src="img/sachet.svg" alt="" style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover"><span>Cica Sheet Mask</span></span></th>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">$2.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 600">$1.20</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; color: #5C5A60">$0.60</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">900</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">30</td>
+              <td style="padding: 9px 16px; color: #3E3C42">Add-on</td>
+            </tr>
+          
+            <tr style="border-bottom: 1px solid #EEEAE4">
+              <th scope="row" style="padding: 9px 16px; text-align: left; font-weight: 700"><span style="display: flex; align-items: center; gap: 12px"><img src="img/masks.svg" alt="" style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover"><span>Cica Sheet Masks, box of 10</span></span></th>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">$16.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 600">$12.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; color: #5C5A60">$5.00</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">150</td>
+              <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace">60</td>
+              <td style="padding: 9px 16px; color: #3E3C42">Volume</td>
             </tr>
           
         </tbody>
@@ -89,24 +121,23 @@ a{color:#B4235A}a:hover{color:#8E1A47}
     </div>
 
     <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
-      <div style="flex: 1 1 360px; min-width: 0; background: #FFFFFF; border: 1px solid #E4DFD8; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
-        <span style="font-size: 16px; font-weight: 800">Extras you can give</span>
-        <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span>Sample kit (5 minis)</span><span style="color: #3E3C42; text-align: right">300 on hand · costs you $1.50</span></div>
-        <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span>Shared freight to LA</span><span style="color: #3E3C42; text-align: right">leaves Nov 14 · about $10 for this box</span></div>
-        <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span>Express shipping</span><span style="color: #3E3C42; text-align: right">any day · at cost</span></div>
-      </div>
-      <div style="flex: 1 1 360px; min-width: 0; background: #FFFFFF; border: 1px solid #E4DFD8; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
-        <span style="font-size: 16px; font-weight: 800">What you care about</span>
-        <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span>Clear the old bottles</span><span style="color: #3E3C42; text-align: right">marketplaces delist old packaging soon</span></div>
-        <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span>One box, one address</span><span style="color: #3E3C42; text-align: right">instead of 10 parcels</span></div>
-        <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span>Guaranteed payment</span><span style="color: #3E3C42; text-align: right">buyers' money is already held</span></div>
+      <div style="flex: 1 1 360px; min-width: 0; background: #FFFFFF; border: 1px solid #E4DFD8; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 10px">
+        <span style="font-size: 16px; font-weight: 800">Extras your agent can give</span>
+        <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span>Sample kit, 5 minis</span><span style="color: #3E3C42; text-align: right">with 2+ items · costs you $1.50</span></div>
+        <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 14px"><span>Free shipping in Korea</span><span style="color: #3E3C42; text-align: right">over $30</span></div>
       </div>
       <div style="flex: 1 1 360px; min-width: 0; background: #FFFFFF; border: 1px solid #E4DFD8; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 10px">
-        <span style="display: flex; align-items: center; gap: 8px"><span style="font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; background: #E6ECFB; color: #1D3FAF">CODE</span><span style="font-size: 16px; font-weight: 800">Hard rules</span></span>
+        <span style="display: flex; align-items: center; gap: 8px"><span style="font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 6px; background: #E6ECFB; color: #1D3FAF">CODE</span><span style="font-size: 16px; font-weight: 800">Rules your agent can't break</span></span>
         <span style="font-size: 14px; line-height: 1.45">Never below your lowest price on any item.</span>
-        <span style="font-size: 14px; line-height: 1.45">No swaps unless the buyer's rule or answer allows it.</span>
-        <span style="font-size: 14px; line-height: 1.45">At most 3 rounds per deal.</span>
-        <span style="font-size: 14px; line-height: 1.45">Orders over $1,000 wait for you. This one ($393) closed on its own.</span>
+        <span style="font-size: 14px; line-height: 1.45">Older packaging only when the shopper allows it.</span>
+        <span style="font-size: 14px; line-height: 1.45">Auto-accept orders up to $300; larger ones wait for you.</span>
+      </div>
+      <div style="flex: 1 1 360px; min-width: 0; background: #FFFFFF; border: 1px solid #E4DFD8; border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 10px">
+        <span style="font-size: 16px; font-weight: 800">Latest order · RL-24817</span>
+        <div style="display: flex; justify-content: space-between; font-size: 14px"><span>Rice Toner</span><span style="font-family: 'IBM Plex Mono', monospace">$19.00</span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px"><span>Snail Essence, older packaging</span><span style="font-family: 'IBM Plex Mono', monospace">$16.00</span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px"><span>Sample kit</span><span style="font-family: 'IBM Plex Mono', monospace">$0.00</span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 700; border-top: 1px solid #EEEAE4; padding-top: 8px"><span>PayPal payout when it reaches the hub</span><span style="font-family: 'IBM Plex Mono', monospace">$35.00</span></div>
       </div>
     </div>
   </div>
