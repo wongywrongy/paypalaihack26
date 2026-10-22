@@ -94,6 +94,68 @@ test('question safely defaults to new and permits an explicit old-bottle choice'
   await expect(page.getByRole('status')).toHaveText('You kept the new bottle.');
 });
 
+test('mobile deal row labels stay visible at both scroll extremes with keyboard access', async ({ page }, info) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/deal');
+  await page.evaluate(() => document.fonts.ready);
+  const region = page.getByRole('region', { name: 'Offers and agreed terms' });
+  await expect(region).toBeVisible();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
+  await expect(region).toBeFocused();
+  await expect(region).toHaveCSS('outline-width', '3px');
+
+  const labels = region.getByRole('rowheader');
+  await expect(labels).toHaveCount(6);
+  const checkPinnedLabels = async () => {
+    const frame = (await region.boundingBox())!;
+    for (const label of await labels.all()) {
+      const cell = (await label.boundingBox())!;
+      expect(cell.x).toBeCloseTo(frame.x, 0);
+      expect(cell.width).toBeGreaterThanOrEqual(150);
+      expect(cell.width).toBeLessThanOrEqual(160);
+    }
+  };
+  await checkPinnedLabels();
+  await page.keyboard.press('ArrowRight');
+  await expect.poll(() => region.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
+  await expect(region).toBeFocused();
+  await region.evaluate(element => { element.scrollLeft = element.scrollWidth; });
+  await checkPinnedLabels();
+  const agreed = region.locator('tbody tr').first().getByRole('cell').last();
+  const frame = (await region.boundingBox())!;
+  const finalPrice = (await agreed.boundingBox())!;
+  expect(finalPrice.x).toBeGreaterThanOrEqual(frame.x + 156);
+  expect(finalPrice.x + finalPrice.width).toBeLessThanOrEqual(frame.x + frame.width + 1);
+  if (info.project.name === 'mobile') {
+    await expect.poll(
+      () => region.locator('img').evaluateAll(images => images.every(image => image.complete && image.naturalWidth > 0)),
+    ).toBe(true);
+    const dir = resolve('design/screenshots');
+    await mkdir(dir, { recursive: true });
+    await page.screenshot({ path: `${dir}/deal-scrolled-mobile.png`, fullPage: true, animations: 'disabled', scale: 'css' });
+  }
+  await region.evaluate(element => { element.scrollLeft = 0; });
+  await checkPinnedLabels();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
+
+test('member primary path works with Tab and Enter only', async ({ page }) => {
+  await page.goto('/invite');
+  for (const route of ['tell', 'review', 'live', 'done', 'receipt']) {
+    const primary = page.locator('.primary');
+    await expect(primary).toBeVisible();
+    for (let tabs = 0; tabs < 8; tabs++) {
+      await page.keyboard.press('Tab');
+      if (await primary.evaluate(element => element === document.activeElement)) break;
+    }
+    await expect(primary).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(new RegExp(`/${route}$`));
+  }
+  await expect(page.getByRole('heading', { name: 'Charged $66.66' })).toBeVisible();
+});
+
 test('unknown routes have a recovery action', async ({ page }) => {
   await page.goto('/missing');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('This page wandered off.');

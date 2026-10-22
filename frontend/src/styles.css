@@ -794,6 +794,21 @@ th small {
   .deal-layout {
     grid-template-columns: minmax(0,1fr)
   }
+  .table-scroll table {
+    table-layout: fixed
+  }
+  .table-scroll th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    width: 156px;
+    background: var(--surface);
+    border-right: 1px solid var(--line);
+    overflow-wrap: anywhere
+  }
+  .table-scroll thead th:first-child {
+    z-index: 2
+  }
   .deal-heading h1 {
     font-size: 32px
   }

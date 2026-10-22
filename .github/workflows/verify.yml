@@ -106,6 +106,19 @@ jobs:
         timeout-minutes: 3
         run: cd frontend && npx playwright install chromium
       - run: npm run test:browser --prefix frontend
+      - name: Export scrolled mobile table for temporary visual review
+        run: |
+          python - <<'PY'
+          import base64
+          import hashlib
+          from pathlib import Path
+
+          path = Path("frontend/design/screenshots/deal-scrolled-mobile.png")
+          assert path.stat().st_size <= 5 * 1024 * 1024, "Scrolled screenshot exceeds 5 MiB"
+          data = path.read_bytes()
+          assert data.startswith(b"\x89PNG\r\n\x1a\n"), "Scrolled screenshot is not a PNG"
+          print("RALLY_REVIEW_IMAGE", path.name, hashlib.sha256(data).hexdigest(), base64.b64encode(data).decode("ascii"), flush=True)
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
