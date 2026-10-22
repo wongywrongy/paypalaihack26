@@ -1,5 +1,11 @@
 # Rally evidence
 
+## October 22, 2026 — visible bargaining example
+
+[Run 39860472878](https://github.com/wongywrongy/paypalaihack26/actions/runs/39860472878), source `a4533264`, passed 31 backend tests with PostgreSQL available, Ruff/build/render/preview-host checks, **48 Playwright cases** and eight Taste inspections with zero FAIL. Initial/final CLI console: zero errors/warnings. Four Playwright cases are fixture-only; provider calls use doubles. Twelve changed-screen JPEGs were hash-verified and visually reviewed. [Demo, screenshots and limits](frontend/design/bartering.md).
+
+The verified build was atomically published to the existing Rootlane preview at 21:57 UTC; readiness and HTTPS were verified. This exposes reconstructed example buyer/shop proposals and their changes. It does not run live agents, a solver or payment mutations, and does not pass G1/G2/G3. No stored purchases or payment records were changed.
+
 ## October 22, 2026 — interface refinement
 
 [Run 39854036017](https://github.com/wongywrongy/paypalaihack26/actions/runs/39854036017), source `f9fc421`, passed 31 PostgreSQL-backed backend tests, Ruff/build/render/preview-host checks and **42 Playwright tests**. Eight pinned Taste inspections at 1440/768/390 px returned zero FAIL; all 24 viewport contexts reported zero console errors. Two reviewers inspected all 48 hash-verified JPEGs. [Review, changes, screenshots and limits](frontend/design/polish-review.md). Provider operations remain test doubles; this is not G1 evidence.
