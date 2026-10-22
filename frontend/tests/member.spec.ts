@@ -26,6 +26,7 @@ const screens = [
 
 for (const [route, heading] of screens) {
   test(`${route} renders the fixture without overflow`, async ({ page }, info) => {
+    if (info.project.name === 'mobile') expect(page.viewportSize()?.width).toBe(390);
     const errors: string[] = [];
     page.on('pageerror', error => errors.push(error.message));
     await page.goto('/' + route);
@@ -34,7 +35,7 @@ for (const [route, heading] of screens) {
     expect((await title.innerText()).replace(/\s+/g, ' ').trim()).toBe(heading);
     await page.evaluate(() => document.fonts.ready);
     await expect(page.getByText('Example', { exact: true })).toBeVisible();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);
     expect(await page.evaluate(() => document.fonts.check('400 16px "Schibsted Grotesk"') && document.fonts.check('400 16px "IBM Plex Mono"'))).toBe(true);
     if (route !== 'receipt') expect(await page.locator('img').evaluateAll(images => images.every(image => image.complete && image.naturalWidth > 0))).toBe(true);
     if (route !== 'deal') {

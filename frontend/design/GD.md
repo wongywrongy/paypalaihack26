@@ -4,6 +4,8 @@ GD is **pending inspection of actual CI screenshots**. The seven member routes a
 
 CI on `3794a77` generated all **16 route screenshots** (eight routes at mobile/desktop widths): [browser screenshot artifact](https://github.com/wongywrongy/paypalaihack26/actions/runs/39837501453/artifacts/12450874005). The Playwright suite passed **22/24** tests; both failures were the same outdated old-bottle confirmation assertion on desktop/mobile. The UI correctly explains the temporary preview and canonical answer. The assertion now checks that full boundary and revises the answer back to new. This correction awaits a CI rerun. Artifact generation and layout assertions are real browser evidence; visual signoff still requires opening the images and a fresh finish review.
 
+The requested Playwright CLI ran in CI on `701f735` with Chrome 155: all seven member routes were captured at **390 × 844 with reduced motion** ([CLI artifact](https://github.com/wongywrongy/paypalaihack26/actions/runs/39839797807/artifacts/12451613734)). Its explicit width check found horizontal page overflow on `/deal`. The mobile grid's plain `1fr` track retained the 720 px table's intrinsic minimum. It now uses `minmax(0,1fr)`, allowing the existing table frame to scroll within the page. The route regression now compares document width with the configured viewport rather than `window.innerWidth`, which mobile layout overflow can expand; it also asserts the mobile viewport is 390 px. The fix needs a fresh browser/CLI run before responsive signoff.
+
 Passed:
 
 - `npm run build --prefix frontend`: TypeScript and Vite production bundle.

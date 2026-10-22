@@ -49,26 +49,44 @@ jobs:
           mkdir -p design/screenshots
           ./node_modules/.bin/vite --host 127.0.0.1 --port 5173 --strictPort > "$RUNNER_TEMP/rally-vite.log" 2>&1 &
           vite_pid=$!
-          trap 'timeout 10 "$cli" -s=rally-gd close || true; kill "$vite_pid" 2>/dev/null || true; wait "$vite_pid" 2>/dev/null || true' EXIT
+          trap 'exit_status=$?; if (( exit_status != 0 )); then timeout 10 "$cli" -s=rally-gd console error || true; fi; timeout 10 "$cli" -s=rally-gd close || true; kill "$vite_pid" 2>/dev/null || true; wait "$vite_pid" 2>/dev/null || true' EXIT
           for attempt in {1..30}; do
             if curl --fail --silent --max-time 2 http://127.0.0.1:5173/invite > /dev/null; then break; fi
             if ! kill -0 "$vite_pid" 2>/dev/null; then cat "$RUNNER_TEMP/rally-vite.log"; exit 1; fi
             sleep 1
           done
           curl --fail --silent --show-error --max-time 2 http://127.0.0.1:5173/invite > /dev/null
-          check_layout='async page => { await page.evaluate(async () => { await document.fonts.ready; if (document.documentElement.scrollWidth > window.innerWidth) throw new Error("Horizontal page overflow"); }); }'
+          wait_fonts='async page => { await page.evaluate(() => document.fonts.ready); }'
+          check_layout='async page => {
+            const layout = await page.evaluate(() => ({
+              scrollWidth: document.documentElement.scrollWidth,
+              clientWidth: document.documentElement.clientWidth,
+              innerWidth: window.innerWidth,
+              offenders: [...document.querySelectorAll("body *")].map(element => ({
+                tag: element.tagName,
+                id: element.id,
+                classes: (element.getAttribute("class") || "").slice(0, 120),
+                left: element.getBoundingClientRect().left,
+                right: element.getBoundingClientRect().right
+              })).filter(rect => rect.left < 0 || rect.right > window.innerWidth).slice(0, 8)
+            }));
+            if (layout.scrollWidth > layout.innerWidth) throw new Error("Horizontal page overflow: " + JSON.stringify(layout));
+          }'
           "$cli" -s=rally-gd open http://127.0.0.1:5173/invite --browser chrome
           "$cli" -s=rally-gd resize 390 844
           "$cli" -s=rally-gd set-reduced-motion reduce
           for route in invite tell review live ask done receipt deal; do
             "$cli" -s=rally-gd goto "http://127.0.0.1:5173/$route"
-            "$cli" -s=rally-gd run-code "$check_layout"
+            "$cli" -s=rally-gd run-code "$wait_fonts"
             "$cli" -s=rally-gd screenshot --filename "design/screenshots/$route-cli-mobile.png" --full-page
+            "$cli" -s=rally-gd run-code "$check_layout"
           done
           "$cli" -s=rally-gd resize 1440 900
           "$cli" -s=rally-gd goto http://127.0.0.1:5173/deal
-          "$cli" -s=rally-gd run-code "$check_layout"
+          "$cli" -s=rally-gd run-code "$wait_fonts"
           "$cli" -s=rally-gd screenshot --filename design/screenshots/deal-cli-desktop.png --full-page
+          "$cli" -s=rally-gd run-code "$check_layout"
+          "$cli" -s=rally-gd console error
       - name: Install Chromium for browser tests
         timeout-minutes: 3
         run: cd frontend && npx playwright install chromium
@@ -80,4 +98,6 @@ jobs:
           path: |
             frontend/design/screenshots/*.png
             frontend/test-results/
+            frontend/.playwright-cli/*.log
           if-no-files-found: ignore
+          include-hidden-files: true

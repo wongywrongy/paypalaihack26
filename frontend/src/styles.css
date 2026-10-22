@@ -792,7 +792,7 @@ th small {
 }
 @media(max-width:800px) {
   .deal-layout {
-    grid-template-columns: 1fr
+    grid-template-columns: minmax(0,1fr)
   }
   .deal-heading h1 {
     font-size: 32px
