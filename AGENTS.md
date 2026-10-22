@@ -19,6 +19,8 @@
   simple: one primary action, one big number, details one tap away.
 - It is a real product, not a prototype. No "Example", "preview", "fixture", "simulated" or "demo" in any
   UI copy; the only sandbox marker is a small "Test mode" pill. What is simulated goes in README and Devpost.
+- No explainer pages in the product (no deal room, scorecard, decision-rights or benchmark pages). The deal is
+  shown live on the Deal screen and in Rally for shops; how it works goes in README, Devpost and the video.
 - Fictional shops and brands only (Haneul Beauty, Bada Market, Dalbit Official; Dalbit, Mulgyeol, Saebom,
   Byeolbit, Gureum, Hayan). No real brand names or logos in code, images or copy.
 - Small commits; run the test suite before each commit.

@@ -87,17 +87,17 @@ Version 2 (Oct 22, 2026): solo international shopping across three Korean shops.
 
 ## Overview
 
-Rally feels like a calm, product-led shopping app that happens to ship from Seoul. A shopper sees six screens and one sheet: Shop, Ship to, Ask Rally, Bag, Deal, Paid, Track. Each has one primary action and one leading number. It reads as a real product: real shopping words, real order numbers and dates, the real PayPal button, and a single small "Test mode" pill in the header as the only sandbox marker. Behind-the-scenes pages (How the deal was made, Shop console, Scorecard, Who decides what, Benchmark) give the agent detail room without crowding the shopper's path.
+Rally feels like a calm, product-led shopping app that happens to ship from Seoul. A shopper sees six screens and one sheet: Shop, Ship to, Ask Rally, Bag, Deal, Paid, Track. Each has one primary action and one leading number. It reads as a real product: real shopping words, real order numbers and dates, the real PayPal button, and a single small "Test mode" pill in the header as the only sandbox marker. The agents' work is shown while it happens, on the Deal screen, as prices meeting and items changing; there are no explainer pages. Shops get Rally for shops, a desktop dashboard showing the same deal from their side.
 
 ## Colors
 
 ### Primary
 
-Berry (`accent`) is the action color for primary buttons, links, checked switches and focus outlines. The wordmark dot also uses berry; keep other uses functional. The PayPal button uses PayPal's own SDK styling, not berry.
+Berry (`accent`) is the action color for primary buttons, links, checked switches and focus outlines, and the color of Rally's offer on a price track. The wordmark dot also uses berry; keep other uses functional. The PayPal button uses PayPal's own SDK styling, not berry.
 
 ### Secondary
 
-Butter (`rule-applied`) appears only when the shopper's own rule changed the order ("Older packaging, same formula. You said that's fine." / "Added a $2 sheet mask. It unlocks free shipping in Korea."). Mint (`saving`, `saving-tint`) marks money saved: "$12.03 less than at checkout", "Saved vs buying from each shop yourself". Reserve berry for actions.
+Butter (`rule-applied`) appears only when the shopper's own rule changed the order ("Older packaging, same formula. You said that's fine." / "Added a $2 sheet mask. It unlocks free shipping in Korea."). Mint (`saving`, `saving-tint`) marks money saved: an agreed price and the saved stretch of its track, "Deal · −$10.96", "$12.03 less than at checkout", "Saved vs buying from each shop yourself". In Rally for shops it marks what the shop earned over its lowest price. Reserve berry for actions.
 
 ### Neutral
 
@@ -109,7 +109,7 @@ Schibsted Grotesk for all text; heavy (800) for main headings, 700 for section t
 
 ## Layout
 
-Mobile first at 390 px with a 20 px gutter. One column; the primary action follows the content and settles at the bottom when space permits, without covering content. Shopper pages remain a comfortable 460 px column on desktop; the shop grid can widen to 3 or 4 columns. Behind-the-scenes pages use a 1272 px outer max width and put wide tables in labeled horizontal scroll boxes.
+Mobile first at 390 px with a 20 px gutter. One column; the primary action follows the content and settles at the bottom when space permits, without covering content. Shopper pages remain a comfortable 460 px column on desktop; the shop grid can widen to 3 or 4 columns. Rally for shops uses a 1272 px outer max width, stacks its order and messages columns below 960 px, and puts wide tables in labeled horizontal scroll boxes.
 
 ## Elevation & Depth
 
@@ -137,21 +137,25 @@ The shopper's words in a dark bubble; the routine as numbered steps (Cleanse, To
 
 Items grouped by shop with the shop's city and shipping note ("Ships inside Korea", "Free shipping in Korea"). One line for the box ("One box from Seoul to California · arrives Oct 30 to Nov 2"). The two shopper rules as switches with one-line explanations. "Total, all in" with a "See breakdown" toggle (items, shipping in Korea, shipping to you, duty, tax, Rally fee). The PayPal SDK button, then: "PayPal holds $118.82. You're charged after Rally's deal, never more than this."
 
-### Deal
+### Deal (live)
 
-Status pill ("Deal done · 14 seconds"), the new total over the struck-through checkout total, one card per change, butter for changes made under the shopper's rules, a plain card for "Prices held. The shop said no." Primary: "See your order". Link: "How the deal was made".
+Opens the moment PayPal approves and plays the negotiation as it happens, about 15 seconds. Top: "Rally is talking to 2 shops" with a pulsing dot and a running clock, then the all-in total counting down, the checkout total struck through once it drops, and one line on the hold ("PayPal is holding $118.82. You pay the final price, never more."). A three-item legend: Rally's offer, Shop's price, You save.
+
+One card per shop: name, city, a status chip (Waiting, Offer sent, Countered, Holding prices, Final offer, Deal · −$10.96). Each item row has a price track under it, from Rally's opening offer to the listed price: Rally's offer is a berry dot with its price below, the shop's price a ring with its price above, both sliding as replies arrive. When they meet, the dots give way to a mint "$19 agreed" pill and the stretch from there to the listed price turns mint. A price the shop won't move loses its track and reads "price held". Swaps and add-ons arrive as rows with a butter tag tied to the bag switch that allowed them ("You allowed older packaging", "You allowed small extras"); a shop's extra (sample kit) arrives as a row priced "Free". Under each shop, the latest message from either agent, one line, in a tinted bubble (berry tint for Rally, warm grey for the shop).
+
+Done: mint "Deal done · 14 seconds", "You pay $106.79. PayPal releases the other $12.03.", primary "See your order", text button "Watch the deal again". The same screen opens from Paid as a replay.
 
 ### Paid and Track
 
 Hero "You paid $106.79", the release line, the saved-vs-direct band in mint, items with photos, a breakdown toggle, "Nothing to pay at your door". Track is a vertical timeline (paid, shops shipped to our Seoul hub, packed into one box, leaves Seoul, customs cleared, delivered) with a "You're covered" card listing refund protections.
 
-### Behind the scenes
+### Rally for shops
 
-How the deal was made: per-shop replies in order with what changed, and a "Why it moved" log tagged CODE, SOLVER, LLM or PAYPAL. Shop console: the shop's products, stock, floors and costs (private to that shop), extras, code rules and payouts. Scorecard: buying direct vs checkout vs deal, checks, shop gains, every destination. Who decides what: one row per step with its owner.
+A desktop dashboard: white top bar with the wordmark and "for shops", tabs (Orders, Products, Payouts, Agent settings), the shop's name and the Test mode pill. Orders shows each deal from the shop's side: the same price tracks, now running from the shop's private lowest price (a dashed tick) to the listed price, with Rally's offers and the shop agent's prices as dots, the agreed pill, and the stretch earned over the lowest price in mint; per line "+$3.00 over lowest"; the sample kit with what it costs the shop; the payout and "Mark handed to the hub". Beside it, the messages between Rally and the shop's agent with times. Products is a grid of listed price, lowest price, cost, stock, days on shelf and goal, with a lock line: lowest prices and costs are private. Agent settings are real checkboxes.
 
 ### Interaction and motion
 
-Apply Emil Kowalski's purpose and frequency test before adding motion. Primary hover changes only `background-color` over 160 ms with `ease`, and only for a fine pointer that supports hover. Press and keyboard focus feedback are immediate. On Deal, cards arrive one by one as the live deal returns them and the total counts down to the charged amount; with reduced motion, show the final state at once. Never animate progress or savings that have not happened. No entrance staggers elsewhere, bouncing controls, looping activity or confetti.
+Apply Emil Kowalski's purpose and frequency test before adding motion. Primary hover changes only `background-color` over 160 ms with `ease`, and only for a fine pointer that supports hover. Press and keyboard focus feedback are immediate. On the live deal, markers slide (500 ms, ease) as offers arrive, rows slide in when items are added, an agreed track turns mint, and the total counts down to each new amount over about half a second. Each event stays on screen at least 600 ms. With reduced motion, every state appears without sliding or counting. Never animate progress or savings that have not happened; the screen shows events the backend actually streamed. No entrance staggers elsewhere, bouncing controls, looping activity or confetti.
 
 ## Do's and Don'ts
 
@@ -161,5 +165,6 @@ Apply Emil Kowalski's purpose and frequency test before adding motion. Primary h
 - Do use real buttons, links and labels; 44 px minimum touch targets; visible focus.
 - Don't write "Example", "preview", "fixture", "simulated" or "demo" anywhere in the UI.
 - Don't use emoji, gradient washes, left-border cards, confetti or decorative agent avatars.
+- Don't build explainer pages or logs to read. Show the deal while it happens, as prices and items.
 - Don't show rounds, utilities, floors or agent jargon on shopper screens.
 - Don't add a second accent color.

@@ -219,23 +219,47 @@ shop_gain = {
                  deal=gain("bada", deal_lines, shipping_cost=BADA_PICKUP_COST)),
 }
 
-# rounds, per shop
-ROUNDS = {
-    "dalbit": [
-        dict(actor="agent", terms="Toner $17, essence $18 (or old packaging $14), sample kit"),
-        dict(actor="shop", terms="Toner $20, essence $22 or old packaging $16, sample kit with 2+ items"),
-        dict(actor="agent", terms="Toner $18, old-packaging essence $15, sample kit"),
-        dict(actor="shop", terms="Toner $19, old-packaging essence $16, sample kit"),
-        dict(actor="code", terms="Accept: every line at or above what the shopper allowed, total under the hold"),
-    ],
-    "bada": [
-        dict(actor="agent", terms="Cleanser $11, cream $17"),
-        dict(actor="shop", terms="No price change; free shipping over $33"),
-        dict(actor="agent", terms="Add one $2 sheet mask; ship free"),
-        dict(actor="shop", terms="Accepted"),
-        dict(actor="code", terms="Accept: the mask lowers the shopper's total, so their rule allows it"),
-    ],
-}
+# the live deal: every event the shopper's Deal screen and the shop's order view show, in order.
+# t = seconds after PayPal approves the hold. Both shops negotiate in parallel.
+mid_lines = [  # Bada Market has accepted the mask; Dalbit Official is still at listed prices
+    ("mul-gel-cleanser", "bada", D(12)),
+    ("dal-rice-toner", "dalbit", D(21)),
+    ("dal-snail-essence", "dalbit", D(23)),
+    ("sae-cica-cream", "bada", D(19)),
+    ("dal-cica-mask", "bada", D(2)),
+]
+mid_domestic, _ = domestic_for(mid_lines)
+mid = landed(mid_lines, "US", mid_domestic)
+
+EVENTS = [
+    dict(t=1, shop="dalbit", actor="rally", kind="offer",
+         lines={"dal-rice-toner": "17", "dal-snail-essence:older": "14"}, extras=["dalbit-sample-kit"],
+         note="Older packaging works for this shopper. $17 and $14, with a sample kit?"),
+    dict(t=2, shop="bada", actor="rally", kind="offer",
+         lines={"mul-gel-cleanser": "11", "sae-cica-cream": "17"},
+         note="$11 for the cleanser and $17 for the cream?"),
+    dict(t=4, shop="bada", actor="shop", kind="counter",
+         lines={"mul-gel-cleanser": "12", "sae-cica-cream": "19"},
+         note="Our prices are firm. Shipping is free over $33."),
+    dict(t=5, shop="dalbit", actor="shop", kind="counter",
+         lines={"dal-rice-toner": "20", "dal-snail-essence:older": "16"}, extras=["dalbit-sample-kit"],
+         note="Toner $20, older packaging $16. Sample kit with both."),
+    dict(t=6, shop="bada", actor="rally", kind="offer",
+         lines={"mul-gel-cleanser": "12", "sae-cica-cream": "19", "dal-cica-mask": "2"}, domestic="0",
+         note="Add one $2 sheet mask so it ships free?"),
+    dict(t=7, shop="bada", actor="shop", kind="accept", total=str(mid["total"]),
+         note="Done. It ships free."),
+    dict(t=9, shop="dalbit", actor="rally", kind="offer",
+         lines={"dal-rice-toner": "18", "dal-snail-essence:older": "15"}, extras=["dalbit-sample-kit"],
+         note="$18 and $15, and we have a deal."),
+    dict(t=12, shop="dalbit", actor="shop", kind="counter", final=True,
+         lines={"dal-rice-toner": "19", "dal-snail-essence:older": "16"}, extras=["dalbit-sample-kit"],
+         note="$19 and $16 with the sample kit. Final offer."),
+    dict(t=13, shop="dalbit", actor="rally", kind="accept", total=str(deal["total"]),
+         note="Accepted."),
+    dict(t=14, kind="done", total=str(deal["total"])),
+]
+assert mid["total"] == D("117.75"), mid["total"]
 
 # every destination for the negotiated cart
 countries_out = {}
@@ -251,6 +275,7 @@ for cc, c in COUNTRIES.items():
 print("listed lines", [(p, s, str(u)) for p, s, u in listed_lines], "domestic", listed_domestic)
 print("LISTED US", {k: str(v) for k, v in listed.items()})
 print("DEAL   US", {k: str(v) for k, v in deal.items()}, "by shop", {k: str(v) for k, v in deal_by_shop.items()})
+print("after Bada accepts", mid["total"])
 print("mask saves", mask_saves, "without mask total", without_mask["total"])
 print("DIRECT US", {k: str(v) for k, v in direct.items()})
 print("saved vs listed", listed["total"] - deal["total"], "vs direct", direct["total"] - deal["total"])
@@ -283,7 +308,7 @@ out = dict(
         mask_saves=str(mask_saves),
         direct={k: (str(v) if isinstance(v, D) else v) for k, v in direct.items()},
         saved_vs_listed=str(listed["total"] - deal["total"]), saved_vs_direct=str(direct["total"] - deal["total"]),
-        rounds=ROUNDS,
+        events=EVENTS,
         shop_gain={k: {a: str(b) for a, b in v.items()} for k, v in shop_gain.items()},
         private={f"{s}/{p}": {a: str(b) for a, b in v.items()} for (s, p), v in PRIVATE.items()},
     ),

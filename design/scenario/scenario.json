@@ -525,52 +525,121 @@
   },
   "saved_vs_listed": "12.03",
   "saved_vs_direct": "44.61",
-  "rounds": {
-   "dalbit": [
-    {
-     "actor": "agent",
-     "terms": "Toner $17, essence $18 (or old packaging $14), sample kit"
+  "events": [
+   {
+    "t": 1,
+    "shop": "dalbit",
+    "actor": "rally",
+    "kind": "offer",
+    "lines": {
+     "dal-rice-toner": "17",
+     "dal-snail-essence:older": "14"
     },
-    {
-     "actor": "shop",
-     "terms": "Toner $20, essence $22 or old packaging $16, sample kit with 2+ items"
+    "extras": [
+     "dalbit-sample-kit"
+    ],
+    "note": "Older packaging works for this shopper. $17 and $14, with a sample kit?"
+   },
+   {
+    "t": 2,
+    "shop": "bada",
+    "actor": "rally",
+    "kind": "offer",
+    "lines": {
+     "mul-gel-cleanser": "11",
+     "sae-cica-cream": "17"
     },
-    {
-     "actor": "agent",
-     "terms": "Toner $18, old-packaging essence $15, sample kit"
+    "note": "$11 for the cleanser and $17 for the cream?"
+   },
+   {
+    "t": 4,
+    "shop": "bada",
+    "actor": "shop",
+    "kind": "counter",
+    "lines": {
+     "mul-gel-cleanser": "12",
+     "sae-cica-cream": "19"
     },
-    {
-     "actor": "shop",
-     "terms": "Toner $19, old-packaging essence $16, sample kit"
+    "note": "Our prices are firm. Shipping is free over $33."
+   },
+   {
+    "t": 5,
+    "shop": "dalbit",
+    "actor": "shop",
+    "kind": "counter",
+    "lines": {
+     "dal-rice-toner": "20",
+     "dal-snail-essence:older": "16"
     },
-    {
-     "actor": "code",
-     "terms": "Accept: every line at or above what the shopper allowed, total under the hold"
-    }
-   ],
-   "bada": [
-    {
-     "actor": "agent",
-     "terms": "Cleanser $11, cream $17"
+    "extras": [
+     "dalbit-sample-kit"
+    ],
+    "note": "Toner $20, older packaging $16. Sample kit with both."
+   },
+   {
+    "t": 6,
+    "shop": "bada",
+    "actor": "rally",
+    "kind": "offer",
+    "lines": {
+     "mul-gel-cleanser": "12",
+     "sae-cica-cream": "19",
+     "dal-cica-mask": "2"
     },
-    {
-     "actor": "shop",
-     "terms": "No price change; free shipping over $33"
+    "domestic": "0",
+    "note": "Add one $2 sheet mask so it ships free?"
+   },
+   {
+    "t": 7,
+    "shop": "bada",
+    "actor": "shop",
+    "kind": "accept",
+    "total": "117.75",
+    "note": "Done. It ships free."
+   },
+   {
+    "t": 9,
+    "shop": "dalbit",
+    "actor": "rally",
+    "kind": "offer",
+    "lines": {
+     "dal-rice-toner": "18",
+     "dal-snail-essence:older": "15"
     },
-    {
-     "actor": "agent",
-     "terms": "Add one $2 sheet mask; ship free"
+    "extras": [
+     "dalbit-sample-kit"
+    ],
+    "note": "$18 and $15, and we have a deal."
+   },
+   {
+    "t": 12,
+    "shop": "dalbit",
+    "actor": "shop",
+    "kind": "counter",
+    "final": true,
+    "lines": {
+     "dal-rice-toner": "19",
+     "dal-snail-essence:older": "16"
     },
-    {
-     "actor": "shop",
-     "terms": "Accepted"
-    },
-    {
-     "actor": "code",
-     "terms": "Accept: the mask lowers the shopper's total, so their rule allows it"
-    }
-   ]
-  },
+    "extras": [
+     "dalbit-sample-kit"
+    ],
+    "note": "$19 and $16 with the sample kit. Final offer."
+   },
+   {
+    "t": 13,
+    "shop": "dalbit",
+    "actor": "rally",
+    "kind": "accept",
+    "total": "106.79",
+    "note": "Accepted."
+   },
+   {
+    "t": 14,
+    "kind": "done",
+    "total": "106.79"
+   }
+  ],
   "shop_gain": {
    "dalbit": {
     "listed": "10",
