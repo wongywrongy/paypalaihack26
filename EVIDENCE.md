@@ -1,5 +1,11 @@
 # Rally evidence
 
+## October 22, 2026 — interface refinement
+
+[Run 39854036017](https://github.com/wongywrongy/paypalaihack26/actions/runs/39854036017), source `f9fc421`, passed 31 PostgreSQL-backed backend tests, Ruff/build/render/preview-host checks and **42 Playwright tests**. Eight pinned Taste inspections at 1440/768/390 px returned zero FAIL; all 24 viewport contexts reported zero console errors. Two reviewers inspected all 48 hash-verified JPEGs. [Review, changes, screenshots and limits](frontend/design/polish-review.md). Provider operations remain test doubles; this is not G1 evidence.
+
+The verified fixture build replaced the static files in the already-approved Rootlane environment at 21:09 UTC; Rootlane reported ready with HTTPS verified. Previous index and hashed assets were retained. No recipe, public route, PayPal setting or stored purchase was changed. The initial CLI-open error count remains a diagnostic to inspect; the final query and Taste contexts were clean. Native zoom, screen-reader speech and physical touch remain unexecuted; bounded financial type does not double fully with the ordinary-text enlargement test.
+
 ## October 22, 2026 — verified source
 
 PLAN.md on `rally` (October 22) is authoritative. The original workspace and database contents were preserved; implementation is in the isolated `.worktrees/rally` checkout. No Render deployment, PayPal configuration, public route or Rootlane environment was changed.

@@ -1,0 +1,79 @@
+# Rally interface refinement — 2026-10-22
+
+Scope: the eight fixture routes in `frontend/src`, preserving the current Rally plan and visual identity. This is an interface review and implementation record, not evidence of connected negotiation or payment execution.
+
+## Method and references
+
+Two isolated Impeccable assessments reviewed source and the ten hash-verified baseline captures. Assessment A completed before its parent consumed B's detector output. A scored the baseline **32/40**; B's technical audit scored **17/20**. Neither found a demonstrated P0/P1 defect. Both subsequently inspected all 48 after-captures. A's final-source validation scores **33/40**; only control/freedom rises, supported by executed repeated keyboard focus. This follow-up occurred after A saw Taste warnings, so it is subsequent verification rather than a new unanchored assessment. B did not consume A's reports and retains 17/20. The earlier GD score used a different assessment; these numbers do not establish a regression or a measured user outcome.
+
+| Nielsen heuristic | Baseline / 4 | Final / 4 | Finding and refinement |
+|---|---:|---:|---|
+| Visibility of system status | 3 | 3 | Persistent answer status and actual table-position feedback |
+| Match with the real world | 4 | 4 | Plain product, hold, charge and pickup language preserved |
+| User control and freedom | 3 | 4 | Deliberate focus through executed repeated answer changes |
+| Consistency and standards | 3 | 3 | Shared pointer-aware controls and immediate keyboard feedback |
+| Error prevention | 4 | 4 | Explicit immutable example and conservative bottle default preserved |
+| Recognition over recall | 3 | 3 | Direct access to agreed terms without losing product identity |
+| Flexibility and efficiency | 3 | 3 | Reversible mobile comparison navigation |
+| Aesthetic and minimalist design | 3 | 3 | Larger decision text within the existing visual hierarchy |
+| Error recovery | 3 | 3 | Safe change-choice and unknown-route recovery preserved |
+| Help and documentation | 3 | 3 | Existing hold/estimate help plus current scroll-position description |
+| **Total** | **32/40** | **33/40 — Good** | Subsequent verification, with manual accessibility limits preserved |
+
+Taste was applied in app-screen mode. The committed palette, Schibsted Grotesk, IBM Plex Mono money, 58 px final amount and product-led member column override generic dashboard styling. The source lint's monospace warnings are intentional exact-money typography. No brand redraw or new dependency was introduced.
+
+The supplied Google redirect resolves to [Emil Kowalski's official skills](https://github.com/emilkowalski/skills), reviewed at commit `2d228630ba1446365f614a108cb8252f1feda202`. Design engineering, animation review, opportunity filtering and animation recipes informed the changes. The existing installed Taste inspector is verified against [the upstream source](https://github.com/Leonxlnx/taste-skill/tree/6010f91a9935f1c167dfc500fb1a475681892e6b/skills/taste-skill/scripts) and pinned in CI. No global skill installation or client settings changed.
+
+## Implemented findings
+
+| Priority | Before | After | Why |
+|---|---|---|---|
+| P2 | Bottle confirmation removed the focused button; its populated status region mounted afterward | Persistent initially empty status region; confirmation focuses the continuation, editing restores the selected native radio | Repeated keyboard choices have a predictable path and useful answer feedback |
+| P2 | Phone comparison initially exposed opening offers while agreed terms were offscreen | Reversible, instant table jumps and position feedback derived from actual scrolling | Reach the result without losing chronological offers or pinned product identity |
+| P2 | Useful product metadata was 11 px; phone names/prices shrank to 13/12 px | Default metadata 12 px, names 14 px and prices 13 px; ordinary root-relative type and wrapping layouts | Improve reading and text-preference support within the existing hierarchy |
+| P3 | Primary hover applied to every pointer and transitioned a shorthand | Fine-pointer hover only; explicit 160 ms `background-color` transition; immediate active/focus state | Keep feedback bounded, touch-safe and fast for keyboard use |
+
+Motion verdict: **approve the restrained interaction model**. Reduced motion retains state-color feedback over 80 ms; keyboard/press feedback and table jumps are immediate. There are no new moving financial figures, transforms, entrances, staggers or loops.
+
+The same checked 1254 × 1254 product sheet now has a browser-encoded WebP derivative (quality 0.86): **1,662,229 → 39,652 bytes**, a **97.6%** reduction. The original PNG and crop geometry remain. A native `picture` source selects WebP with the PNG as fallback. The derived image was visually inspected before use; these byte counts are not measured LCP or transfer-time improvements. Derivative SHA-256: `59a928e8895624dc6e508a562972a8145b3ff8dc33f260368622509eb076d915`, generated by runner Chrome in [baseline run 39853046191](https://github.com/wongywrongy/paypalaihack26/actions/runs/39853046191).
+
+Rejected opportunities: price counting can temporarily show an amount that is not the fixture's settled figure; animated progress would imply live work; page entrances delay frequently repeated reading; agent beams would imply exchanges this immutable example is not executing. The plan's permitted price/progress slots remain available for real state when connected. Dormant Magic UI components were preserved rather than expanded or silently activated.
+
+## Strengths and practical limits
+
+The product remains specific: photos explain the bottle choice, butter identifies an applied personal rule, mint explains the savings, and the final price dominates. The hold explanation repeats the maximum at the trust moment; details and negotiation provenance stay one tap away. Members face one main decision with no more than four meaningful choices. The dense chronological deal comparison remains secondary.
+
+For a distracted phone shopper, larger bottle details and direct agreement navigation address the clearest reading burden. For a first-time member, explicit example labels and conservative default remain. For keyboard users, native radio arrows and deliberate confirmation/edit focus are the main improvement. A persistent live region supplies the announcement contract; actual screen-reader speech remains a separate manual check.
+
+Local browser sockets are denied on this host; CI Chrome/Playwright is the rendered verification path. Root-relative 200% text-size checks are not native browser zoom or a WCAG certification. Ordinary text doubles; viewport-bounded financial figures deliberately remain readable rather than doubling fully (the 58 px final amount reaches 70.2 px at a 390 px viewport). Physical devices, touch gestures, screen-reader speech, native browser zoom and measured real-network performance are outside this executed pass. Mobile-emulated mouse checks establish pointer media/style behavior, not physical touch behavior. WebP fallback markup was checked; an unsupported-format browser was not executed. No connected PayPal lifecycle is established by these fixture checks.
+
+## Executed verification
+
+[Updated-interface run 39854036017](https://github.com/wongywrongy/paypalaihack26/actions/runs/39854036017), source `f9fc421ee5e7fc20858657e3f71f0fb1079576e7`, passed **31/31 PostgreSQL-backed backend tests**, Ruff, frontend build, nine server-render checks, preview-host validation and **42/42 Playwright checks** (23.3 seconds). Provider calls use test doubles. The earlier [baseline run 39853046191](https://github.com/wongywrongy/paypalaihack26/actions/runs/39853046191) also passed.
+
+Playwright CLI 0.1.22 actually captured every route at 390 × 844 with reduced motion and the desktop deal room at 1440 × 900. The pinned Taste inspector separately rendered all eight routes at **1440, 768 and 390 px**: **zero FAIL findings**, with zero console errors in all 24 viewport contexts. Every one of its 48 JPEGs was recovered, SHA-256 verified and visually inspected by both reviewers. Twenty-seven exact captures are retained below; [the full artifact](https://github.com/wongywrongy/paypalaihack26/actions/runs/39854036017/artifacts/12459540535) includes every report, capture and CLI log. The initial CLI-open snapshot reported one console error whose message was not inspected in this run; its final console query was clean. The workflow now queries immediately after opening so this diagnostic is observable in subsequent runs.
+
+The added browser checks execute native radio arrows, repeated confirmation/edit focus, persistent answer status, reversible table navigation with both motion preferences, all routes at 320/768 px, ordinary text doubled at 390 px, pointer-media/color/focus behavior and modern-browser WebP selection without requesting the PNG. They retain the existing no-money journey, fixture cent reconciliation, receipts, image/font readiness, default choice, unknown-route recovery and scroll-region keyboard checks. No arbitrary test sleeps or retries were added.
+
+The final source detector on `f9fc421` returned `[]`, exit 0. Taste source lint returned zero FAIL and three mono warnings, explained by the locked money face. Runtime warnings remain visible: warm brand ground, larger product-led headings/final price, the capped centered member column, product photos classified as icon chips, and a high proportion of 12 px secondary labels on Review/Done. No `--allow` suppression was added. These warnings do not assert a measured usability failure; the buying-context text was increased and rendered at narrow widths.
+
+The verified static build was published to the existing owner-approved Rootlane environment at **21:09 UTC**. Assets were copied before the index was atomically replaced; old hashed assets and the previous index were retained. Rootlane reported application ready, upstream ready, matching route and HTTPS verified. No service recipe, public route, PayPal setting, secret or database was changed.
+
+## Actual screenshots
+
+[Capture manifest](polish-screenshots/manifest.json) records the exact source/run/job, byte sizes and SHA-256 hashes. Fold captures are first viewports, not entire pages. The additional mobile strips show successive screenfuls of longer pages.
+
+| Route | Phone 390 px | Tablet 768 px | Desktop 1440 px |
+|---|---|---|---|
+| Find / invite | [Screenshot](polish-screenshots/invite/mobile-fold.jpg) | [Screenshot](polish-screenshots/invite/tablet-fold.jpg) | [Screenshot](polish-screenshots/invite/desktop-fold.jpg) |
+| Request | [Screenshot](polish-screenshots/tell/mobile-fold.jpg) | [Screenshot](polish-screenshots/tell/tablet-fold.jpg) | [Screenshot](polish-screenshots/tell/desktop-fold.jpg) |
+| Review share | [Screenshot](polish-screenshots/review/mobile-fold.jpg) | [Screenshot](polish-screenshots/review/tablet-fold.jpg) | [Screenshot](polish-screenshots/review/desktop-fold.jpg) |
+| Negotiation status | [Screenshot](polish-screenshots/live/mobile-fold.jpg) | [Screenshot](polish-screenshots/live/tablet-fold.jpg) | [Screenshot](polish-screenshots/live/desktop-fold.jpg) |
+| Bottle question | [Screenshot](polish-screenshots/ask/mobile-fold.jpg) | [Screenshot](polish-screenshots/ask/tablet-fold.jpg) | [Screenshot](polish-screenshots/ask/desktop-fold.jpg) |
+| Agreement | [Screenshot](polish-screenshots/done/mobile-fold.jpg) | [Screenshot](polish-screenshots/done/tablet-fold.jpg) | [Screenshot](polish-screenshots/done/desktop-fold.jpg) |
+| Receipt / tracking | [Screenshot](polish-screenshots/receipt/mobile-fold.jpg) | [Screenshot](polish-screenshots/receipt/tablet-fold.jpg) | [Screenshot](polish-screenshots/receipt/desktop-fold.jpg) |
+| Deal room | [Screenshot](polish-screenshots/deal/mobile-fold.jpg) | [Screenshot](polish-screenshots/deal/tablet-fold.jpg) | [Screenshot](polish-screenshots/deal/desktop-fold.jpg) |
+
+Long-page mobile strips: [Review](polish-screenshots/review/mobile-page-01.jpg), [Receipt](polish-screenshots/receipt/mobile-page-01.jpg), [Deal room](polish-screenshots/deal/mobile-page-01.jpg). The original GD captures and provenance remain intact.
+
+Questions skipped: the user authorized extensive refinement and no new product choice was required.
