@@ -4,14 +4,7 @@ The application is MIT licensed. Dependencies keep their own licenses and notice
 
 ## Magic UI
 
-The following components in `frontend/src/components/magicui/` use the official [Magic UI registry](https://magicui.design/docs/components), downloaded October 7, 2026, with the upstream Motion dependency:
-
-- [Blur Fade](https://magicui.design/r/blur-fade.json): official Motion variants and viewport handling; brief staggered checkout entrance and a finite receipt reveal after all required captures. Blur is disabled. Reduced motion and restored receipts appear immediately.
-- [Animated Beam](https://magicui.design/r/animated-beam.json): original SVG path measurement and Motion gradient; a single indigo confirmation pulse, `repeat={0}`, mounted only after an increased backend authorization count. Disabled with reduced motion.
-- [Number Ticker](https://magicui.design/r/number-ticker.json): original motion value, spring, and number formatting; initializes with the actual backend count, then updates only when that count changes. Reduced motion jumps directly to the verified value. The accessible label always reports the confirmed final count. Financial amounts never animate.
-- [Animated List](https://magicui.design/r/animated-list.json): original keyed Motion items and AnimatePresence; removes timed staged reveals, reversal, scaling, and layout animation. Existing records appear immediately; only newly received backend payment records get a brief transition. Reduced motion displays them immediately.
-
-A local class join replaces the registry's `cn` import; no utility dependency is needed. Activity retains recorded API, reconciliation, webhook, or fixture provenance. No events, authorizations, or provider outcomes are invented.
+The files retained in `frontend/src/components/magicui/` derive from the official [Magic UI registry](https://magicui.design/docs/components): [Blur Fade](https://magicui.design/r/blur-fade.json), [Animated Beam](https://magicui.design/r/animated-beam.json), [Number Ticker](https://magicui.design/r/number-ticker.json), and [Animated List](https://magicui.design/r/animated-list.json). They use the existing Motion dependency. Their upstream license is retained below. The Rally member experience limits motion to the final-price presentation and calm progress; fixtures never establish payment success.
 
 MIT License
 
@@ -37,11 +30,11 @@ SOFTWARE.
 
 ## Fonts
 
-Archivo by Omnibus-Type, distributed through Fontsource. SIL Open Font License 1.1. The font's OFL is copied to `frontend/public/assets/Archivo-OFL.txt` and ships with the site. Font files are self-hosted.
+Schibsted Grotesk and IBM Plex Mono are bundled from the official [Google Fonts repository](https://github.com/google/fonts/tree/45e3d5269e4a17d823f6d84470bc084dc5ae46f6), pinned to commit `45e3d5269e4a17d823f6d84470bc084dc5ae46f6`. Both use the SIL Open Font License 1.1. Their full notices ship in `frontend/public/fonts/SchibstedGrotesk-OFL.txt` and `IBMPlexMono-OFL.txt`. No remote font request is needed at runtime.
 
 ## Original assets
 
-The storefront name, product names, merchant, and SVG product assets were created for this demo. They imply no affiliation with Amazon, PayPal, or any physical manufacturer. PayPal's official SDK button is loaded only in connected mode.
+Haneul Beauty and Dalbit are fictional demo names. Product illustrations in `design/mockup/html/img/` and generated Dalbit product renders are scenario assets, not evidence of real stock, fulfillment or retail offers. Sponsor SDK branding retains its own terms.
 
 ## React, React DOM, and Scheduler
 

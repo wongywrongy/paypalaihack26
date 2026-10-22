@@ -1,5 +1,5 @@
 {
-  "name": "coalition-storefront",
+  "name": "rally-frontend",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -7,10 +7,10 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "test:render": "esbuild tests/render-check.tsx --bundle --platform=node --jsx=automatic --outfile=test-results/render-check.cjs && node test-results/render-check.cjs"
   },
   "dependencies": {
-    "@fontsource-variable/archivo": "https://registry.npmjs.org/@fontsource-variable/archivo/-/archivo-5.3.0.tgz",
     "motion": "14.0.0",
     "react": "19.2.6",
     "react-dom": "19.2.6"
