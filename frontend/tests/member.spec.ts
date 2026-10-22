@@ -37,7 +37,12 @@ for (const [route, heading] of screens) {
     await expect(page.getByText('Example', { exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width);
     expect(await page.evaluate(() => document.fonts.check('400 16px "Schibsted Grotesk"') && document.fonts.check('400 16px "IBM Plex Mono"'))).toBe(true);
-    if (route !== 'receipt') expect(await page.locator('img').evaluateAll(images => images.every(image => image.complete && image.naturalWidth > 0))).toBe(true);
+    if (route !== 'receipt') {
+      await expect.poll(
+        () => page.locator('img').evaluateAll(images => images.every(image => image.complete && image.naturalWidth > 0)),
+        { timeout: 5_000, message: 'All product images must finish loading successfully' },
+      ).toBe(true);
+    }
     if (route !== 'deal') {
       await expect(page.locator('.primary')).toHaveCount(1);
       const box = await page.locator('.primary').boundingBox();

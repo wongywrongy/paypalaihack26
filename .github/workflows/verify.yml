@@ -87,10 +87,6 @@ jobs:
           "$cli" -s=rally-gd screenshot --filename design/screenshots/deal-cli-desktop.png --full-page
           "$cli" -s=rally-gd run-code "$check_layout"
           "$cli" -s=rally-gd console error
-      - name: Install Chromium for browser tests
-        timeout-minutes: 3
-        run: cd frontend && npx playwright install chromium
-      - run: npm run test:browser --prefix frontend
       - name: Export public fixture screenshots for temporary visual review
         run: |
           python - <<'PY'
@@ -106,6 +102,10 @@ jobs:
               assert data.startswith(b"\x89PNG\r\n\x1a\n"), f"Not a PNG: {path.name}"
               print("RALLY_REVIEW_IMAGE", path.name, hashlib.sha256(data).hexdigest(), base64.b64encode(data).decode("ascii"), flush=True)
           PY
+      - name: Install Chromium for browser tests
+        timeout-minutes: 3
+        run: cd frontend && npx playwright install chromium
+      - run: npm run test:browser --prefix frontend
       - uses: actions/upload-artifact@v4
         if: always()
         with:
