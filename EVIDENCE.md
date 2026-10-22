@@ -17,3 +17,9 @@
 - Read-only PayPal connectivity preflight returned `httpx.ConnectError`. No order, authorization, capture, void, refund or payout was created; no provider IDs exist for this run. G1 is **not passed**.
 - Compose configuration validates with the retained `paypalaihack26_coalition_data` volume and three existing service types. No container, Rootlane environment, deployment, PayPal app or public route was changed.
 - GD remains **pending actual browser renders and interaction review**. Exact Playwright CLI capture commands and critique status: [frontend/design/GD.md](frontend/design/GD.md). G1 human approval procedure: [docs/DEMO.md](docs/DEMO.md) and `scripts/paypal_sandbox.py --help`. M2–M5 have not started; PLAN.md requires G1 first.
+
+## October 22, 2026 — first PostgreSQL CI run
+
+- Published the source to `rally` (`8a26f55`); no deployment configuration was applied externally.
+- [Actions run 39837098056](https://github.com/wongywrongy/paypalaihack26/actions/runs/39837098056) executed all 30 backend tests with PostgreSQL 16: **29 passed, 1 error**. Order completion incorrectly read an ID from the purchase unit. Corrected it to use the validated top-level order, with a realistic local regression that failed before the fix.
+- Local correction checks: **26 passed, 5 PostgreSQL skips**, Ruff and diff checks passed. CI rerun is required. Initial CI stopped before frontend/browser steps, so no screenshots or browser pass are claimed.

@@ -192,6 +192,34 @@ class PaymentContracts(unittest.TestCase):
             **kwargs,
         )
 
+    def test_order_uses_top_level_id_when_purchase_unit_has_no_id(self):
+        order = {
+            "id": "ORDER-NEW",
+            "intent": "AUTHORIZE",
+            "status": "CREATED",
+            "purchase_units": [
+                {
+                    "custom_id": str(self.db.member["id"]),
+                    "amount": paypal.money(self.db.member["max_cents"]),
+                    "payee": {"merchant_id": "MERCHANT-TEST"},
+                }
+            ],
+        }
+        with (
+            patch.object(ledger, "paypal", return_value=order),
+            patch.object(self.db, "execute", wraps=self.db.execute) as execute,
+        ):
+            self.assertEqual(self.perform("order", "hold:member:1"), order)
+        op = self.db.ops["hold:member:1"]
+        self.assertEqual(op["provider_ref"], "ORDER-NEW")
+        self.assertEqual(op["status"], "completed")
+        hold_insert = next(
+            call
+            for call in execute.call_args_list
+            if call.args[0].startswith("INSERT INTO holds")
+        )
+        self.assertEqual(hold_insert.args[1][2], "ORDER-NEW")
+
     def transport(self, method, path, body=None, **kwargs):
         self.assertFalse(self.db.locked, "No DB lock may span a provider call")
         if method == "GET":

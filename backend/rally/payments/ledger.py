@@ -145,7 +145,7 @@ def checked_result(op, data):
     ref = resource["id"] if kind == "authorize" else data["id"]
     if op.get("provider_ref") and ref != op["provider_ref"]:
         raise RecoveryRequired("Provider GET resource identity changed.")
-    return resource
+    return data if kind == "order" else resource
 
 
 def finish(db, op, data):
