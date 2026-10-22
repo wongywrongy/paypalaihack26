@@ -47,6 +47,7 @@ Docker and Render configurations are being adapted for the same application and 
 PYTHONPATH=backend .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/ruff check --isolated --select E4,E7,E9,F,I --ignore E402 backend tests scripts
 npm run build --prefix frontend
+npm run test:render --prefix frontend
 npm run test:browser --prefix frontend
 ```
 

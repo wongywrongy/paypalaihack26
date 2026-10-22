@@ -2,7 +2,7 @@
 
 - Read PLAN.md first. Its "Decisions locked" table is settled; ask before changing any of it.
 - Design reference: design/mockup/ (screens/*.png, html/*.html). Numbers: design/scenario/scenario.json.
-- README.md and VERIFICATION.md still describe the retired Coalition app; ignore them until M0 replaces them.
+- README.md describes current Rally capabilities; EVIDENCE.md records executed checks and pending gates.
 - Two tracks may run at once. The design track owns frontend/; the backend track owns backend/,
   tests/ and scripts/. Don't edit the other track's folders without asking.
 - Money is integer cents. Never charge above a member's max: assert it before every capture and refund.

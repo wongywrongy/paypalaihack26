@@ -35,7 +35,43 @@ jobs:
       - run: npm ci --prefix frontend
       - run: npm run build --prefix frontend
       - run: npm run test:render --prefix frontend
-      - run: cd frontend && npx playwright install --with-deps chromium
+      - name: Capture screens with Playwright CLI and runner Chrome
+        timeout-minutes: 3
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+          XDG_CACHE_HOME: ${{ runner.temp }}/rally-playwright-cache
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/rally-playwright-cli" --no-save --package-lock=false --no-audit --no-fund @playwright/cli@0.1.22
+          cli="$RUNNER_TEMP/rally-playwright-cli/node_modules/.bin/playwright-cli"
+          google-chrome --version
+          cd frontend
+          mkdir -p design/screenshots
+          ./node_modules/.bin/vite --host 127.0.0.1 --port 5173 --strictPort > "$RUNNER_TEMP/rally-vite.log" 2>&1 &
+          vite_pid=$!
+          trap 'timeout 10 "$cli" -s=rally-gd close || true; kill "$vite_pid" 2>/dev/null || true; wait "$vite_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent --max-time 2 http://127.0.0.1:5173/invite > /dev/null; then break; fi
+            if ! kill -0 "$vite_pid" 2>/dev/null; then cat "$RUNNER_TEMP/rally-vite.log"; exit 1; fi
+            sleep 1
+          done
+          curl --fail --silent --show-error --max-time 2 http://127.0.0.1:5173/invite > /dev/null
+          check_layout='async page => { await page.evaluate(async () => { await document.fonts.ready; if (document.documentElement.scrollWidth > window.innerWidth) throw new Error("Horizontal page overflow"); }); }'
+          "$cli" -s=rally-gd open http://127.0.0.1:5173/invite --browser chrome
+          "$cli" -s=rally-gd resize 390 844
+          "$cli" -s=rally-gd set-reduced-motion reduce
+          for route in invite tell review live ask done receipt deal; do
+            "$cli" -s=rally-gd goto "http://127.0.0.1:5173/$route"
+            "$cli" -s=rally-gd run-code "$check_layout"
+            "$cli" -s=rally-gd screenshot --filename "design/screenshots/$route-cli-mobile.png" --full-page
+          done
+          "$cli" -s=rally-gd resize 1440 900
+          "$cli" -s=rally-gd goto http://127.0.0.1:5173/deal
+          "$cli" -s=rally-gd run-code "$check_layout"
+          "$cli" -s=rally-gd screenshot --filename design/screenshots/deal-cli-desktop.png --full-page
+      - name: Install Chromium for browser tests
+        timeout-minutes: 3
+        run: cd frontend && npx playwright install chromium
       - run: npm run test:browser --prefix frontend
       - uses: actions/upload-artifact@v4
         if: always()
