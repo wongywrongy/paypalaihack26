@@ -40,6 +40,7 @@ class MemoryLedger:
             "authorization_id": "AUTH-1",
             "order_id": "ORDER-1",
             "amount_cents": 10000,
+            "currency": "USD",
             "status": "AUTHORIZED",
             "honor_until": datetime.now(timezone.utc) + timedelta(days=2),
         }
@@ -220,6 +221,96 @@ class PaymentContracts(unittest.TestCase):
         )
         self.assertEqual(hold_insert.args[1][2], "ORDER-NEW")
 
+    def test_cad_order_persists_currency_in_intent_and_hold(self):
+        order = {
+            "id": "ORDER-CAD",
+            "intent": "AUTHORIZE",
+            "status": "CREATED",
+            "purchase_units": [
+                {
+                    "custom_id": str(self.db.member["id"]),
+                    "amount": paypal.money(10000, "CAD"),
+                    "payee": {"merchant_id": "MERCHANT-TEST"},
+                }
+            ],
+        }
+        with (
+            patch.object(ledger, "paypal", return_value=order) as provider,
+            patch.object(self.db, "execute", wraps=self.db.execute) as execute,
+        ):
+            self.perform("order", "cad-order", currency="CAD")
+            self.assertEqual(self.perform("order", "cad-order", currency="CAD"), order)
+            with self.assertRaisesRegex(ValueError, "different payment terms"):
+                self.perform("order", "cad-order", currency="USD")
+            self.assertEqual(provider.call_count, 1)
+        self.assertEqual(
+            provider.call_args.args[2]["purchase_units"][0]["amount"]["currency_code"],
+            "CAD",
+        )
+        self.assertEqual(self.db.ops["cad-order"]["request"]["currency"], "CAD")
+        insert = next(
+            c
+            for c in execute.call_args_list
+            if c.args[0].startswith("INSERT INTO holds")
+        )
+        self.assertEqual(insert.args[1][-1], "CAD")
+
+    def test_cad_pending_capture_and_refund_inherit_original_currency(self):
+        self.db.hold["currency"] = "CAD"
+
+        def cad_payment(kind, cents):
+            return {**payment(kind, cents), "amount": paypal.money(cents, "CAD")}
+
+        def provider(method, path, body=None, **kwargs):
+            if method == "GET":
+                return cad_payment("authorization", 10000)
+            self.assertEqual(body["amount"], paypal.money(100, "CAD"))
+            return {**cad_payment("capture", 100), "status": "PENDING"}
+
+        with patch.object(ledger, "paypal", side_effect=provider):
+            self.perform(
+                "capture", "cad-capture", resource_id="AUTH-1", amount_cents=100
+            )
+        self.assertEqual(self.db.ops["cad-capture"]["status"], "pending")
+        with patch.object(ledger, "paypal", return_value=payment("capture", 100)):
+            with self.assertRaisesRegex(paypal.RecoveryRequired, "currency mismatch"):
+                ledger.reconcile(self.db, "cad-capture")
+        self.assertEqual(self.db.ops["cad-capture"]["status"], "pending")
+        with patch.object(ledger, "paypal", return_value=cad_payment("capture", 100)):
+            ledger.reconcile(self.db, "cad-capture")
+        self.assertEqual(self.db.ops["cad-capture"]["status"], "completed")
+        with patch.object(
+            ledger, "paypal", return_value=cad_payment("refund", 100)
+        ) as network:
+            self.perform(
+                "refund", "cad-refund", resource_id="CAPTURE-1", amount_cents=100
+            )
+        self.assertEqual(network.call_args.args[2]["amount"], paypal.money(100, "CAD"))
+        self.assertEqual(self.db.ops["cad-refund"]["request"]["currency"], "CAD")
+
+    def test_currency_mismatch_and_non_usd_payout_never_reach_provider(self):
+        self.db.hold["currency"] = "CAD"
+        with patch.object(ledger, "paypal") as provider:
+            for currency in ("USD", "EUR", "KRW"):
+                with self.subTest(currency=currency), self.assertRaises(ValueError):
+                    self.perform(
+                        "capture",
+                        "bad-" + currency,
+                        resource_id="AUTH-1",
+                        amount_cents=100,
+                        currency=currency,
+                    )
+            with self.assertRaisesRegex(ValueError, "payouts must be USD"):
+                ledger.perform(
+                    self.db,
+                    "payout",
+                    "bad-payout",
+                    pool_id=self.db.pool["id"],
+                    amount_cents=50,
+                    currency="CAD",
+                )
+            provider.assert_not_called()
+
     def transport(self, method, path, body=None, **kwargs):
         self.assertFalse(self.db.locked, "No DB lock may span a provider call")
         if method == "GET":
@@ -259,6 +350,10 @@ class PaymentContracts(unittest.TestCase):
                 {"amount": paypal.money(9000), "final_capture": True},
             )
             self.assertEqual(len(mutations[0].kwargs["key"]), 36)
+            self.assertNotIn("currency", self.db.ops["capture:allocation-1"]["request"])
+            self.assertNotIn(
+                "currency", self.db.ops["capture:allocation-1"]["request"]["input"]
+            )
 
     def test_reused_key_cannot_change_terms(self):
         with patch.object(ledger, "paypal", side_effect=self.transport):
@@ -563,6 +658,17 @@ class PaymentContracts(unittest.TestCase):
             self.assertFalse(
                 paypal.amount_matches({"currency_code": "USD", "value": value}, 10000)
             )
+
+    def test_only_supported_two_decimal_currencies_can_be_encoded(self):
+        for currency in ("USD", "CAD", "GBP", "EUR", "AUD"):
+            with self.subTest(currency=currency):
+                amount = paypal.money(123, currency)
+                self.assertEqual(amount, {"currency_code": currency, "value": "1.23"})
+                self.assertTrue(paypal.amount_matches(amount, 123, currency))
+                self.assertFalse(paypal.amount_matches(amount, 124, currency))
+        for currency in ("KRW", "JPY", "cad", "", None):
+            with self.subTest(currency=currency), self.assertRaises(ValueError):
+                paypal.money(123, currency)
 
 
 class TransportContracts(unittest.TestCase):

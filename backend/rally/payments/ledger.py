@@ -140,7 +140,11 @@ def checked_result(op, data):
             raise RecoveryRequired("Provider payment parent link mismatch.")
         if kind == "capture" and resource.get("final_capture") is not True:
             raise RecoveryRequired("Provider capture was not final.")
-    if not amount_matches(resource.get("amount", {}), request["amount_cents"]):
+    if not amount_matches(
+        resource.get("amount", {}),
+        request["amount_cents"],
+        request.get("currency", "USD"),
+    ):
         raise RecoveryRequired("Provider amount or currency mismatch.")
     ref = resource["id"] if kind == "authorize" else data["id"]
     if op.get("provider_ref") and ref != op["provider_ref"]:
@@ -193,8 +197,15 @@ def _finish(db, op, data):
         return op["response"]
     if kind == "order":
         db.execute(
-            "INSERT INTO holds(id,member_id,order_id,amount_cents,status) VALUES(%s,%s,%s,%s,%s) ON CONFLICT(order_id) DO NOTHING",
-            (uuid4(), op["member_id"], ref, request["amount_cents"], "CREATED"),
+            "INSERT INTO holds(id,member_id,order_id,amount_cents,status,currency) VALUES(%s,%s,%s,%s,%s,%s) ON CONFLICT(order_id) DO NOTHING",
+            (
+                uuid4(),
+                op["member_id"],
+                ref,
+                request["amount_cents"],
+                "CREATED",
+                request.get("currency", "USD"),
+            ),
         )
     elif kind == "authorize" and not pending:
         created = datetime.fromisoformat(result["create_time"].replace("Z", "+00:00"))
@@ -261,6 +272,7 @@ def perform(
     resource_id=None,
     return_url=None,
     cancel_url=None,
+    currency=None,
 ):
     if not settings.paypal_merchant_id:
         raise RecoveryRequired(
@@ -274,6 +286,10 @@ def perform(
         raise ValueError("A stable, bounded idempotency key is required.")
     if kind == "payout" and member_id is not None:
         raise ValueError("A payout belongs to a pool, never a member.")
+    if currency is not None:
+        money(1, currency)
+    if kind == "payout" and currency not in (None, "USD"):
+        raise ValueError("Shop payouts must be USD.")
     with payment_lock(db, member_id or pool_id):
         db.execute(
             "SELECT pg_advisory_xact_lock(hashtextextended(%s,3))", (request_id,)
@@ -285,6 +301,9 @@ def perform(
             "return_url": return_url,
             "cancel_url": cancel_url,
         }
+        # Omitted currency preserves the identity of pre-v2 USD operations.
+        if currency is not None:
+            identity["currency"] = currency
         if previous:
             if (
                 previous["kind"] != kind
@@ -318,6 +337,7 @@ def perform(
                 raise ValueError("Unknown pool member.")
         wire_key = str(uuid5(NAMESPACE_URL, "rally:" + request_id))
         body = {}
+        payment_currency = currency or "USD"
         if kind == "order":
             amount_cents = member["max_cents"]
             if pool["state"] != "OPEN":
@@ -330,7 +350,10 @@ def perform(
             body = {
                 "intent": "AUTHORIZE",
                 "purchase_units": [
-                    {"custom_id": str(member_id), "amount": money(amount_cents)}
+                    {
+                        "custom_id": str(member_id),
+                        "amount": money(amount_cents, payment_currency),
+                    }
                 ],
             }
             if return_url or cancel_url:
@@ -361,6 +384,7 @@ def perform(
             ).fetchone()
             if not hold or hold["amount_cents"] != member["max_cents"]:
                 raise ValueError("Hold does not match member max.")
+            payment_currency = hold["currency"]
             amount_cents = hold["amount_cents"]
             path = resource_path("order", resource_id) + "/authorize"
         elif kind in ("capture", "void"):
@@ -370,6 +394,7 @@ def perform(
             ).fetchone()
             if not hold or hold["status"] != "AUTHORIZED":
                 raise ValueError("Member has no active authorization.")
+            payment_currency = hold["currency"]
             path = resource_path("authorize", resource_id) + "/" + kind
             if kind == "capture":
                 money(amount_cents)
@@ -384,7 +409,10 @@ def perform(
                     raise RecoveryRequired(
                         "Authorization honor period expired; reapprove a new hold."
                     )
-                body = {"amount": money(amount_cents), "final_capture": True}
+                body = {
+                    "amount": money(amount_cents, payment_currency),
+                    "final_capture": True,
+                }
         elif kind == "refund":
             money(amount_cents)
             capture = db.execute(
@@ -393,6 +421,7 @@ def perform(
             ).fetchone()
             if not capture:
                 raise ValueError("Unknown member capture.")
+            payment_currency = capture["request"].get("currency", "USD")
             reserved = db.execute(
                 "SELECT COALESCE(sum((request->>'amount_cents')::integer),0) AS total FROM payment_ops WHERE kind='refund' AND request->>'resource_id'=%s AND status!='failed'",
                 (resource_id,),
@@ -402,7 +431,7 @@ def perform(
                 or amount_cents + reserved > capture["request"]["amount_cents"]
             ):
                 raise ValueError("Refund exceeds member max or unrefunded capture.")
-            body = {"amount": money(amount_cents)}
+            body = {"amount": money(amount_cents, payment_currency)}
             path = resource_path("capture", resource_id) + "/refund"
         elif kind == "payout":
             money(amount_cents)
@@ -441,6 +470,8 @@ def perform(
             path = "/v1/payments/payouts"
         else:
             raise ValueError("Unknown payment operation.")
+        if currency is not None and currency != payment_currency:
+            raise ValueError("Currency must match the original payment.")
         request = {
             "input": identity,
             "path": path,
@@ -449,6 +480,8 @@ def perform(
             "amount_cents": amount_cents,
             "wire_key": wire_key,
         }
+        if payment_currency != "USD":
+            request["currency"] = payment_currency
         if previous and previous["request"] != request:
             raise ValueError(
                 "Payment terms changed; create a new versioned operation key."
@@ -472,7 +505,10 @@ def perform(
                 {
                     "kind": "order",
                     "member_id": member_id,
-                    "request": {"amount_cents": amount_cents},
+                    "request": {
+                        "amount_cents": amount_cents,
+                        "currency": payment_currency,
+                    },
                 },
                 order,
             )
@@ -483,7 +519,9 @@ def perform(
             if (
                 auth.get("id") != resource_id
                 or auth.get("status") != "CREATED"
-                or not amount_matches(auth.get("amount", {}), hold["amount_cents"])
+                or not amount_matches(
+                    auth.get("amount", {}), hold["amount_cents"], payment_currency
+                )
             ):
                 raise RecoveryRequired(
                     "Authorization no longer available or amount mismatch."

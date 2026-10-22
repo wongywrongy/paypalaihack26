@@ -90,7 +90,7 @@ class DatabaseContracts(unittest.TestCase):
                 db.execute("SELECT count(*) AS n FROM schema_migrations").fetchone()[
                     "n"
                 ],
-                1,
+                2,
             )
             with self.assertRaises(psycopg.errors.CheckViolation):
                 db.execute(
@@ -102,6 +102,25 @@ class DatabaseContracts(unittest.TestCase):
                     "SELECT max_cents FROM members WHERE id=%s", (self.member,)
                 ).fetchone()["max_cents"],
                 200,
+            )
+            hold = uuid4()
+            self.assertEqual(
+                db.execute(
+                    "INSERT INTO holds(id,member_id,order_id,amount_cents,status) VALUES(%s,%s,'ORDER-MIGRATION',200,'CREATED') RETURNING currency",
+                    (hold, self.member),
+                ).fetchone()["currency"],
+                "USD",
+            )
+            db.execute("UPDATE holds SET currency='CAD' WHERE id=%s", (hold,))
+            db.commit()
+            with self.assertRaises(psycopg.errors.CheckViolation):
+                db.execute("UPDATE holds SET currency='JPY' WHERE id=%s", (hold,))
+            db.rollback()
+            self.assertEqual(
+                db.execute(
+                    "SELECT currency FROM holds WHERE id=%s", (hold,)
+                ).fetchone()["currency"],
+                "CAD",
             )
 
     def test_job_claim_has_one_lane_and_excludes_active_lease(self):
@@ -119,7 +138,7 @@ class DatabaseContracts(unittest.TestCase):
         entered, release = Event(), Event()
         with database.connect() as db:
             db.execute(
-                "INSERT INTO holds VALUES(%s,%s,'ORDER-C','AUTH-C',200,'AUTHORIZED',now()+interval '2 days',now()+interval '29 days')",
+                "INSERT INTO holds(id,member_id,order_id,authorization_id,amount_cents,status,honor_until,expires_at) VALUES(%s,%s,'ORDER-C','AUTH-C',200,'AUTHORIZED',now()+interval '2 days',now()+interval '29 days')",
                 (uuid4(), self.member),
             )
         pid = []
@@ -232,7 +251,9 @@ class DatabaseContracts(unittest.TestCase):
                 auth["status"] = "CAPTURED"
                 data = copy.deepcopy(fixture["capture"])
                 data.update(
-                    id="CAPTURE-TEST",
+                    id="CAPTURE-CAD"
+                    if body["amount"]["currency_code"] == "CAD"
+                    else "CAPTURE-TEST",
                     amount=body["amount"],
                     links=[
                         {
@@ -381,7 +402,39 @@ class DatabaseContracts(unittest.TestCase):
                 script = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(script)
                 with patch("rally.payments.paypal.paypal", side_effect=provider):
+                    evidence = script.verify_run(db, self.pool, require_cad=False)
+                    with self.assertRaisesRegex(
+                        RuntimeError, "Complete cad-order first"
+                    ):
+                        script.verify_run(db, self.pool)
+                    cad_member = script.cad_member(db, self.pool)
+                    self.assertEqual(script.cad_member(db, self.pool), cad_member)
+                    script.members(db, self.pool)
+                    cad_order = perform(
+                        "order", "cad-order", cad_member, currency="CAD"
+                    )
+                    cad_auth = perform(
+                        "authorize",
+                        "cad-authorize",
+                        cad_member,
+                        resource_id=cad_order["id"],
+                    )["purchase_units"][0]["payments"]["authorizations"][0]["id"]
+                    perform(
+                        "capture",
+                        "cad-capture",
+                        cad_member,
+                        resource_id=cad_auth,
+                        amount_cents=100,
+                    )
                     evidence = script.verify_run(db, self.pool)
+                    self.assertEqual(evidence["cad-capture"], "CAPTURE-CAD")
+                    self.assertEqual(
+                        db.execute(
+                            "SELECT currency FROM holds WHERE member_id=%s",
+                            (cad_member,),
+                        ).fetchone()["currency"],
+                        "CAD",
+                    )
                 self.assertEqual(evidence["webhooks"], ["WH-TEST"])
 
     def test_bad_signature_is_persisted_without_fetching_or_processing_money(self):

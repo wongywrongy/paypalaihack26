@@ -92,9 +92,31 @@ def members(db, run_id):
         "SELECT id,display_name FROM members WHERE pool_id=%s", (run_id,)
     ).fetchall()
     selected = {row["display_name"]: row["id"] for row in rows}
-    if set(selected) != {"Capture check", "Void check"}:
+    if not {"Capture check", "Void check"} <= set(selected) or set(selected) - {
+        "Capture check",
+        "Void check",
+        "CAD check",
+    }:
         raise ValueError("This is not a G1 sandbox run.")
     return selected["Capture check"], selected["Void check"]
+
+
+def cad_member(db, run_id):
+    from rally.payments.ledger import payment_lock
+
+    with payment_lock(db, run_id):
+        row = db.execute(
+            "SELECT id FROM members WHERE pool_id=%s AND display_name='CAD check'",
+            (run_id,),
+        ).fetchone()
+        if row:
+            return row["id"]
+        member_id = uuid4()
+        db.execute(
+            "INSERT INTO members(id,pool_id,display_name,raw_text,max_cents) VALUES(%s,%s,'CAD check','Real sandbox CAD check',200)",
+            (member_id, run_id),
+        )
+        return member_id
 
 
 def result(db, run_id, step):
@@ -108,12 +130,12 @@ def result(db, run_id, step):
     return op
 
 
-def verify_run(db, run_id):
+def verify_run(db, run_id, *, require_cad=True):
     from rally.payments.ledger import checked_result, operation, reconcile
     from rally.payments.paypal import amount_matches, paypal, resource_path
 
     ids = {"run": str(run_id)}
-    for step, kind in (
+    steps = (
         ("order", "order"),
         ("authorize", "authorize"),
         ("capture", "capture"),
@@ -122,12 +144,24 @@ def verify_run(db, run_id):
         ("void", "void"),
         ("refund", "refund"),
         ("payout", "payout"),
-    ):
+    )
+    if require_cad:
+        steps += (
+            ("cad-order", "order"),
+            ("cad-authorize", "authorize"),
+            ("cad-capture", "capture"),
+        )
+    for step, kind in steps:
         pending = operation(db, key(run_id, step))
         db.commit()
         if pending and pending["status"] == "pending":
             reconcile(db, key(run_id, step))
         op = result(db, run_id, step)
+        currency = "CAD" if step.startswith("cad-") else "USD"
+        if op["request"].get("currency", "USD") != currency:
+            raise RuntimeError(
+                "Recorded payment currency does not match the proof step."
+            )
         db.commit()
         ref = op["provider_ref"]
         if ref.startswith("FIXTURE"):
@@ -138,7 +172,7 @@ def verify_run(db, run_id):
                 data.get("id") != ref
                 or data.get("status")
                 not in ("CREATED", "CAPTURED", "VOIDED", "PARTIALLY_CAPTURED")
-                or not amount_matches(data.get("amount", {}), 200)
+                or not amount_matches(data.get("amount", {}), 200, currency)
             ):
                 raise RuntimeError("Authorization could not be independently verified.")
         else:
@@ -219,7 +253,21 @@ def main(argv=None):
     payout.add_argument("--tracking", required=True)
     commands.add_parser(
         "verify",
-        help="GET all resources; require successful payout and a genuine verified webhook.",
+        help="Verify full v2 G1: USD lifecycle, payout, genuine verified webhook and completed CAD payment.",
+    )
+    commands.add_parser(
+        "verify-usd",
+        help="Verify legacy USD lifecycle only; this does not establish v2 G1.",
+    )
+    cad_start = commands.add_parser(
+        "cad-start",
+        help="After USD payout succeeds: create a C$2 hold; buyer approval required.",
+    )
+    cad_start.add_argument("--return-url", required=True)
+    cad_start.add_argument("--cancel-url", required=True)
+    commands.add_parser(
+        "cad-charge",
+        help="After CAD approval: authorize C$2 and final capture C$1.",
     )
     reconcile = commands.add_parser(
         "reconcile",
@@ -236,6 +284,9 @@ def main(argv=None):
             "void",
             "refund",
             "payout",
+            "cad-order",
+            "cad-authorize",
+            "cad-capture",
         ),
     )
     args = parser.parse_args(argv)
@@ -289,6 +340,48 @@ def main(argv=None):
         if args.command == "reconcile":
             reconcile(db, key(run_id, args.step))
             print("Reconciled", args.step)
+            return
+        if args.command == "cad-start":
+            result(db, run_id, "payout")
+            data = perform(
+                db,
+                "order",
+                key(run_id, "cad-order"),
+                pool_id=run_id,
+                member_id=cad_member(db, run_id),
+                currency="CAD",
+                return_url=args.return_url,
+                cancel_url=args.cancel_url,
+            )
+            print(
+                "Approve this C$2.00 sandbox hold with a CAD buyer account:",
+                approval(data),
+            )
+            print("Then run --run", run_id, "cad-charge. It final-captures C$1.00.")
+            return
+        if args.command == "cad-charge":
+            cad_order = result(db, run_id, "cad-order")
+            member_id = cad_member(db, run_id)
+            data = perform(
+                db,
+                "authorize",
+                key(run_id, "cad-authorize"),
+                pool_id=run_id,
+                member_id=member_id,
+                resource_id=cad_order["provider_ref"],
+            )
+            auth = data["purchase_units"][0]["payments"]["authorizations"][0]["id"]
+            perform(
+                db,
+                "capture",
+                key(run_id, "cad-capture"),
+                pool_id=run_id,
+                member_id=member_id,
+                resource_id=auth,
+                amount_cents=100,
+            )
+            result(db, run_id, "cad-capture")
+            print("CAD capture completed. Run verify for the complete v2 G1 proof.")
             return
         order = result(db, run_id, "order")
         if args.command == "charge":
@@ -371,14 +464,20 @@ def main(argv=None):
                 db, "payout", key(run_id, "payout"), pool_id=run_id, amount_cents=50
             )
             print(
-                "Shop $0.50 payout submitted. Run verify after the batch/item succeed and the webhook worker processes delivery."
+                "Shop $0.50 payout submitted. After the batch/item succeed, run cad-start --return-url <url> --cancel-url <url>; then verify after the genuine webhook is processed."
             )
         else:
-            ids = verify_run(db, run_id)
-            print("G1 passed:", json.dumps(ids, sort_keys=True))
+            require_cad = args.command == "verify"
+            ids = verify_run(db, run_id, require_cad=require_cad)
+            scope = (
+                "v2 G1 passed"
+                if require_cad
+                else "Legacy USD lifecycle verified; v2 G1 still pending"
+            )
+            print(scope + ":", json.dumps(ids, sort_keys=True))
             print("Append to EVIDENCE.md:")
             print(
-                f"- {datetime.now(timezone.utc).isoformat()}: real sandbox G1 passed; {json.dumps(ids, sort_keys=True)}"
+                f"- {datetime.now(timezone.utc).isoformat()}: real sandbox {scope}; {json.dumps(ids, sort_keys=True)}"
             )
 
 

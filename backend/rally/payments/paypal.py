@@ -9,6 +9,7 @@ import httpx
 from ..config import settings
 
 BASE = "https://api-m.sandbox.paypal.com"
+CURRENCIES = ("USD", "CAD", "GBP", "EUR", "AUD")
 _oauth_lock = Lock()
 _oauth_token = None
 _oauth_expires = 0
@@ -100,18 +101,21 @@ def paypal(method, path, body=None, key=None, raw_json=None):
     )
 
 
-def money(cents):
+def money(cents, currency="USD"):
     if type(cents) is not int or cents <= 0:
         raise ValueError("Money must be positive integer cents.")
-    return {"currency_code": "USD", "value": f"{cents // 100}.{cents % 100:02d}"}
+    if currency not in CURRENCIES:
+        raise ValueError("Unsupported shopper currency.")
+    return {"currency_code": currency, "value": f"{cents // 100}.{cents % 100:02d}"}
 
 
-def amount_matches(data, cents):
+def amount_matches(data, cents, currency="USD"):
     from decimal import Decimal, InvalidOperation
 
     try:
         return (
-            data["currency_code"] == "USD"
+            currency in CURRENCIES
+            and data["currency_code"] == currency
             and isinstance(data["value"], str)
             and Decimal(data["value"]) == Decimal(cents) / 100
         )
