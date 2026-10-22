@@ -78,7 +78,14 @@ test('question safely defaults to new and permits an explicit old-bottle choice'
   await page.reload();
   await page.getByRole('radio', { name: /Old bottle/ }).check();
   await page.getByRole('button', { name: 'Switch to the old bottle' }).click();
-  await expect(page.getByRole('status')).toContainText('You chose the old bottle.');
+  await expect(page.getByRole('status')).toHaveText('You chose the old bottle for this preview. The example deal still shows Aisha’s original answer: keep new.');
+  await expect(page.getByRole('radio', { name: /Old bottle/ })).toBeDisabled();
+  await page.getByRole('button', { name: 'Change this preview choice' }).click();
+  await expect(page.getByRole('radio', { name: /Old bottle/ })).toBeChecked();
+  await expect(page.getByRole('radio', { name: /New bottle/ })).toBeEnabled();
+  await page.getByRole('radio', { name: /New bottle/ }).check();
+  await page.getByRole('button', { name: 'Keep the new bottle' }).click();
+  await expect(page.getByRole('status')).toHaveText('You kept the new bottle.');
 });
 
 test('unknown routes have a recovery action', async ({ page }) => {

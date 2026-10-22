@@ -23,3 +23,9 @@
 - Published the source to `rally` (`8a26f55`); no deployment configuration was applied externally.
 - [Actions run 39837098056](https://github.com/wongywrongy/paypalaihack26/actions/runs/39837098056) executed all 30 backend tests with PostgreSQL 16: **29 passed, 1 error**. Order completion incorrectly read an ID from the purchase unit. Corrected it to use the validated top-level order, with a realistic local regression that failed before the fix.
 - Local correction checks: **26 passed, 5 PostgreSQL skips**, Ruff and diff checks passed. CI rerun is required. Initial CI stopped before frontend/browser steps, so no screenshots or browser pass are claimed.
+
+## October 22, 2026 — rendered CI verification
+
+- [Actions run 39837501453](https://github.com/wongywrongy/paypalaihack26/actions/runs/39837501453), commit `3794a77`: **31/31 backend tests passed with PostgreSQL 16**, Ruff, clean dependency install, frontend build and server-render checks passed. PayPal remained mocked in these tests.
+- Actual Chromium: **22/24 passed**, including every route capture and the member journey on desktop and mobile. Both failures were the same stale question-copy assertion after the honesty correction. Updated that assertion to require the preview disclosure and also test revising the choice; rerun pending.
+- [16 screenshots and failure traces](https://github.com/wongywrongy/paypalaihack26/actions/runs/39837501453/artifacts/12450874005) were produced. Artifact retrieval to this host is blocked, so actual image critique remains pending; GD is not signed off. Local Playwright CLI and a narrower loopback-only bind remain blocked. No outside-sandbox execution occurred.
