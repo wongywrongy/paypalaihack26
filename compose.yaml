@@ -1,3 +1,4 @@
+name: paypalaihack26
 services:
   postgres:
     image: postgres:16-alpine
@@ -19,6 +20,8 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgresql://coalition:coalition@postgres:5432/coalition
+      RALLY_DATABASE_SCHEMA: rally
+      RALLY_MODE: ${RALLY_MODE:-connected}
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8000}
       LLM_BASE_URL: ${LLM_CONTAINER_BASE_URL:-${LLM_BASE_URL:-}}
     ports: ["127.0.0.1:8000:8000"]
@@ -39,10 +42,12 @@ services:
   worker:
     build: .
     restart: unless-stopped
-    command: ["python", "-m", "coalition.worker"]
+    command: ["python", "-m", "rally.worker"]
     env_file: .env
     environment:
       DATABASE_URL: postgresql://coalition:coalition@postgres:5432/coalition
+      RALLY_DATABASE_SCHEMA: rally
+      RALLY_MODE: ${RALLY_MODE:-connected}
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8000}
       LLM_BASE_URL: ${LLM_CONTAINER_BASE_URL:-${LLM_BASE_URL:-}}
     depends_on:

@@ -14,3 +14,7 @@ frontend/playwright-report/
 .ruff_cache/
 .pytest_cache/
 .runtime/
+
+# Local skill research and dependency links are not application source.
+.taste-skill/
+frontend/node_modules

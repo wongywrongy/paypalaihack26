@@ -8,16 +8,16 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_USER: coalition
-          POSTGRES_PASSWORD: coalition
-          POSTGRES_DB: coalition_test
+          POSTGRES_USER: rally
+          POSTGRES_PASSWORD: rally
+          POSTGRES_DB: rally_test
         ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U coalition"
+          --health-cmd "pg_isready -U rally"
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
-      COALITION_MODE: fixture
-      COALITION_TEST_DATABASE_URL: postgresql://coalition:coalition@localhost:5432/coalition_test
+      RALLY_MODE: connected
+      RALLY_TEST_DATABASE_URL: postgresql://rally:rally@localhost:5432/rally_test
       PYTHONPATH: backend
     steps:
       - uses: actions/checkout@v4
@@ -34,5 +34,14 @@ jobs:
       - run: ruff check --isolated --select E4,E7,E9,F,I --ignore E402 backend tests scripts
       - run: npm ci --prefix frontend
       - run: npm run build --prefix frontend
+      - run: npm run test:render --prefix frontend
       - run: cd frontend && npx playwright install --with-deps chromium
-      - run: npm run test:browser --prefix frontend -- tests/buyer.spec.ts tests/checkout.spec.ts tests/storefront.spec.ts tests/negotiation-ui.spec.ts
+      - run: npm run test:browser --prefix frontend
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rally-browser-evidence
+          path: |
+            frontend/design/screenshots/*.png
+            frontend/test-results/
+          if-no-files-found: ignore

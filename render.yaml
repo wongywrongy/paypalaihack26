@@ -10,19 +10,19 @@ databases:
 envVarGroups:
   - name: coalition-shared
     envVars:
-      - key: COALITION_MODE
+      - key: RALLY_MODE
         value: connected
-      - key: OPERATOR_TOKEN
-        generateValue: true
+      - key: RALLY_DATABASE_SCHEMA
+        value: rally
       - key: LLM_MODEL
-        value: qwen3:30b-a3b-instruct-2507-q4_K_M
+        value: ""
       - key: LLM_BASE_URL
         value: ""
       - key: LLM_PROTOCOL
-        value: ollama
-      - key: PAYPAL_PAYMENTS_RETRY_HOURS
-        value: "0"
-# Set PUBLIC_URL, PayPal credentials/merchant/webhook IDs, and LLM_API_KEY in this
+        value: openai
+# Existing Render resource names are retained to preserve the database and services.
+# Set PUBLIC_URL, PayPal credentials/merchant/webhook IDs, PAYPAL_SHOP_EMAIL,
+# LLM_BASE_URL, LLM_MODEL and LLM_API_KEY in this
 # shared group in the dashboard. sync:false is unsupported inside envVarGroups.
 services:
   - type: web
@@ -30,8 +30,8 @@ services:
     runtime: python
     plan: 0.5c-512mb
     buildCommand: pip install -r backend/requirements.txt
-    preDeployCommand: PYTHONPATH=backend python -m coalition.db
-    startCommand: PYTHONPATH=backend uvicorn coalition.main:app --host 0.0.0.0 --port $PORT
+    preDeployCommand: PYTHONPATH=backend python -m rally.db
+    startCommand: PYTHONPATH=backend uvicorn rally.api:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/health
     envVars:
       - fromGroup: coalition-shared
@@ -43,7 +43,7 @@ services:
     plan: 0.5c-512mb
     numInstances: 1
     buildCommand: pip install -r backend/requirements.txt
-    startCommand: PYTHONPATH=backend python -m coalition.worker
+    startCommand: PYTHONPATH=backend python -m rally.worker
     envVars:
       - fromGroup: coalition-shared
       - key: DATABASE_URL

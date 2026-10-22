@@ -1,43 +1,10 @@
-# Coalition five-buyer sandbox demonstration
+# Rally demo gates
 
-## Prerequisites and current blockers
+Use [PLAN.md](../PLAN.md#codex-prompts) for the current prompts and scope. The retired Coalition demo is not a Rally payment demonstration.
 
-Use the existing React/API/single-worker/PostgreSQL deployment; check the latest deployment evidence in `VERIFICATION.md`. The API and worker must run the same revision, with the configured real model, `COALITION_MODE=connected`, sandbox app credentials, `PAYPAL_MERCHANT_ID`, and the webhook registration belonging to that app. Preserve the database and apply additive migrations. Never reset payment history.
+1. **Design / GD:** run the frontend scenario preview. Inspect Invite, Tell, Review, Live, Ask, Done, Receipt and the deal room at 390 px. It uses the committed scenario; it does not authorize a payment. Capture actual Playwright screenshots and fix the Impeccable critique before claiming GD.
+2. **Payments / G1:** configure the sandbox merchant ID, separate shop payout email, app credentials and webhook. Run `scripts/paypal_sandbox.py --help` and its explicit lifecycle commands. The human approves each designated order in PayPal; server code confirms the hold, lower final capture, separate void, refund, payout and signature-verified webhook. Record actual IDs and results in EVIDENCE.md. A pending or ambiguous outcome remains unresolved.
+3. **Engine / G2:** begins after G1. Implement the CP-SAT/cost engine and pass the golden test and seeded ten-member CLI; the scenario JSON alone does not prove this engine exists.
+4. **Wiring / G3:** connect member screens to the API and complete the hosted flow with a real sandbox hold. Later gates add tracking/payout protections, benchmark, judge flow and submission artifacts.
 
-The local merchant ID is missing; the existing local operator token was rejected by Render. App OAuth and registration retrieval succeeded, but neither proves webhook delivery. Five distinct sandbox payer accounts and five human PayPal approvals are required. Keep passwords and operator tokens out of chat, logs and recordings. The buyer approves on PayPal's sandbox surface; Coalition never collects credentials.
-
-## Reproducible procedure
-
-1. Open `/operator` with the deployed private operator token. Prepare **small**, successful scenario, with a 1,800-second closing window. Generate the five protected preparation links. Open each in a separate browser profile; keep the fragment invitation intact until the session is created. Ordinary shopping at `/` needs no operator preparation.
-2. Wait for all five real model evaluations. Maya requests noise cancellation, iPhone, under $100 and seven days; Leo requests noise cancellation, maximum $92 and eight days; Aisha requests Bluetooth, iPhone, under $95 and nine days; Noah requests noise cancellation, under $120 and seven days; Sam requests iPhone, under $90 and ten days. These are simulated requirements, not funding.
-3. In Sam's profile, inspect **Sony WH-CH720N** and negotiate. Review the actual structured exchanges and accepted product, variant, maximum, USD currency, delivery, closing time and quantity tiers. The October 8 real-product five-person model check yielded **$89/$88** with no authorizations. An earlier fictional-product model check observed $89/$85; neither result guarantees another quote. Agents can choose another permitted agreement or decline; never overwrite an accepted agreement to obtain this result. For the exact $89/$85 evidence gate, proceed only when those are the observed immutable terms; otherwise preserve the run and negotiate a fresh run with explicitly revised requirements.
-
-   A supported optional request for the exact evidence target is: **“Headphones under $90 for my iPhone 12. I can wait 10 days. My preferred group prices are $89 each at three authorizations and $85 each at five authorizations. These are preferences; keep my product and delivery requirements fixed.”** Submit this before negotiating. The current configured-model check genuinely accepted $89/$85 after a $92/$88 merchant counter and a safely rejected buyer response. This preference belongs to this buyer request; it is not a universal instruction or a guaranteed future result. All five requests were genuinely evaluated, with zero payment operations. See `model-verification-tier-preference.json`.
-
-4. In Maya, Leo, Aisha and Noah's profiles, review the same quote and consent checkbox, choose PayPal approval, sign in as four **different sandbox payer accounts**, and approve the displayed $89 maximum. Return to Coalition and wait for each provider-confirmed authorization. No timer, persona, model acceptance or PayPal button click alone increases the funding count.
-5. Leave Sam's fifth profile for the judge. The judge can inspect the request and photograph, review immutable terms, consent and approve $89 using the fifth sandbox payer account. Activate the operator run if required; activation does not change the accepted closing time. Show five confirmed authorizations and the $85 tier.
-6. Wait for the actual closing deadline. Every selected $85 final capture must be confirmed before success. In operator controls, inspect the five operations, signature-verified **processed** app webhook and separately labeled API/reconciliation observations. Inspect the provider's actual remaining authorization state. Do not assume a separate void event after final partial capture or promise immediate bank hold release.
-7. Refresh Sam's receipt and purchase history. An authorized operator can restart the existing worker process, then refresh again and confirm identical receipt and logical operation IDs. **Find another deal** must preserve this purchase while allowing a different product request.
-8. Prepare a separate small run with fewer than three genuine approvals. Cancel before capture using operator **Cancel**, or have a buyer leave and let the below-minimum group close. Wait for provider-confirmed `VOIDED` on the authorization; cancellation requested/pending is not proof. Retain its run ID.
-9. On the completed five-buyer run, use explicit operator **Refund cleanup**. Wait for actual refunds to complete; pending refunds remain unresolved. This refunds all completed demo captures rather than leaving other sandbox obligations behind. Retain the completed/refunded and cancellation run IDs.
-10. With server-side access to the same database and private connected environment, run the read-only gate:
-
-    ```bash
-    PYTHONPATH=backend .venv/bin/python scripts/check_connected.py SUCCESS_RUN_ID VOID_RUN_ID
-    ```
-
-    Save its redacted output in the verification record. It requires five distinct payers, $89/$85 provider resources, confirmed refund cleanup, a separate void, processed verified app webhook and live eligibility/exclusion. Do not substitute mocked payloads. If the provider returns pending or an unknown outcome, show that state and reconcile before retrying.
-
-    The Docker image includes the read-only verifier. In the Render service shell, with its existing connected environment and database, use **`python scripts/check_connected.py SUCCESS_RUN_ID VOID_RUN_ID`**. This command retrieves provider resources and validates existing records; it does not create approvals, captures, voids or refunds.
-
-## Independent judge shopping
-
-Open `/` in a fresh profile, browse or submit “Headphones under $100,” answer the delivery question, inspect matching products and negotiate. Editable chips preserve the request and completed answers. A compatible open group can be joined; otherwise a new bounded draft is negotiated. Closed, canceled, settled and unavailable deals offer another search. Previously approved terms remain attached to the original purchase.
-
-For the negotiation feature alone: select Sony WH-CH720N, inspect the simulated list price and actual compatible-interest count, then click **Negotiate for me**. Identify both agents, watch validated cards arrive, and point out any price changes. An unchanged merchant offer is acceptance, not a counteroffer. The agreement shows the approved maximum, conditional lower tier, required authorizations, shipping, delivery and closing time. Completed exchanges stay visible; refresh restores the exact quote and **View negotiation**. **Review agreement & authorize** opens the existing checkout. Stop before approving PayPal when demonstrating only this UI. The latest configured model observed $90/$87 for one ordinary Sony request; different valid results are allowed.
-
-## Fixture demonstration and recording
-
-Fixture mode simulates both AI and provider resources and labels them accordingly. Its four prepared approvals plus Sam demonstrate application behavior only. Current desktop/mobile tests exercised the real API, worker, PostgreSQL, 90-second deadline, five-member $85 capture, refresh, cancellation and repeat shopping; saved receipts also survived an actual isolated worker/API restart.
-
-For a short recording, show request/clarification and product (30 seconds), actual negotiation and terms (30 seconds), disclosed four earlier genuine approvals plus the judge's fifth approval (60 seconds), then the verified receipt and cancellation/refund evidence (60 seconds). Use observed timing; label time cuts or prerecorded evidence. A pending resource must stay pending on screen. Genuine connected acceptance remains incomplete until the approval and lifecycle gates above pass.
+Never delete existing database volumes to prepare a demo. The new application uses its own `rally` schema. Deployment, PayPal configuration or route changes require owner review and approval. Do not replay real mutations to manufacture a success; reconcile unknown outcomes first.
