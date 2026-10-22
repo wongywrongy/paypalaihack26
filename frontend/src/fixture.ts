@@ -45,3 +45,40 @@ export const fixture = {
     { id: 'msk', qty: scenario.shop.deal.units.msk, offers: [1200, cents(scenario.prices.round1_shop.msk), 1300], agreed: cents(scenario.prices.agreed.msk) },
   ],
 };
+
+
+export type PublicOfferId = 'group-opening' | 'shop-counter' | 'group-revised' | 'shop-final';
+export type PublicOffer = {
+  id: PublicOfferId;
+  sequence: number;
+  actor: 'buyer' | 'shop';
+  title: string;
+  proposal: string;
+  lines: Array<{ product: Product; unit: number; delta: number | null }>;
+  freight: { kind: 'Express' | 'Shared freight'; groupCost: number; delta: number | null };
+  freeKits: number;
+};
+// A public, illustrative reconstruction of the four saved term columns. No agent transcript,
+// private shop economics, intermediate allocations or execution state is inferred here.
+const offerDefinitions: Array<Pick<PublicOffer, 'id' | 'actor' | 'title' | 'proposal'>> = [
+  { id: 'group-opening', actor: 'buyer', title: 'The group opens', proposal: `Can you meet these unit prices for our group order, with express shipping to ${fixture.destination}?` },
+  { id: 'shop-counter', actor: 'shop', title: 'The shop counters with a bottle choice', proposal: `The old bottle is ${money(fixture.question.oldPrice)}; the new one is ${money(fixture.question.newPrice)}. Same formula, with express shipping unchanged.` },
+  { id: 'group-revised', actor: 'buyer', title: 'The group trades speed for a better deal', proposal: `We can use the shared box shipping ${fixture.dates.ships}, for pickup ${fixture.dates.pickup}—within our ${fixture.dates.arriveBy} limit. Can you meet these item prices and include a free sample kit for each person?` },
+  { id: 'shop-final', actor: 'shop', title: 'The shop makes its final counter', proposal: `I can keep shared freight at ${money(fixture.freight.agreed)} for the group and include ${fixture.group.count} free sample kits, at these final item prices.` },
+];
+export const publicOffers: PublicOffer[] = offerDefinitions.map((definition, index) => {
+  const column = (term: typeof fixture.terms[number], at: number) => at === 3 ? term.agreed : term.offers[at];
+  const groupCost = index < 2 ? fixture.freight.express : fixture.freight.agreed;
+  const previousFreight = index <= 2 ? fixture.freight.express : fixture.freight.agreed;
+  return {
+    ...definition,
+    sequence: index + 1,
+    lines: fixture.terms.map(term => ({
+      product: products.find(product => product.id === term.id)!,
+      unit: column(term, index),
+      delta: index === 0 ? null : column(term, index) - column(term, index - 1),
+    })),
+    freight: { kind: index < 2 ? 'Express' : 'Shared freight', groupCost, delta: index === 0 ? null : groupCost - previousFreight },
+    freeKits: index < 2 ? 0 : fixture.group.count,
+  };
+});

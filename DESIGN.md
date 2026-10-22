@@ -87,7 +87,7 @@ Refined from the mockup in `design/mockup/` for the fixture milestone. The locke
 
 ## Overview
 
-Rally feels like a calm, product-led shopping app. A member sees six screens and one optional question; each has one primary action and one leading number. Bargaining stays one tap away ("See how the deal is going"). The example fixture is labeled at every step. Behind-the-scenes pages are denser but use the same system.
+Rally feels like a calm, product-led shopping app. A member sees six screens and one optional question; each has one primary action and one leading number. The progress screen prominently opens "See the example bargaining"; a secondary link still goes straight to the final deal. The example fixture is labeled at every step. The separate deal room gives the exchange room without crowding the basket or payment review.
 
 ## Colors
 
@@ -135,7 +135,9 @@ The example action previews a hold of the max without contacting PayPal. Copy di
 
 ### Negotiation status
 
-A three-step progress bar and a single highlighted card for applied rules. Agent detail lives on the deal room page, with CODE, SOLVER and LLM tags in the "Why it moved" log.
+A three-step progress bar and a single highlighted card for applied rules remain on the member progress screen. Its primary action opens the bargaining exchange. The deal room leads with four visible proposals: group opening, shop counter, group revision, shop final counter. Named sides, exact unit-price changes, whole-group shipping and sample-kit terms explain what each side traded. Aisha's choice appears at the relevant counteroffer; the complete final share and saved-allocation code checks follow the history. The full term matrix remains available below.
+
+The public example events have stable IDs and explicit sequence numbers derived from the canonical term columns. They reconstruct the scenario; they are not recorded model output or database-persisted negotiation events. State that near the heading. Do not animate invented typing, ongoing work or financial success, and do not invent complete intermediate totals. Item prices are labeled per unit before shared costs; only the final saved allocation is presented as the complete share. Desktop can place adjacent proposals side by side; mobile follows the same chronological DOM order. Completed proposals remain visible after refresh.
 
 On small screens, offer history stays chronological with pinned product labels. "Show agreed terms" and "Show opening offer" move the existing comparison instantly; position feedback follows actual scrolling. Confirming the optional question focuses the continuation link; changing the answer returns focus to the selected radio. A persistent, initially empty status region announces the answer.
 

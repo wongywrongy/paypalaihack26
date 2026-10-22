@@ -1,7 +1,15 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { cents, fixture, money } from '../src/fixture';
+import { cents, fixture, money, publicOffers } from '../src/fixture';
+
+async function tabTo(page: Page, target: Locator) {
+  for (let tabs = 0; tabs < 20; tabs++) {
+    await page.keyboard.press('Tab');
+    if (await target.evaluate(element => element === document.activeElement)) break;
+  }
+  await expect(target).toBeFocused();
+}
 
 test('fixture money reconciles to the cent and rejects malformed amounts', () => {
   expect(cents('1.3')).toBe(130);
@@ -80,7 +88,9 @@ test('member preview reaches the receipt without moving money', async ({ page })
   await expect(page.getByLabel('Your max, all in')).toHaveValue('$75.00');
   await page.getByRole('link', { name: 'Preview the $75.00 hold' }).click();
   await expect(page.getByText('Still under your max')).toBeVisible();
-  await page.getByRole('link', { name: 'See the example deal' }).click();
+  await page.getByRole('link', { name: 'See the example bargaining' }).click();
+  await expect(page.getByRole('list', { name: 'Example bargaining history' }).getByRole('listitem')).toHaveCount(4);
+  await page.getByRole('link', { name: 'See your example price' }).click();
   await expect(page.locator('.hero-money')).toHaveText('$66.66');
   await expect(page.locator('.savings')).toContainText('$54.92');
   await page.getByText('See full breakdown', { exact: true }).click();
@@ -125,10 +135,7 @@ test('mobile deal row labels stay visible at both scroll extremes with keyboard 
   await page.evaluate(() => document.fonts.ready);
   const region = page.getByRole('region', { name: 'Offers and agreed terms' });
   await expect(region).toBeVisible();
-  await page.keyboard.press('Tab');
-  await page.keyboard.press('Tab');
-  await page.keyboard.press('Tab');
-  await expect(region).toBeFocused();
+  await tabTo(page, region);
   await expect(region).toHaveCSS('outline-width', '3px');
 
   const labels = region.getByRole('rowheader');
@@ -168,14 +175,10 @@ test('mobile deal row labels stay visible at both scroll extremes with keyboard 
 
 test('member primary path works with Tab and Enter only', async ({ page }) => {
   await page.goto('/invite');
-  for (const route of ['tell', 'review', 'live', 'done', 'receipt']) {
-    const primary = page.locator('.primary');
+  for (const route of ['tell', 'review', 'live', 'deal', 'done', 'receipt']) {
+    const primary = page.url().endsWith('/deal') ? page.getByRole('link', { name: 'See your example price' }) : page.locator('.primary');
     await expect(primary).toBeVisible();
-    for (let tabs = 0; tabs < 8; tabs++) {
-      await page.keyboard.press('Tab');
-      if (await primary.evaluate(element => element === document.activeElement)) break;
-    }
-    await expect(primary).toBeFocused();
+    await tabTo(page, primary);
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(new RegExp(`/${route}$`));
   }
@@ -224,9 +227,7 @@ test('mobile table jumps are reversible and keyboard operable with either motion
     await expect(agreed).toBeVisible();
     await expect(page.getByRole('status')).toHaveText('Opening offer in view');
     expect(await region.evaluate(element => element.scrollLeft)).toBe(0);
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
-    await expect(agreed).toBeFocused();
+    await tabTo(page, agreed);
     await page.keyboard.press('Enter');
     const opening = page.getByRole('button', { name: 'Show opening offer' });
     await expect(opening).toBeFocused();
@@ -255,13 +256,13 @@ for (const width of [320, 768]) {
       await page.evaluate(() => document.fonts.ready);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
       for (const [selector, floor] of [
-        ['.product-copy span,.bottle-options .muted,.preview-note,.progress li,.example,th small', 12],
+        ['.product-copy span,.bottle-options .muted,.preview-note,.progress li,.example,th small,.offer-price-label,.offer-prices small,.offer-actor,.offer-shared p > span', 12],
         ['.product-copy strong,.mini-products strong,.bottle-options strong', 14],
-        ['.product-price', 13],
+        ['.product-price,.offer-prices strong', 13],
       ] as const) {
         expect(await page.locator(selector).evaluateAll((elements, minimum) => elements.every(element => parseFloat(getComputedStyle(element).fontSize) >= minimum - .01), floor)).toBe(true);
       }
-      expect(await page.locator('.product-copy,.mini-products strong,.bottle-options strong,.bottle-options .muted').evaluateAll(elements => elements.every(element => element.scrollWidth <= element.clientWidth + 1))).toBe(true);
+      expect(await page.locator('.product-copy,.mini-products strong,.bottle-options strong,.bottle-options .muted,.offer-prices dt,.offer-prices dd').evaluateAll(elements => elements.every(element => element.scrollWidth <= element.clientWidth + 1))).toBe(true);
     }
   });
 }
@@ -275,8 +276,8 @@ test('all routes reflow with ordinary text resized to 200 percent', async ({ pag
     await page.addStyleTag({ content: ':root { font-size: 187.5% !important; }' });
     expect(await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize))).toBe(30);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
-    expect(await page.locator('.product-copy span,.bottle-options .muted,.preview-note,.progress li,.example,th small').evaluateAll(elements => elements.every(element => parseFloat(getComputedStyle(element).fontSize) >= 23.99))).toBe(true);
-    expect(await page.locator('.product-copy,.mini-products strong,.bottle-options strong,.bottle-options .muted,.hero-money').evaluateAll(elements => elements.every(element => element.scrollWidth <= element.clientWidth + 1))).toBe(true);
+    expect(await page.locator('.product-copy span,.bottle-options .muted,.preview-note,.progress li,.example,th small,.offer-price-label,.offer-prices small,.offer-actor,.offer-shared p > span').evaluateAll(elements => elements.every(element => parseFloat(getComputedStyle(element).fontSize) >= 23.99))).toBe(true);
+    expect(await page.locator('.product-copy,.mini-products strong,.bottle-options strong,.bottle-options .muted,.hero-money,.offer-prices dt,.offer-prices dd').evaluateAll(elements => elements.every(element => element.scrollWidth <= element.clientWidth + 1))).toBe(true);
     await expect(page.locator('.primary')).toHaveCount(route === 'deal' ? 0 : 1);
   }
 });
@@ -313,4 +314,56 @@ test('unknown routes have a recovery action', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('This page wandered off.');
   await page.getByRole('link', { name: 'Open the group order' }).click();
   await expect(page).toHaveURL(/\/invite$/);
+});
+
+
+test('public example offers preserve exact unit prices, deltas and group costs', () => {
+  expect(publicOffers.map(offer => [offer.id, offer.sequence, offer.actor])).toEqual([
+    ['group-opening', 1, 'buyer'], ['shop-counter', 2, 'shop'], ['group-revised', 3, 'buyer'], ['shop-final', 4, 'shop'],
+  ]);
+  expect(publicOffers.map(offer => offer.lines.map(line => line.unit))).toEqual([
+    [1800, 1800, 1700, 1200], [2300, 1800, 2100, 1500], [2100, 1600, 1900, 1300], [2200, 1700, 2000, 1400],
+  ]);
+  expect(publicOffers.map(offer => offer.lines.map(line => line.delta))).toEqual([
+    [null, null, null, null], [500, 0, 400, 300], [-200, -200, -200, -200], [100, 100, 100, 100],
+  ]);
+  expect(publicOffers.map(offer => offer.freight.groupCost)).toEqual([10500, 10500, 2500, 2500]);
+  expect(publicOffers.map(offer => offer.freight.delta)).toEqual([null, 0, -8000, 0]);
+  expect(publicOffers.map(offer => offer.freeKits)).toEqual([0, 0, 10, 10]);
+});
+
+test('the complete example bargaining remains readable after refresh with either motion preference', async ({ page }) => {
+  for (const reducedMotion of ['reduce', 'no-preference'] as const) {
+    await page.emulateMedia({ reducedMotion });
+    await page.goto('/deal');
+    const history = page.getByRole('list', { name: 'Example bargaining history' });
+    for (const refresh of [false, true]) {
+      if (refresh) await page.reload();
+      await expect(page.getByText('Example exchange · no live agents or payments', { exact: true })).toBeVisible();
+      const offers = history.getByRole('listitem');
+      await expect(offers).toHaveCount(4);
+      expect(await offers.locator('.offer-actor').allTextContents()).toEqual([
+        'Glass Skin Club · buying agentOffer 1 of 4', 'Haneul Beauty · shop agentOffer 2 of 4',
+        'Glass Skin Club · buying agentOffer 3 of 4', 'Haneul Beauty · shop agentOffer 4 of 4',
+      ]);
+      for (const offer of await offers.all()) {
+        await expect(offer).toBeVisible();
+        await expect(offer.getByText('Unit prices · before shipping, duty, fees and tax', { exact: true })).toBeVisible();
+        await expect(offer.getByRole('definition')).toHaveCount(4);
+        await expect(offer.locator('.offer-shared')).toContainText('for the whole group');
+        expect(await offer.evaluate(element => getComputedStyle(element).animationName)).toBe('none');
+      }
+      await expect(offers.nth(1).getByText('Up $5.00 / unit', { exact: true })).toBeVisible();
+      await expect(offers.nth(1).getByRole('region', { name: 'Aisha’s choice' })).toContainText('No answer would keep her original choice too.');
+      await expect(offers.nth(2)).toContainText('Nov 14');
+      await expect(offers.nth(2)).toContainText('around Nov 21');
+      await expect(offers.nth(2)).toContainText('Nov 28');
+      await expect(offers.nth(2).locator('.offer-shared')).toContainText('$80.00 less than the previous offer');
+      await expect(offers.nth(3).getByText('Up $1.00 / unit', { exact: true })).toHaveCount(4);
+      const checks = page.getByRole('region', { name: 'Final terms pass the code checks' });
+      await expect(checks).toContainText('All 10 saved member totals are under their max. They sum to $513.52 for the group.');
+      await expect(checks).toContainText('Your complete final share is $66.66, under your $75.00 max');
+      await expect(checks).toContainText('Example totals checked from the saved scenario.');
+    }
+  }
 });

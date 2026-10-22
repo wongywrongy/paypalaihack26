@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import App from '../src/App';
-import { cents, fixture, money } from '../src/fixture';
+import { cents, fixture, money, publicOffers } from '../src/fixture';
 
 const routes = [
   ['/invite', 'Haneul Beauty,'],
@@ -23,6 +23,13 @@ for (const [pathname, title] of routes) {
   assert.ok(html.includes(`<h1>${title}`), `${pathname}: expected route title`);
   assert.match(html, /[Ee]xample/, `${pathname}: explicit example label`);
   if (pathname !== '/deal') assert.equal((html.match(/class="primary"/g) || []).length, 1, pathname);
+  if (pathname === '/deal') {
+    assert.equal((html.match(/class="offer-event"/g) || []).length, 4);
+    assert.ok(html.includes('Example exchange · no live agents or payments'));
+    assert.ok(html.includes('Your complete final share is'));
+    const positions = publicOffers.map(offer => html.indexOf(`id="${offer.id}"`));
+    assert.ok(positions.every((position, index) => position >= 0 && (index === 0 || position > positions[index - 1])));
+  }
   console.log(`SSR ${pathname}: expected title, one heading, example label, action present`);
 }
 
