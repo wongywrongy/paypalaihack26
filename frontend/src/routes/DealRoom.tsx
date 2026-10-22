@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { fixture as f, money } from '../fixture';
 import { Header, Photo } from '../components/MemberUI';
 const log = [
@@ -9,7 +10,31 @@ const log = [
   { who: 'CODE', title: 'Everyone fit. Code accepted.', body: 'All ten totals are under their max. The language model never accepts a deal or moves money.' },
 ];
 export default function DealRoom() {
-  return <main className="deal-room"><Header back="/live" title="Behind the deal" /><div className="deal-heading"><div><h1>How the deal<br />was made.</h1><p className="intro">{f.community} × {f.shop}</p></div><div className="deal-result"><span>All {f.group.count} under their max</span><strong className="money">{money(f.group.total)}</strong><p>from {money(f.group.held)} held</p></div></div><div className="deal-layout"><section><h2>Better terms, together</h2><p className="muted">Per item, before shared costs. Scroll the offers on a small screen.</p><div className="table-scroll" tabIndex={0} role="region" aria-label="Offers and agreed terms"><table><thead><tr><th scope="col">Term</th><th scope="col">Our first offer</th><th scope="col">Shop’s reply</th><th scope="col">Our next offer</th><th scope="col">Agreed</th></tr></thead><tbody>{f.terms.map(term => {
+  const scrollRegion = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<'opening' | 'middle' | 'agreed' | 'all'>('opening');
+  function updatePosition() {
+    const element = scrollRegion.current;
+    if (!element) return;
+    const end = element.scrollWidth - element.clientWidth;
+    setPosition(end <= 1 ? 'all' : element.scrollLeft <= 1 ? 'opening' : element.scrollLeft >= end - 1 ? 'agreed' : 'middle');
+  }
+  useEffect(() => {
+    const element = scrollRegion.current;
+    if (!element) return;
+    const observer = new ResizeObserver(updatePosition);
+    observer.observe(element);
+    updatePosition();
+    return () => observer.disconnect();
+  }, []);
+  function jump() {
+    const element = scrollRegion.current;
+    if (!element) return;
+    element.scrollTo({ left: position === 'agreed' ? 0 : element.scrollWidth, behavior: 'instant' });
+    updatePosition();
+  }
+  const feedback = position === 'agreed' ? 'Agreed terms in view' : position === 'opening' ? 'Opening offer in view' : position === 'all' ? 'All offers in view' : 'Comparing offers';
+
+  return <main className="deal-room"><Header back="/live" title="Behind the deal" /><div className="deal-heading"><div><h1>How the deal<br />was made.</h1><p className="intro">{f.community} × {f.shop}</p></div><div className="deal-result"><span>All {f.group.count} under their max</span><strong className="money">{money(f.group.total)}</strong><p>from {money(f.group.held)} held</p></div></div><div className="deal-layout"><section><h2>Better terms, together</h2><p className="muted">Per item, before shared costs. Scroll the offers on a small screen.</p><div className="table-nav" hidden={position === 'all'}><button type="button" className="table-jump" aria-controls="deal-offers" aria-describedby="table-position" onClick={jump}>{position === 'agreed' ? 'Show opening offer' : 'Show agreed terms'}</button><p id="table-position" role="status" aria-atomic="true">{feedback}</p></div><div ref={scrollRegion} id="deal-offers" className="table-scroll" tabIndex={0} role="region" aria-label="Offers and agreed terms" aria-describedby="table-position" onScroll={updatePosition}><table><thead><tr><th scope="col">Term</th><th scope="col">Our first offer</th><th scope="col">Shop’s reply</th><th scope="col">Our next offer</th><th scope="col">Agreed</th></tr></thead><tbody>{f.terms.map(term => {
     const product = f.products.find(product => product.id === term.id)!;
     return <tr key={term.id}><th scope="row"><div className="term-product"><Photo product={product} /><span>{product.name}<small>{product.detail} · ×{term.qty}</small></span></div></th>{term.offers.map((offer, i) => <td className="money" key={i}>{money(offer)}</td>)}<td className="money agreed">{money(term.agreed)}</td></tr>;
   })}<tr><th scope="row">Shipping<small>One box to {f.destination}</small></th><td>Express<br /><span className="money">{money(f.freight.express)}</span></td><td>Express<br /><span className="money">{money(f.freight.express)}</span></td><td>Shared freight<br /><span className="money">{money(f.freight.agreed)}</span></td><td className="agreed">{f.dates.ships}<br /><span className="money">{money(f.freight.agreed)}</span></td></tr><tr><th scope="row">Extras</th><td>None</td><td>None</td><td>Sample kits</td><td className="agreed">{f.group.count} free kits</td></tr></tbody></table></div><section className="acceptance"><h2>Code accepted the final terms</h2><p>All {f.group.count} members under their max. {money(f.group.listed - f.group.total)} less than the listed-price group order, if everyone had bought.</p></section><div className="privacy"><section><h2>Our agent saw</h2><p>Everyone’s items and rules, the group’s total max and the shop’s offers. Never the shop’s costs.</p></section><section><h2>The shop’s agent saw</h2><p>Total held, item counts and delivery window. Never anyone’s individual max or rules.</p></section></div></section><aside className="decision-log"><h2>Why it moved</h2><ol>{log.map(entry => <li key={entry.title}><span className="actor">{entry.who}</span><h3>{entry.title}</h3><p>{entry.body}</p></li>)}</ol><a className="text-link" href="/ask">See Aisha’s question</a></aside></div><footer className="deal-footer"><a className="text-link" href="/done">See your example price</a><p className="fine">Illustrative scenario. Fictional shop and products. No money moves.</p></footer></main>;

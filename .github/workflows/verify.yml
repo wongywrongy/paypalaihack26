@@ -105,28 +105,6 @@ jobs:
               review_status=1
             fi
           done
-          "$cli" -s=rally-gd goto http://127.0.0.1:5173/invite
-          "$cli" -s=rally-gd run-code 'async page => {
-            const art = await page.evaluate(async () => {
-              const response = await fetch("/assets/dalbit-products.png");
-              if (!response.ok) throw new Error("Canonical product artwork did not load");
-              const original = await response.arrayBuffer();
-              const image = await createImageBitmap(new Blob([original], { type: "image/png" }));
-              if (image.width !== 1254 || image.height !== 1254) throw new Error("Unexpected artwork dimensions");
-              const canvas = document.createElement("canvas");
-              canvas.width = image.width;
-              canvas.height = image.height;
-              canvas.getContext("2d").drawImage(image, 0, 0);
-              const encoded = canvas.toDataURL("image/webp", 0.86);
-              if (!encoded.startsWith("data:image/webp;base64,")) throw new Error("WebP codec unavailable");
-              const base64 = encoded.split(",")[1];
-              return { width: canvas.width, height: canvas.height, originalBytes: original.byteLength, webpBytes: atob(base64).length, base64 };
-            });
-            const { base64, ...metadata } = art;
-            await page.evaluate(value => { window.__rallyArtMetadata = value; }, metadata);
-            return "RALLY_ART_WEBP " + base64;
-          }'
-          "$cli" -s=rally-gd run-code 'async page => "RALLY_ART_META " + JSON.stringify(await page.evaluate(() => window.__rallyArtMetadata))'
           exit "$review_status"
       - name: Export fixture Taste evidence for temporary visual review
         if: always()

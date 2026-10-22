@@ -105,7 +105,7 @@ Warm off-white ground, white grouped rows and cards, near-black ink. Warm lines 
 
 ## Typography
 
-Schibsted Grotesk for all text; heavy (800) for main headings, 700 for section titles and 650 for product names and primary actions. Body text uses 15 px with a 1.5 line height; small labels vary by role. IBM Plex Mono for every money amount, with tabular figures, so totals line up and read as exact. The 58 px hero amount appears on both "Deal reached" and the receipt and is the largest type in the product.
+Schibsted Grotesk for all text; heavy (800) for main headings, 700 for section titles and 650 for product names and primary actions. Body text defaults to 15 px with a 1.5 line height. Ordinary type uses root-relative units so browser text preferences can enlarge it; decision-bearing metadata stays at least 12 px, product names 14 px and item prices 13 px at the default size. Rows grow and wrap rather than truncate bottle details. IBM Plex Mono for every money amount, with tabular figures, so totals line up and read as exact. The 58 px hero amount appears on both "Deal reached" and the receipt and is the largest type in the product; its viewport bound keeps the complete amount readable on narrow screens.
 
 ## Layout
 
@@ -136,6 +136,14 @@ The example action previews a hold of the max without contacting PayPal. Copy di
 ### Negotiation status
 
 A three-step progress bar and a single highlighted card for applied rules. Agent detail lives on the deal room page, with CODE, SOLVER and LLM tags in the "Why it moved" log.
+
+On small screens, offer history stays chronological with pinned product labels. "Show agreed terms" and "Show opening offer" move the existing comparison instantly; position feedback follows actual scrolling. Confirming the optional question focuses the continuation link; changing the answer returns focus to the selected radio. A persistent, initially empty status region announces the answer.
+
+### Interaction and motion
+
+Apply Emil Kowalski's purpose and frequency test before adding motion. Primary hover feedback changes only `background-color` over 160 ms with `ease`, and only for a fine pointer that supports hover. Press and keyboard focus feedback are immediate. Reduced motion keeps state colors with a shorter 80 ms color transition. Table jumps are instant for every input method. Financial figures remain immediately readable; the static example never animates fabricated progress or financial success. No entrance staggers, bouncing controls, looping activity or additional motion dependency.
+
+The plan permits a final-price count and calm progress when they clarify real state. That permission is not a requirement to animate this immutable example. Review a future counter's currency, cents, accessible final value and reduced-motion formatting before using the retained Magic UI component.
 
 ### Receipt
 

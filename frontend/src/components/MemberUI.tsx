@@ -4,7 +4,7 @@ export function Arrow({ back = false }: { back?: boolean }) {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d={back ? 'm14 6-6 6 6 6M8 12h12' : 'M4 12h15m-5-6 6 6-6 6'} /></svg>;
 }
 export function Photo({ product }: { product: Product }) {
-  return <div className={`photo photo-${product.photo}`}><img src="/assets/dalbit-products.png" alt={`Dalbit ${product.name}, ${product.detail}`} width="1254" height="1254" /></div>;
+  return <div className={`photo photo-${product.photo}`}><picture><source srcSet="/assets/dalbit-products.webp" type="image/webp" /><img src="/assets/dalbit-products.png" alt={`Dalbit ${product.name}, ${product.detail}`} width="1254" height="1254" /></picture></div>;
 }
 export function Products({ agreed = false }: { agreed?: boolean }) {
   return <ul className="products">{(agreed ? f.basket : f.catalog).map(product => <li key={product.id}>

@@ -42,6 +42,7 @@ for (const [route, heading] of screens) {
         () => page.locator('img').evaluateAll(images => images.every(image => image.complete && image.naturalWidth > 0)),
         { timeout: 5_000, message: 'All product images must finish loading successfully' },
       ).toBe(true);
+      expect(await page.locator('img').evaluateAll(images => images.every(image => image.currentSrc.endsWith('/assets/dalbit-products.webp') && image.naturalWidth === 1254 && image.naturalHeight === 1254))).toBe(true);
     }
     if (route !== 'deal') {
       await expect(page.locator('.primary')).toHaveCount(1);
@@ -76,6 +77,16 @@ test('member preview reaches the receipt without moving money', async ({ page })
   expect(requests).toEqual([]);
 });
 
+test('product artwork uses the small derivative and retains its PNG fallback', async ({ page }) => {
+  const images: string[] = [];
+  page.on('request', request => { if (/dalbit-products\.(png|webp)(\?|$)/.test(request.url())) images.push(request.url()); });
+  await page.goto('/invite');
+  await expect.poll(() => page.locator('img').evaluateAll(elements => elements.every(image => image.complete && image.naturalWidth === 1254))).toBe(true);
+  expect(images.some(url => url.endsWith('/assets/dalbit-products.webp'))).toBe(true);
+  expect(images.some(url => url.endsWith('/assets/dalbit-products.png'))).toBe(false);
+  for (const image of await page.locator('picture img').all()) await expect(image).toHaveAttribute('src', '/assets/dalbit-products.png');
+});
+
 test('question safely defaults to new and permits an explicit old-bottle choice', async ({ page }) => {
   await page.goto('/ask');
   await expect(page.getByRole('radio', { name: /New bottle/ })).toBeChecked();
@@ -100,6 +111,7 @@ test('mobile deal row labels stay visible at both scroll extremes with keyboard 
   await page.evaluate(() => document.fonts.ready);
   const region = page.getByRole('region', { name: 'Offers and agreed terms' });
   await expect(region).toBeVisible();
+  await page.keyboard.press('Tab');
   await page.keyboard.press('Tab');
   await page.keyboard.press('Tab');
   await expect(region).toBeFocused();
@@ -154,6 +166,132 @@ test('member primary path works with Tab and Enter only', async ({ page }) => {
     await expect(page).toHaveURL(new RegExp(`/${route}$`));
   }
   await expect(page.getByRole('heading', { name: 'Charged $66.66' })).toBeVisible();
+});
+
+test('question keeps its status region and keyboard focus through repeated choices', async ({ page }) => {
+  await page.goto('/ask');
+  const status = page.getByRole('status');
+  await expect(status).toBeEmpty();
+  const statusNode = (await status.elementHandle())!;
+  const newBottle = page.getByRole('radio', { name: 'New bottle', exact: true });
+  const oldBottle = page.getByRole('radio', { name: 'Old bottle', exact: true });
+  const continuation = page.getByRole('link', { name: 'Back to the example deal' });
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
+  await expect(newBottle).toBeFocused();
+
+  for (const choice of ['old', 'new', 'old']) {
+    await page.keyboard.press(choice === 'old' ? 'ArrowRight' : 'ArrowLeft');
+    const selected = choice === 'old' ? oldBottle : newBottle;
+    await expect(selected).toBeChecked();
+    await expect(selected).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: choice === 'old' ? 'Switch to the old bottle' : 'Keep the new bottle' })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(continuation).toBeFocused();
+    await expect(status).toContainText(choice === 'old' ? 'for this preview' : 'You kept the new bottle.');
+    expect(await statusNode.evaluate(element => element.isConnected)).toBe(true);
+    await page.keyboard.press('Shift+Tab');
+    await expect(page.getByRole('button', { name: 'Change this preview choice' })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(selected).toBeEnabled();
+    await expect(selected).toBeFocused();
+    await expect(status).toBeEmpty();
+  }
+});
+
+test('mobile table jumps are reversible and keyboard operable with either motion preference', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const reducedMotion of ['reduce', 'no-preference'] as const) {
+    await page.emulateMedia({ reducedMotion });
+    await page.goto('/deal');
+    const region = page.getByRole('region', { name: 'Offers and agreed terms' });
+    const agreed = page.getByRole('button', { name: 'Show agreed terms' });
+    await expect(agreed).toBeVisible();
+    await expect(page.getByRole('status')).toHaveText('Opening offer in view');
+    expect(await region.evaluate(element => element.scrollLeft)).toBe(0);
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Tab');
+    await expect(agreed).toBeFocused();
+    await page.keyboard.press('Enter');
+    const opening = page.getByRole('button', { name: 'Show opening offer' });
+    await expect(opening).toBeFocused();
+    await expect(page.getByRole('status')).toHaveText('Agreed terms in view');
+    expect(await region.evaluate(element => Math.abs(element.scrollWidth - element.clientWidth - element.scrollLeft) <= 1)).toBe(true);
+    await page.keyboard.press('Enter');
+    await expect(agreed).toBeFocused();
+    expect(await region.evaluate(element => element.scrollLeft)).toBe(0);
+    await agreed.click();
+    await expect(opening).toBeVisible();
+    await opening.click();
+    await expect(page.getByRole('status')).toHaveText('Opening offer in view');
+    expect(await region.evaluate(element => element.scrollLeft)).toBe(0);
+    const target = (await agreed.boundingBox())!;
+    expect(target.width).toBeGreaterThanOrEqual(44);
+    expect(target.height).toBeGreaterThanOrEqual(44);
+  }
+});
+
+for (const width of [320, 768]) {
+  test(`all routes reflow with readable decision text at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    for (const [route] of screens) {
+      await page.goto('/' + route);
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+      for (const [selector, floor] of [
+        ['.product-copy span,.bottle-options .muted,.preview-note,.progress li,.example,th small', 12],
+        ['.product-copy strong,.mini-products strong,.bottle-options strong', 14],
+        ['.product-price', 13],
+      ] as const) {
+        expect(await page.locator(selector).evaluateAll((elements, minimum) => elements.every(element => parseFloat(getComputedStyle(element).fontSize) >= minimum - .01), floor)).toBe(true);
+      }
+      expect(await page.locator('.product-copy,.mini-products strong,.bottle-options strong,.bottle-options .muted').evaluateAll(elements => elements.every(element => element.scrollWidth <= element.clientWidth + 1))).toBe(true);
+    }
+  });
+}
+
+test('all routes reflow with ordinary text resized to 200 percent', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const [route] of screens) {
+    await page.goto('/' + route);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    await page.addStyleTag({ content: ':root { font-size: 187.5% !important; }' });
+    expect(await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).fontSize))).toBe(30);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    expect(await page.locator('.product-copy span,.bottle-options .muted,.preview-note,.progress li,.example,th small').evaluateAll(elements => elements.every(element => parseFloat(getComputedStyle(element).fontSize) >= 23.99))).toBe(true);
+    expect(await page.locator('.product-copy,.mini-products strong,.bottle-options strong,.bottle-options .muted,.hero-money').evaluateAll(elements => elements.every(element => element.scrollWidth <= element.clientWidth + 1))).toBe(true);
+    await expect(page.locator('.primary')).toHaveCount(route === 'deal' ? 0 : 1);
+  }
+});
+
+test('pointer feedback is gated and keyboard and reduced-motion feedback stays immediate', async ({ page }) => {
+  for (const reducedMotion of ['reduce', 'no-preference'] as const) {
+    await page.emulateMedia({ reducedMotion });
+    await page.goto('/invite');
+    const primary = page.getByRole('link', { name: 'Join the order' });
+    const finePointer = await page.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches);
+    await primary.hover();
+    await expect(primary).toHaveCSS('transition-property', 'background-color');
+    await expect(primary).toHaveCSS('background-color', finePointer ? 'rgb(142, 26, 71)' : 'rgb(180, 35, 90)');
+    const target = (await primary.boundingBox())!;
+    await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2);
+    await page.mouse.down();
+    await expect(primary).toHaveCSS('background-color', 'rgb(142, 26, 71)');
+    await expect(primary).toHaveCSS('transition-duration', '0s');
+    await page.mouse.move(0, 0);
+    await page.mouse.up();
+    await page.goto('/invite');
+    await expect(primary).toBeVisible();
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Tab');
+    await expect(primary).toBeFocused();
+    await expect(primary).toHaveCSS('transition-duration', '0s');
+    await expect(primary).toHaveCSS('outline-width', '3px');
+    await expect(primary).toHaveCSS('transform', 'none');
+  }
 });
 
 test('unknown routes have a recovery action', async ({ page }) => {
