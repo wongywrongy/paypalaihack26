@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test:browser": "playwright test",
-    "test:render": "esbuild tests/render-check.tsx --bundle --platform=node --jsx=automatic --outfile=test-results/render-check.cjs && node test-results/render-check.cjs"
+    "test:render": "esbuild tests/render-check.tsx --bundle --platform=node --jsx=automatic --outfile=test-results/render-check.cjs && node test-results/render-check.cjs && node tests/preview-config-check.mjs"
   },
   "dependencies": {
     "motion": "14.0.0",

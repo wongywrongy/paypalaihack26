@@ -9,6 +9,18 @@ Use [PLAN.md](../PLAN.md#codex-prompts) for the current prompts and scope. The r
 
 Never delete existing database volumes to prepare a demo. The new application uses its own `rally` schema. Deployment, PayPal configuration or route changes require owner review and approval. Do not replay real mutations to manufacture a success; reconcile unknown outcomes first.
 
+## Live scenario preview with Rootlane
+
+The checkout's `.rootlane.json` runs the built frontend with Vite preview on an allocated loopback port. Rootlane provides a private HTTPS link after owner review. This is the same labeled scenario preview as GD, with no API, database, credentials or payment operations.
+
+1. Install frontend dependencies if needed and run `npm run build --prefix frontend`. Rootlane displays the recipe's setup hints but does not execute them.
+2. Call Rootlane `locate` for the absolute Rally checkout, then `request_environment` for that same path with a new request UUID. Open its returned `approvalUrl` and approve the exact recipe in the owner UI.
+3. Start the returned `resolvedPreview.instanceId` with `start_environment` and a new request UUID. Keep that UUID and payload when retrying the same start. Poll `get_environment` for application readiness and a verified HTTPS preview; a reserved URL alone is not a live demo.
+4. Open the returned preview at `/invite`. Follow Join → Continue → Preview hold → Example deal → Receipt. `/deal` shows the offer history; its Aisha link opens `/ask`. Every amount and fulfillment milestone is illustrative.
+5. Stop the recorded environment with Rootlane when finished. Do not alter unrelated routes or services.
+
+The recipe references this host's existing Node executable because its Rootlane `{node}` alias is unset. Another host needs its own installed executable path and a new owner review. `frontend/vite.config.ts` allows only the exact hostname in `ROOTLANE_PREVIEW_ORIGIN`; no wildcard host permission is used. Rootlane's environment approval does not pass G1 or change PayPal callbacks.
+
 ## G1: the two human approvals
 
 Use an execution host that can reach PostgreSQL and PayPal. Keep `DATABASE_URL`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MERCHANT_ID`, `PAYPAL_WEBHOOK_ID` and the separate shop's `PAYPAL_SHOP_EMAIL` in a private environment file, with `RALLY_MODE=connected`. Payouts must be enabled and the sending sandbox business balance funded. The API and worker must be running, with a genuine webhook configured for `/api/paypal/webhook`; the script does not register it or change provider settings.
