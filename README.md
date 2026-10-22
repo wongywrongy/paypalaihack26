@@ -8,7 +8,7 @@
 
 The **Design track** builds Invite, Tell, Review, Live, Ask, Done and Receipt, then the deal room, from one typed scenario fixture. **M0 + M1** rebuilds the backend and proves authorize, lower final capture, void, refund, payout and verified webhook in the real sandbox. Neither fixture screenshots nor contract doubles satisfy the real-payment gate. Milestones M2–M5 remain gated by PLAN.md; do not treat a prepared adapter as a completed lifecycle.
 
-[EVIDENCE.md](EVIDENCE.md) records only checks actually executed and remaining blockers. The hosted demo is not ready until its gates pass.
+**GD passed:** all fixture screens render, actual screenshots were reviewed, and the Impeccable findings were fixed. [Screenshots and review](frontend/design/GD.md). **G1 remains open:** both merchant identifiers are configured privately, but the current execution host cannot reach PostgreSQL or PayPal. No real payment evidence is claimed. [EVIDENCE.md](EVIDENCE.md) records executed checks and blockers. The hosted demo is not ready until its gates pass.
 
 ## Real and simulated
 

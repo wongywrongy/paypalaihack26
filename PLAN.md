@@ -360,7 +360,7 @@ Six milestones and a parallel design track in 23 days, each ending in a gate. Th
 Milestones overlap by a day so the next one can start while a gate is being verified; the next milestone's main work waits for the gate.
 
 - [ ] G1 · Oct 24 — real sandbox: authorize, lower final capture, void, refund, payout, verified webhook.
-- [ ] GD · Oct 27 — member screens and the deal room render from the scenario fixture; Impeccable critique findings fixed.
+- [x] GD · Oct 27 — member screens and the deal room render from the scenario fixture; Impeccable critique findings fixed. [Evidence](frontend/design/GD.md), October 22.
 - [ ] G2 · Oct 28 — golden test to the cent; the seeded pool accepts with all 10 under their max.
 - [ ] G3 · Nov 2 — member screens wired to the API; full flow on the Render URL with a real sandbox hold.
 - [ ] G4 · Nov 6 — benchmark published; strategy D beats A with zero over-max charges.

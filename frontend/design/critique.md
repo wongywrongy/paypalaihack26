@@ -1,35 +1,31 @@
-# Impeccable critique — Rally fixture flow
+Method: dual-agent (A: `/root/gd_visual_a` · B: `/root/gd_evidence_b`).
 
-Two independent assessments: A reviewed source against the supplied mockups without detector findings; B ran the source detector independently. A then checked the material fixes in the changed source. This is a **source/mockup review**, not rendered QA. No implementation screenshots were available.
+# Rally fixture review — 2026-10-22
 
-| Nielsen heuristic | Provisional initial score |
-| --- | ---: |
-| Visibility of system status | 3/4 |
-| Match with real world | 3/4 |
-| User control and freedom | 2/4 |
-| Consistency and standards | 3/4 |
-| Error prevention | 3/4 |
-| Recognition rather than recall | 3/4 |
-| Flexibility and efficiency | 3/4 |
-| Aesthetic and minimalist design | 3/4 |
-| Error recovery | 2/4 |
-| Help and documentation | 3/4 |
-| **Total** | **28/40** |
+The final fixture review scores **34/40**. Rally feels specific to its purpose: product photos carry through the basket and bottle swap, the maximum stays prominent, and detailed bargaining sits behind an optional link.
 
-Rally has its own mechanism in the source: the bottle swap, hard max, shared shipment and separate decision log. The requested basket, two rules and optional two-way question keep member choices small. Grouped product rows support shopping rather than a finance dashboard.
+| Heuristic | Score | Evidence |
+|---|---:|---|
+| System status | 3/4 | Example labels and clear progress |
+| Real-world language | 4/4 | Concrete products, prices and pickup terms |
+| User control | 3/4 | Back paths and reversible preview choice |
+| Consistency | 4/4 | Shared controls and visual language |
+| Error prevention | 3/4 | Safe default and explicit preview boundary |
+| Recognition | 4/4 | Mobile product labels remain beside prices |
+| Efficiency | 3/4 | Short path; optional details |
+| Minimalism | 4/4 | One primary action and clear hierarchy |
+| Recovery | 3/4 | Route recovery and change-choice action |
+| Contextual help | 3/4 | Hold, release and refund explanations |
+| **Total** | **34/40** | **Good** |
 
-| Priority | Finding | Fix | Independent verdict |
-| --- | --- | --- | --- |
-| P1 | A temporary answer said it was saved and could contradict Aisha’s canonical deal. | Removed persistence claim; alternative is explicitly a preview; canonical answer stays new. Added a change-choice action. | Resolved in source |
-| P2 | Live paired an under-max label with the ceiling itself. | Leading number now says “Your max, all in”; separate text carries status. | Resolved in source |
-| P2 | Receipt milestones could suggest actual payments. | Visible no-hold/no-charge explanation scopes the timeline; PayPal and bank text is conditional. | Resolved in source |
+The sole visual finding is fixed: mobile offer comparisons retain product labels while scrolling. Both reviewers inspected the actual captures; the final source detector returned zero findings. CI also verified Tab/Enter through the main preview journey and ArrowRight access to the table. No open P0–P2 finding remains within GD scope.
 
-Persona risks identified: a first-time member could mistake the timeline for payment; a distracted member could lose their temporary choice; a stress tester could select old then read a new-bottle log. The copy/correction changes address those source findings at preview scope. Actual interaction and perception remain unverified.
+The strongest parts are the pictured bottle tradeoff, the clear maximum-to-final-price progression, and the repeated disclosure that this is an example with no money movement. First-time and distracted buyers retain context; the focused table has a visible outline. All eight cognitive-load checks pass; no decision has more than four visible choices.
 
-Assessment B: detector exit 0, `[]`, no rules or locations to report. `detector.json` is the raw evidence. Ignore list absent. No overlay or browser-visible detector was run. Taste lint: 0 failures, three mono warnings accepted because Plex money is a pinned product choice; no decorative mono text.
+Persona checks: Jordan can recognize the basket and distinguish the preview hold from a real approval; Casey can inspect mobile prices without losing the product; Sam has an executed primary keyboard path and visible table focus. Those checks do not establish screen-reader behavior or every secondary keyboard interaction.
 
-Final finish disposition: **recapture**. Missing current 390 px member screenshots and desktop/mobile deal captures prevent a visual shipping verdict. No score increase is claimed from source corrections alone. The next review must inspect actual captures, crop quality, type, overflow, focus and interaction states.
+Minor observation: small secondary metadata remains a candidate for low-vision testing; its nominal token contrast passes, and small size alone is not an established accessibility failure.
 
-Run notes: target `frontend/src/App.tsx`, slug `frontend-src-app-tsx`; isolated A and B, no mutual findings shared before assessment; source detector only; browser visibility/injection unavailable; no critique server was started; no temporary review files retained. Source assertions and mockups were the fallback evidence. This committed report is the review archive; no rendered trend exists.
+Evidence: source commit `9016d26cb031f2aff50900937e0c11d31f27a6e9`, CI run `39843746928`. Ten actual PNG hashes verified. The recognition score rises from the initial rendered review's 3/4 to 4/4 after the table fix; other scores remain unchanged. The earlier 28/40 source/mockup review used a different target and evidence, so it is not a like-for-like trend. Fixture behavior only; connected model/payment success is outside this review.
 
-Questions skipped: the locked plan authorized fixing all three source findings; the remaining blocker needs permitted browser execution rather than a design preference.
+Questions skipped: 0 unresolved priority issues.

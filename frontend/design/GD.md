@@ -1,36 +1,49 @@
 # GD evidence — 2026-10-22
 
-Latest automated evidence: **CI is green on `f5f4d0aa`** ([run 39840487958](https://github.com/wongywrongy/paypalaihack26/actions/runs/39840487958)). GD still awaits visual critique of the actual images.
+**GD passed for the fixture preview.** [CI run 39843746928](https://github.com/wongywrongy/paypalaihack26/actions/runs/39843746928), source commit `9016d26c`, passed **31/31 backend tests against PostgreSQL 16**, Ruff, clean npm install, production build, nine SSR checks and **28/28 Playwright tests**. Backend provider calls use doubles; this is not G1 evidence.
 
-- **24/24 Playwright tests passed:** 22 browser cases plus two fixture-money checks. Coverage includes eight routes, the full member preview, both question choices and revision, recovery, fonts, images and page width against the configured viewport. Mobile width is explicitly 390 px.
-- **Playwright CLI completed nine captures:** all eight routes at **390 × 844 with reduced motion**, plus the desktop deal room at 1440 px. Final CLI console: **0 errors, 0 warnings**.
-- **25 screenshots produced:** nine CLI captures and 16 test captures, with CLI logs in the [current artifact](https://github.com/wongywrongy/paypalaihack26/actions/runs/39840487958/artifacts/12451474681).
-- Production build, reusable SSR/static checks, Ruff and all 31 backend PostgreSQL/unit tests passed in the same run. These backend tests do not establish real PayPal or LLM behavior.
+## Actual rendered review
 
-The seven member routes and `/deal` read one typed model in `src/fixture.ts`, sourced from `design/scenario/scenario.json`. Request, max and rules deliberately show the canonical example. No money moves.
+Two isolated Impeccable assessments inspected the actual captures and source. Final score **34/40**, no unresolved P0–P2 findings within GD scope. [Combined critique](critique.md); [final detector output](detector.json): zero findings. The sole rendered finding was the mobile offer table losing product context. A compact sticky row-header column now keeps product identity beside both first-offer and agreed amounts, without changing desktop layout. Both reviewers inspected the corrected left and right scroll extremes.
 
-## Review still required
+The seven member routes and `/deal` use one typed model in `src/fixture.ts`, sourced from `design/scenario/scenario.json`. Request, max and rules deliberately show the canonical example. No money moves.
 
-The artifact exists, but its hosted images remain inaccessible from this agent environment. **No image critique or final visual shipping verdict is claimed.** Open all current captures, check product crops, typography, hierarchy, complete content and responsive composition, then run a fresh Impeccable finish review. Inspect keyboard focus and interaction states beyond the automated coverage before GD signoff.
+## Screenshots and provenance
 
-The independent source/mockup critique scored 28/40 provisionally; its three findings were fixed and verified in source: temporary-choice honesty and correction, clear max labeling, and an illustrative payment timeline. Its earlier `recapture` verdict predates the current captures; actual-image review must replace it. The independent source detector returned `[]` ([raw result](detector.json)); this does not establish visual quality.
+The committed PNGs below are exact captures from the green run, not mockups or reconstructed images. [Manifest](screenshots/manifest.json) records the source commit, run/job and SHA-256 of each image. The nine CLI captures use Playwright CLI 0.1.22 and runner Chrome; mobile viewport **390 × 844**, reduced motion, desktop deal **1440 × 900**. Heights are full-page heights. The tenth capture comes from the focused-table Playwright test.
 
-## Reproducible checks
+| Surface | Capture |
+|---|---|
+| Invite | [390 px](screenshots/invite-cli-mobile.png) |
+| Tell | [390 px](screenshots/tell-cli-mobile.png) |
+| Review | [390 px](screenshots/review-cli-mobile.png) |
+| Live | [390 px](screenshots/live-cli-mobile.png) |
+| Ask | [390 px](screenshots/ask-cli-mobile.png) |
+| Done | [390 px](screenshots/done-cli-mobile.png) |
+| Receipt | [390 px](screenshots/receipt-cli-mobile.png) |
+| Deal room | [390 px](screenshots/deal-cli-mobile.png), [1440 px](screenshots/deal-cli-desktop.png) |
+| Deal room, agreed column and keyboard focus | [390 px](screenshots/deal-scrolled-mobile.png) |
 
-From the repository root:
+The [full artifact](https://github.com/wongywrongy/paypalaihack26/actions/runs/39843746928/artifacts/12454052411) has 26 screenshots plus CLI logs. Temporary transport exported only public fixture PNGs and hashes through job logs so this restricted host could inspect them; those export steps were removed afterward. Normal CLI capture and artifact upload remain.
+
+## Executed behavior and limits
+
+The 28 cases cover all eight routes on desktop/mobile, fixture arithmetic, fonts/images, viewport bounds, preview journey, question default/revision, recovery, primary Tab/Enter navigation and table focus/ArrowRight scrolling. The table's far-right extreme is then set programmatically to verify pinned labels and complete agreed amounts. The final CLI console query returned 0 errors/warnings; the initial browser-open snapshot separately reported one error count, whose content was not inspected. Do not treat the final query as a zero-error audit of every navigation.
+
+Static token contrast from the CSS: muted/ground **6.21:1**, white/berry **6.31:1**, ink/butter **14.98:1**, saving/mint **7.13:1**. These are not an exhaustive computed browser contrast audit.
+
+Screen-reader announcements, 200% zoom, physical devices, every secondary keyboard action, slow network and connected model/payment/persistence remain unexecuted. No local detector overlay or human-visible tab was available; source detection and actual CI captures were the fallback. Local sockets/browser execution remains denied; a prior escalation was rejected by disabled `sandbox_approval`. CI closed its browser and Vite processes.
+
+## Reproduce
 
 ```bash
 npm run build --prefix frontend
 npm run test:render --prefix frontend
-npm run test:browser --prefix frontend
+cd frontend
+npx playwright install chromium
+npm run test:browser
 ```
 
-`test:render` checks the expected titles, single headings, example labels and primary actions across nine paths, malformed money inputs and fixture reconciliation. It reads the actual CSS tokens for static contrast: muted/ground **6.21:1**, white/berry **6.31:1**, ink/butter **14.98:1**, saving/mint **7.13:1**. These checks do not substitute for browser screenshots or computed contrast.
+The [workflow](../../.github/workflows/verify.yml) contains the exact successful CLI commands. Browser installation must match the package lock. SSR output alone does not establish GD.
 
-Use the [CI workflow](../../.github/workflows/verify.yml) for the exact successful Playwright CLI capture commands. Browser installation must match the package lock; in a permitted environment run `cd frontend && npx playwright install chromium` before the suite. Captures use CSS pixels. Local server/browser execution remains denied by this workspace; a sandbox escalation request was rejected by the disabled `sandbox_approval` policy. No restriction was bypassed.
-
-## Resolved history and assets
-
-Earlier CI exposed a stale confirmation assertion ([initial artifact](https://github.com/wongywrongy/paypalaihack26/actions/runs/39837501453/artifacts/12450874005)) and a mobile deal-grid minimum-width bug ([CLI diagnostic artifact](https://github.com/wongywrongy/paypalaihack26/actions/runs/39839797807/artifacts/12451613734)). The assertion now tests the honest preview boundary and revision; the mobile grid uses `minmax(0,1fr)` so its 720 px table scrolls inside its frame. Both corrections pass the current run, including the stricter viewport check.
-
-The generated Dalbit sheet was inspected: four fictional products, only Dalbit labels, no stray real logos. Its exact prompt is embedded in the PNG; provenance scan reported one raster, none missing. Fonts and licenses are bundled. `PayPalApproval.tsx` and Magic UI files remain preserved; the retired storefront and its browser suites were replaced.
+Earlier source/mockup critique findings (preview-choice honesty, maximum labeling and illustrative receipt timeline), mobile grid overflow and an image-readiness race were corrected before the current green run. The generated fictional Dalbit product sheet was inspected; fonts and licenses are bundled. `PayPalApproval.tsx` and Magic UI remain preserved for later wiring.

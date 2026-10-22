@@ -1,0 +1,47 @@
+{
+  "source_commit": "9016d26cb031f2aff50900937e0c11d31f27a6e9",
+  "run_id": 39843746928,
+  "job_id": 120051411820,
+  "images": [
+    {
+      "name": "ask-cli-mobile.png",
+      "sha256": "6d213912f13fb628490d68870a1cc7396fe0f7db2f2c9f76c8c386aaeadc1baa"
+    },
+    {
+      "name": "deal-cli-desktop.png",
+      "sha256": "9822ad5885c0e6c738837f8a23a0ad039938b02216ede648b3abfbf12c8f43ae"
+    },
+    {
+      "name": "deal-cli-mobile.png",
+      "sha256": "ce1fdfc8eb8047811508b6a5c2ac6544f035e90602386d6932fb6404dbb5c6bf"
+    },
+    {
+      "name": "done-cli-mobile.png",
+      "sha256": "801f87f4ce4a68a0702a6b974c2b672e035b57922e4c55b00319989317976fb0"
+    },
+    {
+      "name": "invite-cli-mobile.png",
+      "sha256": "1ab827746d039eea6fbf16755def0bc1dc3a53d8f176ef6a02b5372d8e55380f"
+    },
+    {
+      "name": "live-cli-mobile.png",
+      "sha256": "0dc7b148add02539755aa21d6f221566b6be6070faf7066c98354f353ffa6aa9"
+    },
+    {
+      "name": "receipt-cli-mobile.png",
+      "sha256": "16ccad62b515283679c2a5749dd6626ff7a0d7e5f76c9bee7084ec96ce4755c5"
+    },
+    {
+      "name": "review-cli-mobile.png",
+      "sha256": "3f81ae08e1af0dc8a0bb6040b17d9a365a3d31e3876d66292139fa0004d6fac2"
+    },
+    {
+      "name": "tell-cli-mobile.png",
+      "sha256": "ccc7295d66e295b370cc06317de176d966ce0d97b4f718e10627394ec64939a9"
+    },
+    {
+      "name": "deal-scrolled-mobile.png",
+      "sha256": "6858518ec952a44affcf2946c28fa09e15eea0102e1eda08519bc34bec39c9e7"
+    }
+  ]
+}
