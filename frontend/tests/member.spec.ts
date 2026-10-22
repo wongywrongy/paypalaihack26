@@ -13,6 +13,20 @@ test('fixture money reconciles to the cent and rejects malformed amounts', () =>
   expect(money(fixture.saved)).toBe('$54.92');
 });
 
+test('the browser icon is served as SVG without missing-icon responses', async ({ page }) => {
+  const missingIcons: string[] = [];
+  page.on('response', response => {
+    if (/\/favicon\.(svg|ico)(?:\?|$)/.test(response.url()) && response.status() === 404) missingIcons.push(response.url());
+  });
+  await page.goto('/invite');
+  const iconUrl = await page.locator('link[rel="icon"]').evaluate((element: HTMLLinkElement) => element.href);
+  const icon = await page.request.get(iconUrl);
+  expect(icon.status()).toBe(200);
+  expect(icon.headers()['content-type']).toMatch(/^image\/svg\+xml(?:;|$)/);
+  expect(await icon.text()).toContain('<svg');
+  expect(missingIcons).toEqual([]);
+});
+
 const screens = [
   ['invite', 'Haneul Beauty, Seoul to you.'],
   ['tell', 'What do you want?'],

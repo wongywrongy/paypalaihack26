@@ -4,7 +4,9 @@
 
 [Run 39854036017](https://github.com/wongywrongy/paypalaihack26/actions/runs/39854036017), source `f9fc421`, passed 31 PostgreSQL-backed backend tests, Ruff/build/render/preview-host checks and **42 Playwright tests**. Eight pinned Taste inspections at 1440/768/390 px returned zero FAIL; all 24 viewport contexts reported zero console errors. Two reviewers inspected all 48 hash-verified JPEGs. [Review, changes, screenshots and limits](frontend/design/polish-review.md). Provider operations remain test doubles; this is not G1 evidence.
 
-The verified fixture build replaced the static files in the already-approved Rootlane environment at 21:09 UTC; Rootlane reported ready with HTTPS verified. Previous index and hashed assets were retained. No recipe, public route, PayPal setting or stored purchase was changed. The initial CLI-open error count remains a diagnostic to inspect; the final query and Taste contexts were clean. Native zoom, screen-reader speech and physical touch remain unexecuted; bounded financial type does not double fully with the ordinary-text enlargement test.
+The verified fixture build replaced the static files in the already-approved Rootlane environment at 21:09 UTC; Rootlane reported ready with HTTPS verified. Previous index and hashed assets were retained. No recipe, public route, PayPal setting or stored purchase was changed. Native zoom, screen-reader speech and physical touch remain unexecuted; bounded financial type does not double fully with the ordinary-text enlargement test.
+
+[Instrumented cleanup run 39855743652](https://github.com/wongywrongy/paypalaihack26/actions/runs/39855743652), source `1a589066`, passed the same 31 backend/42 browser tests and eight Taste checks with temporary image transport removed. Its initial-console query identified a 404 for `/favicon.ico`; an explicit Rally SVG favicon and resource/MIME regression case were added afterward. The suite now discovers 44 browser cases. Main-page screenshots remain valid; this last change affects the browser icon only.
 
 ## October 22, 2026 — verified source
 
