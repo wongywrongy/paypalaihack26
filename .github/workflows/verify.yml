@@ -91,6 +91,21 @@ jobs:
         timeout-minutes: 3
         run: cd frontend && npx playwright install chromium
       - run: npm run test:browser --prefix frontend
+      - name: Export public fixture screenshots for temporary visual review
+        run: |
+          python - <<'PY'
+          import base64
+          import hashlib
+          from pathlib import Path
+
+          images = sorted(Path("frontend/design/screenshots").glob("*-cli-*.png"))
+          assert len(images) == 9, f"Expected 9 public fixture screenshots, found {len(images)}"
+          for path in images:
+              assert path.stat().st_size <= 5 * 1024 * 1024, f"Screenshot exceeds 5 MiB: {path.name}"
+              data = path.read_bytes()
+              assert data.startswith(b"\x89PNG\r\n\x1a\n"), f"Not a PNG: {path.name}"
+              print("RALLY_REVIEW_IMAGE", path.name, hashlib.sha256(data).hexdigest(), base64.b64encode(data).decode("ascii"), flush=True)
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
