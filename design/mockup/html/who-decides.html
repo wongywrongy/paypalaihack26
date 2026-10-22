@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rally — who decides what</title>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#B4235A}a:hover{color:#8E1A47}
+</style>
+
+</head>
+<body>
+<div style="min-height: 820px; box-sizing: border-box; background: #F7F4F0; color: #17161A; font-family: 'Schibsted Grotesk', system-ui, sans-serif; padding: 32px 24px">
+  <div style="max-width: 1232px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 14px; color: #5C5A60">Under the hood</span>
+      <h1 style="margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -0.025em">Who decides what</h1>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 8px">
+      <span style="font-size: 12px; font-weight: 700; padding: 5px 9px; border-radius: 6px; background: #EFE8FB; color: #5B21B6">LLM · language and ideas</span>
+      <span style="font-size: 12px; font-weight: 700; padding: 5px 9px; border-radius: 6px; background: #E2F2EA; color: #0B5A3C">SOLVER · math</span>
+      <span style="font-size: 12px; font-weight: 700; padding: 5px 9px; border-radius: 6px; background: #E6ECFB; color: #1D3FAF">CODE · authority</span>
+      <span style="font-size: 12px; font-weight: 700; padding: 5px 9px; border-radius: 6px; background: #FFF1D6; color: #7A4F00">PAYPAL · money</span>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #E4DFD8; border-radius: 18px; overflow-x: auto">
+      <table style="width: 100%; min-width: 900px; border-collapse: collapse; font-size: 14px">
+        <thead>
+          <tr style="text-align: left; border-bottom: 1px solid #E4DFD8; background: #FBF9F6">
+            <th scope="col" style="padding: 12px 16px; font-size: 12px; color: #5C5A60; font-weight: 600; width: 34%">Step</th>
+            <th scope="col" style="padding: 12px; font-size: 12px; color: #5C5A60; font-weight: 600; width: 16%">Done by</th>
+            <th scope="col" style="padding: 12px 16px; font-size: 12px; color: #5C5A60; font-weight: 600">Guarantee</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+            <tr style="border-bottom: 1px solid #EEEAE4">
+              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Turn a person’s words into items, rules and a max</th>
+              <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #EFE8FB; color: #5B21B6">LLM</span></td>
+              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Every field ties back to their words; at most one question. Can’t set prices or charge anyone.</td>
+            </tr>
+          
+            <tr style="border-bottom: 1px solid #EEEAE4">
+              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Approve the max as a PayPal hold</th>
+              <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #FFF1D6; color: #7A4F00">PAYPAL</span></td>
+              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Orders v2 authorization for the max. The max is also enforced in code, because PayPal lets a capture exceed a hold (up to 115% or +$75).</td>
+            </tr>
+          
+            <tr style="border-bottom: 1px solid #EEEAE4">
+              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Assign people to variants and split shared costs</th>
+              <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #E2F2EA; color: #0B5A3C">SOLVER</span></td>
+              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Respects every rule and max. One price per item per order, so stating a higher max never raises your price.</td>
+            </tr>
+          
+            <tr style="border-bottom: 1px solid #EEEAE4">
+              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Pick the next offer and suggest new terms</th>
+              <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #EFE8FB; color: #5B21B6">LLM</span></td>
+              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Ideas only. The solver re-checks every proposal before it is sent.</td>
+            </tr>
+          
+            <tr style="border-bottom: 1px solid #EEEAE4">
+              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Read the other side’s message</th>
+              <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #EFE8FB; color: #5B21B6">LLM</span></td>
+              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Parsed into a fixed offer format and treated as data, so “ignore your rules” changes nothing.</td>
+            </tr>
+          
+            <tr style="border-bottom: 1px solid #EEEAE4">
+              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Score offers for the shop</th>
+              <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #E6ECFB; color: #1D3FAF">CODE</span></td>
+              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Lowest prices live in code. The shop’s language model sees scores, never the floor.</td>
+            </tr>
+          
+            <tr style="border-bottom: 1px solid #EEEAE4">
+              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Accept or reject</th>
+              <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #E6ECFB; color: #1D3FAF">CODE</span></td>
+              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Accept only if everyone is under their max and the group beats its threshold. The language model never accepts.</td>
+            </tr>
+          
+            <tr style="border-bottom: 1px solid #EEEAE4">
+              <th scope="row" style="padding: 13px 16px; text-align: left; font-weight: 600">Charge, release, pay the shop, track</th>
+              <td style="padding: 13px 12px"><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; white-space: nowrap; background: #FFF1D6; color: #7A4F00">PAYPAL</span></td>
+              <td style="padding: 13px 16px; color: #3E3C42; line-height: 1.45">Capture each share at deal close; void every hold if no deal; pay the shop once it ships; add tracking to each payment.</td>
+            </tr>
+          
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rally — benchmark plan</title>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#B4235A}a:hover{color:#8E1A47}
+</style>
+
+</head>
+<body>
+<div style="min-height: 720px; box-sizing: border-box; background: #F7F4F0; color: #17161A; font-family: 'Schibsted Grotesk', system-ui, sans-serif; padding: 32px 24px">
+  <div style="max-width: 1232px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 14px; color: #5C5A60">Benchmark</span>
+        <h1 style="margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -0.025em">Is the bargaining doing real work?</h1>
+      </div>
+      <span style="font-size: 13px; font-weight: 700; padding: 8px 12px; border-radius: 999px; background: #FBE9DD; color: #A3470F">Not run yet</span>
+    </div>
+
+    <p style="margin: 0; font-size: 15px; line-height: 1.55; color: #3E3C42; max-width: 860px">200 simulated group orders from a published generator: random shop situations (old stock, costs, freight dates) and random baskets, rules and maxes. Every strategy runs on the same orders.</p>
+
+    <div style="background: #FFFFFF; border: 1px solid #E4DFD8; border-radius: 18px; overflow-x: auto">
+      <table style="width: 100%; min-width: 900px; border-collapse: collapse; font-size: 14px">
+        <thead>
+          <tr style="text-align: left; border-bottom: 1px solid #E4DFD8; background: #FBF9F6">
+            <th scope="col" style="padding: 12px 16px; font-size: 12px; color: #5C5A60; font-weight: 600">Strategy</th>
+            <th scope="col" style="padding: 12px; font-size: 12px; color: #5C5A60; font-weight: 600">Orders completed</th>
+            <th scope="col" style="padding: 12px; font-size: 12px; color: #5C5A60; font-weight: 600">Buyer savings vs alone</th>
+            <th scope="col" style="padding: 12px; font-size: 12px; color: #5C5A60; font-weight: 600">Shop gain</th>
+            <th scope="col" style="padding: 12px; font-size: 12px; color: #5C5A60; font-weight: 600">Over-max charges</th>
+            <th scope="col" style="padding: 12px 16px; font-size: 12px; color: #5C5A60; font-weight: 600">Rounds</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+            <tr style="border-bottom: 1px solid #EEEAE4">
+              <th scope="row" style="padding: 14px 16px; text-align: left; font-weight: 400"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700">A · Listed prices</span><span style="font-size: 12px; color: #5C5A60">No bargaining; people drop out if over their max</span></span></th>
+              <td style="padding: 14px 12px; color: #5C5A60">—</td>
+              <td style="padding: 14px 12px; color: #5C5A60">—</td>
+              <td style="padding: 14px 12px; color: #5C5A60">—</td>
+              <td style="padding: 14px 12px; color: #5C5A60">—</td>
+              <td style="padding: 14px 16px; color: #5C5A60">—</td>
+            </tr>
+          
+            <tr style="border-bottom: 1px solid #EEEAE4">
+              <th scope="row" style="padding: 14px 16px; text-align: left; font-weight: 400"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700">B · Chatbot haggling</span><span style="font-size: 12px; color: #5C5A60">One price, the language model decides (the current repo)</span></span></th>
+              <td style="padding: 14px 12px; color: #5C5A60">—</td>
+              <td style="padding: 14px 12px; color: #5C5A60">—</td>
+              <td style="padding: 14px 12px; color: #5C5A60">—</td>
+              <td style="padding: 14px 12px; color: #5C5A60">—</td>
+              <td style="padding: 14px 16px; color: #5C5A60">—</td>
+            </tr>
+          
+            <tr style="border-bottom: 1px solid #EEEAE4">
+              <th scope="row" style="padding: 14px 16px; text-align: left; font-weight: 400"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700">C · Engine without rules</span><span style="font-size: 12px; color: #5C5A60">Solver + code, but no flexibility collected from people</span></span></th>
+              <td style="padding: 14px 12px; color: #5C5A60">—</td>
+              <td style="padding: 14px 12px; color: #5C5A60">—</td>
+              <td style="padding: 14px 12px; color: #5C5A60">—</td>
+              <td style="padding: 14px 12px; color: #5C5A60">—</td>
+              <td style="padding: 14px 16px; color: #5C5A60">—</td>
+            </tr>
+          
+            <tr style="border-bottom: 1px solid #EEEAE4">
+              <th scope="row" style="padding: 14px 16px; text-align: left; font-weight: 400"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700">D · Full engine</span><span style="font-size: 12px; color: #5C5A60">Rules + quick questions + solver + code decides</span></span></th>
+              <td style="padding: 14px 12px; color: #5C5A60">—</td>
+              <td style="padding: 14px 12px; color: #5C5A60">—</td>
+              <td style="padding: 14px 12px; color: #5C5A60">—</td>
+              <td style="padding: 14px 12px; color: #5C5A60">—</td>
+              <td style="padding: 14px 16px; color: #5C5A60">—</td>
+            </tr>
+          
+        </tbody>
+      </table>
+    </div>
+
+    <div style="background: #17161A; color: #FFFFFF; border-radius: 18px; padding: 18px 20px; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #FFE9A8; text-transform: uppercase; letter-spacing: 0.06em">Pass bar</span>
+      <span style="font-size: 16px; line-height: 1.5">D beats A on orders completed and on combined buyer + shop gain, with zero over-max charges. If it doesn't, the bargaining is decoration.</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

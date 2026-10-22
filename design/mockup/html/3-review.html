@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rally — review and approve</title>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#B4235A}a:hover{color:#8E1A47}
+</style>
+
+</head>
+<body>
+<div style="width: 390px; height: 920px; box-sizing: border-box; background: #F7F4F0; color: #17161A; font-family: 'Schibsted Grotesk', system-ui, sans-serif; display: flex; flex-direction: column">
+  <div style="display: flex; align-items: center; gap: 8px; padding: 12px 12px 8px">
+    <a href="2-tell-us.html" aria-label="Back" style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; color: #17161A">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+    </a>
+    <span style="font-weight: 700; font-size: 16px">Review</span>
+  </div>
+
+  <div style="flex: 1; padding: 8px 20px; display: flex; flex-direction: column; gap: 16px">
+    <div style="background: #FFFFFF; border: 1px solid #E4DFD8; border-radius: 18px; padding: 6px 12px">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #EEEAE4">
+        <img src="img/essence.svg" alt="Snail essence" style="width: 48px; height: 48px; border-radius: 10px; object-fit: cover">
+        <span style="flex: 1; font-weight: 600">Snail Essence</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #5C5A60">$25 list</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid #EEEAE4">
+        <img src="img/toner.svg" alt="Rice toner" style="width: 48px; height: 48px; border-radius: 10px; object-fit: cover">
+        <span style="flex: 1; font-weight: 600">Rice Toner</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #5C5A60">$24 list</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0">
+        <img src="img/masks.svg" alt="Cica sheet masks" style="width: 48px; height: 48px; border-radius: 10px; object-fit: cover">
+        <span style="flex: 1; font-weight: 600">Cica Sheet Masks</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #5C5A60">$18 list</span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 14px; font-weight: 700">To get you a better price, your agent can</span>
+      
+        <label style="display: flex; gap: 12px; align-items: center; background: #FFFFFF; border: 1px solid #E4DFD8; border-radius: 14px; padding: 12px 14px; min-height: 48px; box-sizing: border-box; cursor: pointer">
+          <input type="checkbox" checked style="width: 20px; height: 20px; margin: 0; accent-color: #B4235A">
+          <span style="font-size: 15px">Take the old bottle if $4+ cheaper</span>
+        </label>
+      
+        <label style="display: flex; gap: 12px; align-items: center; background: #FFFFFF; border: 1px solid #E4DFD8; border-radius: 14px; padding: 12px 14px; min-height: 48px; box-sizing: border-box; cursor: pointer">
+          <input type="checkbox" checked style="width: 20px; height: 20px; margin: 0; accent-color: #B4235A">
+          <span style="font-size: 15px">Use slower shipping (by Nov 28)</span>
+        </label>
+      
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #E4DFD8; border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+      <label for="maxTotal" style="font-size: 14px; font-weight: 700">Your max, all in</label>
+      <input id="maxTotal" type="text" inputmode="decimal" value="$75.00" style="min-height: 52px; border-radius: 12px; border: 1px solid #C9C3BA; background: #FFFFFF; padding: 0 14px; font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 600; color: #17161A">
+      <div style="display: flex; justify-content: space-between; font-size: 14px; color: #5C5A60"><span>Ordering alone</span><span style="font-family: 'IBM Plex Mono', monospace">about $121.58</span></div>
+      <span style="font-size: 12px; color: #5C5A60">Includes shipping, import duty and tax.</span>
+    </div>
+  </div>
+
+  <div style="padding: 12px 20px 22px; display: flex; flex-direction: column; gap: 10px">
+    <a href="4-negotiating.html" style="display: flex; align-items: center; justify-content: center; min-height: 56px; border-radius: 16px; border: 2px dashed #8E8A92; background: #FFFFFF; color: #3E3C42; font-size: 15px; font-weight: 600; text-decoration: none; text-align: center; padding: 0 16px">[ PayPal button: approve a $75.00 hold ]</a>
+    <span style="font-size: 12px; color: #5C5A60; text-align: center; line-height: 1.4">Charged only if a deal happens, and never more than $75.00.</span>
+  </div>
+</div>
+</body>
+</html>
