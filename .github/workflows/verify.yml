@@ -35,8 +35,16 @@ jobs:
       - run: npm ci --prefix frontend
       - run: npm run build --prefix frontend
       - run: npm run test:render --prefix frontend
+      - name: Fetch pinned Taste inspector scripts
+        uses: actions/checkout@v4
+        with:
+          repository: Leonxlnx/taste-skill
+          ref: 6010f91a9935f1c167dfc500fb1a475681892e6b
+          path: .runtime/taste
+          sparse-checkout: skills/taste-skill/scripts
+          persist-credentials: false
       - name: Capture screens with Playwright CLI and runner Chrome
-        timeout-minutes: 3
+        timeout-minutes: 5
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
           XDG_CACHE_HOME: ${{ runner.temp }}/rally-playwright-cache
@@ -87,6 +95,68 @@ jobs:
           "$cli" -s=rally-gd screenshot --filename design/screenshots/deal-cli-desktop.png --full-page
           "$cli" -s=rally-gd run-code "$check_layout"
           "$cli" -s=rally-gd console error
+          review_status=0
+          for route in invite tell review live ask done receipt deal; do
+            mkdir -p "test-results/taste/$route"
+            if (cd "$GITHUB_WORKSPACE" && node .runtime/taste/skills/taste-skill/scripts/inspect.mjs "http://127.0.0.1:5173/$route" --app --widths 1440,768,390 --out "frontend/test-results/taste/$route") | tee "test-results/taste/$route/inspector.log"; then
+              printf 'Taste inspector %s passed\n' "$route"
+            else
+              printf 'Taste inspector %s failed (exit %s)\n' "$route" "$?"
+              review_status=1
+            fi
+          done
+          "$cli" -s=rally-gd goto http://127.0.0.1:5173/invite
+          "$cli" -s=rally-gd run-code 'async page => {
+            const art = await page.evaluate(async () => {
+              const response = await fetch("/assets/dalbit-products.png");
+              if (!response.ok) throw new Error("Canonical product artwork did not load");
+              const original = await response.arrayBuffer();
+              const image = await createImageBitmap(new Blob([original], { type: "image/png" }));
+              if (image.width !== 1254 || image.height !== 1254) throw new Error("Unexpected artwork dimensions");
+              const canvas = document.createElement("canvas");
+              canvas.width = image.width;
+              canvas.height = image.height;
+              canvas.getContext("2d").drawImage(image, 0, 0);
+              const encoded = canvas.toDataURL("image/webp", 0.86);
+              if (!encoded.startsWith("data:image/webp;base64,")) throw new Error("WebP codec unavailable");
+              const base64 = encoded.split(",")[1];
+              return { width: canvas.width, height: canvas.height, originalBytes: original.byteLength, webpBytes: atob(base64).length, base64 };
+            });
+            const { base64, ...metadata } = art;
+            await page.evaluate(value => { window.__rallyArtMetadata = value; }, metadata);
+            return "RALLY_ART_WEBP " + base64;
+          }'
+          "$cli" -s=rally-gd run-code 'async page => "RALLY_ART_META " + JSON.stringify(await page.evaluate(() => window.__rallyArtMetadata))'
+          exit "$review_status"
+      - name: Export fixture Taste evidence for temporary visual review
+        if: always()
+        run: |
+          python - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import re
+          from pathlib import Path
+
+          root = Path("frontend/test-results/taste")
+          for route in ("invite", "tell", "review", "live", "ask", "done", "receipt", "deal"):
+              directory = root / route
+              if not directory.is_dir():
+                  continue
+              for path in sorted(directory.iterdir()):
+                  is_image = re.fullmatch(r"(desktop|tablet|mobile)-(fold|page-\d+)\.jpg", path.name)
+                  if not is_image and path.name != "report.json":
+                      continue
+                  assert path.stat().st_size <= 5 * 1024 * 1024, f"Taste evidence exceeds 5 MiB: {route}/{path.name}"
+                  data = path.read_bytes()
+                  encoded = base64.b64encode(data).decode("ascii")
+                  if is_image:
+                      assert data.startswith(b"\xff\xd8\xff") and data.endswith(b"\xff\xd9"), f"Invalid JPEG: {route}/{path.name}"
+                      print("RALLY_TASTE_IMAGE", f"{route}/{path.name}", hashlib.sha256(data).hexdigest(), encoded, flush=True)
+                  else:
+                      assert isinstance(json.loads(data), dict), f"Invalid JSON report: {route}"
+                      print("RALLY_TASTE_REPORT", route, encoded, flush=True)
+          PY
       - name: Install Chromium for browser tests
         timeout-minutes: 3
         run: cd frontend && npx playwright install chromium
