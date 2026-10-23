@@ -334,7 +334,7 @@ Six milestones in 21 days, each ending in a gate. Real PayPal proof and the rede
 
 - [x] G1 · verified Oct 23 — real USD authorize, lower final capture, void, refund, successful shop payout, original signed webhook recovered and reverified, plus CAD authorization/capture. See EVIDENCE.md; this is not G3 deployment proof.
 - [ ] GD2 · Oct 28 — all shopper screens, the live deal (played from `hero.events`) and Rally for shops render from the new scenario; 30 product images; Impeccable critique fixed; no "Example" copy.
-- [ ] G2 · Oct 30 — engine CLI: golden test to the cent, sourcing restrictions, both shops' negotiations accept as in the scenario.
+- [x] G2 · verified Oct 23 — explicit fixture engine CLI, all five golden totals, exact sourcing/restrictions and both shops accepting within code-validated authority; see EVIDENCE.md. Connected model/checkout remain G3.
 - [ ] G3 · Nov 4 — full shopper flow on Render with a real sandbox hold and capture and a live deal.
 - [ ] G4 · Nov 7 — payouts at hub, tracking, refunds; Rally for shops orders and payouts; benchmark published in the README.
 - [ ] G5 · Nov 10 — feature freeze; a fresh browser completes the judge flow in each currency.
