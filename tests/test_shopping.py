@@ -4,13 +4,16 @@ import copy
 import os
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 from uuid import uuid4
 
 import test_database as database_tests
+from fastapi import Request
 from fastapi.testclient import TestClient
+from psycopg.types.json import Jsonb
 from rally import api, orders, sessions, shopping, store, worker
 from rally import db as database
 from rally.negotiation.engine import negotiate
@@ -372,3 +375,49 @@ class ShoppingContracts(unittest.TestCase):
             db.commit()
             self.assertEqual(worker.claim(db, "payments")["kind"], "webhook")
             self.assertEqual(worker.claim(db, "ai")["kind"], "negotiate")
+
+    def test_legacy_receipts_keep_original_cookie_scope_and_recovery_is_read_only(self):
+        from rally import legacy
+
+        with patch.dict(os.environ, {"RALLY_HUB_PASSWORD": "hub-test"}):
+            self.login("hub", "hub-test")
+        token, owner_id, other = "a" * 32, uuid4(), uuid4()
+        run_id, buyer_id, group_id, commitment_id = [uuid4() for _ in range(4)]
+        cookie = f"coalition_session={token}; rally_session={self.client.cookies.get('rally_session')}"
+        request = Request({"type": "http", "headers": [(b"cookie", cookie.encode())]})
+        consent = {"title": "Historical headphones", "variant": "Black", "maximum": 6500}
+        with database.connect() as db:
+            self.assertFalse(legacy.available(db), "Use an isolated database with no historical public tables.")
+            with db.transaction(force_rollback=True):
+                db.execute("""
+                    CREATE TABLE public.runs(id uuid PRIMARY KEY,mode text);
+                    CREATE TABLE public.buyers(id uuid PRIMARY KEY,run_id uuid,owner_id uuid);
+                    CREATE TABLE public.sessions(token_hash text,buyer_id uuid,expires_at timestamptz);
+                    CREATE TABLE public.groups(id uuid PRIMARY KEY,run_id uuid,status text);
+                    CREATE TABLE public.commitments(id uuid,group_id uuid,buyer_id uuid,accepted_terms jsonb,amount_minor integer,currency text,authorization_status text,capture_status text,refund_status text,void_status text,active boolean,captured_minor integer,created_at timestamptz);
+                    CREATE TABLE public.payment_operations(id uuid,commitment_id uuid,kind text,status text,amount_minor integer,first_attempt_at timestamptz,updated_at timestamptz);
+                """)
+                db.execute("INSERT INTO public.runs VALUES(%s,'connected')", (run_id,))
+                db.execute("INSERT INTO public.buyers VALUES(%s,%s,%s)", (buyer_id, run_id, owner_id))
+                db.execute("INSERT INTO public.sessions VALUES(%s,%s,now()+interval '1 day')", (sessions.digest(token), buyer_id))
+                db.execute("INSERT INTO public.groups VALUES(%s,%s,'SUCCEEDED')", (group_id, run_id))
+                db.execute("INSERT INTO public.commitments VALUES(%s,%s,%s,%s,6500,'USD','AUTHORIZED','COMPLETED',NULL,NULL,true,6400,now())", (commitment_id, group_id, buyer_id, Jsonb(consent)))
+                other_buyer = uuid4()
+                db.execute("INSERT INTO public.buyers VALUES(%s,%s,%s)", (other_buyer, run_id, other))
+                db.execute("INSERT INTO public.sessions VALUES(%s,%s,now()+interval '1 day')", (sessions.digest("b" * 32), other_buyer))
+                db.execute("INSERT INTO public.commitments VALUES(%s,%s,%s,%s,6500,'USD',NULL,NULL,NULL,NULL,true,NULL,now())", (uuid4(), group_id, other_buyer, Jsonb({"title": "Other buyer's receipt"})))
+                db.execute("INSERT INTO public.payment_operations VALUES(%s,%s,'order','unknown',6500,now(),now())", (uuid4(), commitment_id))
+                rows = legacy.purchases(db, request)
+                self.assertEqual(len(rows), 1)
+                self.assertEqual(rows[0]["terms"], consent)
+                self.assertEqual(rows[0]["captured_minor"], 6400)
+                with patch.object(legacy, "connect", return_value=nullcontext(db)):
+                    recovery = legacy.recovery(request)
+                self.assertEqual(recovery["operations"][0]["status"], "unknown")
+                self.assertNotIn("response", recovery["operations"][0])
+                other_request = Request({"type": "http", "headers": [(b"cookie", ("coalition_session=" + "b" * 32).encode())]})
+                self.assertEqual([r["terms"] for r in legacy.purchases(db, other_request)], [{"title": "Other buyer's receipt"}])
+                self.assertEqual(legacy.purchases(db, Request({"type": "http", "headers": [(b"cookie", b"coalition_session=unowned")]})), [])
+                db.execute("UPDATE public.sessions SET expires_at=now()-interval '1 minute'")
+                self.assertEqual(legacy.purchases(db, request), [])
+            self.assertFalse(legacy.available(db))

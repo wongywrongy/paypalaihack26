@@ -1,5 +1,9 @@
 # Rally evidence
 
+## October 23, 2026 — historical receipt preservation verified
+
+Final suite: **74/74 backend tests passed against isolated PostgreSQL, zero skips (25.883 seconds)**; Ruff and diff checks passed. The additional contract executes the legacy SQL against transactional public-table fixtures: two valid original cookies return only their respective owners' exact consent/receipt, an expired or unowned cookie returns nothing, and hub recovery retains an unknown operation without raw response data. Fixtures are rolled back and only the disposable database is removed. A read-only Render schema check confirmed compatibility with the existing public columns; no hosted row changed. The API guide's legacy recovery path was corrected to `/api/hub/legacy/recovery`. The production implementation is unchanged from the preceding locally verified build.
+
 ## October 23, 2026 — connected implementation and local contracts
 
 Implemented owned quotes/checkout with PayPal SDK v6, immediate persisted negotiation/SSE, atomic stock reservations, fixed quote FX, server-confirmed receipts/history, scoped shop/judge/hub access, two-shop payouts, Agent Toolkit tracking, immutable import refunds, deadline refunds and reconciliation/recovery. Migration 003 is additive; original public purchases and unknown operations are preserved. Optional scheduled fictional hub steps default off and use the same confirmed-funding/payout guards. Every financial operation still uses the existing durable ledger. Hosted Render settings/resources and PayPal callback settings are unchanged.

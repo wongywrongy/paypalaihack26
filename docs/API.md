@@ -24,7 +24,7 @@ Call `GET /api/session` first to establish an HttpOnly cookie and receive its CS
 | POST /api/hub/recovery/{request_id}/reconcile | GET-only provider reconciliation of a saved logical operation |
 | POST /api/hub/jobs/{id}/resume | Resume saved recovery job using its original keys |
 | GET /api/purchases, /api/legacy/purchases | Original-cookie owned historical Coalition receipts |
-| GET /api/hub/legacy-recovery | Read-only original-ledger unresolved metadata |
+| GET /api/hub/legacy/recovery | Read-only original-ledger unresolved metadata |
 | POST /api/paypal/webhook | Persist original bytes before acknowledgement; verify signature and reconcile in worker |
 | GET /api/health | Application health, `app: rally` |
 
