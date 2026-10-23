@@ -10,6 +10,8 @@ FROM python:3.12-slim
 WORKDIR /app
 COPY backend/requirements.txt backend/requirements.txt
 RUN pip install --no-cache-dir -r backend/requirements.txt
+COPY backend/toolkit-requirements.txt backend/toolkit-requirements.txt
+RUN pip install --no-cache-dir --no-deps -r backend/toolkit-requirements.txt
 COPY backend backend
 COPY scripts scripts
 COPY design/scenario design/scenario

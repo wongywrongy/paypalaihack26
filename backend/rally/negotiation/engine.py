@@ -45,6 +45,7 @@ def negotiate(start, destination, catalog, rules, *, choose=None, emit=None, max
     initial = tuple(start["lines"])
     ceiling = start["breakdown"]["total"]
     currency = start["breakdown"]["currency"]
+    rate = start.get("rate")
     state_lock, budget_lock = Lock(), Lock()
     state = {"lines": initial, "extras": (), "events": [], "seq": 0}
     budget = {"tokens": 60000, "calls": 0}
@@ -55,7 +56,7 @@ def negotiate(start, destination, catalog, rules, *, choose=None, emit=None, max
     def event(shop, actor, kind, lines=(), extras=(), note="", final=False, chosen_by="CODE"):
         with state_lock:
             state["seq"] += 1
-            row = {"id": str(uuid4()), "seq": state["seq"], "t": round(monotonic() - started, 2), "shop": shop, "actor": actor, "kind": kind, "lines": {catalog.offers[line.offer_id]["product_id"] + (":older" if catalog.offers[line.offer_id]["variant"] == "older" else ""): convert(line.unit_usd_cents, currency) for line in lines}, "extras": list(extras), "domestic": convert(rally_agent.shipping(lines, catalog), currency) if lines else None, "note": note[:240], "final": final, "chosen_by": chosen_by, "total": calculate(state["lines"], destination, catalog, extras=state["extras"])["total"]}
+            row = {"id": str(uuid4()), "seq": state["seq"], "t": round(monotonic() - started, 2), "shop": shop, "actor": actor, "kind": kind, "lines": {catalog.offers[line.offer_id]["product_id"] + (":older" if catalog.offers[line.offer_id]["variant"] == "older" else ""): convert(line.unit_usd_cents, currency, rate) for line in lines}, "extras": list(extras), "domestic": convert(rally_agent.shipping(lines, catalog), currency, rate) if lines else None, "note": note[:240], "final": final, "chosen_by": chosen_by, "total": calculate(state["lines"], destination, catalog, extras=state["extras"], rate=rate)["total"]}
             state["events"].append(row)
             if emit:
                 emit(dict(row))
@@ -68,7 +69,7 @@ def negotiate(start, destination, catalog, rules, *, choose=None, emit=None, max
                 with state_lock:
                     others = tuple(line for line in state["lines"] if catalog.offers[line.offer_id]["shop_id"] != shop)
                     kits = tuple(e for e in state["extras"] if not e.startswith(shop)) + extras
-                total = calculate(others + lines, destination, catalog, extras=kits)["total"]
+                total = calculate(others + lines, destination, catalog, extras=kits, rate=rate)["total"]
                 # Paid extras and variants must improve the complete obligation.
                 if total <= ceiling:
                     scored.append((total, -len(extras), lines, extras))
@@ -117,8 +118,8 @@ def negotiate(start, destination, catalog, rules, *, choose=None, emit=None, max
             others = tuple(line for line in state["lines"] if catalog.offers[line.offer_id]["shop_id"] != shop)
             combined = others + lines
             kits = tuple(e for e in state["extras"] if not e.startswith(shop)) + extras
-            priced = calculate(combined, destination, catalog, extras=kits)
-            prior = calculate(state["lines"], destination, catalog, extras=state["extras"])
+            priced = calculate(combined, destination, catalog, extras=kits, rate=rate)
+            prior = calculate(state["lines"], destination, catalog, extras=state["extras"], rate=rate)
             if priced["total"] > min(prior["total"], ceiling):
                 return False
             changed = any(catalog.offers[line.offer_id]["product_id"] not in {catalog.offers[x.offer_id]["product_id"] for x in original} or catalog.offers[line.offer_id]["variant"] == "older" for line in lines)
@@ -163,7 +164,7 @@ def negotiate(start, destination, catalog, rules, *, choose=None, emit=None, max
         futures = [executor.submit(exchange, shop, tuple(lines)) for shop, lines in groups.items()]
         for future in futures:
             future.result()
-    breakdown = calculate(state["lines"], destination, catalog, extras=state["extras"])
+    breakdown = calculate(state["lines"], destination, catalog, extras=state["extras"], rate=rate)
     assert breakdown["total"] <= ceiling
     event(None, None, "done", note="The agreed total is ready for payment processing.")
     return {"lines": state["lines"], "extras": state["extras"], "breakdown": breakdown, "events": state["events"], "model_calls": budget["calls"], "elapsed_seconds": round(monotonic() - started, 3)}

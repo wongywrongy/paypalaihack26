@@ -392,6 +392,8 @@ def perform(
                 }
             path = "/v2/checkout/orders"
         elif kind == "authorize":
+            if pool["state"] != "OPEN":
+                raise RecoveryRequired("This checkout was canceled before authorization.")
             hold = db.execute(
                 "SELECT * FROM holds WHERE member_id=%s AND order_id=%s AND status IN ('CREATED','APPROVED')",
                 (member_id, resource_id),
@@ -595,3 +597,49 @@ def reconcile(db, request_id):
             "Ambiguous payment lacks a provider ID; inspect sandbox activity before recording recovery. Do not issue another mutation."
         )
     return finish(db, op, data)
+
+
+def record_tracking(db, order_id, *, paypal_order_id, capture_id, carrier, tracking):
+    """Non-financial metadata still uses a durable, immutable operation."""
+    from .. import toolkit
+
+    identity = {"order_id": paypal_order_id, "capture_id": capture_id, "carrier": carrier, "tracking": tracking}
+    key = str(uuid5(NAMESPACE_URL, "rally-tracking:" + str(order_id)))
+    with payment_lock(db, order_id):
+        capture = db.execute("SELECT p.* FROM payment_ops p JOIN orders o ON o.member_id=p.member_id WHERE o.id=%s AND o.paypal_order_id=%s AND p.kind='capture' AND p.status='completed' AND p.provider_ref=%s", (order_id, paypal_order_id, capture_id)).fetchone()
+        if not capture:
+            raise ValueError("Tracking requires this order's confirmed capture.")
+        old = db.execute("SELECT * FROM tracking_operations WHERE order_id=%s", (order_id,)).fetchone()
+        if old and old["request"] != identity:
+            raise ValueError("Tracking terms changed; inspect the original operation.")
+        if old and old["status"] == "completed":
+            return old["response"]
+        if old and old["status"] == "failed":
+            raise RecoveryRequired("Tracking was rejected; inspect provider records.")
+        if not old:
+            db.execute("INSERT INTO tracking_operations(order_id,request_id,request,status) VALUES(%s,%s,%s,'inflight')", (order_id, key, Jsonb(identity)))
+    mutation_started = False
+    try:
+        if not old:
+            mutation_started = True
+            toolkit.create({"transaction_id": capture_id, "tracking_number": tracking, "carrier": carrier, "status": "SHIPPED"}, lambda body: paypal("POST", resource_path("order", paypal_order_id) + "/track", body, key=key))
+        # On restart/ambiguity, GET only. A missing tracker never triggers a blind POST.
+        data = paypal("GET", resource_path("order", paypal_order_id))
+        if data.get("id") != paypal_order_id:
+            raise RecoveryRequired("Tracking order identity mismatch.")
+        expected = capture_id + "-" + tracking
+        found = any(t.get("id") == expected for unit in data.get("purchase_units", []) for t in unit.get("shipping", {}).get("trackers", []))
+        if not found:
+            db.execute("UPDATE tracking_operations SET status='pending',updated_at=now() WHERE order_id=%s AND status!='completed'", (order_id,))
+            db.commit()
+            raise RecoveryRequired("Tracking remains unconfirmed; reconcile by GET.")
+        result = {"order_id": paypal_order_id, "tracker_id": expected, "verified": True}
+        db.execute("UPDATE tracking_operations SET status='completed',response=%s,updated_at=now() WHERE order_id=%s", (Jsonb(result), order_id))
+        db.commit()
+        return result
+    except Exception as exc:
+        db.rollback()
+        failed = mutation_started and isinstance(exc, ProviderError) and exc.definitive
+        db.execute("UPDATE tracking_operations SET status=%s,updated_at=now() WHERE order_id=%s AND status IN ('inflight','unknown')", ("failed" if failed else "unknown", order_id))
+        db.commit()
+        raise

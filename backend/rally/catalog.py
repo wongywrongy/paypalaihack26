@@ -56,4 +56,10 @@ class Catalog:
         from .fx import convert
 
         currency = country(destination)["currency"]
-        return {"products": [{**p, "price": convert(min(minor(v) for v in p["prices"].values()), currency), "currency": currency, "available": self.allowed(p["id"], destination)} for p in self.products.values()], "shops": self.shops, "prices_currency": "USD"}
+        products = []
+        for p in self.products.values():
+            offers = [o for o in self.offers.values() if o["product_id"] == p["id"] and o["variant"] == "current"]
+            available = [o for o in offers if o["stock"] > 0]
+            prices = {o["shop_id"]: f"{o['list_usd'] // 100}.{o['list_usd'] % 100:02d}" for o in available or offers}
+            products.append({**p, "prices": prices, "price": convert(min(o["list_usd"] for o in available or offers), currency), "currency": currency, "available": self.allowed(p["id"], destination) and bool(available)})
+        return {"products": products, "shops": self.shops, "prices_currency": "USD"}

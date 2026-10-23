@@ -28,7 +28,7 @@ def permitted(lines, extras, catalog):
     baseline = tuple(replace(line, unit_usd_cents=target(line, catalog)) for line in lines)
     score = utility(lines, extras, catalog)
     threshold = utility(baseline, extras, catalog)
-    return score is not None and threshold is not None and score >= threshold
+    return score is not None and threshold is not None and score >= max(0, threshold)
 
 
 def counters(lines, extras, catalog, reply):
