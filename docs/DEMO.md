@@ -46,7 +46,7 @@ The calculator matches the reference scenario. These are not verified customs ra
 
 Rootlane manages the approved static frontend preview. It does not supply PayPal/Render API access, remote command execution, PostgreSQL access or payment callback configuration. Reuse the existing observed environment and its HTTPS link; do not create replacement services or routes.
 
-A normal frontend build can expose browsing and the bag. A static preview cannot run the G1 lifecycle or the connected M3 flow. The existing link is being updated to the v2 design-review build; use `/shop?test=recorded` for browsing and `/deal?test=recorded` for recorded negotiation. This explicit review build enables the harness, while ordinary production builds exclude it. Private shop contracts are supplied only in CI, so shop pages remain locked on the static preview. Any new build publication must preserve the existing index/assets for rollback and verify readiness; a reserved link alone is not a running app.
+A normal frontend build can expose browsing and the bag. A static preview cannot run the G1 lifecycle or the connected M3 flow. The [existing link](https://neo.taile1abc7.ts.net:20001/shop?test=recorded) serves the v2 design-review build; use `/shop?test=recorded` for browsing and `/deal?test=recorded` for recorded negotiation. This explicit review build enables the harness, while ordinary production builds exclude it. Private shop contracts are supplied only in CI, so shop pages remain locked on the static preview. Any new build publication must preserve the existing index/assets for rollback and verify readiness; a reserved link alone is not a running app.
 
 ## G1: three human PayPal approvals
 

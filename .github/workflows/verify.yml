@@ -122,27 +122,6 @@ jobs:
         run: cd frontend && npx playwright install chromium
       - run: npm run test:browser --prefix frontend
         if: ${{ !cancelled() }}
-      - name: Export v2 captures for source review (temporary)
-        if: always()
-        run: |
-          python - <<'PY'
-          import base64
-          import hashlib
-          import json
-          from pathlib import Path
-
-          # CI-only recorded pages and fictional shop contract; no provider credentials or IDs.
-          root = Path("frontend/design/screenshots/v2")
-          for path in sorted(root.glob("*.jpg")):
-              data = path.read_bytes()
-              assert len(data) <= 8 * 1024 * 1024, path.name
-              assert data.startswith(b"\xff\xd8\xff") and data.endswith(b"\xff\xd9"), path.name
-              print("RALLY_V2_IMAGE", path.name, hashlib.sha256(data).hexdigest(), base64.b64encode(data).decode("ascii"), flush=True)
-          for path in sorted(Path("frontend/design/screenshots/v2/taste").rglob("report.json")):
-              data = path.read_bytes()
-              assert isinstance(json.loads(data), dict)
-              print("RALLY_V2_TASTE", path.parent.relative_to("frontend/design/screenshots/v2/taste"), base64.b64encode(data).decode("ascii"), flush=True)
-          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:

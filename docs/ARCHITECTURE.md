@@ -18,7 +18,7 @@ flowchart LR
 
 One public scenario adapter supplies product IDs, public shop prices, destination rates and the saved hero events. Money is integer minor units with explicit currency. Bag rules express permission; they do not establish a negotiated price or buyer consent. The quote display reproduces all five saved country schedules. Category filters, restrictions, country changes and bag edits are interactive.
 
-The Deal reducer consumes stable ordered events, deduplicates repeats and supports replay. A recorded event source is enabled only by the compile-time CI harness plus its explicit URL entry. Presentation pacing never calls a payment endpoint. Reduced motion removes price-track sliding. Completed playback cannot establish a capture; live event persistence and recovery belong to M3.
+The Deal reducer consumes stable ordered events, deduplicates repeats and supports replay. A recorded event source is enabled only by the explicitly enabled review/CI harness plus its URL entry. Presentation pacing never calls a payment endpoint. Reduced motion removes price-track sliding. Completed playback cannot establish a capture; live event persistence and recovery belong to M3.
 
 Ordinary builds require actual order data before displaying a receipt or tracking history. The current checkout remains unavailable pending M3. Shop workspace data comes through a scoped API adapter; the ordinary unconnected view is locked. CI fulfills that contract from a test fixture. No private floor, cost or test workspace payload is part of the public production bundle. The UI is not an authentication boundary: the future server must enforce shop scope independently.
 

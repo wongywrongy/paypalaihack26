@@ -1,5 +1,19 @@
 # Rally evidence
 
+## October 23, 2026 — v2 design preview updated
+
+The latest revised plan at `fb2772c9` is in use. GD2 replaces the retired group-order UI with solo shopping across three Korean shops, 30 products/five destinations, persistent bag/permissions and event-driven recorded bartering. All 31 generated product photographs were visually inspected. Historical payment records and recovery code are preserved; hold currency is additive.
+
+[Run 39878422696](https://github.com/wongywrongy/paypalaihack26/actions/runs/39878422696), application source `c35f9be3`, passed **37 PostgreSQL-backed backend tests** and **60 Playwright cases**, including four browser-independent fixture cases. Build/render/privacy checks and CLI console (zero errors/warnings) passed. Taste passed eight routes and failed two on fully clipped category text at 768 px; the subsequent inspection-only correction has a baseline-reproduction and true-positive Chrome regression, plus an actual category keyboard/geometry check. The run's failure is retained rather than relabeled green. [28 exact screenshots, independent critique and detailed failures](frontend/design/GD2.md).
+
+[Final application verification, run 39879386126](https://github.com/wongywrongy/paypalaihack26/actions/runs/39879386126), inspection/test source `0c86a26d`, **passed**: all37 backend tests against PostgreSQL, all60 Playwright cases (four fixture-only), Ruff/build/render/privacy checks, ten Taste inspections with zero FAIL, both native-modal and scroll-clipping Chrome regressions, and initial/final CLI console zero errors/warnings. Application source/assets are byte-identical to the published `c35f9be3` build. The 768 px actual-DOM test confirms clipped Mask becomes safely visible through native keyboard focus. Provider calls remain doubles. Temporary encoded screenshot/report transport was removed after recovery; normal artifact upload is retained.
+
+Two isolated reviewers inspected all 48 original/replacement captures. Design assessment moved **27/40 → 30/40** with no P0/P1 issue remaining within GD2; mobile density remains a refinement. The detector's single timeline-border warning was classified as a functional connector. Scores and screenshots do not certify connected agents or money movement.
+
+At **00:37:59 UTC**, the exact `c35f9be3` review build was atomically published to the already-approved Rootlane environment. Rootlane reported application/upstream ready, route matching and HTTPS verified. Previous index and hashed assets remain available for rollback; no recipe, external route or payment setting changed. [Shop](https://neo.taile1abc7.ts.net:20001/shop?test=recorded) · [Recorded Deal](https://neo.taile1abc7.ts.net:20001/deal?test=recorded). Static readiness is distinct from the CI-rendered journeys.
+
+This explicit review build enables recorded events; checkout is disabled and private shop data is not served. **G1 remains unexecuted**, as do live v2 model negotiation and M2/M3. Local backend invocation passed32 and skipped5 PostgreSQL cases; the CI counts above include all37 against disposable PostgreSQL. Native browser zoom, screen-reader speech, real-device touch and throttled-network performance were not tested. [Exact genuine-provider next steps](docs/DEMO.md#g1-three-human-paypal-approvals).
+
 ## October 22, 2026 — version 2 and CAD foundation
 
 Imported the two signed branch revisions through `fb2772c9` (solo international shopping), preserving local purchases, payment operations and the approved running preview. Shell Git DNS is unavailable. GitHub connector import verified both signed commit identities and both trees. The oversized reference image `design/mockup/flow.png` initially exceeded the contents API limit; it was recovered from CI, verified as Git blob `53888802`, restored exactly, and its temporary index omission removed. The complete current source is present.

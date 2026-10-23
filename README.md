@@ -10,6 +10,8 @@ The v2 frontend replaces the group-order routes with Shop, Ship to, Ask, Bag, De
 
 **This is the design track, not the connected judge flow.** Ordinary builds cannot manufacture an approved hold or a paid order: checkout is unavailable until M3 integration, order screens require order data and shop screens require a scoped API response. CI explicitly enables a compile-time harness for recorded deal/receipt/tracking events and authenticated shop contract responses. No live model negotiates in that harness. The local quote display follows the reference scenario's cheapest-listed-item selection; it is not the M2 lowest-all-in sourcing engine.
 
+[Open the Rootlane design review](https://neo.taile1abc7.ts.net:20001/shop?test=recorded) · [Watch the recorded deal](https://neo.taile1abc7.ts.net:20001/deal?test=recorded). [GD2 screenshots and independent critique](frontend/design/GD2.md) show the actual rendered views and verification limits.
+
 **G1 remains open:** credentials are configured, but this coding runtime cannot reach PostgreSQL or PayPal. The payment foundation now persists USD/CAD/GBP/EUR/AUD on holds and inherits currency through capture/refund/reconciliation. The G1 script preserves existing USD runs and additionally requires completed CAD proof. No genuine sandbox lifecycle has been verified. [EVIDENCE.md](EVIDENCE.md) records executed checks and blockers; [the demo procedure](docs/DEMO.md) separates design checks from the three human PayPal approvals.
 
 ## Real and simulated
