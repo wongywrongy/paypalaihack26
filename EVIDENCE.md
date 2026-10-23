@@ -1,5 +1,11 @@
 # Rally evidence
 
+## October 23, 2026 — final source CI passed
+
+[CI 40017564735](https://github.com/wongywrongy/paypalaihack26/actions/runs/40017564735), application/test source **8b51e89**, passed **75 PostgreSQL-backed tests, 94 Playwright desktop/mobile cases**, Ruff, clean build/render/privacy checks, ten Taste inspections with zero FAIL and console checks. Provider/model responses in CI are doubles. Earlier actual API/database browser checks and genuine G1 provider proof remain separate evidence, as described below. Taste warnings for the pinned warm palette, prominent totals and centered shopper layout remain intentional per PLAN.md; they were not suppressed to force a pass. No hosted G3/G4/G5 claim is made.
+
+Final private configuration recheck still found a local model endpoint and three missing named shop recipient keys. Rootlane remains ready as an explicitly recorded static review. Only temporary test databases/server/browser were cleaned up; the real G1 ledger, existing Render resources, public URLs and private hosted settings remain unchanged. GitHub recognizes MIT. The following documentation-only commit does not change the verified application/test trees. [Exact owner actions](docs/ACTIONS.md).
+
 ## October 23, 2026 — final rejection-state check and green application CI
 
 **75/75 backend contracts passed against isolated PostgreSQL, zero skips (27.604 seconds)**; Ruff/diff checks passed. A definitive authorization rejection now projects Needs review rather than leaving the shopper on a spinning approval; no charge or fulfillment is fabricated. Stock and original operations remain available for recovery. The additional regression verifies the provider rejection, honest state and no confirmed payment. Only its disposable database was removed.
