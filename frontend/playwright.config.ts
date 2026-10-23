@@ -11,6 +11,7 @@ export default defineConfig({
     ? undefined
     : {
         command: "npm run dev -- --port 5173",
+        env: { VITE_RALLY_TEST_HARNESS: "1" },
         url: "http://127.0.0.1:5173",
         reuseExistingServer: true,
       },

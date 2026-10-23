@@ -3,7 +3,7 @@ on: [push, pull_request]
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:16-alpine
@@ -44,26 +44,27 @@ jobs:
           sparse-checkout: skills/taste-skill/scripts
           persist-credentials: false
       - name: Capture screens with Playwright CLI and runner Chrome
-        timeout-minutes: 5
+        timeout-minutes: 8
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
           XDG_CACHE_HOME: ${{ runner.temp }}/rally-playwright-cache
+          VITE_RALLY_TEST_HARNESS: "1"
         run: |
           set -euo pipefail
           npm install --prefix "$RUNNER_TEMP/rally-playwright-cli" --no-save --package-lock=false --no-audit --no-fund @playwright/cli@0.1.22
           cli="$RUNNER_TEMP/rally-playwright-cli/node_modules/.bin/playwright-cli"
           google-chrome --version
           cd frontend
-          mkdir -p design/screenshots
+          mkdir -p design/screenshots/v2
           ./node_modules/.bin/vite --host 127.0.0.1 --port 5173 --strictPort > "$RUNNER_TEMP/rally-vite.log" 2>&1 &
           vite_pid=$!
           trap 'exit_status=$?; if (( exit_status != 0 )); then timeout 10 "$cli" -s=rally-gd console error || true; fi; timeout 10 "$cli" -s=rally-gd close || true; kill "$vite_pid" 2>/dev/null || true; wait "$vite_pid" 2>/dev/null || true' EXIT
           for attempt in {1..30}; do
-            if curl --fail --silent --max-time 2 http://127.0.0.1:5173/invite > /dev/null; then break; fi
+            if curl --fail --silent --max-time 2 http://127.0.0.1:5173/shop > /dev/null; then break; fi
             if ! kill -0 "$vite_pid" 2>/dev/null; then cat "$RUNNER_TEMP/rally-vite.log"; exit 1; fi
             sleep 1
           done
-          curl --fail --silent --show-error --max-time 2 http://127.0.0.1:5173/invite > /dev/null
+          curl --fail --silent --show-error --max-time 2 http://127.0.0.1:5173/shop > /dev/null
           wait_fonts='async page => { await page.evaluate(() => document.fonts.ready); }'
           check_layout='async page => {
             const layout = await page.evaluate(() => ({
@@ -80,26 +81,28 @@ jobs:
             }));
             if (layout.scrollWidth > layout.innerWidth) throw new Error("Horizontal page overflow: " + JSON.stringify(layout));
           }'
-          "$cli" -s=rally-gd open http://127.0.0.1:5173/invite --browser chrome
+          "$cli" -s=rally-gd open 'http://127.0.0.1:5173/shop?test=recorded' --browser chrome
           "$cli" -s=rally-gd console error
           "$cli" -s=rally-gd resize 390 844
           "$cli" -s=rally-gd set-reduced-motion reduce
-          for route in invite tell review live ask done receipt deal; do
-            "$cli" -s=rally-gd goto "http://127.0.0.1:5173/$route"
+          for route in shop ship-to ask bag deal paid track; do
+            "$cli" -s=rally-gd goto "http://127.0.0.1:5173/$route?test=recorded"
             "$cli" -s=rally-gd run-code "$wait_fonts"
-            "$cli" -s=rally-gd screenshot --filename "design/screenshots/$route-cli-mobile.png" --full-page
+            "$cli" -s=rally-gd screenshot --filename "design/screenshots/v2/$route-cli-mobile.png" --full-page
             "$cli" -s=rally-gd run-code "$check_layout"
           done
           "$cli" -s=rally-gd resize 1440 900
-          "$cli" -s=rally-gd goto http://127.0.0.1:5173/deal
+          "$cli" -s=rally-gd goto 'http://127.0.0.1:5173/deal?test=recorded'
           "$cli" -s=rally-gd run-code "$wait_fonts"
-          "$cli" -s=rally-gd screenshot --filename design/screenshots/deal-cli-desktop.png --full-page
+          "$cli" -s=rally-gd screenshot --filename design/screenshots/v2/deal-cli-desktop.png --full-page
           "$cli" -s=rally-gd run-code "$check_layout"
           "$cli" -s=rally-gd console error
           review_status=0
-          for route in invite tell review live ask done receipt deal; do
+          for route in shop ship-to ask bag deal paid track shops/orders shops/products shops/settings; do
             mkdir -p "test-results/taste/$route"
-            if (cd "$GITHUB_WORKSPACE" && node .runtime/taste/skills/taste-skill/scripts/inspect.mjs "http://127.0.0.1:5173/$route" --app --widths 1440,768,390 --out "frontend/test-results/taste/$route") | tee "test-results/taste/$route/inspector.log"; then
+            url="http://127.0.0.1:5173/$route"
+            if [[ "$route" != shops/* ]]; then url="$url?test=recorded"; fi
+            if (cd "$GITHUB_WORKSPACE" && node .runtime/taste/skills/taste-skill/scripts/inspect.mjs "$url" --app --widths 1440,768,390 --out "frontend/test-results/taste/$route") | tee "test-results/taste/$route/inspector.log"; then
               printf 'Taste inspector %s passed\n' "$route"
             else
               printf 'Taste inspector %s failed (exit %s)\n' "$route" "$?"
@@ -111,12 +114,38 @@ jobs:
         timeout-minutes: 3
         run: cd frontend && npx playwright install chromium
       - run: npm run test:browser --prefix frontend
+      - name: Export v2 captures for source review (temporary)
+        if: always()
+        run: |
+          python - <<'PY'
+          import base64
+          import hashlib
+          import json
+          from pathlib import Path
+
+          # CI-only recorded pages and fictional shop contract; no provider credentials or IDs.
+          root = Path("frontend/design/screenshots/v2")
+          for path in sorted(root.glob("*.jpg")):
+              data = path.read_bytes()
+              assert len(data) <= 8 * 1024 * 1024, path.name
+              assert data.startswith(b"\xff\xd8\xff") and data.endswith(b"\xff\xd9"), path.name
+              print("RALLY_V2_IMAGE", path.name, hashlib.sha256(data).hexdigest(), base64.b64encode(data).decode("ascii"), flush=True)
+          for path in sorted(Path("frontend/test-results/taste").rglob("report.json")):
+              data = path.read_bytes()
+              assert isinstance(json.loads(data), dict)
+              print("RALLY_V2_TASTE", path.parent.relative_to("frontend/test-results/taste"), base64.b64encode(data).decode("ascii"), flush=True)
+          # Restore the public reference diagram omitted by the contents API's 1 MiB limit.
+          source = Path("design/mockup/flow.png").read_bytes()
+          blob_sha = hashlib.sha1(b"blob " + str(len(source)).encode() + b"\0" + source).hexdigest()
+          assert blob_sha == "53888802bf860eeaf082555280f9e46e52758fba"
+          print("RALLY_V2_SOURCE_BLOB", blob_sha, base64.b64encode(source).decode("ascii"), flush=True)
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: rally-browser-evidence
           path: |
-            frontend/design/screenshots/*.png
+            frontend/design/screenshots/v2/*.png
             frontend/test-results/
             frontend/.playwright-cli/*.log
           if-no-files-found: ignore

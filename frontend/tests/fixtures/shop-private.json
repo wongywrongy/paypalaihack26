@@ -1,0 +1,41 @@
+{
+  "shopId": "dalbit",
+  "readOnly": true,
+  "products": [
+    {
+      "id": "dal-rice-toner",
+      "listed": 2100,
+      "lowest": 1600,
+      "cost": 700,
+      "goal": "Volume"
+    },
+    {
+      "id": "dal-snail-essence",
+      "listed": 2300,
+      "lowest": 1800,
+      "cost": 800,
+      "goal": "Volume"
+    },
+    {
+      "id": "dal-snail-essence",
+      "listed": 2300,
+      "lowest": 1200,
+      "cost": 800,
+      "goal": "Clear older packaging",
+      "variant": "older",
+      "stock": 40,
+      "days": 150
+    }
+  ],
+  "order": {
+    "id": "RL-24817",
+    "payout": 3500,
+    "gain": 550,
+    "sampleCost": 150,
+    "status": "Waiting for hand-off"
+  },
+  "settings": {
+    "older": true,
+    "autoAccept": true
+  }
+}

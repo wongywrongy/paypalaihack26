@@ -1,5 +1,15 @@
 # Rally evidence
 
+## October 22, 2026 — version 2 and CAD foundation
+
+Imported the two signed branch revisions through `fb2772c9` (solo international shopping), preserving local purchases, payment operations and the approved running preview. Shell Git DNS is unavailable. GitHub connector import verified both signed commit identities and both trees. One oversized reference image, `design/mockup/flow.png`, could not be downloaded through the contents API and is omitted locally via the index; all application source, scenario data and individual reference screens are present.
+
+[Backend run 39871010940](https://github.com/wongywrongy/paypalaihack26/actions/runs/39871010940), source `46041581`, passed **37 backend tests against PostgreSQL 16 with no skips**, including additive hold-currency migration and USD/CAD lifecycle contracts. Ruff, the parent frontend build/render checks, 48 parent-version Playwright cases and eight Taste checks passed; CLI console had zero errors/warnings. Those frontend counts concern the retired interface, not GD2. Provider responses were doubles; this is not G1 evidence.
+
+Read-only preflight at 23:02 UTC: PayPal identifiers/credentials and DATABASE_URL are configured privately; local TCP bind was denied, PostgreSQL returned OperationalError, and sandbox OAuth returned ConnectError. No credential value was printed or copied. Rootlane can observe the existing frontend but cannot execute G1 remotely. No provider mutation, account preference, webhook destination, Render configuration or external route changed. **G1 remains open**, now requiring completed CAD evidence as well as the USD lifecycle, payout and genuine reconciled webhook. [Exact three-approval procedure](docs/DEMO.md#g1-three-human-paypal-approvals).
+
+GD2 work replaces the group-order UI; its actual rendered checks and critique will be recorded separately. Earlier sections below are preserved historical evidence for the retired group-order implementation, not proof of v2 agents, payments or fulfillment.
+
 ## October 22, 2026 — visible bargaining example
 
 [Run 39860472878](https://github.com/wongywrongy/paypalaihack26/actions/runs/39860472878), source `a4533264`, passed 31 backend tests with PostgreSQL available, Ruff/build/render/preview-host checks, **48 Playwright cases** and eight Taste inspections with zero FAIL. Initial/final CLI console: zero errors/warnings. Four Playwright cases are fixture-only; provider calls use doubles. Twelve changed-screen JPEGs were hash-verified and visually reviewed. [Demo, screenshots and limits](frontend/design/bartering.md).
@@ -34,6 +44,6 @@ PLAN.md on `rally` (October 22) is authoritative. The original workspace and dat
 ## Remaining gates
 
 - **G1 not passed:** no genuine order, authorization, capture, void, refund, payout or verified webhook was executed; no provider IDs exist for this run. After the owner's update, `PAYPAL_MERCHANT_ID` and `PAYPAL_SHOP_EMAIL` both load privately from the existing `.env`. Read-only PostgreSQL preflight still returned `OperationalError`; PayPal sandbox OAuth returned `ConnectError`. No credential values were printed or copied. Reachable runtime access remains necessary.
-- **GD passed:** ten exact captures were recovered and hash-verified; two independent Impeccable assessments inspected them. The mobile table finding is fixed; final score 34/40, zero source-detector findings, no unresolved P0–P2 findings within fixture scope. [Screenshots, critique and limits](frontend/design/GD.md). Screen-reader, zoom and physical-device checks remain unexecuted.
-- **M2–M5 not started:** PLAN.md requires G1 before the main engine work. Member screens remain labeled fixture previews. [G1 procedure](docs/DEMO.md#g1-the-two-human-approvals) specifies the two human approvals and reconciliation steps.
+- **Retired GD passed:** ten group-order captures were recovered and hash-verified; two independent Impeccable assessments inspected them. That 34/40 assessment applies only to the retired interface. [Historical screenshots and limits](frontend/design/GD.md). V2 GD2 requires its own rendered verification and critique. Screen-reader, native zoom and physical-device checks remain unexecuted.
+- **M2–M5 not started:** current PLAN.md requires G1 before the main engine work. V2 design uses an explicit recorded-event test harness; it does not establish connected payment success. [Current G1 procedure](docs/DEMO.md#g1-three-human-paypal-approvals) specifies the three human approvals and reconciliation steps.
 - The new migration targets only `rally`; existing public tables and Compose volume names are preserved. No database or volume deletion was performed.

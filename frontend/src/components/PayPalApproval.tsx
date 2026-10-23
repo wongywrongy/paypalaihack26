@@ -80,7 +80,7 @@ export default function PayPalApproval({
           },
           onCancel: () =>
             callbacks.current.onError(
-              "PayPal approval canceled. You have not joined the group.",
+              "PayPal approval canceled. You have not been charged.",
             ),
           onError: () =>
             callbacks.current.onError(
@@ -102,6 +102,6 @@ export default function PayPalApproval({
   }, [clientId, commitment.id, commitment.order_id, attempt]);
   return <div className="paypal-buttons">
     <div ref={ref} hidden={failed} />
-    {failed && <button className="coalition-button" onClick={() => { callbacks.current.onError(""); setAttempt(n => n + 1); }}>Retry PayPal approval</button>}
+    {failed && <button className="primary" onClick={() => { callbacks.current.onError(""); setAttempt(n => n + 1); }}>Retry PayPal approval</button>}
   </div>;
 }

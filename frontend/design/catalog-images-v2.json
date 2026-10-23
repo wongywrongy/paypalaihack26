@@ -1,0 +1,287 @@
+{
+  "generator": "Built-in image_gen.imagegen",
+  "date": "2026-10-22",
+  "art_direction": "Warm ivory seamless studio; soft upper-left daylight; whole fictional product visible; restrained labels; no real brands or logos.",
+  "review": "All 31 final images visually inspected for matching product/size, readable fictional label, framing and stray real brands. No rejected images. PNG originals retained without post-generation pixel edits.",
+  "prompts": [
+    {
+      "id": "mul-gel-cleanser",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. A single fictional Mulgyeol Low-pH Gel Cleanser 150 ml standing upright, pale translucent icy blue squeeze tube, matte deep blue-green flat cap at bottom, small understated white label with exact fictional brand text 'Mulgyeol' and 'Low-pH Gel Cleanser', subtle tiny '150 ml'. Three-quarter front view, whole container visible and centered occupying 68% of square frame with equal breathing room, warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, delicate realistic grounded shadow. Photorealistic premium Korean skincare packaging, restrained simple typography and no decorative props. No real brands, no real logos, no watermark, no UI, no additional containers, no gradients or frame. Match a unified warm neutral catalog art direction. This is a new standalone product asset.",
+      "path": "frontend/public/assets/products/mul-gel-cleanser.png",
+      "bytes": 1675851,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "834e42882714588eda44cb61167815adf946583f320d2daa8b6d2ca81af12c77"
+    },
+    {
+      "id": "mul-oil-cleanser",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a tall transparent pale green 200 ml bottle with deep teal pump, subtle green tea liquid. Exact fictional brand label text 'Mulgyeol'; exact product name 'Green Tea Cleansing Oil'; subtle tiny size '200 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/mul-oil-cleanser.png",
+      "bytes": 1630204,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "4d972bc309724f4e48ba44c9265327ac71f877cfd4989728d99d8814161dcba6"
+    },
+    {
+      "id": "hay-foam",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a pearly rice-white 120 ml squeeze tube with pale warm-gray bottom cap. Exact fictional brand label text 'Hayan'; exact product name 'Rice Foam Cleanser'; subtle tiny size '120 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/hay-foam.png",
+      "bytes": 1576112,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "a3c96cf482188d580d461f950f1c13741a2c9770c214f2445435c4d2d1c1d3d0"
+    },
+    {
+      "id": "dal-rice-toner",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a milky white 150 ml round bottle with a matte champagne gold screw cap. Exact fictional brand label text 'Dalbit'; exact product name 'Rice Toner'; subtle tiny size '150 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/dal-rice-toner.png",
+      "bytes": 1607916,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "e2137416bf31f80303e402bc17440957b340c6059a4842da4364ea383cb5bc05"
+    },
+    {
+      "id": "mul-hydro-toner",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a transparent icy blue 200 ml tall cylinder bottle with navy blue screw cap. Exact fictional brand label text 'Mulgyeol'; exact product name 'Hyaluronic Water Toner'; subtle tiny size '200 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/mul-hydro-toner.png",
+      "bytes": 1621114,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "d243f5e5038df83093fa7c971ef2e9fe7e5a4806a191dda8140bbc646f083d6a"
+    },
+    {
+      "id": "byeol-pad",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a short frosted pale lavender cylindrical 70-pad tub with dark plum lid. Exact fictional brand label text 'Byeolbit'; exact product name 'Exfoliating Toner Pads'; subtle tiny size '70 pads'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/byeol-pad.png",
+      "bytes": 1693606,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "dc67b0efe79bed2fa40510e5de8050d3433a76f7afcc64ae31e1399839105d7c"
+    },
+    {
+      "id": "dal-snail-essence",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a warm amber transparent 100 ml cylindrical pump bottle, white pump and ivory rectangular label. Exact fictional brand label text 'Dalbit'; exact product name 'Snail Essence'; subtle tiny size '100 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/dal-snail-essence.png",
+      "bytes": 1621128,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "2927b2ca80b1d168476b5f2af497f4c4d60419478ea74ee5c85dc95a5f52ba09"
+    },
+    {
+      "id": "gur-ferment-essence",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a tall frosted smoky-beige 150 ml glass bottle with warm gray cap. Exact fictional brand label text 'Gureum'; exact product name 'Ferment Essence'; subtle tiny size '150 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/gur-ferment-essence.png",
+      "bytes": 1590317,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "4b78aff2c48a65631df981f5ce169def9b370f4a4e550b9366f3af32d7cd0ecb"
+    },
+    {
+      "id": "byeol-vitc",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a golden yellow 30 ml glass dropper bottle with matte black bulb and pale amber label. Exact fictional brand label text 'Byeolbit'; exact product name 'Vitamin C Serum'; subtle tiny size '30 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/byeol-vitc.png",
+      "bytes": 1744281,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "fb2e50d3e3296fce258a422cfbe2758a854f9acc106c63b372d96cf190b395c8"
+    },
+    {
+      "id": "byeol-niacin",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a translucent pale lavender 30 ml glass dropper bottle with ivory bulb and white label. Exact fictional brand label text 'Byeolbit'; exact product name 'Niacinamide Serum'; subtle tiny size '30 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/byeol-niacin.png",
+      "bytes": 1732545,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "aa61cad79a68b6cafaf9f7b668b1de37364840786fa66f7a801fb0d7a2bd0a79"
+    },
+    {
+      "id": "sae-propolis",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a honey amber 30 ml glass dropper bottle with forest green bulb and warm ivory label. Exact fictional brand label text 'Saebom'; exact product name 'Propolis Ampoule'; subtle tiny size '30 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/sae-propolis.png",
+      "bytes": 1766757,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "2d2e29d44fd9328eb98fe93bfefb678652886618c77120cf17cad510b40ea610"
+    },
+    {
+      "id": "dal-ginseng",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a deep amber 50 ml glass dropper bottle with champagne gold collar and black bulb. Exact fictional brand label text 'Dalbit'; exact product name 'Ginseng Serum'; subtle tiny size '50 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/dal-ginseng.png",
+      "bytes": 1718849,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "80b8a766c7fceeb35eca66b328ab416f3ff0ad62381d75bd2e68fea2660336a8"
+    },
+    {
+      "id": "sae-cica-cream",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a low frosted white 50 ml cream jar with wide muted sage green lid and tiny leaf mark. Exact fictional brand label text 'Saebom'; exact product name 'Cica Barrier Cream'; subtle tiny size '50 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/sae-cica-cream.png",
+      "bytes": 1678697,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "4f71bb7cf4f3c04e57c926287b49b5c8251d04d32e3fd5b9aea01ab94631cd08"
+    },
+    {
+      "id": "gur-water-gel",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a low translucent pale blue 75 ml gel jar with light slate-blue lid. Exact fictional brand label text 'Gureum'; exact product name 'Water Gel Cream'; subtle tiny size '75 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/gur-water-gel.png",
+      "bytes": 1690189,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "e42db5e1dc2b165d66980933d4e611a3c60649e41da342e4590895d35de086b0"
+    },
+    {
+      "id": "hay-rice-cream",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a soft ivory ceramic-like 60 ml cream jar with warm beige lid. Exact fictional brand label text 'Hayan'; exact product name 'Rice Ceramide Cream'; subtle tiny size '60 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/hay-rice-cream.png",
+      "bytes": 1653433,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "e2df185a55bc8044f68c4add3cf07da48958d9421940311b21c3af41a4775f63"
+    },
+    {
+      "id": "dal-snail-cream",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a pale peach frosted 50 ml cream jar with ivory lid and gold fine-line mark. Exact fictional brand label text 'Dalbit'; exact product name 'Snail Repair Cream'; subtle tiny size '50 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/dal-snail-cream.png",
+      "bytes": 1667804,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "4d73c0ec94654f162f8a568d4899904351061362cbc9c9872cd3363fb39821f8"
+    },
+    {
+      "id": "hay-eye",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a slim pearly ivory 20 ml squeeze tube with pointed gold screw cap at bottom. Exact fictional brand label text 'Hayan'; exact product name 'Retinal Eye Cream'; subtle tiny size '20 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/hay-eye.png",
+      "bytes": 1635323,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "f80f6eba7df7326f783640497094d416860b746fa8897539b5ba90feadba9c15"
+    },
+    {
+      "id": "dal-cica-mask",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: one pale sage green foil sheet-mask sachet standing upright front-facing with simple small leaf symbol. Exact fictional brand label text 'Dalbit'; exact product name 'Cica Sheet Mask'; subtle tiny size '1 sheet'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/dal-cica-mask.png",
+      "bytes": 1971072,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "6ba5a1f950bc917b7cf51c470e816eb1c8c0dad90aa1f8027e438cd3e998f248"
+    },
+    {
+      "id": "dal-mask-box",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a pale sage green rectangular carton box containing ten sheet masks, one matching sachet leaning beside it. Exact fictional brand label text 'Dalbit'; exact product name 'Cica Sheet Masks'; subtle tiny size 'Box of 10'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/dal-mask-box.png",
+      "bytes": 1903529,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "bfd12a4135b8e196635ace83734d2d64501c3e8f5ee72d77776f75fe5cfac005"
+    },
+    {
+      "id": "gur-sleep",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a wide dusky blue frosted 80 ml overnight-mask jar with deep blue lid. Exact fictional brand label text 'Gureum'; exact product name 'Overnight Sleeping Mask'; subtle tiny size '80 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/gur-sleep.png",
+      "bytes": 1746168,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "5ee730c3800c2ac80481694064f5fa8f1392a41cb89720039f15ae0f2d78cfe5"
+    },
+    {
+      "id": "byeol-clay",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a warm taupe 100 ml clay-mask jar with charcoal lid. Exact fictional brand label text 'Byeolbit'; exact product name 'Volcanic Clay Mask'; subtle tiny size '100 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/byeol-clay.png",
+      "bytes": 1897902,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "7863b76759fd6b675b530af76178603e291ea355a268be8d69d957d281631c9b"
+    },
+    {
+      "id": "sae-lip",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a tiny honey amber 20 g lip-mask jar with muted green lid. Exact fictional brand label text 'Saebom'; exact product name 'Honey Lip Sleeping Mask'; subtle tiny size '20 g'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/sae-lip.png",
+      "bytes": 1788146,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "50c7dd95ea84cef5d32a6c01049ec962b6e715de23c1c97128d42f3fb4ebd65f"
+    },
+    {
+      "id": "hay-tint",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a slim 4 g translucent rose-tinted lip-tint vial with ivory tall cap. Exact fictional brand label text 'Hayan'; exact product name 'Water Lip Tint'; subtle tiny size '4 g'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/hay-tint.png",
+      "bytes": 1579351,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "28c446509c7091bf56f6148c7ef3411b3a5f949539916281a2f6157b1916eab7"
+    },
+    {
+      "id": "mul-sun-essence",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a pale icy blue 50 ml sunscreen squeeze tube with deep teal bottom cap. Exact fictional brand label text 'Mulgyeol'; exact product name 'Watery Sun Essence SPF 50+'; subtle tiny size '50 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/mul-sun-essence.png",
+      "bytes": 1573485,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "8750f730f29bc2610018a3e37fd2be967fe25c69913ef8536dbaf79e590ed577"
+    },
+    {
+      "id": "gur-sun-stick",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a small pale blue rounded rectangular 19 g sunscreen stick with slate-blue lid. Exact fictional brand label text 'Gureum'; exact product name 'Sun Stick SPF 50+'; subtle tiny size '19 g'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/gur-sun-stick.png",
+      "bytes": 1607529,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "c9f63ae549dcf00ee34b53e7f8b8b481393b2fb4430f2ec3dec087d9d29ea34f"
+    },
+    {
+      "id": "sae-mist-spray",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a tall pale sage green 120 ml aerosol can with matching rounded cap. Exact fictional brand label text 'Saebom'; exact product name 'Toner Mist, aerosol'; subtle tiny size '120 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/sae-mist-spray.png",
+      "bytes": 1648527,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "690ca8237c4389721103b3a3f5a8b76e34af60564616ed189d06cde6972f6d20"
+    },
+    {
+      "id": "sae-mist-pump",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a tall translucent pale sage green 120 ml fine-mist pump bottle with transparent cap. Exact fictional brand label text 'Saebom'; exact product name 'Toner Mist, pump'; subtle tiny size '120 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/sae-mist-pump.png",
+      "bytes": 1628042,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "e913b9e3e3be5a5a24be221da753b9a821519906bcfdde96337f2763a03ae7c1"
+    },
+    {
+      "id": "dal-travel-kit",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a four-mini skincare travel set: small milky toner bottle, amber pump bottle, ivory cream jar, ivory squeeze tube grouped neatly on one plane. Exact fictional brand label text 'Dalbit'; exact product name 'Snail Travel Kit'; subtle tiny size '4 minis'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/dal-travel-kit.png",
+      "bytes": 1623019,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "bf6d1c17170ec51748eb03c26630d735e4f00bc4b62574b777814e3ef62868c3"
+    },
+    {
+      "id": "mul-starter",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a three-item hydrating skincare starter set: tall pale blue bottle, pale blue squeeze tube and small blue cream jar grouped neatly on one plane. Exact fictional brand label text 'Mulgyeol'; exact product name 'Hydration Starter Set'; subtle tiny size '3 items'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/mul-starter.png",
+      "bytes": 1615272,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "8f78f52993e1bfd8ce7cff1375ffbd288618869eda2d495906b63f776855cb7f"
+    },
+    {
+      "id": "byeol-spot",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a slim pale lavender resealable skincare patch sachet, 36 patches, small restrained circular pattern. Exact fictional brand label text 'Byeolbit'; exact product name 'Spot Patches'; subtle tiny size '36 patches'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/byeol-spot.png",
+      "bytes": 1722917,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "0c30dbb5d38912d1f1e36ab14901397fc65d2b613b449df3c9fa27016e324a82"
+    },
+    {
+      "id": "dal-snail-essence-older",
+      "prompt": "Use case: product-mockup. Asset type: square ecommerce skincare catalog photograph for Rally. Subject: a warm amber transparent 100 ml cylindrical pump bottle with dark black cap and older black-and-gold minimalist label. Exact fictional brand label text 'Dalbit'; exact product name 'Snail Essence'; subtle tiny size '100 ml'. Whole packaging visible, centered, product occupying 68% of square frame with even breathing room, near-front three-quarter view. Photorealistic premium Korean skincare packaging with simple understated typography. Unified catalog art direction: warm ivory seamless studio tabletop and background (#F7F4F0), soft natural daylight from upper left, fine realistic grounded shadow. No decorative props, no real brands or logos, no watermark, no UI, no frame, no unrelated text or containers. This is a new standalone product asset, one asset only.",
+      "path": "frontend/public/assets/products/dal-snail-essence-older.png",
+      "bytes": 1703255,
+      "width": 1254,
+      "height": 1254,
+      "sha256": "ec6310aff0ffd124eb254476b8604b5eac233f72b2dcc3112d38022e85287f12"
+    }
+  ]
+}

@@ -6,13 +6,17 @@
 
 ## Current state
 
-The frontend in `frontend/src/` and the notes in `frontend/design/` and `docs/DEMO.md` still show the retired group-order version. Its scenario lives in `design/scenario/retired-group-order/` so the build stays green until the design track replaces the routes (gate GD2). **G1 remains open:** the payments code exists, but no real sandbox authorize, capture, void, refund, payout or verified webhook has run yet, because the previous build host could not reach PostgreSQL or PayPal. [EVIDENCE.md](EVIDENCE.md) records executed checks and blockers.
+The v2 frontend replaces the group-order routes with Shop, Ship to, Ask, Bag, Deal, Paid, Track and Rally for shops. It includes the 30-product catalog, five destination currencies, category filters, persistent bag/rules, exact saved-scenario cost breakdowns and an event-driven Deal player. Generated catalog photographs use fictional labels. [Architecture and data boundaries](docs/ARCHITECTURE.md) distinguish implemented modules from later milestones.
+
+**This is the design track, not the connected judge flow.** Ordinary builds cannot manufacture an approved hold or a paid order: checkout is unavailable until M3 integration, order screens require order data and shop screens require a scoped API response. CI explicitly enables a compile-time harness for recorded deal/receipt/tracking events and authenticated shop contract responses. No live model negotiates in that harness. The local quote display follows the reference scenario's cheapest-listed-item selection; it is not the M2 lowest-all-in sourcing engine.
+
+**G1 remains open:** credentials are configured, but this coding runtime cannot reach PostgreSQL or PayPal. The payment foundation now persists USD/CAD/GBP/EUR/AUD on holds and inherits currency through capture/refund/reconciliation. The G1 script preserves existing USD runs and additionally requires completed CAD proof. No genuine sandbox lifecycle has been verified. [EVIDENCE.md](EVIDENCE.md) records executed checks and blockers; [the demo procedure](docs/DEMO.md) separates design checks from the three human PayPal approvals.
 
 ## Real and simulated
 
 - **Real when verified:** buyer-approved PayPal sandbox orders, holds, lower final captures, voids, refunds and payouts to shop sandbox accounts; signed webhooks and reconciliation; hosted model calls during each deal. Sandbox uses test money.
 - **Simulated:** the three shops, six brands and their products, stock, prices and lowest prices; the Seoul hub, parcels and delivery; FX rates and shipping rate cards. Duty and import tax come from a dated rate table with sources; rows not yet verified are labeled estimates.
-- **Test-only:** fixture data and provider doubles in tests and CI. They never establish payment success.
+- **Test-only:** recorded deal/receipt/tracking events and private shop contract responses in the explicitly enabled GD2 harness, and provider doubles in unit/CI tests. They never establish payment success. An ordinary production build excludes that harness and all private shop fixture data.
 
 Rally is the sandbox merchant of record. Money movement belongs to deterministic code and the payment ledger. The LLM never accepts a deal, never sees a shop's lowest prices or costs, and never moves money. The product UI reads as a real shop; the only sandbox marker is a "Test mode" pill, and this section is where simulation is disclosed.
 
@@ -27,7 +31,9 @@ npm ci --prefix frontend
 npm run dev --prefix frontend
 ```
 
-The frontend reads the scenario through one typed module until M3 wires the real API. Backend modules:
+The frontend reads a generated public scenario through one typed module until M3 wires the real API. `frontend/scripts/project-scenario.mjs` allow-lists public fields; Vite rejects raw private scenario/test-fixture imports into the browser graph. Check projection freshness with `npm run test:render --prefix frontend` after changing the reference scenario.
+
+For the recorded GD2 journey only, start a separate local test server with `VITE_RALLY_TEST_HARNESS=1 npm run dev --prefix frontend` and open `/deal?test=recorded`. That flag is deliberately absent from Render and the normal build. The documented CI path injects shop responses; it is not production authentication. Backend modules:
 
 ```bash
 PYTHONPATH=backend .venv/bin/python -m rally.db
@@ -51,6 +57,6 @@ npm run test:browser --prefix frontend
 
 Unit/contract tests inject provider doubles; they need no payment credentials. PostgreSQL integration requires `RALLY_TEST_DATABASE_URL` pointing to an explicitly disposable database.
 
-See the real-sandbox script in `scripts/` for its explicit human approval checkpoints. Never claim G1 until provider-confirmed IDs and a verified webhook are recorded. The final Devpost submission, judge flow and benchmark are later milestones, not present capabilities.
+See the real-sandbox script in `scripts/` for its explicit human approval checkpoints. `verify` now requires the USD lifecycle, payout, genuine verified webhook and a received CAD payment; `verify-usd` reports only legacy USD evidence. Never claim G1 until provider-confirmed IDs and a verified webhook are recorded. The connected engine, live model stream, final Devpost submission, judge flow and benchmark are later milestones, not present capabilities. Earlier `frontend/design/*.md` records describe the retired group-order screens unless explicitly marked v2.
 
 MIT licensed; [third-party notices](THIRD_PARTY_NOTICES.md) retain dependency attribution.

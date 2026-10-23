@@ -1,25 +1,19 @@
-import type { ReactNode } from 'react';
-import { fixture as f, money, type Product } from '../fixture';
-export function Arrow({ back = false }: { back?: boolean }) {
-  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d={back ? 'm14 6-6 6 6 6M8 12h12' : 'M4 12h15m-5-6 6 6-6 6'} /></svg>;
+import { useState, type ReactNode } from 'react';
+import { currency, href, money, price, product, shops, type Breakdown as Costs, type CountryCode, type Line, type Product } from '../fixture';
+import { useBag } from '../state';
+export function Arrow({ back = false }: { back?: boolean }) { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d={back ? 'm14 6-6 6 6 6M8 12h12' : 'M4 12h15m-5-6 6 6-6 6'} /></svg>; }
+export function Photo({ item, older = false }: { item: Product; older?: boolean }) {
+  const [failed, setFailed] = useState(false);
+  const fallback = item.category === 'Cleanser' ? 'cleanser' : item.category === 'Toner' ? 'toner' : item.category === 'Moisturizer' || item.category === 'Eye' || item.category === 'Lip' ? 'cream' : item.category === 'Mask' || item.category === 'Care' ? 'masks' : item.category === 'Essence' ? older ? 'essence-old' : 'essence' : 'serum';
+  return <img className="product-photo" src={failed ? `/assets/product-fallback/${fallback}.svg` : `/assets/products/${item.id}${older ? '-older' : ''}.png`} onError={() => setFailed(true)} alt={`${item.brand} ${item.name}, ${item.size}${older ? ', older packaging' : ''}`} width="320" height="320" />;
 }
-export function Photo({ product }: { product: Product }) {
-  return <div className={`photo photo-${product.photo}`}><picture><source srcSet="/assets/dalbit-products.webp" type="image/webp" /><img src="/assets/dalbit-products.png" alt={`Dalbit ${product.name}, ${product.detail}`} width="1254" height="1254" /></picture></div>;
+export function Header({ title, back }: { title?: string; back?: string }) {
+  const { bag } = useBag();
+  return <header className="header">{back ? <a href={href(back)} className="back" aria-label="Go back"><Arrow back /></a> : <a href={href('/shop')} className="wordmark">rally<span aria-hidden="true">.</span></a>}{title && <span className="header-title">{title}</span>}<span className="test-mode">Test mode</span>{!title && <a className="bag-link" href={href('/bag')} aria-label={`Bag, ${bag.items.length} items`}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M5 7h14l-1 14H6L5 7Zm4 0V5a3 3 0 0 1 6 0v2" /></svg><span>{bag.items.length}</span></a>}</header>;
 }
-export function Products({ agreed = false }: { agreed?: boolean }) {
-  return <ul className="products">{(agreed ? f.basket : f.catalog).map(product => <li key={product.id}>
-    <Photo product={product} /><div className="product-copy"><strong>{product.name}</strong><span>{agreed && product.id === 'ess_old' ? 'Old bottle · same formula' : `Dalbit · ${product.detail}`}</span></div><span className="money product-price">{money(agreed ? product.agreed : product.list)}</span>
-  </li>)}{agreed && <li className="extra"><div className="sample-mark" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 9h16v11H4zM3 6h18v4H3zM12 6v14" /><path d="M12 6C6-2 3 7 12 6Zm0 0c6-8 9 1 0 0Z" /></svg></div><div className="product-copy"><strong>Sample kit</strong><span>Five little things to try</span></div><span className="saving">Free</span></li>}</ul>;
-}
-export function Breakdown() {
-  return <details className="breakdown"><summary>See full breakdown</summary><dl>{f.costs.map(cost => <div key={cost.label}><dt>{cost.label}</dt><dd className="money">{money(cost.cents)}</dd></div>)}<div className="total-row"><dt>Total</dt><dd className="money">{money(f.total)}</dd></div></dl><p className="fine">Duty, customs fee and tax are estimates. If customs costs less, you get the difference back.</p></details>;
-}
-export function Action({ href, children, note }: { href: string; children: ReactNode; note?: ReactNode }) {
-  return <footer className="actions"><a className="primary" href={href}>{children}<Arrow /></a>{note && <p className="fine">{note}</p>}</footer>;
-}
-export function Header({ back, title }: { back?: string; title?: string }) {
-  return <header className="header">{back ? <a className="back" href={back} aria-label="Go back"><Arrow back /></a> : <a className="wordmark" href="/invite">rally<span aria-hidden="true">.</span></a>}{title ? <span className="header-title">{title}</span> : <span className="community">{f.community}</span>}<span className="example">Example</span></header>;
-}
-export function Screen({ children, back, title, className = '' }: { children: ReactNode; back?: string; title?: string; className?: string }) {
-  return <main className={`member ${className}`}><Header back={back} title={title} /><div className="screen-content">{children}</div><p className="preview-note">An example group order. No money moves.</p></main>;
-}
+export function SiteFooter() { const { setBag, setNotice } = useBag(); return <footer className="site-footer"><a href="/shops/orders">Sell on Rally</a><button className="text-link" onClick={() => { setBag({ country: 'US', items: [], rules: { old_packaging_ok: true, add_small_extras_if_cheaper: true } }); setNotice('Your bag is clear.'); location.assign('/shop'); }}>Start over</button><a href="/assets/dependency-notices.txt">Licenses</a></footer>; }
+export function Screen({ children, title, back, wide = false }: { children: ReactNode; title?: string; back?: string; wide?: boolean }) { const { notice } = useBag(); return <main className={wide ? 'shop-screen' : 'member'}><Header title={title} back={back} /><div className="screen-content">{notice && <p className="status-note" role="status">{notice}</p>}{children}</div><SiteFooter /></main>; }
+export function Action({ to, children, onClick }: { to?: string; children: ReactNode; onClick?: () => void }) { return <div className="actions">{to ? <a className="primary" href={href(to)} onClick={onClick}>{children}<Arrow /></a> : <button className="primary" onClick={onClick}>{children}<Arrow /></button>}</div>; }
+export function Breakdown({ value }: { value: Costs }) { return <details className="breakdown"><summary>See breakdown</summary><dl>{(['goods', 'domestic', 'shipping', 'duty', 'tax', 'fee'] as const).map((key, index) => <div key={key}><dt>{['Items', 'Shipping in Korea', 'Shipping to you', 'Import duty (est.)', 'Tax (est.)', 'Rally fee'][index]}</dt><dd className="money">{money(value[key], value.currency)}</dd></div>)}<div className="total-row"><dt>Total</dt><dd className="money">{money(value.total, value.currency)}</dd></div></dl></details>; }
+export function ProductRows({ lines, country, remove }: { lines: Line[]; country: CountryCode; remove?: (id: string) => void }) { return <ul className="product-rows">{lines.map(line => <li key={line.id}><Photo item={product(line.id)} older={!!line.variant} /><div className="product-copy"><strong>{product(line.id).name}</strong><span>{product(line.id).brand} · {product(line.id).size}</span><small>{line.variant ? 'Older packaging' : shops[line.shop].name}{line.added ? ' · added for free shipping' : ''}</small>{remove && <button className="text-link remove" aria-label={`Remove ${product(line.id).name}`} onClick={() => remove(line.id)}>Remove</button>}</div><span className="money item-price">{price(line.unit, country)}</span></li>)}</ul>; }
+export function Unavailable({ title = 'Your order is not available', shop = false }: { title?: string; shop?: boolean }) { return <Screen title={shop ? 'Rally for shops' : 'Your order'} back="/shop"><h1>{title}</h1><p>{shop ? 'Sign in to your shop account to see orders, products and agent settings.' : 'Complete checkout to see your order here.'}</p><Action to="/shop">Back to the shop</Action></Screen>; }

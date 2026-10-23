@@ -20,3 +20,6 @@ Shopper screens are designed for a quick phone session at 390 px. Each screen an
 Contrast at least 4.5:1, touch targets at least 44 px, real buttons, links and labels, visible focus, keyboard access, reduced motion respected. Motion limited to the live deal: price markers sliding, agreed tracks turning mint, the total counting down; reduced motion shows each state without movement.
 ## Delegated Decisions
 Product imagery: replace the mockup illustrations with about 30 product images in one art direction, unbranded containers with fictional labels. Exact type scale, spacing and component details are open to refinement within the palette and type choices above; do not add a second accent.
+
+## GD2 implementation boundary
+The design gate uses recorded public offer events with the same subscription contract as the later server stream. Production checkout requires the real PayPal SDK and a server-created order; playback never authorizes, captures or confirms payment. Recorded paid/tracking views are reachable only in the explicitly compiled CI harness until authenticated order APIs land. Shop economics are loaded through a shop-scoped adapter, never included in the shopper scenario bundle.

@@ -2,61 +2,60 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import App from '../src/App';
-import { cents, fixture, money, publicOffers } from '../src/fixture';
+import { BagProvider } from '../src/state';
+import { Orders, Products, Settings } from '../src/routes/shops/Workspace';
+import shopData from './fixtures/shop-private.json' with { type: 'json' };
+import type { ShopSnapshot } from '../src/shop-api';
+import { applyEvent, initialDeal } from '../src/deal';
+import { allowed, catalog, cents, countries, countryCodes, events, finalLines, hero, landed, listedLines, money, quote, recordedMode } from '../src/fixture';
 
-const routes = [
-  ['/invite', 'Haneul Beauty,'],
-  ['/tell', 'What do you want?'],
-  ['/review', 'Your order.'],
-  ['/live', 'Working on a'],
-  ['/ask', 'Same formula.'],
-  ['/done', 'Deal reached.'],
-  ['/receipt', 'All set.'],
-  ['/deal', 'How the deal'],
-  ['/missing', 'This page wandered off.'],
-];
-
-for (const [pathname, title] of routes) {
-  Object.defineProperty(globalThis, 'location', { configurable: true, value: { pathname } });
-  const html = renderToStaticMarkup(<App />);
-  assert.equal((html.match(/<h1>/g) || []).length, 1, pathname);
-  assert.ok(html.includes(`<h1>${title}`), `${pathname}: expected route title`);
-  assert.match(html, /[Ee]xample/, `${pathname}: explicit example label`);
-  if (pathname !== '/deal') assert.equal((html.match(/class="primary"/g) || []).length, 1, pathname);
-  if (pathname === '/deal') {
-    assert.equal((html.match(/class="offer-event"/g) || []).length, 4);
-    assert.ok(html.includes('Example exchange · no live agents or payments'));
-    assert.ok(html.includes('Your complete final share is'));
-    const positions = publicOffers.map(offer => html.indexOf(`id="${offer.id}"`));
-    assert.ok(positions.every((position, index) => position >= 0 && (index === 0 || position > positions[index - 1])));
+const forbidden = /\b(example|preview|fixture|simulated|demo)\b/i;
+function render(path: string, test = false) {
+  Object.defineProperty(globalThis, 'location', { configurable: true, value: { pathname: path, search: test ? '?test=recorded' : '' } });
+  return renderToStaticMarkup(<App />);
+}
+for (const route of ['/shop','/ship-to','/ask','/bag','/deal','/paid','/track','/shops/orders','/shops/products','/shops/settings','/missing']) {
+  for (const test of [false,true]) {
+    const html = render(route, test);
+    assert.ok(html.includes('<h1'), route);
+    assert.doesNotMatch(html.replace(/<[^>]*>/g,''), forbidden, route);
+    if ((!test || !recordedMode()) && ['/deal','/paid','/track'].includes(route)) assert.ok(html.includes('Complete checkout to see your order here.'));
+    if (!test && route.startsWith('/shops')) assert.ok(html.includes('Sign in to your shop account'));
+    console.log(`SSR ${route}: ${test ? 'recorded URL query' : 'ordinary URL'} render and copy guard passed`);
   }
-  console.log(`SSR ${pathname}: expected title, one heading, example label, action present`);
 }
-
-assert.equal(cents('1.3'), 130);
-assert.equal(cents('0.01'), 1);
-for (const invalid of ['-1', '1.234', '1e2', 'NaN', '']) assert.throws(() => cents(invalid));
-assert.equal(fixture.costs.reduce((total, cost) => total + cost.cents, 0), fixture.total);
-assert.equal(money(fixture.total), '$66.66');
-assert.equal(fixture.max - fixture.total, 834);
-assert.equal(fixture.saved, 5492);
-
-const css = readFileSync('src/styles.css', 'utf8');
-function color(token: string): string {
-  const match = css.match(new RegExp(`--${token}:\\s*#([\\da-f]{3}|[\\da-f]{6})\\b`, 'i'));
-  assert.ok(match, `Missing hex color token: ${token}`);
-  return match[1].length === 3 ? [...match[1]].map(char => char + char).join('') : match[1];
+for (const Page of [Orders, Products, Settings]) {
+  const html = renderToStaticMarkup(<BagProvider><Page data={shopData as ShopSnapshot} /></BagProvider>);
+  assert.doesNotMatch(html.replace(/<[^>]*>/g,''), forbidden);
+  assert.ok(html.length > 500);
 }
-function luminance(hex: string): number {
-  return hex.match(/\w\w/g)!
-    .map(channel => parseInt(channel, 16) / 255)
-    .map(channel => channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4)
-    .reduce((sum, channel, index) => sum + channel * [.2126, .7152, .0722][index], 0);
+assert.equal(cents('1.3'),130); assert.equal(cents('0.01'),1);
+for (const value of ['-1','1.234','1e2','NaN','','100000000000000000']) assert.throws(() => cents(value));
+assert.equal(catalog.length,30);
+for (const country of countryCodes) {
+  const before = quote(hero.cart, country).breakdown;
+  const after = landed(finalLines, country, 50);
+  for (const [actual, expected] of [[before,countries[country].listed],[after,countries[country].deal]] as const) {
+    for (const key of ['goods','domestic','shipping','duty','tax','fee','total'] as const) assert.equal(actual[key],cents(expected[key]), `${country} ${key}`);
+    assert.equal(actual.goods+actual.domestic+actual.shipping+actual.duty+actual.tax+actual.fee, actual.total);
+  }
 }
-for (const [foreground, background] of [['muted', 'ground'], ['surface', 'accent'], ['ink', 'butter'], ['saving', 'mint']]) {
-  const [light, dark] = [luminance(color(foreground)), luminance(color(background))].sort((a, b) => b - a);
-  const contrast = (light + .05) / (dark + .05);
-  assert.ok(contrast >= 4.5, `${foreground}/${background}: ${contrast.toFixed(2)}:1 is below 4.5:1`);
-  console.log(`Static contrast ${foreground}/${background}: ${contrast.toFixed(2)}:1`);
-}
-console.log('SSR, fixture money and static token contrast passed. Browser layout, interactions and screenshots remain unverified; this does not pass GD.');
+assert.equal(money(landed(finalLines,'US',50).total),'$106.79');
+assert.equal(allowed(catalog.find(item => item.id === 'mul-sun-essence')!,'US'),false);
+assert.throws(() => quote(['mul-sun-essence'],'US'));
+assert.throws(() => quote(['sae-mist-spray'],'CA'));
+let state = initialDeal();
+const totalChanges = [state.totalUsd];
+for (const event of events) { state = applyEvent(state,event); if (totalChanges.at(-1) !== state.totalUsd) totalChanges.push(state.totalUsd); assert.equal(applyEvent(state,event), state, 'duplicate delivery is idempotent'); }
+assert.deepEqual(totalChanges,[11882,11775,10679]);
+assert.equal(state.done,true); assert.equal(state.elapsed,14);
+for (const line of finalLines) assert.equal(state.shops[line.shop]!.lines[line.id].asking,line.unit);
+assert.deepEqual(events.reduce(applyEvent,initialDeal()),state,'replay rebuilds final state');
+const projection = readFileSync('src/data/public-scenario.json','utf8');
+assert.doesNotMatch(projection,/"(?:private|floor|cost|shop_gain|profit|gain)"/);
+assert.doesNotMatch(readFileSync('src/fixture.ts','utf8'),/design\/scenario/);
+const css = readFileSync('src/styles.css','utf8');
+const color=(token:string)=>{const hex=css.match(new RegExp(`--${token}:\\s*#([\\da-f]{3}|[\\da-f]{6})\\b`,'i'))![1];return hex.length===3?[...hex].map(c=>c+c).join(''):hex;};
+const luminance=(hex:string)=>hex.match(/\w\w/g)!.map(c=>parseInt(c,16)/255).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4).reduce((sum,c,i)=>sum+c*[.2126,.7152,.0722][i],0);
+for(const [fg,bg] of [['muted','ground'],['surface','accent'],['ink','butter'],['saving','mint']]) { const [light,dark]=[luminance(color(fg)),luminance(color(bg))].sort((a,b)=>b-a); assert.ok((light+.05)/(dark+.05)>=4.5); }
+console.log('All five currency golden quotes, public projection, event replay, scoped shop SSR and static contrast passed. Browser screenshots and real payments are separate gates.');

@@ -1,56 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import { fixture as f, money } from '../fixture';
-import { Arrow, Photo, Screen } from '../components/MemberUI';
-
+import { hero, href, money, localizeNote, product, quote, shops } from '../fixture';
+import { Action, Photo, Screen } from '../components/MemberUI';
+import { useBag } from '../state';
+const reasons = ['A gentle first cleanse.', 'A light layer of hydration.', 'An essence for dry-feeling skin.', 'Finish with a barrier cream.'];
 export default function Ask() {
-  const [choice, setChoice] = useState('new');
-  const [answered, setAnswered] = useState(false);
-  const interacted = useRef(false);
-  const continuation = useRef<HTMLAnchorElement>(null);
-  const newBottle = useRef<HTMLInputElement>(null);
-  const oldBottle = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!interacted.current) return;
-    if (answered) continuation.current?.focus();
-    else (choice === 'old' ? oldBottle : newBottle).current?.focus();
-  }, [answered, choice]);
-
-  const answer = choice === 'new'
-    ? 'You kept the new bottle.'
-    : 'You chose the old bottle for this preview. The example deal still shows Aisha’s original answer: keep new.';
-
-  return <Screen back="/live" title={`${f.question.member}’s question`}>
-    <h1>Same formula.<br />Old bottle for less?</h1>
-    <p className="intro">{f.question.member}, it’s your choice. Your order stays the same unless you say so.</p>
-    <fieldset className="bottle-options">
-      <legend className="sr-only">Choose your bottle</legend>
-      {f.products.slice(0, 2).map((product, index) => {
-        const value = index ? 'old' : 'new';
-        const label = index ? 'Old bottle' : 'New bottle';
-        return <label key={product.id} className={choice === value ? 'selected' : ''}>
-          <Photo product={product} />
-          <strong>{label}</strong>
-          <span id={`${value}-price`} className="money">{money(index ? f.question.oldPrice : f.question.newPrice)}</span>
-          <span id={`${value}-detail`} className="muted">{index ? 'Same formula' : 'Your original pick'}</span>
-          <input ref={index ? oldBottle : newBottle} name="bottle" type="radio" value={value}
-            aria-label={label} aria-describedby={`${value}-price ${value}-detail`}
-            checked={choice === value} onChange={event => setChoice(event.target.value)} disabled={answered} />
-        </label>;
-      })}
-    </fieldset>
-    <p className="explanation">Switching saves {money(f.question.newPrice - f.question.oldPrice)} before duty and tax. Prices may still move a little.</p>
-    <footer className="actions">
-      <p id="answer-status" role="status" aria-atomic="true">{answered ? answer : ''}</p>
-      {answered ? <>
-        <button className="text-link change-choice" onClick={() => setAnswered(false)}>Change this preview choice</button>
-        <a ref={continuation} href="/live" className="primary" aria-describedby="answer-status">Back to the example deal<Arrow /></a>
-      </> : <>
-        <button className="primary" onClick={() => { interacted.current = true; setAnswered(true); }}>
-          {choice === 'new' ? 'Keep the new bottle' : 'Switch to the old bottle'}<Arrow />
-        </button>
-        <p className="fine">No answer in {f.question.minutes} minutes keeps the new bottle.</p>
-      </>}
-    </footer>
-  </Screen>;
+  const { bag, setBag } = useBag();
+  const routine = quote(hero.cart, bag.country);
+  return <Screen title="Ask Rally" back="/shop"><h1>A little care,<br />picked for you.</h1><blockquote className="request-bubble">{localizeNote(hero.request, bag.country)}</blockquote><h2>A gentle four-step routine from two shops.</h2><p className="muted">Each item matched with a Korean shop.</p><ol className="routine">{routine.lines.map((line, index) => <li key={line.id}><Photo item={product(line.id)} /><div><span className="routine-step">{['Cleanse', 'Tone', 'Treat', 'Moisturize'][index]}</span><h3>{product(line.id).brand} {product(line.id).name}</h3><p>{reasons[index]}</p><small>{shops[line.shop].name} · {product(line.id).size}</small></div></li>)}</ol><p className="delivery-note">Bada Market only ships inside Korea. We collect your items at our Seoul hub and send everything in one box.</p><div className="checkout-total"><span>All in, delivered</span><strong className="money">{money(routine.breakdown.total, routine.breakdown.currency)}</strong></div><Action to="/bag" onClick={() => setBag({ ...bag, items: [...hero.cart] })}>Add routine to bag</Action></Screen>;
 }
