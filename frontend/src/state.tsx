@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode, type SetStateAction } from 'react';
 import { allowed, catalog, countries, hero, recordedMode, type CountryCode, type Rules } from './fixture';
+import { request, type CatalogResponse, type Destination } from './connected';
 export type BagState = { country: CountryCode; items: string[]; rules: Rules };
 const initial = (): BagState => {
   const fallback: BagState = { country: 'US', items: recordedMode() ? [...hero.cart] : [], rules: { ...hero.rules } };
@@ -18,8 +19,22 @@ function useBagState() {
     updateBag(value);
   }
   const [notice, setNotice] = useState('');
+  const [store, setStore] = useState<CatalogResponse | null>(null);
+  const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [storeError, setStoreError] = useState('');
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    if (recordedMode() || location.pathname.startsWith('/shops') || location.pathname.startsWith('/hub')) return;
+    const controller = new AbortController(); setStore(null); setStoreError('');
+    Promise.all([
+      request<CatalogResponse>(`/catalog?country=${bag.country}`, { signal: controller.signal }),
+      request<{ countries: Destination[] }>('/countries', { signal: controller.signal }),
+    ]).then(([catalog, countries]) => { setStore(catalog); setDestinations(countries.countries); })
+      .catch(error => { if (!controller.signal.aborted) setStoreError(error.message); });
+    return () => controller.abort();
+  }, [bag.country, retry]);
   useEffect(() => { try { localStorage.setItem('rally-shopping-v2', JSON.stringify(bag)); } catch { /* Browsing still works when storage is unavailable. */ } }, [bag]);
-  return { bag, setBag, notice, setNotice };
+  return { bag, setBag, notice, setNotice, store, destinations, storeError, retryStore: () => setRetry(value => value + 1) };
 }
 export function BagProvider({ children }: { children: ReactNode }) { const value = useBagState(); return <Context.Provider value={value}>{children}</Context.Provider>; }
 export function useBag() { const value = useContext(Context); if (!value) throw new Error('BagProvider required'); return value; }

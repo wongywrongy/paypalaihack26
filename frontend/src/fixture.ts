@@ -67,7 +67,7 @@ export function quote(ids: string[], country: CountryCode): { lines: Line[]; bre
   return { lines, breakdown: landed(lines, country) };
 }
 export const listedLines = hero.listed.lines.map(line => ({ id: line.id, shop: line.shop as ShopId, unit: cents(line.unit) }));
-export const finalLines: Line[] = hero.deal.lines.map(line => ({ id: line.id, shop: line.shop as ShopId, unit: cents(line.unit), variant: 'variant' in line ? line.variant : undefined, added: 'added_by_agent' in line ? line.added_by_agent : undefined }));
+export const finalLines: Line[] = hero.deal.lines.map(line => ({ id: line.id, shop: line.shop as ShopId, unit: cents(line.unit), variant: 'variant' in line ? 'older' : undefined, added: 'added_by_agent' in line ? line.added_by_agent : undefined }));
 export const events: DealEvent[] = hero.events.map((event, index) => {
   const value = event as { t: number; shop?: string; actor?: string; kind: string; lines?: Record<string,string>; extras?: string[]; domestic?: string; total?: string; note?: string; final?: boolean };
   return { ...value, id: `hero-${index + 1}`, shop: value.shop as ShopId | undefined, actor: value.actor as DealEvent['actor'], kind: value.kind as DealEvent['kind'], lines: value.lines ? Object.fromEntries(Object.entries(value.lines).map(([id, unit]) => [id, cents(unit)])) : undefined, domestic: value.domestic === undefined ? undefined : cents(value.domestic), total: value.total === undefined ? undefined : cents(value.total) };

@@ -4,8 +4,11 @@ import { resolve } from 'node:path';
 import shopSnapshot from './fixtures/shop-private.json' with { type: 'json' };
 import { applyEvent, initialDeal } from '../src/deal';
 import { allowed, catalog, cents, countries, countryCodes, events, finalLines, hero, landed, quote } from '../src/fixture';
+import { mockPublicApi } from './public-api';
+test.beforeEach(async ({ page }) => { await mockPublicApi(page); });
 const forbidden = /\b(example|preview|fixture|simulated|demo)\b/i;
 const recorded = (path: string) => `${path}?test=recorded`;
+const financialRequest = (url: string) => { const parsed = new URL(url); return /(^|\.)paypal\.com$/.test(parsed.hostname) || parsed.pathname.startsWith('/api/'); };
 async function tabTo(page: Page, target: Locator) {
   for (let i = 0; i < 30; i++) { await page.keyboard.press('Tab'); if (await target.evaluate(element => element === document.activeElement)) break; }
   await expect(target).toBeFocused();
@@ -16,7 +19,7 @@ async function screenshot(page: Page, name: string) {
   await page.locator('img[loading="lazy"]').evaluateAll(images => images.forEach(image => { (image as HTMLImageElement).loading = 'eager'; }));
   await expect.poll(() => page.locator('img').evaluateAll(images => images.every(image => image.complete && image.naturalWidth > 0)), { timeout: 10000 }).toBe(true);
   await page.locator('img').evaluateAll(images => Promise.all(images.map(image => image.decode())));
-  const dir = resolve('design/screenshots/v2'); await mkdir(dir,{ recursive:true });
+  const dir = resolve('../.runtime/frontend-screenshots'); await mkdir(dir,{ recursive:true });
   await page.evaluate(() => window.scrollTo(0,0));
   await page.screenshot({ path:`${dir}/${name}.png`, fullPage:true, animations:'disabled', scale:'css' });
   await page.screenshot({ path:`${dir}/${name}-page.jpg`, fullPage:true, type:'jpeg', quality:70, animations:'disabled', scale:'css' });
@@ -79,7 +82,7 @@ test('catalog filters, adds, removes and preserves the real local bag',async({pa
   await page.getByRole('button',{name:'Toner',exact:true}).click();
   await expect(page.locator('.catalog > li')).toHaveCount(3);
   await page.getByRole('button',{name:'Add Rice Toner',exact:true}).click();
-  await page.getByRole('link',{name:'Bag, 1 items'}).click();
+  await page.getByRole('link',{name:'Bag, 1 item'}).click();
   await expect(page.getByRole('heading',{name:'Dalbit Official'})).toBeVisible();
   const total=await page.locator('.checkout-total > .money').innerText();
   await page.reload();await expect(page.locator('.checkout-total > .money')).toHaveText(total);
@@ -110,25 +113,27 @@ test('country change removes restricted products and blocked products cannot be 
   await page.getByRole('button',{name:'Sun',exact:true}).click();
   await page.getByRole('button',{name:'Add Watery Sun Essence SPF 50+',exact:true}).click();
   await page.getByRole('button',{name:/Ship to Canada/}).click();await page.getByRole('radio',{name:/United States/}).check();await page.getByRole('button',{name:'Done',exact:true}).click();
-  await expect(page.getByRole('status')).toContainText('1 item removed');
+  await expect(page.getByRole('status').filter({ hasText: '1 item removed' })).toContainText('1 item removed');
   await expect(page.getByRole('button',{name:'Add Watery Sun Essence SPF 50+',exact:true})).toBeDisabled();
   await expect(page.getByRole('link',{name:'Bag, 0 items'})).toBeVisible();
 });
 test('routine and permissions persist while checkout remains the ceiling and cannot fake payment',async({page})=>{
-  const financial:string[]=[];page.on('request',request=>{if(/paypal|\/api\//i.test(request.url()))financial.push(request.url());});
+  const financial:string[]=[];page.on('request',request=>{if(financialRequest(request.url()))financial.push(request.url());});
   await page.goto('/shop');await page.getByRole('link',{name:/Ask for a routine/}).click();
+  await page.getByLabel('What would you like your routine to do?').fill('A gentle routine for dry skin');
+  await page.getByRole('button', { name: 'Find my routine' }).click();
   await page.getByRole('link',{name:'Add routine to bag'}).click();
   await expect(page.locator('.checkout-total > .money')).toHaveText('$118.82');
   await page.getByRole('switch',{name:/Older packaging is fine/}).uncheck();
   await page.getByRole('switch',{name:/Add a small extra/}).uncheck();
   await page.reload();await expect(page.getByRole('switch',{name:/Older packaging is fine/})).not.toBeChecked();
   await expect(page.locator('.checkout-total > .money')).toHaveText('$118.82');
-  await expect(page.getByRole('button',{name:'Checkout unavailable'})).toBeDisabled();
+  await expect(page.getByRole('button',{name:'Pay with PayPal'})).toBeVisible();
   await page.goto('/paid');await expect(page.getByRole('heading',{name:'Your order is not available'})).toBeVisible();
-  expect(financial).toEqual([]);
+  expect(financial.filter(url => /\/checkout|\/approve|\/capture/.test(new URL(url).pathname))).toEqual([]);
 });
 test('deal follows received prices, pauses and replays without financial requests',async({page},info)=>{
-  const financial:string[]=[];page.on('request',request=>{if(/paypal|\/api\//i.test(request.url()))financial.push(request.url());});
+  const financial:string[]=[];page.on('request',request=>{if(financialRequest(request.url()))financial.push(request.url());});
   await page.clock.install();await page.goto(recorded('/deal'));
   await expect(page.getByRole('heading',{name:'Rally is talking to 2 shops'})).toBeVisible();
   const pause = page.getByRole('button', { name: 'Pause deal' });
@@ -166,7 +171,7 @@ test('reduced motion applies event values without moving price markers or counti
 test('ordinary private routes are locked without fetching shop economics',async({page})=>{
   const calls:string[]=[];page.on('request',request=>{if(request.url().includes('/api/'))calls.push(request.url());});
   for(const route of ['/shops/orders','/shops/products','/shops/settings']) {await page.goto(route);await expect(page.getByText(/Sign in to your shop account/)).toBeVisible();}
-  expect(calls).toEqual([]);
+  expect(calls.every(url => new URL(url).pathname === '/api/session')).toBe(true);
 });
 test('a rejected shop session never renders private product prices',async({page})=>{
   await page.route('**/api/shops/dalbit/workspace',route=>route.fulfill({status:401,json:{error:'sign in required'}}));
@@ -306,6 +311,8 @@ test('adding a routine preserves unique existing selections and refuses overflow
   const existing = ['byeol-vitc', 'dal-rice-toner'];
   await page.evaluate(items => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items, rules: { old_packaging_ok: false, add_small_extras_if_cheaper: true } })), existing);
   await page.goto('/ask');
+  await page.getByLabel('What would you like your routine to do?').fill('A gentle routine for dry skin');
+  await page.getByRole('button', { name: 'Find my routine' }).click();
   await page.getByRole('link', { name: 'Add routine to bag' }).click();
   await expect(page.locator('.product-rows li')).toHaveCount(5);
   await expect(page.locator('.product-copy strong').filter({ hasText: 'Vitamin C Serum' })).toHaveCount(1);
@@ -314,6 +321,8 @@ test('adding a routine preserves unique existing selections and refuses overflow
   const full = catalog.filter(item => allowed(item, 'US') && !hero.cart.includes(item.id)).slice(0,8).map(item => item.id);
   await page.evaluate(items => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items, rules: { old_packaging_ok: true, add_small_extras_if_cheaper: true } })), full);
   await page.goto('/ask');
+  await page.getByLabel('What would you like your routine to do?').fill('A gentle routine for dry skin');
+  await page.getByRole('button', { name: 'Find my routine' }).click();
   await expect(page.getByRole('button', { name: 'Add routine to bag' })).toBeDisabled();
   await expect(page.getByText('This routine would make 12 items. Your bag can hold eight. Remove 4 items before adding it.', { exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Edit bag' }).click();

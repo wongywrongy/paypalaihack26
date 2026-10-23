@@ -8,11 +8,12 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test:browser": "playwright test",
-    "test:render": "node scripts/project-scenario.mjs --check && node tests/run-render.mjs && node tests/preview-config-check.mjs && node tests/public-boundary-check.mjs",
+    "test:render": "node scripts/project-scenario.mjs --check && node tests/run-render.mjs && node tests/run-connected.mjs && node tests/preview-config-check.mjs && node tests/public-boundary-check.mjs",
     "scenario:project": "node scripts/project-scenario.mjs",
     "prebuild": "node scripts/project-scenario.mjs --check"
   },
   "dependencies": {
+    "ag-grid-react": "36.2.0",
     "motion": "14.0.0",
     "react": "19.2.6",
     "react-dom": "19.2.6"
@@ -26,6 +27,6 @@
     "@vitejs/plugin-react": "4.7.0",
     "tailwindcss": "4.3.3",
     "typescript": "5.9.3",
-    "vite": "6.4.3"
+    "vite": "6.4.5"
   }
 }

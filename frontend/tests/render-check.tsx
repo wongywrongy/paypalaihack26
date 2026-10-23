@@ -35,7 +35,7 @@ for (const route of ['/shop','/ship-to','/ask','/bag','/deal','/paid','/track','
     assert.ok(html.includes('<h1'), route);
     assert.doesNotMatch(html.replace(/<[^>]*>/g,''), forbidden, route);
     if ((!test || !recordedMode()) && ['/deal','/paid','/track'].includes(route)) assert.ok(html.includes('Complete checkout to see your order here.'));
-    if (!test && route.startsWith('/shops')) assert.ok(html.includes('Sign in to your shop account'));
+    if (!test && route.startsWith('/shops')) { assert.ok(html.includes('Loading your workspace')); assert.ok(!html.includes('Lowest price')); }
     console.log(`SSR ${route}: ${test ? 'recorded URL query' : 'ordinary URL'} render and copy guard passed`);
   }
 }

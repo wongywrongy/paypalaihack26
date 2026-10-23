@@ -1,3 +1,5 @@
+> Historical GD2 record (October 22, 2026). Gate statuses and capabilities below describe that checkpoint; current [EVIDENCE.md](../../EVIDENCE.md) supersedes them.
+
 # Rally v2 design verification
 
 This record concerns the October 22 revised plan: one shopper, three fictional Korean shops and one box from Seoul. Earlier design reports in this directory concern the retired group-order product.

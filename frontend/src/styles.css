@@ -246,3 +246,23 @@ thead th { font-weight: 500; color: var(--muted); font-size: .8rem }
 @media(max-width:800px) { .table-scroll-hint { display: block } .catalog { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px } .shop-screen { max-width: 540px } .shop-intro h1 { font-size: 2.133333rem } .order-columns { grid-template-columns: minmax(0,1fr) } .order-sheet { padding: 16px } .workspace { padding: 0 20px 36px } .shop-header nav { flex-basis: 100%; order: 3 } .table-scroll th:first-child { position: sticky; left: 0; width: 180px; min-width: 180px; background: var(--surface); border-right: 1px solid var(--line); z-index: 1 } }
 @media(max-width:420px) { .shop-group,.deal-card { padding: 14px } .product-rows li { grid-template-columns: 48px minmax(0,1fr); gap: 4px 10px } .product-rows .product-photo { grid-row: span 2; width: 48px; height: 48px } .item-price { grid-column: 2 } .deal-product { grid-template-columns: 40px minmax(0,1fr); gap: 5px 10px } .deal-product .product-photo { width: 40px; height: 40px; grid-row: span 2 } .deal-product > strong { grid-column: 2; margin-top: 3px; display: flex; gap: 10px; flex-wrap: wrap } .deal-product del { margin: 0 } .price-track,.price-held,.line-detail { margin-left: 50px } .country-option { flex-wrap: wrap; padding: 12px } .country-option > .money { margin-left: 28px } }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior: auto!important } .price-marker { transition: none } .primary { transition-duration: 80ms } }
+
+.request-form { display: grid; gap: 12px; margin: 24px 0; max-width: 480px; }
+.request-form label { font-weight: 600; }
+.request-form input:not([type='checkbox']), .request-form textarea, .request-form select {
+  width: 100%; min-height: 44px; padding: 12px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface); color: var(--ink); font: inherit; caret-color: var(--accent);
+}
+.request-form textarea { resize: vertical; }
+.request-form .checkbox-field { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+.checkbox-field input { width: 22px; height: 22px; accent-color: var(--accent); }
+.private-grid { height: 590px; width: 100%; margin-top: 24px; }
+.order-history { list-style: none; padding: 0; }
+.order-history a { display: block; color: inherit; text-decoration: none; }
+.order-history a:hover h2 { text-decoration: underline; text-underline-offset: 3px; }
+.paypal-buttons { width: 100%; }
+.paypal-buttons paypal-button { display: block; min-height: 44px; }
+.agreed-terms { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; font-size: .8rem; margin-top: 12px; }
+.recovery { margin-top: 36px; }
+.recovery h3 { margin-top: 24px; }
+.recovery dd, .order-history dd { overflow-wrap: anywhere; min-width: 0; }

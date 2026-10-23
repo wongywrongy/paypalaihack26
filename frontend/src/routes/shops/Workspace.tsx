@@ -4,7 +4,11 @@ import { events, href, money, product, recordedMode } from '../../fixture';
 import { loadShop, type ShopSnapshot } from '../../shop-api';
 import DealCard from '../../components/DealCard';
 import { Photo, Unavailable } from '../../components/MemberUI';
+import Console from './Console';
 export default function Workspace({ tab }: { tab: 'orders'|'products'|'settings' }) {
+  return recordedMode() ? <RecordedWorkspace tab={tab} /> : <Console tab={tab} />;
+}
+function RecordedWorkspace({ tab }: { tab: 'orders'|'products'|'settings' }) {
   const [data, setData] = useState<ShopSnapshot | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => { if (!recordedMode()) return; const controller = new AbortController(); loadShop(controller.signal).then(setData).catch(error => { if (error.name !== 'AbortError') setFailed(true); }); return () => controller.abort(); }, []);

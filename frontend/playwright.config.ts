@@ -6,6 +6,7 @@ export default defineConfig({
   use: {
     baseURL: stackUrl || "http://127.0.0.1:5173",
     trace: "retain-on-failure",
+    launchOptions: process.env.RALLY_CHROMIUM_EXECUTABLE ? { executablePath: process.env.RALLY_CHROMIUM_EXECUTABLE } : undefined,
   },
   webServer: stackUrl
     ? undefined
