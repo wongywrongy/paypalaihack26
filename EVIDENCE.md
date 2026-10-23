@@ -1,5 +1,13 @@
 # Rally evidence
 
+## October 23, 2026 — deployment preparation and explicit approval boundary
+
+76/76 PostgreSQL-backed contracts passed, zero skips (26.935 seconds), including the existing worker command initializing Rally before launching it and refusing to start after a migration error. The Docker API command now forwards shutdown with exec. The compatibility namespace contains no old application routes. The existing main and Rally histories have no common ancestor; a history-preserving release merge is prepared rather than a force push.
+
+Read-only Render checks confirmed the same two main-linked services, Docker commands, plans and single instances. Historical public data: seven commitments, five operations, one unknown order; consent/reference digest 5b99b2d5e6d99f2d560118c82ed124d9. A narrowly scoped PayPal activity GET for its October 7 request returned 403 NOT_AUTHORIZED; no mutation or false resolution occurred. Hosted model and three named shop recipients remain missing locally.
+
+Inspection of the official Render MCP source confirmed environment updates also trigger deploys. The first attempted private configuration merge was rejected by automatic approval review for insufficiently explicit authorization to copy secrets and deploy the live service; no configuration or deploy changed. Exact approval is pending. Submission text and a timed video capture script are prepared; neither is published or represented as genuine hosted proof.
+
 ## October 23, 2026 — final source CI passed
 
 [CI 40017564735](https://github.com/wongywrongy/paypalaihack26/actions/runs/40017564735), application/test source **8b51e89**, passed **75 PostgreSQL-backed tests, 94 Playwright desktop/mobile cases**, Ruff, clean build/render/privacy checks, ten Taste inspections with zero FAIL and console checks. Provider/model responses in CI are doubles. Earlier actual API/database browser checks and genuine G1 provider proof remain separate evidence, as described below. Taste warnings for the pinned warm palette, prominent totals and centered shopper layout remain intentional per PLAN.md; they were not suppressed to force a pass. No hosted G3/G4/G5 claim is made.

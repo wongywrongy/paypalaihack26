@@ -8,22 +8,19 @@ In `/home/kyle/code/paypalaihack26/.env`, set the hosted provider's `LLM_BASE_UR
 
 Set `PAYPAL_SHOP_EMAIL_DALBIT`, `PAYPAL_SHOP_EMAIL_BADA`, `PAYPAL_SHOP_EMAIL_HANEUL` to the three receiving sandbox business accounts. They must differ from Rally's sending account. The older `PAYPAL_SHOP_EMAIL` was only the G1 probe recipient and does not configure these shops. Confirm Payouts is enabled and the sending sandbox account has USD funds.
 
-Strong shop, hub and read-only judge passwords have already been generated privately in the root `.env` (existing values were preserved). Copy the intended settings privately to the **two existing Render services**, preserving unrelated variables and the hosted database URL. Never put server passwords or keys in `VITE_*` variables. Set `PUBLIC_URL=https://paypalaihack26.onrender.com`, `RALLY_MODE=connected`, `RALLY_DATABASE_SCHEMA=rally`; leave `VITE_RALLY_TEST_HARNESS` unset. The public PayPal client ID is intentionally supplied by the API; its secret remains server-side.
+Strong shop, hub and read-only judge passwords have already been generated privately in the root `.env` (existing values were preserved). The agent can transfer the intended settings privately to the **two existing Render services**, preserving unrelated variables and the hosted database URL. Workspace passwords are needed only on the web service; payment configuration is shared. A pending explicit approval covers this transfer because the Render MCP also triggers a deploy. Never put server passwords or keys in `VITE_*` variables. Set `PUBLIC_URL=https://paypalaihack26.onrender.com`, `RALLY_MODE=connected`, `RALLY_DATABASE_SCHEMA=rally`; leave `VITE_RALLY_TEST_HARNESS` unset. The public PayPal client ID is intentionally supplied by the API; its secret remains server-side.
 
 Keep scheduled fulfillment off initially. After the genuine manual handoff/payout/tracking checks pass, review enabling `RALLY_AUTO_FULFILLMENT=1`: it records fictional arrivals/export/delivery after approximately 1/2/4 minutes, enqueues genuine sandbox payouts/tracking, and waits for confirmed funding/payouts. It neither ships cosmetics nor moves real money.
 
-## 2. Review the exact existing-service cutover
+## 2. Approve the agent-managed existing-service cutover
 
-[Render settings and resource IDs](RENDER.md) specify the complete diff. In **My Workspace**, use the existing web/worker/database, with the same plans, instance counts, region, disk and database credentials.
+The release now includes a minimal `coalition.worker` startup compatibility module. It initializes the separate Rally schema, then runs only `rally.worker`; it does not restore the retired app. Both paid services can retain their existing **main** branch and Docker settings. The agent can promote the verified Rally tree to main, preserving both Git histories and using a normal non-force push. No Dashboard branch/command edit is required.
 
-- Web: Git branch `main` → `rally`; Dockerfile `./Dockerfile`, context `.`, default Docker command; HTTP health path `/api/health`.
-- Worker: branch `main` → `rally`; Docker override `python -m rally.worker`; pre-deploy command `python -m rally.db`.
-- Database: existing instance; only additive migrations inside schema `rally`. Preserve all `public` tables and supported backup/recovery facilities.
-- PayPal: preserve the existing public webhook URL `/api/paypal/webhook` and app identity. Confirm the Rally business account accepts CAD/GBP/EUR/AUD; make sandbox personal buyers available for all five currencies.
+The Render environment-update tool merges keys but also triggers a deploy. Automatic approval review rejected the first private configuration transfer because that exact secret-bearing mutation/deploy had not been explicitly approved; neither service changed. The pending approval covers merging the intended project keys into the two existing services and promoting the tested release. The same resource IDs, plans, regions, instance counts, database and URLs remain in place. Only additive Rally-schema migrations run; original public tables remain untouched. The agent will monitor deploy IDs, verify app/worker/database behavior and compare the historical consent digest before and after.
 
-Changing the branch/config may start auto-deploy. Avoid a duplicate manual deploy. The connected Render MCP can inspect and deploy but cannot edit branch/Docker-command settings; make those particular changes in the existing service Dashboard, or provide approved API access privately. **Do not apply the archived Blueprint or create another stack.** AGENTS.md requires owner review before external configuration changes; these settings have not been changed by the agent.
+The current TCP health check can remain; `/api/health` and real catalog/session requests are verified after deployment. The web image uses exec to pass shutdown signals. Scheduled fictional fulfillment stays off. PayPal's existing webhook URL remains unchanged. CAD/GBP/EUR/AUD acceptance and the missing model/shop configuration still require valid account settings.
 
-One original Coalition order operation remains unknown without a provider ID. Review its original request/time against sandbox activity before considering it resolved. Do not resend it, mark it failed without evidence or delete it. Owned legacy receipts and read-only recovery metadata remain implemented.
+One original Coalition order operation remains unknown without a provider ID. The agent inspected its exact request time and attempted a read-only provider activity lookup; PayPal returned 403 NOT_AUTHORIZED. Review the original October 7, 00:50 UTC request against sandbox activity before considering it resolved. Do not resend it, mark it failed without evidence or delete it. Owned legacy receipts and read-only recovery metadata remain implemented.
 
 ## 3. Complete human PayPal approvals with me
 
@@ -33,6 +30,6 @@ You must explicitly approve each new shopper order in the real PayPal sandbox UI
 
 ## 4. Submit only after those gates pass
 
-Record a public YouTube video under three minutes, following PLAN.md's beats and the actual outcome (agents may retain checkout terms). Put the hosted URL, sandbox buyer logins per currency and the **read-only judge** shop password in Devpost's private testing notes. Keep writer/hub passwords and API secrets out. Include the public repository/license and the README's simulation disclosure; do not describe fixture benchmark results as live-model evidence or measured customer impact.
+The agent has prepared [submission text](SUBMISSION.md) and a [timed video script](VIDEO.md). Record/upload a public YouTube video under three minutes using the actual outcome (agents may retain checkout terms). Put the hosted URL, sandbox buyer logins per currency and the **read-only judge** shop password in Devpost's private testing notes. Keep writer/hub passwords and API secrets out. Include the public repository/license and the README's simulation disclosure; do not describe fixture benchmark results as live-model evidence or measured customer impact.
 
 No owner action is needed for local builds, PostgreSQL contracts, frontend wiring, screenshots or recovery implementation: those are completed in this change. Native-device/screen-reader checks and genuine hosted gates remain unexecuted.
