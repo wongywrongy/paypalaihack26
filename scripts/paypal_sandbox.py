@@ -352,7 +352,7 @@ def main(argv=None):
     if args.command == "preflight":
         return preflight()
     from rally.config import settings
-    from rally.db import connect
+    from rally.db import connect, init_db
     from rally.payments.ledger import perform, reconcile
 
     missing = [name for name in PAYPAL_ENV if not os.environ.get(name)]
@@ -362,6 +362,8 @@ def main(argv=None):
         parser.error("--run is required when resuming.")
     run_id = args.run or uuid4()
     print("Sandbox run:", run_id, flush=True)
+    if args.command == "start":
+        init_db()
     with connect() as db:
         if args.command == "start":
             existing = db.execute(

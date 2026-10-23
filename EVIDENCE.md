@@ -1,5 +1,9 @@
 # Rally evidence
 
+## October 23, 2026 — missing-schema G1 recovery
+
+The user reported a successful host preflight, then `UndefinedTable` from `start` for run `97d8e055-b8c2-485a-b7b3-aa4dcb4df149`; no approval URL or confirmed provider operation was supplied. `start` now runs the existing additive migrations before querying run data. Recovery retains that UUID and the original operation key; ambiguous ledger outcomes remain blocked. Local tests: 37 passed, six PostgreSQL cases skipped, Ruff passed. Added a PostgreSQL contract for a fresh schema, a single provider-double order across repeated starts, and refusal to repeat an unknown operation. Real G1 remains unverified.
+
 ## October 23, 2026 — connected-demo access rechecked
 
 At 01:41 UTC the new non-mutating `paypal_sandbox.py preflight` loaded the existing private environment and reported connected mode, no missing required settings, PostgreSQL `OperationalError` and sandbox OAuth `ConnectError`; exit status 1. An independent local bind also returned `PermissionError`. PayPal and model settings are present; no value or token was printed. Rootlane still runs only the approved static frontend service. No payment, schema, route or provider setting changed, and G1 remains unexecuted.

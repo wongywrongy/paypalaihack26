@@ -5,10 +5,12 @@ Requires RALLY_TEST_DATABASE_URL. Uses and removes only its own random test sche
 
 import copy
 import importlib.util
+import io
 import json
 import os
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import redirect_stdout
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -133,6 +135,96 @@ class DatabaseContracts(unittest.TestCase):
             self.assertEqual(claimed["payload"]["x"], unique)
             self.assertEqual(claimed["attempts"], 1)
             self.assertIsNone(worker.claim(db))
+
+    def test_sandbox_start_bootstraps_missing_tables_and_preserves_retry_identity(self):
+        assert self.schema.startswith("rally_test_") and len(self.schema) == 43
+        with psycopg.connect(self.url) as connection:
+            connection.execute(
+                sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(self.schema))
+            )
+            connection.execute(
+                sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(self.schema))
+            )
+        spec = importlib.util.spec_from_file_location(
+            "sandbox_bootstrap", Path(__file__).parents[1] / "scripts/paypal_sandbox.py"
+        )
+        script = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(script)
+        run_id = uuid4()
+        args = [
+            "--run",
+            str(run_id),
+            "start",
+            "--return-url",
+            "https://shop.test/shop",
+            "--cancel-url",
+            "https://shop.test/bag",
+        ]
+
+        def provider(method, path, body=None, **kwargs):
+            self.assertEqual((method, path), ("POST", "/v2/checkout/orders"))
+            return {
+                "id": "ORDER-BOOTSTRAP",
+                "status": "CREATED",
+                "intent": "AUTHORIZE",
+                "purchase_units": [
+                    {
+                        **body["purchase_units"][0],
+                        "payee": {"merchant_id": "MERCHANT-TEST"},
+                    }
+                ],
+                "links": [
+                    {
+                        "rel": "approve",
+                        "href": "https://www.sandbox.paypal.com/checkoutnow?token=ORDER-BOOTSTRAP",
+                    }
+                ],
+            }
+
+        with (
+            patch.dict(
+                os.environ,
+                {
+                    **{name: "set" for name in script.PAYPAL_ENV},
+                    "PAYPAL_SHOP_EMAIL": "shop@example.test",
+                },
+            ),
+            patch("rally.config.settings", self.config),
+            patch.object(ledger, "paypal", side_effect=provider) as transport,
+            redirect_stdout(io.StringIO()),
+        ):
+            script.main(args)
+            script.main(args)
+            self.assertEqual(transport.call_count, 1)
+            with database.connect() as db:
+                self.assertEqual(
+                    db.execute(
+                        "SELECT count(*) AS n FROM schema_migrations"
+                    ).fetchone()["n"],
+                    2,
+                )
+                self.assertEqual(
+                    db.execute(
+                        "SELECT count(*) AS n FROM members WHERE pool_id=%s", (run_id,)
+                    ).fetchone()["n"],
+                    2,
+                )
+                self.assertEqual(
+                    db.execute(
+                        "SELECT count(*) AS n FROM payment_ops WHERE pool_id=%s",
+                        (run_id,),
+                    ).fetchone()["n"],
+                    1,
+                )
+                db.execute(
+                    "UPDATE payment_ops SET status='unknown' WHERE request_id=%s",
+                    (script.key(run_id, "order"),),
+                )
+            with self.assertRaisesRegex(
+                paypal.RecoveryRequired, "needs reconciliation"
+            ):
+                script.main(args)
+            self.assertEqual(transport.call_count, 1)
 
     def test_concurrent_capture_claims_leave_no_database_lock_during_network(self):
         entered, release = Event(), Event()

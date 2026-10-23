@@ -66,7 +66,7 @@ A normal frontend build can expose browsing and the bag. A static preview cannot
 
 **Current blocker:** this coding runtime cannot connect to PostgreSQL or PayPal. Credentials are configured privately; no real mutation or provider ID has been produced. Run `preflight` above and this procedure on an approved host that reaches both services and receives genuine webhooks.
 
-Keep `DATABASE_URL`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MERCHANT_ID`, `PAYPAL_WEBHOOK_ID` and the separate shop's `PAYPAL_SHOP_EMAIL` private, with `RALLY_MODE=connected`. Apply the additive Rally schema migrations with `PYTHONPATH=backend python -m rally.db` after loading that environment. Do not point tests at a real purchase database or delete any volumes.
+Keep `DATABASE_URL`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MERCHANT_ID`, `PAYPAL_WEBHOOK_ID` and the separate shop's `PAYPAL_SHOP_EMAIL` private, with `RALLY_MODE=connected`. `start` applies the existing additive migrations in Rally's dedicated schema before reading run data or calling PayPal. It preserves existing purchases and payment operations. Do not point tests at a real purchase database or delete any volumes.
 
 Before execution, the owner must review the Rally sandbox account's Payment Receiving Preferences for CAD, enabled Payouts capability/funded balance, and the app's webhook destination/event subscriptions. This implementation did not change those settings. Run the API and worker on the approved host, with the configured webhook reaching `/api/paypal/webhook`.
 
@@ -91,6 +91,8 @@ PYTHONPATH=backend python scripts/paypal_sandbox.py --env-file /private/rally.en
 ```
 
 On interruption or ambiguity, use `--run RUN-UUID reconcile STEP`, then the original command with its original operation identity. Inspect unknown provider outcomes before retrying; never invent replacement keys. Existing USD runs remain resumable. `verify-usd` reports scoped legacy USD evidence and explicitly does not pass v2 G1.
+
+For an earlier `start` failure caused by missing tables (`UndefinedTable`), use the updated script with `--run` and the original UUID, return URL and cancel URL. It initializes the schema and reuses the original logical operation; an unresolved operation still blocks provider retries until reconciled. A migration error stops before any payment ledger call. Do not drop or recreate an existing schema to repair this failure.
 
 The G1 script retains the existing pool/member storage solely as a capability probe; it is not the v2 purchasing engine. A PayPal browser return cannot confirm a payment. Final capture's uncaptured amount is not a separate remainder-void event, and bank hold release timing is not guaranteed.
 

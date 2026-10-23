@@ -98,6 +98,79 @@ class SandboxPreflightContracts(unittest.TestCase):
             client.assert_not_called()
 
 
+class SandboxStartContracts(unittest.TestCase):
+    def test_start_migrates_before_database_queries_and_keeps_the_run_key(self):
+        run_id, member, other = uuid4(), uuid4(), uuid4()
+        sequence, output = [], io.StringIO()
+        connection = MagicMock()
+        connection.__enter__.return_value.execute.return_value.fetchone.return_value = (
+            None
+        )
+
+        def connect():
+            sequence.append("connect")
+            return connection
+
+        with (
+            patch.dict(os.environ, {name: "set" for name in script.PAYPAL_ENV}),
+            patch("rally.config.settings", SimpleNamespace(mode="connected")),
+            patch("rally.db.init_db", side_effect=lambda: sequence.append("migrate")),
+            patch("rally.db.connect", side_effect=connect),
+            patch.object(script, "setup", return_value=(member, other)),
+            patch.object(
+                ledger,
+                "perform",
+                return_value={
+                    "links": [
+                        {
+                            "rel": "approve",
+                            "href": "https://www.sandbox.paypal.com/checkoutnow?token=ORDER-TEST",
+                        }
+                    ]
+                },
+            ) as perform,
+            redirect_stdout(output),
+        ):
+            script.main(
+                [
+                    "--run",
+                    str(run_id),
+                    "start",
+                    "--return-url",
+                    "https://shop.test/shop",
+                    "--cancel-url",
+                    "https://shop.test/bag",
+                ]
+            )
+        self.assertEqual(sequence, ["migrate", "connect"])
+        self.assertEqual(
+            perform.call_args.args[1:], ("order", script.key(run_id, "order"))
+        )
+        self.assertEqual(perform.call_args.kwargs["pool_id"], run_id)
+
+    def test_failed_migration_never_reaches_the_payment_ledger(self):
+        with (
+            patch.dict(os.environ, {name: "set" for name in script.PAYPAL_ENV}),
+            patch("rally.config.settings", SimpleNamespace(mode="connected")),
+            patch("rally.db.init_db", side_effect=RuntimeError("Migration failed")),
+            patch("rally.db.connect") as connect,
+            patch.object(ledger, "perform") as perform,
+            redirect_stdout(io.StringIO()),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "Migration failed"):
+                script.main(
+                    [
+                        "start",
+                        "--return-url",
+                        "https://shop.test/shop",
+                        "--cancel-url",
+                        "https://shop.test/bag",
+                    ]
+                )
+        connect.assert_not_called()
+        perform.assert_not_called()
+
+
 class ProofDatabase:
     def commit(self):
         pass
