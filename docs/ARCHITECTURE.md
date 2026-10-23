@@ -1,43 +1,78 @@
-# Rally v2: implementation boundaries
+# Rally v2 architecture and data model
 
-GD2 supplies the design implementation. G1 (real PayPal proof) passed on October 23 through genuine sandbox operations and recovery of an original signed webhook; EVIDENCE.md records the exact scope. [PLAN.md](../PLAN.md) defines the later engine, API, operations and judge gates. Its architecture drawing is the target, not evidence those modules have shipped.
+[PLAN.md v2](../PLAN.md) is authoritative. Implementation is complete for the connected shopping and operations surfaces; [EVIDENCE.md](../EVIDENCE.md) distinguishes local doubles, genuine G1 proof and the still-open hosted gates.
 
 ```mermaid
 flowchart LR
-  S[Reference scenario: public and private terms] --> P[Build-time public projection]
-  P --> U[Shopper catalog and bag]
-  P --> D[Deal reducer and recorded event source]
-  T[CI authenticated shop response] --> W[Shop workspace]
-  U -. M3 API integration .-> A[FastAPI]
-  A --> Q[PostgreSQL durable operations]
-  Q --> K[Worker and reconciliation]
-  K --> PP[PayPal sandbox]
+  U[React shopper / scoped shop / hub] --> A[One FastAPI app]
+  A --> S[Owned sessions and CSRF]
+  A --> Q[Quotes and atomic stock reservations]
+  A --> DB[(Existing PostgreSQL)]
+  DB --> AI[Worker AI lane]
+  AI --> B[Buyer context]
+  AI --> M[Shop context]
+  B --> L[One configured LLM adapter]
+  M --> L
+  AI --> C[Code validates permitted terms and ceiling]
+  C --> DB
+  DB --> P[Worker payment lane]
+  DB --> R[Independent deadline and reconciliation lane]
+  P --> PL[Existing durable PayPal ledger]
+  R --> PL
+  A --> PL
+  PL --> PP[PayPal sandbox]
+  PP --> WH[Persisted verified webhooks]
+  WH --> DB
+  DB --> SSE[Persisted events / SSE / owned receipts]
+  SSE --> U
 ```
 
-## Implemented frontend
+One web service, one worker process with separate AI/payment/maintenance threads, and the existing database. No broker, vector database, additional agent framework or service. SQL transactions finish before external requests. Durable job leases and immutable operation keys survive restart; SIGTERM stops new work and allows a bounded drain.
 
-One public scenario adapter supplies product IDs, public shop prices, destination rates and the saved hero events. Money is integer minor units with explicit currency. Bag rules express permission; they do not establish a negotiated price or buyer consent. The quote display reproduces all five saved country schedules. Category filters, restrictions, country changes and bag edits are interactive.
+## Modules
 
-The Deal reducer consumes stable ordered events, deduplicates repeats and supports replay. A recorded event source is enabled only by the explicitly enabled review/CI harness plus its URL entry. Presentation pacing never calls a payment endpoint. Reduced motion removes price-track sliding. Completed playback cannot establish a capture; live event persistence and recovery belong to M3.
+| Module | Responsibility |
+| --- | --- |
+| catalog, countries, fx, landed, sourcing | Server-owned stock/policies; restrictions; dated complete cost schedules; integer rounding; exact all-in search over at most 3^8 assignments |
+| assistant | Catalog-only routine proposals, stock validation and explicit budget checks; honest outage fallback |
+| negotiation | Separate buyer/shop proposal contexts; executable candidates; private utility checks; at most three replies/shop, 30 seconds, bounded calls/tokens |
+| sessions, shopping, orders | Owned HttpOnly sessions, CSRF/origin guards, quotes, immutable consent, reservations, SDK approval, receipt/history and SSE |
+| payments, toolkit, worker, maintenance | Durable logical operations, signature verification, reconciliation, capture/void/refunds, separate processing lanes and deadlines |
+| fulfillment, workspaces | Shop-scoped products/policies/deals, hub handoff/payout, export tracking, import true-up and operator recovery |
+| legacy | Original-cookie owned historical receipts and hub-only read-only recovery; retired checkout returns 410 |
+| sim | Seeded synthetic bags and no-payment A–D benchmark; cached model B/D only when explicitly requested |
 
-Ordinary builds require actual order data before displaying a receipt or tracking history. The current checkout remains unavailable pending M3. Shop workspace data comes through a scoped API adapter; the ordinary unconnected view is locked. CI fulfills that contract from a test fixture. No private floor, cost or test workspace payload is part of the public production bundle. The UI is not an authentication boundary: the future server must enforce shop scope independently.
+## Persistent data
 
-`frontend/scripts/project-scenario.mjs` generates the public JSON with an explicit allow-list. Build checks reject imports of raw `design/scenario` data or `tests/fixtures` into the browser dependency graph. Public projection freshness is checked before rendered verification.
+Migration `003_shopping.sql` adds the following; migrations 001/002 and every original `public` table remain intact.
 
-## Existing payment foundation
+| Entity | Key relationships / immutable data |
+| --- | --- |
+| shopper_sessions | Hashed random cookie, role/shop scope, read-only flag, expiry; no payment credentials |
+| catalog_products / catalog_offers / shop_policies | Public metadata separate from private costs/floors/stock and permitted policies |
+| bags → quotes | Owned items/country/rules; versioned complete terms, exact lines, locked FX, merchant, all-in breakdown, 15-minute expiry |
+| orders | Unique quote, owner and legacy ledger bridge; separate payment/fulfillment states; final terms, provider order, ship-by deadline |
+| order_reservations | Unique order/offer, one unit; reserved → consumed or released exactly once |
+| deal_events | Stable UUID and unique per-order sequence; immediately committed; restored/deduplicated live and on replay |
+| order_shipments | Separate shop→hub and hub→shopper legs; simulated flag; carrier/tracking independent of payment |
+| order_shop_payments | One order/shop payout, amount in USD, stable existing-ledger scope |
+| true_ups | Immutable actual import total and nonnegative refund; no extra charge |
+| tracking_operations | Immutable tracking body and stable logical key; unknown outcomes use order GET before any recovery |
 
-FastAPI, PostgreSQL, the worker, the existing LLM adapter and the durable PayPal ledger are retained. Every money mutation uses the ledger's stable logical operation and provider idempotency key. Pending/unknown responses remain unresolved until reconciliation. Webhooks retain verification, deduplication and recovery behavior. No UI timer or model callback can confirm payment.
+The existing pools/members tables are internal ledger compatibility records, not active group purchasing. Old G1 operations retain their original identities. No domain rewrite changes a historical consent, receipt or pending operation. Original Coalition records remain in `public`; unknown operations without provider IDs require provider activity review, never blind mutation.
 
-Migration `002_hold_currency.sql` adds `holds.currency`, defaulting existing rows to USD and accepting USD/CAD/GBP/EUR/AUD. Requests record non-USD currency; authorization, capture, void and refund inherit the original payment currency. Explicit mismatches fail before provider mutation. Legacy omitted-USD request identities retain their original shape, and shop payouts remain USD. Existing schema, public tables, payment operations and purchase records are not deleted or rewritten.
+## Payment and recovery boundaries
 
-The old pool/member domain remains for existing operations and the G1 capability probe. Replacing its purchasing domain is M2/M3 work after G1. New catalog/bag/order/negotiation/shipments tables listed in PLAN.md are not yet implemented. The frontend's recorded events are not a durable live negotiation log.
+Checkout binds a specific owned quote and atomically reserves its stock before creating an AUTHORIZE order. Server approval verifies the provider's APPROVED order, merchant, owner, amount and currency before authorizing. Eligible authorization is required before negotiation. A canceled checkout closes the ledger authorization gate, including after pre-mutation failures.
 
-## Unproven and pending
+Code validates all final terms, updates inventory and enqueues a capture atomically. Capture is final and at most the approved ceiling, promptly after negotiation and within the authorization honor period. Only confirmed capture releases fulfillment. Definitive capture failure voids the hold; ambiguity remains Needs review and is reconciled before retry. Deadline refunds reserve the unrefunded capture balance and block export. Pending refunds remain pending; successful refunds are distinct from uncaptured amounts.
 
-- G1 passed through the local ledger, three human sandbox approvals and an original signed Render-delivered CAD webhook replayed through Rally. The public API and worker still run Coalition on `main`; direct Rally deployment and a connected shopper journey remain unproved. [Existing-resource deployment gates](RENDER.md).
-- M2 must replace cheapest-unit reference sourcing with exact lowest-all-in search. Those can pick different shops, including for the Canadian hero bag; reconcile the saved fixture and engine golden expectations before G2.
-- M3 supplies real scoped sessions, quotes, checkout, model decisions and the persisted SSE deal stream. The existing LLM adapter being present does not mean the v2 agents run.
-- M4 supplies hub operations, payouts/tracking, refund deadlines and benchmark results. The current tracking display is a test contract, not carrier evidence.
-- Destination duty/tax/FX values are dated scenario assumptions. Their presence in the fixture does not verify customs rules or constitute a live rate service.
+Shop handoff enqueues one USD payout per shop. Export requires every shop arrival and confirmed payout. PayPal Agent Toolkit's tracking handler is called through a guarded transport using the current Orders v2 tracking endpoint; tracking itself has a durable operation. `RALLY_AUTO_FULFILLMENT=1` opts into fictional scheduled arrivals after one minute, export after two, and delivery after four, subject to those same guards. It is off by default. No webhook establishes a parcel movement.
 
-See [DEMO.md](DEMO.md) for reproducible checks and [EVIDENCE.md](../EVIDENCE.md) for execution records.
+## Privacy and frontend
+
+Public endpoints never return floors, costs, recipient emails or provider secrets. Shop credentials expose only that shop's data; the judge password is read-only. Hub credentials provide operational recovery, not secret access. Logs use exception types, not raw provider payloads. API responses are not cached; credentials remain server-side.
+
+Production URLs use real API contracts. The explicit compile-time review harness plus `?test=recorded` is the only recorded shopper path. Private test fixtures are absent from the production dependency graph; AG Grid is lazily loaded for the private products page. SDK v6 callbacks request server verification, never mark an order paid. Durable event reducers handle duplicates, batching, refresh, reduced motion, pause and replay without driving payments.
+
+The Rootlane environment remains an approved static review only. The existing Render services have not been cut over; [RENDER.md](RENDER.md) gives the exact reviewable settings diff. Import/FX schedules remain fictional estimates with dated source links, not verified customs calculations.

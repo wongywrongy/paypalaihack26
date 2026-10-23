@@ -1,68 +1,52 @@
 # Rally v2 verification and demo
 
-[PLAN.md](../PLAN.md) version 2 is authoritative: one shopper, three fictional Korean shops, one box from Seoul. Group buying and the earlier group-order screens are retired. [EVIDENCE.md](../EVIDENCE.md) records actual execution; [ARCHITECTURE.md](ARCHITECTURE.md) distinguishes current code from later milestones.
+[PLAN.md v2](../PLAN.md) is authoritative: one shopper, three fictional Korean shops, one box from Seoul. Group purchasing and the earlier shopping routes are retired. [Owner actions](ACTIONS.md), [architecture](ARCHITECTURE.md), [API](API.md) and [executed evidence](../EVIDENCE.md) distinguish implementation from genuine provider proof.
 
 ## Before submission
 
-The current hosted review is not submission-ready. The small **Test mode** label remains in the finished judge app because the agreed scope uses PayPal sandbox accounts and test money. Completing the product means proving genuine sandbox API operations and connecting the live engine, not removing that label.
+The connected product and operations are implemented and locally verified. G1 passed genuine USD/CAD payment capability checks earlier; **G3/G4/G5 remain open** until the hosted model and new UI flow run on the existing Render services with human sandbox approvals. The small Test mode label stays because the scope is PayPal sandbox, not live-money commerce.
 
-The design journey is implemented. G1 passed with genuine USD/CAD payments, void, refund, shop payout and an original signed webhook recovered through Rally; see EVIDENCE.md for the exact execution and provenance. M2 must implement the sourcing and negotiation engine; M3 must connect it and PayPal checkout to these screens. The plan gates that main implementation on G1. M4/M5 operations and fresh-browser judge checks follow. There is no verified completion date for these unfinished gates.
+## Connected judge journey
 
-First run this from the repository on a host terminal with PostgreSQL and PayPal access:
+1. Complete [private configuration and the reviewed existing-service cutover](ACTIONS.md). Verify both deploys are live, `/api/health` reports `app: rally`, and the same database's additive `rally` schema is present. Keep the production review harness disabled. Confirm legacy receipts/recovery access before retiring the old deployment.
+2. Open `/shop` in a fresh browser. Select a destination; browse or ask for a routine. Requests use the configured model, stock and explicit budget validation. A model outage uses code fallback; do not present that as a successful live model decision. For the reproducible golden bag add `mul-gel-cleanser`, `dal-rice-toner`, `dal-snail-essence`, `sae-cica-cream`; enable both saved permissions. The US complete checkout schedule is $118.82.
+3. Review the exact items, destination, permissions, complete breakdown and approved maximum. Click the actual PayPal JS SDK v6 button and manually sign in with a **personal sandbox buyer**. Approve this order only. Do not use the receiving business account or automate approval. The server verifies provider ownership, merchant, amount and currency, then authorizes and queues negotiation.
+4. Watch `/deal?order=<saved order id>`. Buyer/shop contexts choose real proposals; code checks the complete total, shop authority, shopper permissions and stock. Actual decisions may accept immediately, counter, decline a concession or retain checkout terms. Never force the connected outcome to $106.79. Pause/replay affects presentation only. Refresh restores persisted events.
+5. Wait for **confirmed capture** before calling the order paid. The worker uses final capture, at or below the approved maximum. Check the durable capture and independent provider GET, exact currency/amount, signed webhook verification and reconciliation. The unused amount is uncaptured, not a separate void; bank release timing varies. Refresh Paid and Your orders, reset the bag and create another bag; the old receipt must remain.
+6. With the corresponding private shop login, view that shop's deal/products and record its fictional handoff. The payment worker submits one genuine USD sandbox payout to its configured business recipient; confirm batch **and item** status. A read-only judge login cannot change policy or hand off parcels, and cannot see another shop's private data.
+7. Use the hub login after all shops arrive and all payouts confirm. Record fictional export tracking. The worker invokes the PayPal Agent Toolkit tracking handler through the guarded Orders v2 transport, then confirms the expected tracker with provider GET. PayPal tracking is not evidence of real shipping.
+8. Record an import total lower than the quoted duty+tax to test a partial refund; confirm pending versus completed refund separately. A higher import total produces no shopper charge. Do not repeatedly change a saved true-up: it is immutable. Optionally approve scheduled fictional hub steps after this manual lifecycle is proved; details are in ACTIONS.md.
+9. Repeat in fresh browser contexts for CAD, GBP, EUR and AUD, verifying the actual human approval and provider amount in each currency. Supply test logins privately in submission notes. Capture screenshots/video of actual outcomes, not fixture totals over a real receipt.
 
-```bash
-PYTHONPATH=backend python scripts/paypal_sandbox.py --env-file /private/rally.env preflight
-```
-
-This checks required settings, a read-only PostgreSQL connection and sandbox OAuth with five-second network timeouts. It prints configuration names and exception types, never values, tokens or raw errors. It creates no purchase or payment operation, changes no schema and does not prove G1. A blocked check exits with status 1; a successful check exits with status 0. Approved host execution is now working; the normal coding sandbox still has restricted network access. Rootlane continues to serve static frontend files only.
-
-## GD2: design journey, no money movement
-
-Use Node and the existing installed frontend dependencies:
-
-```bash
-npm ci --prefix frontend
-npm run build --prefix frontend
-npm run test:render --prefix frontend
-npm run test:browser --prefix frontend
-```
-
-The browser suite supplies an explicit compile-time test harness to its development server and injects the authenticated shop response. CI also runs the actual Playwright CLI and pinned Taste inspector. Contract tests are not evidence of real agents, a human PayPal approval or a captured payment.
-
-For manual design inspection, start a separate test server:
+The live model smoke CLI uses the same adapter without moving money:
 
 ```bash
-VITE_RALLY_TEST_HARNESS=1 npm run dev --prefix frontend
+PYTHONPATH=backend python scripts/engine.py --env-file /private/rally.env --country US
+# Explicit deterministic selector, never live-model evidence:
+PYTHONPATH=backend python scripts/engine.py --fixture --country US
+# No payments. Hosted calls can incur model cost; cache makes identical reruns repeatable.
+PYTHONPATH=backend python scripts/benchmark.py --connected --env-file /private/rally.env --count 500 --output /private/connected-benchmark.json
 ```
 
-1. Open `/shop?test=recorded`. Filter categories, add/remove products and open Ship to. Change to Canada and inspect CAD amounts. US sunscreen and all air-shipping aerosol restrictions remain enforced.
-2. Open Ask, review the saved routine and add it to the bag. The ordinary assistant is a local catalog routine, not a hosted model call.
-3. On Bag, inspect the grouped shops, switches and all-in breakdown. Switches grant permission; they do not reduce the checkout hold before a shop agrees. Refresh to verify bag/country/rules persist. Checkout remains unavailable until M3; there is no look-alike PayPal button.
-4. Open `/deal?test=recorded` directly for the recorded US order. It is isolated from edits to the current bag. Watch the two shops' item tracks, older packaging, the added mask, free Korea shipping, price-held items and totals **$118.82 → $117.75 → $106.79**. Pause/resume and replay. The events come from `hero.events`, not live agents.
-5. After playback, See your order opens Paid and Track. Their fixed receipt and fulfillment data are test contracts. Refreshing the recorded Deal restarts playback; durable live stream recovery belongs to M3.
-6. The Playwright shop tests inject the shop-scoped contract for `/shops/orders`, `/shops/products` and `/shops/settings`. Inspect both desktop and phone screenshots. Without that authenticated response, ordinary shop routes stay locked; private prices never enter the public bundle.
+The fixture benchmark in `docs/benchmark.json` deliberately leaves strategy B null. A connected benchmark passes only with real B/D model results, no model failures, code-validated shop authority and zero ceiling violations; code fallback alone is insufficient.
 
-The ordinary production build has no test harness. A query parameter alone cannot enable recorded payments. `/deal`, `/paid` and `/track` require an order; no receipt is created by an animation, browser return or local bag edit. Keep the harness out of Render and ordinary production builds. The explicitly enabled Rootlane design-review build is an exception for this recorded journey; its checkout remains disabled.
+## Cancellation, recovery and deadlines
 
-Saved quote totals at checkout / after the recorded terms:
+- Cancel an unapproved checkout: stock releases once and a delayed approval callback cannot authorize it. A completed authorization canceled before capture uses a verified void. Capture already underway blocks ordinary cancellation.
+- A failed/interrupted model attempt retains checkout terms with persisted error events. The outcome is recoverable and cannot fabricate acceptance or payment.
+- For an ambiguous provider mutation, inspect Hub recovery. Reconcile the **saved operation** first; resume its saved job only after resolving the cause. Never invent a new key to repeat an unknown charge/refund/payout. Missing provider IDs require provider activity review.
+- A definitively failed capture voids the remaining hold. An unknown capture does not release stock, ship or blindly capture again.
+- Unshipped orders past `ship_by` receive a full remaining refund through the worker; export is blocked. Use an isolated disposable test database to shorten deadlines, never rewrite live consent or timestamps to make a demo pass. Pending refunds remain pending until provider confirmation.
+- Original Coalition receipts require the original `coalition_session` cookie. `/api/purchases` remains read-only; hub legacy recovery retains unresolved metadata. New retired checkout requests return 410.
 
-| Destination | Checkout | Recorded final |
-| --- | --- | --- |
-| United States | $118.82 | $106.79 |
-| Canada | C$160.87 | C$144.49 |
-| United Kingdom | £93.61 | £84.15 |
-| Germany | €111.05 | €100.30 |
-| Australia | A$172.60 | A$155.04 |
+## GD2: recorded review, no money movement
 
-The calculator matches the reference scenario. These are not verified customs rates, live FX, actual savings or engine benchmark results. The recorded order uses the US schedule; other country golden checks run independently.
+The existing Rootlane link is static-only: [Shop](https://neo.taile1abc7.ts.net:20001/shop?test=recorded) / [recorded Deal](https://neo.taile1abc7.ts.net:20001/deal?test=recorded). It uses the explicit compile-time review harness and recorded reference events; checkout is disabled. Shop pages remain locked unless a scoped API is present. Rootlane does not supply GitHub/Render API access, database access or callback changes.
 
-## Existing Rootlane environment
-
-Rootlane manages the approved static frontend preview. It does not supply PayPal/Render API access, remote command execution, PostgreSQL access or payment callback configuration. Reuse the existing observed environment and its HTTPS link; do not create replacement services or routes.
-
-A normal frontend build can expose browsing and the bag. A static preview cannot run the G1 lifecycle or the connected M3 flow. The [existing link](https://neo.taile1abc7.ts.net:20001/shop?test=recorded) serves the v2 design-review build; use `/shop?test=recorded` for browsing and `/deal?test=recorded` for recorded negotiation. This explicit review build enables the harness, while ordinary production builds exclude it. Private shop contracts are supplied only in CI, so shop pages remain locked on the static preview. Any new build publication must preserve the existing index/assets for rollback and verify readiness; a reserved link alone is not a running app.
+Normal production URLs use the actual API in every build. `?test=recorded` alone cannot enable recorded receipts in an ordinary production build. To inspect locally, explicitly set `VITE_RALLY_TEST_HARNESS=1 npm run dev --prefix frontend` and use that query parameter. The fixture golden schedules are checkout/final: USD 11882/10679, CAD 16087/14449, GBP 9361/8415, EUR 11105/10030, AUD 17260/15504 minor units. They are complete scenario assumptions, not verified live customs/FX or guaranteed savings.
 
 ## G1: three human PayPal approvals
+
 
 **Current status:** G1 passed at 08:45 UTC on October 23. USD authorization/capture/void/refund, CAD authorization/capture and the corrected $0.50 payout were independently confirmed. The genuine CAD webhook had reached the existing Render receiver. After explicit owner approval, its original bytes and signature headers were replayed through the local Rally ASGI handler and durable worker; PayPal signature verification and capture GET reconciliation both succeeded. The full verifier exited successfully. No financial operation was replayed. This proves payment capability and signed-event recovery; direct delivery to a deployed Rally API and the connected judge journey remain G3 work. [Reuse the existing Render resources](RENDER.md); do not provision another stack.
 
@@ -97,9 +81,3 @@ For an earlier `start` failure caused by missing tables (`UndefinedTable`), use 
 For `SELF_PAY_NOT_ALLOWED`, the configured shop recipient is the sending business account. Set `PAYPAL_SHOP_EMAIL` privately to a different sandbox business account. After the original payout is provider-confirmed failed, `--run RUN-UUID retry-payout` permits one explicit $0.50 recipient correction with a separate stable `payout-correction` operation. It preserves the original denied request and batch. Repeated calls cannot create another correction; pending/unknown outcomes require `reconcile payout-correction`, and a changed recipient after submission is rejected. The final verifier follows the correction and still requires its batch and item to succeed. Later events for the original denied batch cannot overwrite the current payout summary.
 
 The G1 script retains the existing pool/member storage solely as a capability probe; it is not the v2 purchasing engine. A PayPal browser return cannot confirm a payment. Final capture's uncaptured amount is not a separate remainder-void event, and bank hold release timing is not guaranteed.
-
-## After G1
-
-M2 replaces the retired domain with catalog, landed-cost and exact sourcing/negotiation modules. G2 must reconcile the reference scenario's cheapest-unit selection with lowest-all-in sourcing before claiming an optimal result. M3 then wires genuine checkout, the hosted model and the persistent SSE deal stream. M4 adds hub payouts, tracking, refund deadlines and the benchmark. None is established by GD2 playback.
-
-Official provider references: [supported currencies and pending foreign-currency payments](https://developer.paypal.com/api/codes/currency), [authorization timing](https://developer.paypal.com/payment-methods/auth-honor/), [final capture](https://developer.paypal.com/api/payments/v2/authorizations-capture/), [void](https://developer.paypal.com/api/payments/v2/authorizations-void/), [refund](https://developer.paypal.com/api/payments/v2/captures-refund) and [idempotency](https://developer.paypal.com/api/rest/requests/). Documentation checks are not sandbox execution.
