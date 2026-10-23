@@ -1,0 +1,148 @@
+{
+  "source_commit": "f9fc421ee5e7fc20858657e3f71f0fb1079576e7",
+  "run_id": 39854036017,
+  "job_id": 120087444955,
+  "tool": "Taste inspector pinned6010f91a9935f1c167dfc500fb1a475681892e6b; CI Chrome",
+  "viewports": [
+    1440,
+    768,
+    390
+  ],
+  "images": [
+    {
+      "path": "ask/desktop-fold.jpg",
+      "sha256": "abb4ae5cf4b2585ed826dd909737421b76a497877d0d668fd27ed3234b6e4dc5",
+      "bytes": 51334
+    },
+    {
+      "path": "ask/mobile-fold.jpg",
+      "sha256": "746c14ff6e66ed33cc96dd4e2965e98945850d4787ccaadcb3f91381c128aecb",
+      "bytes": 41031
+    },
+    {
+      "path": "ask/tablet-fold.jpg",
+      "sha256": "b6e66ffd35d34e1d608b766d22e327d2023cf6253cb43a220aafd6fbe165276c",
+      "bytes": 47360
+    },
+    {
+      "path": "deal/desktop-fold.jpg",
+      "sha256": "d8b4b7365646dc50a4b03609fcb0a610c19e9f78f97acbb69bd37cfe4d8b873f",
+      "bytes": 106002
+    },
+    {
+      "path": "deal/mobile-fold.jpg",
+      "sha256": "4b8fa0d9abc2a95d36e063d78ff30efd009ea6a5ed7b60c9d0ee2536801b5919",
+      "bytes": 35074
+    },
+    {
+      "path": "deal/mobile-page-01.jpg",
+      "sha256": "1954e9b5619c12459bda99b921bd45afcf62a9fda9286ad7f2dd9c472c961464",
+      "bytes": 112964
+    },
+    {
+      "path": "deal/tablet-fold.jpg",
+      "sha256": "d271c6224f58f3a73de86b951909cee4676346c58c384e989b5fe3791fafb027",
+      "bytes": 68230
+    },
+    {
+      "path": "done/desktop-fold.jpg",
+      "sha256": "08731bf6c0eb7a5a4628cacf7f2388d62c1eb7eb42b64d834fdcd10a94163cd3",
+      "bytes": 42979
+    },
+    {
+      "path": "done/mobile-fold.jpg",
+      "sha256": "dfa46bbf8bb4362f62d59c6c7245b73d459fc1cfda3eb4dca9caa24255a0a68d",
+      "bytes": 31697
+    },
+    {
+      "path": "done/tablet-fold.jpg",
+      "sha256": "06c5002768bfad7dd495181831edecbbefe05ad2bb493849ca33a731678c1893",
+      "bytes": 43132
+    },
+    {
+      "path": "invite/desktop-fold.jpg",
+      "sha256": "aa7eace749c16ea5b7b3144203ff777a7ad54dc63cf5797c35abff1e57629bbc",
+      "bytes": 49172
+    },
+    {
+      "path": "invite/mobile-fold.jpg",
+      "sha256": "970968de687fdbe24dda148c31c5c0590ab0be9b3a95150e920e114a32c494bf",
+      "bytes": 39660
+    },
+    {
+      "path": "invite/tablet-fold.jpg",
+      "sha256": "13e16d0ecf99661531cc4cda2cd61ea6f987bd92e1de371446b17f9524849c25",
+      "bytes": 45296
+    },
+    {
+      "path": "live/desktop-fold.jpg",
+      "sha256": "792d4788fcc0976fe726406cc38faa7c76678656b51f9ba97e5b8489a7ae5afe",
+      "bytes": 49565
+    },
+    {
+      "path": "live/mobile-fold.jpg",
+      "sha256": "b9205c52447ca09e00af7e79695fe0660427cd8c8ca8a00160a51fea2c4ee4c3",
+      "bytes": 41140
+    },
+    {
+      "path": "live/tablet-fold.jpg",
+      "sha256": "edc835df32ef2ab9f32768c850b5b37b670d5b51d347bd0c22c30122ebb54c38",
+      "bytes": 45511
+    },
+    {
+      "path": "receipt/desktop-fold.jpg",
+      "sha256": "671f03e63db9d15af23c76abdf8fcacb82a9f60a8bf794479d88e5ed47ba8896",
+      "bytes": 50294
+    },
+    {
+      "path": "receipt/mobile-fold.jpg",
+      "sha256": "3ddb1f71a5b1d75f665de6ed845b71b9de9e57df797486ada07b3daa66404bfb",
+      "bytes": 38494
+    },
+    {
+      "path": "receipt/mobile-page-01.jpg",
+      "sha256": "987af54471cfcd45052ee41e7ada71dcd9cf96111b23cf3a6e9c503b64ac4475",
+      "bytes": 78345
+    },
+    {
+      "path": "receipt/tablet-fold.jpg",
+      "sha256": "93699bc8dd041216134a58fc8b0a270cd61dec6b3ff316dd888459f8a8cfe0dd",
+      "bytes": 49642
+    },
+    {
+      "path": "review/desktop-fold.jpg",
+      "sha256": "cff61a37b7a5a5946d727d0d9d4ec013a4396cdd3879617fbf3ef1c40a1eeae5",
+      "bytes": 45312
+    },
+    {
+      "path": "review/mobile-fold.jpg",
+      "sha256": "4eb7cb0bcb94b01ac327c692d6df2d0e84025b63f8612dc8ed9c77c2cb00cdc7",
+      "bytes": 34595
+    },
+    {
+      "path": "review/mobile-page-01.jpg",
+      "sha256": "22358b45569ed80b9b028687abcbe48220f8d36373bb34d426afa5af9e66e01b",
+      "bytes": 72523
+    },
+    {
+      "path": "review/tablet-fold.jpg",
+      "sha256": "6a814cd61f4be84494b065bb4f8e7a2b066dd2963e3b9061564ebd5e0a3be902",
+      "bytes": 49850
+    },
+    {
+      "path": "tell/desktop-fold.jpg",
+      "sha256": "7b2dc7be0e249aab2fd38c2059996292eacee65cd6eb5b12ac13a6340674483e",
+      "bytes": 49916
+    },
+    {
+      "path": "tell/mobile-fold.jpg",
+      "sha256": "58aeeeb80231537e7cfc26f557f622c4ab1b6224b25d4b827e9d2163ec8ebfab",
+      "bytes": 39941
+    },
+    {
+      "path": "tell/tablet-fold.jpg",
+      "sha256": "b638358836b8c1a4280b6115de44ec9dd70dadb03d1ecedd10ae4f18c599d5eb",
+      "bytes": 46403
+    }
+  ]
+}

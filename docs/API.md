@@ -1,44 +1,33 @@
-# Coalition API
+# Rally API
 
-FastAPI's `/openapi.json` is the executable schema. Money uses integer USD minor units and timestamps are UTC.
+The generated `/openapi.json` is authoritative. All money is integer minor units plus explicit currency. This is one same-origin FastAPI application serving the built React app; no new microservices.
 
-Buyer commands require an owned HttpOnly session, exact allowed origin and `X-Coalition-Request: 1`. IDs and run links do not grant access to someone else's receipt. Operator commands additionally require `X-Operator-Token`.
+Call `GET /api/session` first to establish an HttpOnly cookie and receive its CSRF token. Mutations require that cookie plus `X-CSRF-Token`; a supplied Origin must match `PUBLIC_URL`. Never put tokens in share links. Shopper order/bag IDs are always checked against the server session.
 
-| Endpoint | Purpose |
-|---|---|
-| `GET /api/config` | Public configuration/disclosures, without secrets |
-| `POST /api/session` | Restore/create shopper identity; optional owned `run_id` or protected preparation invite; `shopping:true` without a run/invite opens/reuses an independent draft; retired-product storefront links also open a draft; `new_deal:true` starts/reuses another draft |
-| `GET /api/catalog` | Six real-model headphone products with simulated offers; retired models and private policies excluded |
-| `POST /api/requests` | `{raw_text, edits?}` creates an owner-scoped version and durable matching job; identical active work is reused |
-| `GET /api/journey` | Owned request, current-catalog assessments/products, safe rounds, quote and verified progress; historical purchases remain available through owned checkout/history |
-| `GET /api/purchases` | Latest purchase per group for the authenticated owner across runs; no other buyer’s records |
-| `POST /api/negotiations` | `{product_id}` matches a compatible open shopping group or queues a bounded draft; returns the selected `run_id` |
-| `GET /api/status` | Buyer-owned commitment, immutable terms and provider evidence; 409 before a quote exists |
-| `POST /api/commitments` | Exact context/terms consent; reserves an expiring slot and queues order creation; returns only `{id, amount_minor, currency}` |
-| `POST /api/commitments/{id}/authorize` | Owned recorded order only; queues provider authorization |
-| `POST /api/commitments/{id}/leave` | Withdraw before closure; queues safe unwind |
-| `POST /api/paypal/webhook` | Verifies the app signature, persists original bytes and verified event durably before HTTP 200, then queues asynchronous processing |
-| `POST /api/operator/runs` | `{scenario, demo, profile:"small", close_seconds}`; only five-person headphone preparation, default 600 seconds |
-| `GET /api/operator/runs/{id}` | Protected jobs, negotiation attempts and payment evidence |
-| `POST /api/operator/runs/{id}/activate` | Activates preparations, retaining tiered quote deadline |
-| `POST /api/operator/runs/{id}/cleanup` | Unwind an open run; preserves unresolved records |
-| `POST /api/operator/runs/{id}/refund-cleanup` | Explicit refund cleanup after a sandbox success |
-| `POST /api/operator/jobs/{id}/retry` | Retry unresolved durable work with original operation identity |
+| Routes | Behavior |
+| --- | --- |
+| GET /api/countries, /api/catalog?country=US | Public catalog, availability and dated complete scenario assumptions; no private policy |
+| POST /api/assist, /api/quotes | Catalog-only routine or transient exact quote; text/country/items/rules validated |
+| POST /api/bags, PATCH /api/bags/{id}, GET /api/bags/{id}/quote | Owned bag and immutable quote versions |
+| POST /api/bags/{id}/checkout | Body `{quote_id}`; binds consent, reserves stock and creates idempotent PayPal order |
+| POST /api/bags/{id}/checkout/approve | Body `{order_id}` (PayPal ID); provider verification/authorization, then durable negotiation job |
+| GET /api/orders, /api/orders/{id} | Owned persistent history, exact receipt, independent payment and fulfillment status |
+| GET /api/orders/{id}/deal, /api/orders/{id}/deal/stream | Persisted events; SSE event `deal`, numeric sequence ID, `after`/Last-Event-ID resume |
+| POST /api/orders/{id}/cancel | Cancel pre-capture; confirmed authorization uses ledger void; ambiguous outcomes block release |
+| POST /api/reset | Resets client shopping state; preserves purchases and receipts |
+| POST /api/login, /api/logout | Rotate credentials while preserving owned order identity; rate-limited shop/hub login |
+| GET /api/shops/{id}/products, /orders, /settings | Shop scope; only own floor/cost/stock and deals; judge read-only |
+| PATCH /api/shops/{id}/settings | Permitted discount/sample policy; private writer credential required |
+| POST /api/shops/{id}/orders/{order}/handoff | `{carrier,tracking}`; immutable arrival, confirmed funding, enqueues one payout |
+| GET /api/hub/orders, /api/hub/recovery | Hub-only order/recovery metadata, never credentials/raw provider bodies |
+| POST /api/hub/orders/{id}/ship, /true-up, /delivered | Hub-only export, `{actual_minor}` import adjustment, and independent delivery |
+| POST /api/hub/recovery/{request_id}/reconcile | GET-only provider reconciliation of a saved logical operation |
+| POST /api/hub/jobs/{id}/resume | Resume saved recovery job using its original keys |
+| GET /api/purchases, /api/legacy/purchases | Original-cookie owned historical Coalition receipts |
+| GET /api/hub/legacy/recovery | Read-only original-ledger unresolved metadata |
+| POST /api/paypal/webhook | Persist original bytes before acknowledgement; verify signature and reconcile in worker |
+| GET /api/health | Application health, `app: rally` |
 
-Buyer API reads/mutations accept `?run=UUID` to select an **owned** buyer row without changing another tab’s selected checkout. The cookie identifies its owner independently of that group.
+409 means changed/expired consent, incompatible state or unresolved payment; 403 means CSRF/scope/read-only failure; provider failures return sanitized errors. Unknown provider outcomes never become success from a callback or model response. Retired Coalition checkout endpoints return 410.
 
-Matching statuses include `queued`, `running`, `clarification`, `completed`, `failed`, and `superseded`. `error_kind` distinguishes missing information, unsupported requirements, no matching products, provider failure and invalid model output. Clarification preserves raw text and completed answers; `clarification.fields` and `question` identify the next answer. Journey `availability` is `draft`, `open`, `unavailable`, `closed`, `canceled`, or `settled`.
-
-Explicit request edits contain `max_total_minor`, `latest_arrival` (ISO date in UTC), `required_features`, `device` and `flexibility`. Budget and arrival can be null until clarification completes. Unknown mandatory assessments block checkout; evidence must support the specific requirement, and prices come from that product’s merchant policy. Constraint edits cannot modify an active approved agreement.
-
-Accepted quote terms include immutable version, product/variant, sandbox payee, maximum total, `tier_schedule`, minimum/capacity, delivery date, closing time and reservation expiry. A settlement snapshot freezes member IDs, quote version and selected cents per buyer. Commitment `amount_minor` remains the approved maximum; `settlement_minor`, `authorized_minor`, `captured_minor` and `refunded_minor` have separate meanings.
-
-Poll active work approximately every two seconds. Terminal views back off. Payment success requires every selected capture to be confirmed; pending approval, an authorization threshold or application timer is never provider evidence.
-
-Journey includes `compatible_counts` by product (distinct owners with current supported requirements), separately from `status.confirmed_count`. Its `negotiation` includes product/request identity, `state` (`negotiating`, `agreed`, `declined`, `interrupted`), `phase`, `error_kind` and `accepted_quote_reference`. No ordinary request creates a payment merely by negotiating.
-
-Each `rounds` item has stable `id`, ordered `sequence`, `speaker`, `action`, `valid`, explicit `currency`, validated `tiers`, numeric `changes`, server-written `explanation`, UTC `timestamp`, `proposal_reference` and `accepted_quote_reference`. Actions are `offered`, `countered`, `accepted`, `declined`, `invalid`, or `unavailable`. Changes compare the previous validated opponent offer by buyer threshold. An identical merchant price schedule is `accepted`, while its structured merchant proposal remains executable. Each round commits before the next model call; the accepted quote reference commits with publication. Invalid responses contain no executable tiers. Historical rows without structured data are labeled unavailable rather than inferred from prose. Raw prompts, model reasoning, private floors and provider diagnostics are excluded.
-
-Protected preparation invitations use URL fragments (`#invite=…`), then are removed after session creation. Access logging and referrers are disabled to protect approval/invitation tokens; verified payer identities never enter buyer responses. Operator evidence includes matching and negotiation jobs alongside payment/deadline jobs.
-
-The retired merchant-widget opportunity and optional calculator-assistant creation endpoints are absent. Historic calculator/large purchases retain owned status and recovery. New legacy/large run preparation returns 422.
+See [architecture](ARCHITECTURE.md), [demo](DEMO.md) and [executed evidence](../EVIDENCE.md).

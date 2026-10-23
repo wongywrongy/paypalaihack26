@@ -1,195 +1,179 @@
 ---
-name: Commonplace / Coalition
-description: Photo-led headphone shopping and evidence-backed group purchasing with persistent checkout.
+name: Rally
+description: Product-led international shopping. One box, one all-in price, the deal one tap away.
 colors:
-  indigo: "#4338ca"
-  indigo-hover: "#352aa8"
-  green: "#247154"
-  ink: "#202431"
-  muted: "#626977"
-  ground: "#f7f8fa"
-  surface: "#fff"
-  line: "#e0e3e9"
-  photo-ground: "#efeeec"
+  ground: "#F7F4F0"
+  surface: "#FFFFFF"
+  line: "#E4DFD8"
+  ink: "#17161A"
+  muted: "#5C5A60"
+  accent: "#B4235A"
+  accent-hover: "#8E1A47"
+  accent-tint: "#FBE8EF"
+  rule-applied: "#FFE9A8"
+  saving: "#0B5A3C"
+  saving-tint: "#E2F2EA"
 typography:
   display:
-    fontFamily: '"Archivo Variable", sans-serif'
-    fontSize: "clamp(30px, 3.1vw, 42px)"
-    fontWeight: 600
-    lineHeight: 1.15
-    letterSpacing: "-.035em"
-  storefront-title:
-    fontFamily: '"Archivo Variable", sans-serif'
-    fontSize: "28px"
-    fontWeight: 600
-    lineHeight: 1.25
+    fontFamily: '"Schibsted Grotesk", system-ui, sans-serif'
+    fontSize: "32px"
+    fontWeight: 800
+    lineHeight: 1.12
     letterSpacing: "-.03em"
-  catalog-title:
-    fontFamily: '"Archivo Variable", sans-serif'
-    fontSize: "22px"
-    fontWeight: 550
-    letterSpacing: "-.02em"
-  product-title:
-    fontFamily: '"Archivo Variable", sans-serif'
-    fontSize: "17px"
-    fontWeight: 550
   title:
-    fontFamily: '"Archivo Variable", sans-serif'
-    fontSize: "24px"
-    fontWeight: 550
-    lineHeight: 1.3
-    letterSpacing: "-.03em"
-  price:
-    fontFamily: '"Archivo Variable", sans-serif'
-    fontSize: "36px"
-    fontWeight: 600
-    lineHeight: 1
-    letterSpacing: "-.04em"
+    fontFamily: '"Schibsted Grotesk", system-ui, sans-serif'
+    fontSize: "17px"
+    fontWeight: 700
+    lineHeight: 1.35
+    letterSpacing: "-.015em"
   body:
-    fontFamily: '"Archivo Variable", sans-serif'
-    fontSize: "14px"
-    lineHeight: 1.7
+    fontFamily: '"Schibsted Grotesk", system-ui, sans-serif'
+    fontSize: "15px"
+    fontWeight: 400
+    lineHeight: 1.5
   label:
-    fontFamily: '"Archivo Variable", sans-serif'
+    fontFamily: '"Schibsted Grotesk", system-ui, sans-serif'
     fontSize: "13px"
-    fontWeight: 550
-  storefront-price:
-    fontFamily: '"Archivo Variable", sans-serif'
-    fontSize: "36px"
     fontWeight: 600
-    lineHeight: 1.15
-    letterSpacing: "-.035em"
+  money-hero:
+    fontFamily: '"IBM Plex Mono", ui-monospace, monospace'
+    fontSize: "58px"
+    fontWeight: 400
+    lineHeight: 1.2
+    letterSpacing: "-.025em"
+  money:
+    fontFamily: '"IBM Plex Mono", ui-monospace, monospace'
+    letterSpacing: "-.025em"
 rounded:
-  field: "6px"
-  panel: "10px"
-  media: "12px"
+  chip: "999px"
+  field: "12px"
+  card: "16px"
+  button: "16px"
+  photo: "10px"
 spacing:
-  field-gap: "12px"
-  panel-mobile: "20px"
-  panel: "24px"
-  checkout-panel: "26px"
-  selected-gap: "64px"
+  gutter: "20px"
+  band: "16px"
+  applied-rule: "18px"
+  stack: "14px"
 components:
   button-primary:
-    backgroundColor: "{colors.indigo}"
+    backgroundColor: "{colors.accent}"
     textColor: "{colors.surface}"
-    rounded: "{rounded.field}"
+    rounded: "{rounded.button}"
     padding: "14px 18px"
     width: "100%"
   button-primary-hover:
-    backgroundColor: "{colors.indigo-hover}"
-  panel:
+    backgroundColor: "{colors.accent-hover}"
+  card:
     backgroundColor: "{colors.surface}"
-    rounded: "{rounded.panel}"
-    padding: "{spacing.panel}"
-  search-field:
-    rounded: "{rounded.media}"
-    padding: "6px 6px 6px 20px"
+    rounded: "{rounded.card}"
+  rule-applied-card:
+    backgroundColor: "{colors.rule-applied}"
+    rounded: "{rounded.card}"
+    padding: "{spacing.applied-rule}"
+  savings-band:
+    backgroundColor: "{colors.saving-tint}"
+    textColor: "{colors.saving}"
+    rounded: "{rounded.field}"
+    padding: "{spacing.band}"
   product-photo:
-    backgroundColor: "{colors.photo-ground}"
-    rounded: "{rounded.media}"
-    width: "100%"
+    backgroundColor: "{colors.line}"
+    rounded: "{rounded.photo}"
 ---
 
-# Design System: Commonplace / Coalition
+# Design System: Rally
+
+Version 2 (Oct 22, 2026): solo international shopping across three Korean shops. Reference screens in `design/mockup/`. The palette and type choices in the front matter remain the visual authority; layout, typography, elevation, shape and motion rules below carry over from the first design milestone.
 
 ## Overview
 
-**Creative North Star: "Coalition storefront"**
-
-Coalition brings shopping and group purchasing into a white storefront with precise Archivo typography, fine neutral dividers and solid indigo actions. Sourced Apple, Sony and Bose product photographs make the catalog immediately browsable; intelligent search supports product choice. Commonplace Audio is the fictional headphone merchant. Historical calculator purchases retain their dedicated checkout and recovery controls. The user-approved composition extends the incumbent neutral/indigo system.
-
-Editable needs unfold on demand. Product evidence and a bounded buyer/merchant negotiation lead to a concise deal summary and persistent checkout, where the full payment explanation remains visible. Financial outcomes use restrained text, tabular amounts and explicit provenance. Generated product photographs are illustrations, never evidence of specifications or fulfillment.
-
-**Key Characteristics:**
-
-- Large product photographs, white shopping surfaces and fine neutral dividers.
-- One Archivo family, tabular amounts and solid indigo actions.
-- Compact editable requirements and persistent negotiation; evidence-backed eligibility and buyer-owned payment outcomes.
-- Finite, reduced-motion-aware confirmation effects.
+Rally feels like a calm, product-led shopping app that happens to ship from Seoul. A shopper sees six screens and one sheet: Shop, Ship to, Ask Rally, Bag, Deal, Paid, Track. Each has one primary action and one leading number. It reads as a real product: real shopping words, real order numbers and dates, the real PayPal button, and a single small "Test mode" pill in the header as the only sandbox marker. The agents' work is shown while it happens, on the Deal screen, as prices meeting and items changing; there are no explainer pages. Shops get Rally for shops, a desktop dashboard showing the same deal from their side.
 
 ## Colors
 
 ### Primary
 
-Solid indigo identifies primary actions and confirmed authorization positions; the deeper hover shade supplies interaction feedback.
+Berry (`accent`) is the action color for primary buttons, links, checked switches and focus outlines, and the color of Rally's offer on a price track. The wordmark dot also uses berry; keep other uses functional. The PayPal button uses PayPal's own SDK styling, not berry.
 
 ### Secondary
 
-Green identifies savings and completed payment confirmations. Eligibility also uses textual verdicts with green, amber and red accents so color never carries the conclusion alone.
+Butter (`rule-applied`) appears only when the shopper's own rule changed the order ("Older packaging, same formula. You said that's fine." / "Added a $2 sheet mask. It unlocks free shipping in Korea."). Mint (`saving`, `saving-tint`) marks money saved: an agreed price and the saved stretch of its track, "Deal · −$10.96", "$12.03 less than at checkout", "Saved vs buying from each shop yourself". In Rally for shops it marks what the shop earned over its lowest price. Reserve berry for actions.
 
 ### Neutral
 
-Cool ink and muted supporting text sit on white shopping surfaces and pale checkout surroundings. Thin neutral borders separate browsing, evidence and consent. Warm pale-gray photographic material supports graphite products. The frontmatter preserves the incumbent palette and the reused photo fallback; local checkout and operator neutral variants remain contextual code values, not replacement tokens.
-
-**The Evidence Color Rule.** Authorization uses indigo; confirmed payment uses green. A compatible request or full authorization count does not establish completed payment.
+Warm off-white ground, white grouped rows and cards, near-black ink. Warm lines separate rows and timelines; most cards have no outer border. Secondary text uses `muted`, with at least 4.5:1 contrast on the ground.
 
 ## Typography
 
-Self-hosted Archivo Variable is the only font family. Prices, counts and deadlines use tabular numerals. Product identity, payment status and totals have clear size and weight differences; supporting terms and evidence remain subordinate. No serif display typography.
-
-The shopping heading uses the responsive display role, fixed at (30px) on mobile. Selected-product headings use the storefront-title role, reducing to (25px) on mobile; catalog headings reduce from (22px) to (20px). Product tile titles reduce from (17px) to (14px). Search labels use the label role; editable requirement labels use (12px). Selected-deal prices use storefront-price; checkout status uses title, reducing to (20px) on mobile, and checkout maximum price uses price, reducing to (32px). Supporting checkout copy remains compact without making its smallest evidence labels a default for new surfaces.
-
-**The Stable Amount Rule.** Monetary amounts remain static; only verified counts may use a number ticker.
+Schibsted Grotesk for all text; heavy (800) for main headings, 700 for section titles and product names, 600 for labels and primary actions. Body text defaults to 15 px with a 1.5 line height. Ordinary type uses root-relative units so browser text preferences can enlarge it; decision-bearing metadata stays at least 12 px, product names 14 px and item prices 13 px. Rows grow and wrap rather than truncate product details. IBM Plex Mono for every money amount, with tabular figures. The 58 px hero amount appears on Deal and Paid and is the largest type in the product; its viewport bound keeps the complete amount readable on narrow screens. Local currency symbols (C$, £, €, A$) sit in the same mono face.
 
 ## Layout
 
-The storefront is browsable before a request is submitted. A centered container (1200px) with horizontal padding (28px) holds the wordmark, navigation, a left-aligned heading and wide search, then the product catalog. The search field is capped at (920px). Desktop browsing uses three columns with gaps (38px vertically, 26px horizontally); square photographs occupy most of each unboxed tile. A selected product appears above the catalog, with its large photograph beside a concise purchase column, a gap (64px), and a fine divider below. Requirements use a compact native disclosure inside the selected purchase panel, or beneath search before selection. Negotiation and agreement occupy that same panel; completed exchanges remain visible rather than automatically collapsing.
-
-At (700px) and below, horizontal padding becomes (16px), navigation wraps below the wordmark and demo badge, and the search action fills its own row. The catalog becomes two columns with gaps (28px vertically, 16px horizontally); the selected photograph stacks before the deal and is capped at (400px). Requirement fields become a single column. Buyer and merchant roles stay embedded in the selected-product journey.
-
-The sole storefront is the headphone shopping journey. Old `/shop` links open it; dedicated consent and payment live at `/checkout?run=<run UUID>`.
-
-Desktop checkout allocates 40% to the order summary and 60% to group progress and payment, using a centered container with a (22px) gap. Summary and payment surfaces have (26px) padding, reduced at narrower widths. At (700px) and below, they form one focused white surface: item, delivered price, shipping/tax, logistics, payment status, commitment positions, conditional terms, consent and payment controls, payment outcomes, latest event and evidence. Catalog browsing stays on the headphone storefront. Payment and recovery links remain in keyboard order.
+Mobile first at 390 px with a 20 px gutter. One column; the primary action follows the content and settles at the bottom when space permits, without covering content. Shopper pages remain a comfortable 460 px column on desktop; the shop grid can widen to 3 or 4 columns. Rally for shops uses a 1272 px outer max width, stacks its order and messages columns below 960 px, and puts wide tables in labeled horizontal scroll boxes.
 
 ## Elevation & Depth
 
-Checkout surfaces use thin neutral borders and tonal separation rather than prominent shadows. Keep the receipt's restrained green tint subordinate to the verified payment outcome. Focus outlines remain visible on links, buttons, native disclosures and form controls.
-
-Shopping tiles are unboxed; selected content and negotiation use dividers and pale proposal material. Visible keyboard focus uses a solid indigo outline (3px) with offset (4px). The search wrapper also changes its border to indigo on focus. Selected product photographs use an indigo outline (2px) with offset (4px).
+Flat. Separation comes from white cards on the warm ground, semantic tints and fine dividers. No shadows, gradients or glass. The Ship to sheet may use a scrim over the shop.
 
 ## Shapes
 
-Photographs and the wide search wrapper share the media radius; checkout panels retain the panel radius. Native fields, role labels, proposal rows and receipts use the smaller field radius. The compact demo badge is outlined. Numbered commitment positions are circles joined by thin connectors. Preserve these established forms rather than introducing avatars or ornamental shapes.
+Rounded but not bubbly: 12 px fields and bands, 10 px product photos (12 px in the shop grid), 16 px cards and buttons, 18 px shop tiles, full pills for chips and the Test mode marker.
 
 ## Components
 
-### Product photography and browsing
+### Header
 
-Six square studio photographs place graphite headphones on pale neutral material. `frontend/public/assets/headphones-studio.png` is a generated three-column, two-row contact sheet, displayed with CSS background size (300% 200%) and catalog positions. Each photo has an accessible illustrative-product label. Source, prompt and fictional status are recorded in `docs/photography.json`; the footer and demo disclosure retain that status. Selection outlines the photograph and scrolls to the selected-product section. Tile titles, retail price, delivery and fit evidence remain distinct from accepted group terms.
+Wordmark, "Test mode" pill, bag icon with count. Below it on the shop: a "Ship to United States · USD" chip that opens the Ship to sheet.
 
-### Requirements and eligibility
+### Product tiles and photos
 
-The labeled search input and “Find deals” action evaluate the shopper's needs. Extracted number, date and text fields are editable inside the initially collapsed “Your requirements” disclosure. Native checkboxes explicitly relax requirements. Product tiles use text fit status and native disclosures for per-requirement rationale, sources and uncertainty; excluded products have a separate disclosure. Unknown mandatory requirements remain distinct from compatible offers. Failed or edited requests suppress previous fit and quote presentation until a current evaluation completes; failure shows a plain retry alert and the ordinary catalog. Approval locks the accepted agreement rather than silently editing its financial terms.
+Photo, brand, name, "from $12", "2 shops". Photos sit on a quiet tinted surface in a rounded frame, one art direction across all ~30 products. Product art is fictional and must never show a real brand or logo. Older packaging is shown as its own photo so the shopper sees exactly what they get. Images remain understandable with their text labels.
 
-### Buttons and navigation
+### Ask Rally
 
-The full-width solid indigo primary control retains the incumbent rounded shape and minimum height (50px), with a deeper hover and visible focus. The search control uses a minimum height (48px desktop, 42px mobile). Secondary buttons use a neutral stroke and minimum height (42px); text actions use an underline. The Coalition wordmark accompanies “Shop,” session-owned “My purchases,” and a compact “Sandbox demo” disclosure. Mobile navigation wraps onto its own row. Purchase history uses divided rows for item, recorded payment state, amount and one checkout link. Current and historical purchases link to persistent owned checkout.
+The shopper's words in a dark bubble; the routine as numbered steps (Cleanse, Tone, Treat, Moisturize) with one reason per item and the shop under it; a note when a shop ships only inside Korea; the all-in total and "Add routine to bag".
 
-### Accepted quote and negotiation
+### Bag and checkout
 
-The selected product pairs its photograph with product/variant, merchant, compact editable requirements, actual compatible interest and confirmed-payment counts. “Negotiate for me” starts the exchange in that same purchase panel. The simulated list price and indicative public price range never imply an accepted quote. The agreement gives the maximum per person, conditional lower tier and required authorizations, delivery, closing time and “Review agreement & authorize.” Prices are server data, never universal price tokens. Zero authorizations never establishes a reached tier. Browsing a different product changes selection without moving the accepted quote to that product. Checkout retains the immutable quote, version, full tier schedule and maximum.
+Items grouped by shop with the shop's city and shipping note ("Ships inside Korea", "Free shipping in Korea"). One line for the box ("One box from Seoul to California · arrives Oct 30 to Nov 2"). The two shopper rules as switches with one-line explanations. "Total, all in" with a "See breakdown" toggle (items, shipping in Korea, shipping to you, duty, tax, Rally fee). The PayPal SDK button, then: "PayPal holds $118.82. You're charged after Rally's deal, never more than this."
 
-Your buying agent and the named merchant's agent appear as plain bordered role labels, without avatars. Preparing, waiting and evaluating states follow saved backend progress. Compact offer cards show validated tier prices, numeric differences, accurate offered/countered/accepted/declined actions and server-written public explanations on pale neutral material. The disclosure opens while running and does not automatically collapse on completion. An accepted agreement keeps a compact summary and “View negotiation”; a refresh restores history without replaying old beams. Interrupted/declined states preserve requirements and offer explicit recovery. Desktop photography stays beside the panel; mobile uses a compact product photograph above it. Technical diagnostics stay in operator controls.
+### Deal (live)
 
-### Commitment, consent and receipt
+Opens the moment PayPal approves and plays the negotiation as it happens, about 15 seconds. Top: "Rally is talking to 2 shops" with a pulsing dot and a running clock, then the all-in total counting down, the checkout total struck through once it drops, and one line on the hold ("PayPal is holding $118.82. You pay the final price, never more."). A three-item legend: Rally's offer, Shop's price, You save.
 
-The compact commitment track uses anonymous backend member records and the accepted offer's capacity; larger offers use summarized progress. Each position can show authorized, approval pending, paid, pending, failed, canceled, reversed, refund pending or refunded; only the current session's position receives “You.” After closure, a separate payment progress list preserves each recorded capture/refund outcome. Numbered positions do not imply known buyer identities.
+One card per shop: name, city, a status chip (Waiting, Offer sent, Countered, Holding prices, Final offer, Deal · −$10.96). Each item row has a price track under it, from Rally's opening offer to the listed price: Rally's offer is a berry dot with its price below, the shop's price a ring with its price above, both sliding as replies arrive. When they meet, the dots give way to a mint "$19 agreed" pill and the stretch from there to the listed price turns mint. A price the shop won't move loses its track and reads "price held". Swaps and add-ons arrive as rows with a butter tag tied to the bag switch that allowed them ("You allowed older packaging", "You allowed small extras"); a shop's extra (sample kit) arrives as a row priced "Free". Under each shop, the latest message from either agent, one line, in a tinted bubble (berry tint for Rally, warm grey for the shop).
 
-Native checkbox consent covers the exact item, seller, maximum delivered total, delivery and conditional payment terms. The main control moves through preparation, approval verification, authorized waiting, settlement and completion without changing its place in the payment surface. A failed PayPal SDK load exposes “Retry PayPal approval” and reuses the existing commitment. Guidance reflects the current payment state. Pending payments, cancellation, refunds and provider errors remain visible; a paid receipt requires completed captures for every frozen selected member and the session-owned buyer's completed payment, with no unresolved refund. Receipt rows distinguish authorized maximum, actual capture and amount not captured; unspent authorization is not described as an instantaneous bank release.
+Done: mint "Deal done · 14 seconds", "You pay $106.79. PayPal releases the other $12.03.", primary "See your order", text button "Watch the deal again". The same screen opens from Paid as a replay.
 
-Official Magic UI Animated Beam, Number Ticker, Animated List and Blur Fade sources use the existing Motion dependency. Negotiation beams queue every unseen validated offer in sequence; cards appear from persisted rounds without delaying agreement or checkout. Tier price changes use brief opacity transitions on exact amounts, never rolling financial numbers. Confirmation beams run once after verified count increases; the ticker starts at the actual backend count. Blur Fade briefly reveals checkout and a newly confirmed receipt, without replaying success on refresh. Latest-event animation follows recorded events, not reconciliation timestamps or fabricated timers. All motion is finite and respects reduced motion; status updates are announced politely.
+### Paid and Track
 
-Activity starts with the latest recorded provider observation, with history and webhook evidence in a native disclosure. Evidence preserves fixture, API, reconciliation and webhook provenance. The tiered storefront checkout needs no extra AI step or coming-soon placeholder; optional assistance remains after payment only on the retained untiered checkout. Explicit fixture/sandbox and simulated-fulfillment disclosures remain visible.
+Hero "You paid $106.79", the release line, the saved-vs-direct band in mint, items with photos, a breakdown toggle, "Nothing to pay at your door". Track is a vertical timeline (paid, shops shipped to our Seoul hub, packed into one box, leaves Seoul, customs cleared, delivered) with a "You're covered" card listing refund protections.
+
+### Rally for shops
+
+A desktop dashboard: white top bar with the wordmark and "for shops", tabs (Orders, Products, Payouts, Agent settings), the shop's name and the Test mode pill. Orders shows each deal from the shop's side: the same price tracks, now running from the shop's private lowest price (a dashed tick) to the listed price, with Rally's offers and the shop agent's prices as dots, the agreed pill, and the stretch earned over the lowest price in mint; per line "+$3.00 over lowest"; the sample kit with what it costs the shop; the payout and "Mark handed to the hub". Beside it, the messages between Rally and the shop's agent with times. Products is a grid of listed price, lowest price, cost, stock, days on shelf and goal, with a lock line: lowest prices and costs are private. Agent settings are real checkboxes.
+
+### Interaction and motion
+
+Apply Emil Kowalski's purpose and frequency test before adding motion. Primary hover changes only `background-color` over 160 ms with `ease`, and only for a fine pointer that supports hover. Press and keyboard focus feedback are immediate. On the live deal, markers slide (500 ms, ease) as offers arrive, rows slide in when items are added, an agreed track turns mint, and the total counts down to each new amount over about half a second. Each event stays on screen at least 600 ms. With reduced motion, every state appears without sliding or counting. Never animate progress or savings that have not happened; the screen shows events the backend actually streamed. No entrance staggers elsewhere, bouncing controls, looping activity or confetti.
 
 ## Do's and Don'ts
 
-- Do derive offer amounts, counts and financial labels from backend records.
-- Do distinguish compatible requests, authorized maximum, reached tier and confirmed capture.
-- Do keep exact product, quote version, delivery and closing time visible before approval.
-- Do preserve consent, approval and outcome controls across refresh and provider return/cancel navigation.
-- Do keep payment and evidence before optional assistance in visual and keyboard order.
-- Don't infer payment success from a full authorization track or a group status alone.
-- Don't invent buyer activity, buyer identities or webhook provenance.
-- Don't animate monetary amounts, loop confirmation effects or replay success on refresh.
-- Don't introduce decorative gradients, glow, avatars or serif display typography.
+- Do keep one primary action and one big number per shopper screen.
+- Do write real product copy: Bag, Checkout, Pay with PayPal, hold, charged, Order RL-24817, Track order.
+- Do show the all-in price in the shopper's currency before payment.
+- Do use real buttons, links and labels; 44 px minimum touch targets; visible focus.
+- Don't write "Example", "preview", "fixture", "simulated" or "demo" anywhere in the UI.
+- Don't use emoji, gradient washes, left-border cards, confetti or decorative agent avatars.
+- Don't build explainer pages or logs to read. Show the deal while it happens, as prices and items.
+- Don't show rounds, utilities, floors or agent jargon on shopper screens.
+- Don't add a second accent color.
+
+## GD2 interaction refinements
+The catalog is a responsive two-column product grid on phones and four columns on desktop. Category chips use one native horizontal scrolling rail. Keyboard focus scrolls each category into view; focus padding and the rail’s own overflow preserve text resize without page overflow. Products show their exact size and shipping restriction; unavailable items cannot enter the bag. The native Ship to dialog keeps focus inside, closes with Escape and restores the trigger. Country, bag and permission changes persist locally; a country change removes restricted items with a visible status message.
+
+Deal events own visible prices and messages. A presentation source may pace recorded events for CI, but a timer cannot change payment status. Markers interpolate only between received values; the announced total remains exact and the visible total settles within 500 ms. Reduced motion updates immediately. Replay changes presentation only. Pausing preserves the latest received state and offers an explicit resume; no fake typing or looping activity.
+
+Until the authenticated APIs and PayPal checkout are wired, ordinary hosted browsing stops at an unavailable checkout state. Production order/shop pages show a useful unavailable state rather than seeded payment or private-shop claims. The CI harness is a separate compile-time option and is not published as the ordinary build.
+
+The recorded order is an immutable US checkout snapshot with its original item and permission choices. Editing the current bag or destination does not edit an existing order. Recorded playback starts from the beginning on refresh; persistence of a connected order’s current stream position belongs to M3.

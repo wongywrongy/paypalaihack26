@@ -1,0 +1,2 @@
+# Install with --no-deps: Rally imports only the framework-free tracking handlers.
+paypal-agent-toolkit==1.11.0

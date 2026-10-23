@@ -1,0 +1,72 @@
+{
+  "source_commit": "a4533264fc4f45ba633f76a47b8970328c24d04d",
+  "run_id": 39860472878,
+  "job_id": 120109567034,
+  "viewports": [
+    1440,
+    768,
+    390
+  ],
+  "images": [
+    {
+      "path": "deal/desktop-fold.jpg",
+      "sha256": "1e3d1340f0cb8acd836fd81f171e66751c7f5e6e1f2eab77479a35a5542fb091",
+      "bytes": 101596
+    },
+    {
+      "path": "deal/desktop-page-01.jpg",
+      "sha256": "b8c28008fda76e07302ee68bf1e179d4d502be48ba9abbbe1016abec8c9bc6f2",
+      "bytes": 131372
+    },
+    {
+      "path": "deal/mobile-fold.jpg",
+      "sha256": "fac9f3875c3a4132a3222b2b68e76534483ec954857f57f5d78ee9852a5bf079",
+      "bytes": 47679
+    },
+    {
+      "path": "deal/mobile-page-01.jpg",
+      "sha256": "e78d269c5953e7714a6b5b7cba817b3c0004cded9ab91b1a57133429dc34f1ae",
+      "bytes": 272380
+    },
+    {
+      "path": "deal/tablet-fold.jpg",
+      "sha256": "43921e34e25a4080cc447111c6435b44ab2bbd3397826fe8e30b5c0ff249aab5",
+      "bytes": 74914
+    },
+    {
+      "path": "deal/tablet-page-01.jpg",
+      "sha256": "814ccb65dfe24bf3eb27b8c76a1212e455f70012b5cf99cf8fd9356cdbc39a49",
+      "bytes": 145536
+    },
+    {
+      "path": "live/desktop-fold.jpg",
+      "sha256": "8eaf5d82b17991dad0e4527b5f141545b6abe7d0fc8874a7e229f4ff6a25b566",
+      "bytes": 49807
+    },
+    {
+      "path": "live/desktop-page-01.jpg",
+      "sha256": "60f476fa00509559f323a50aa9414be547128cb28553015740a1cc91c81f6286",
+      "bytes": 37582
+    },
+    {
+      "path": "live/mobile-fold.jpg",
+      "sha256": "ae1a714bf92c51470d03f02e1fdddd6ef91531622e9c6f0eee7944cda944464b",
+      "bytes": 41248
+    },
+    {
+      "path": "live/mobile-page-01.jpg",
+      "sha256": "655b5083228db63c377c2201610573d58915bc8eebfb6a3c77d31772581a152f",
+      "bytes": 81909
+    },
+    {
+      "path": "live/tablet-fold.jpg",
+      "sha256": "234076fef57ff902dd029d77752fa07c5ff82fc3af17c1febee2cdb5fc14f3ed",
+      "bytes": 45621
+    },
+    {
+      "path": "live/tablet-page-01.jpg",
+      "sha256": "616f4bed1a42d6dc01a09eddd435ec8d35f77efc5f072cb1665654771ab89022",
+      "bytes": 46597
+    }
+  ]
+}
