@@ -14,6 +14,8 @@ The v2 frontend replaces the group-order routes with Shop, Ship to, Ask, Bag, De
 
 **G1 remains open:** credentials are configured, but this coding runtime cannot reach PostgreSQL or PayPal. The payment foundation now persists USD/CAD/GBP/EUR/AUD on holds and inherits currency through capture/refund/reconciliation. The G1 script preserves existing USD runs and additionally requires completed CAD proof. No genuine sandbox lifecycle has been verified. [EVIDENCE.md](EVIDENCE.md) records executed checks and blockers; [the demo procedure](docs/DEMO.md) separates design checks from the three human PayPal approvals.
 
+**Not ready for submission:** the live sourcing/negotiation engine and checkout integration are unfinished M2/M3 work, gated on G1. The finished sandbox judge app will retain its small Test mode label. On a host with database/provider access, start with `PYTHONPATH=backend python scripts/paypal_sandbox.py --env-file /private/rally.env preflight`; it checks connectivity without creating purchases or moving money. [Submission gates and first steps](docs/DEMO.md#before-submission).
+
 ## Real and simulated
 
 - **Real when verified:** buyer-approved PayPal sandbox orders, holds, lower final captures, voids, refunds and payouts to shop sandbox accounts; signed webhooks and reconciliation; hosted model calls during each deal. Sandbox uses test money.

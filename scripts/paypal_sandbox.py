@@ -14,6 +14,14 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import UUID, uuid4
 
+PAYPAL_ENV = (
+    "PAYPAL_CLIENT_ID",
+    "PAYPAL_CLIENT_SECRET",
+    "PAYPAL_MERCHANT_ID",
+    "PAYPAL_WEBHOOK_ID",
+    "PAYPAL_SHOP_EMAIL",
+)
+
 
 def load_env(path):
     if not path:
@@ -31,6 +39,52 @@ def load_env(path):
         if len(tokens) > 1:
             raise ValueError("Quote environment values containing spaces.")
         os.environ.setdefault(key, tokens[0] if tokens else "")
+
+
+def preflight():
+    """Check G1 connectivity without creating a run or changing money or schema."""
+    import httpx
+    import psycopg
+    from rally.config import settings
+    from rally.payments.paypal import access_token
+
+    missing = [name for name in ("DATABASE_URL", *PAYPAL_ENV) if not os.getenv(name)]
+    report = {
+        "connected_mode": settings.mode == "connected",
+        "missing": missing,
+        "postgresql": "not_checked",
+        "paypal_oauth": "not_checked",
+    }
+    if report["connected_mode"] and not missing:
+        try:
+            with psycopg.connect(
+                settings.database_url,
+                connect_timeout=5,
+                options="-c default_transaction_read_only=on",
+            ) as db:
+                if db.execute("SELECT 1").fetchone() != (1,):
+                    raise RuntimeError("Unexpected connectivity result")
+            report["postgresql"] = "reachable"
+        except Exception as error:
+            report["postgresql"] = type(error).__name__
+        try:
+            with httpx.Client(timeout=5, follow_redirects=False) as client:
+                if not access_token(client):
+                    raise RuntimeError("Empty token")
+            report["paypal_oauth"] = "verified"
+        except Exception as error:
+            report["paypal_oauth"] = type(error).__name__
+    ready = report["postgresql"] == "reachable" and report["paypal_oauth"] == "verified"
+    print(json.dumps(report, sort_keys=True))
+    print(
+        "Connectivity ready; continue with start and the three human approvals."
+        if ready
+        else "Connectivity blocked; use a host that reaches PostgreSQL and PayPal."
+    )
+    print(
+        "G1 is not proved by preflight: payments, payouts and verified webhooks remain separate checks."
+    )
+    return 0 if ready else 1
 
 
 def key(run_id, step):
@@ -233,6 +287,10 @@ def main(argv=None):
         "--run", type=UUID, help="Reuse the printed run UUID when resuming."
     )
     commands = parser.add_subparsers(dest="command", required=True)
+    commands.add_parser(
+        "preflight",
+        help="Check configuration, read-only database access and sandbox OAuth; no payment or schema changes.",
+    )
     start = commands.add_parser(
         "start", help="Create a $2 hold order; prints buyer approval URL."
     )
@@ -291,18 +349,13 @@ def main(argv=None):
     )
     args = parser.parse_args(argv)
     load_env(args.env_file)
+    if args.command == "preflight":
+        return preflight()
     from rally.config import settings
     from rally.db import connect
     from rally.payments.ledger import perform, reconcile
 
-    required = (
-        "PAYPAL_CLIENT_ID",
-        "PAYPAL_CLIENT_SECRET",
-        "PAYPAL_MERCHANT_ID",
-        "PAYPAL_WEBHOOK_ID",
-        "PAYPAL_SHOP_EMAIL",
-    )
-    missing = [name for name in required if not os.environ.get(name)]
+    missing = [name for name in PAYPAL_ENV if not os.environ.get(name)]
     if settings.mode != "connected" or missing:
         raise ValueError("Connected sandbox required; missing: " + ", ".join(missing))
     if args.command != "start" and not args.run:
@@ -483,7 +536,7 @@ def main(argv=None):
 
 if __name__ == "__main__":
     try:
-        main()
+        sys.exit(main())
     except Exception as exc:
         # Provider bodies, access tokens, environment values and buyer details stay private.
         if isinstance(exc, (ValueError, RuntimeError)):

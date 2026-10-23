@@ -2,10 +2,13 @@
 
 import copy
 import importlib.util
+import io
+import os
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 from rally.payments import ledger, paypal
@@ -15,6 +18,84 @@ spec = importlib.util.spec_from_file_location(
 )
 script = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(script)
+
+
+class SandboxPreflightContracts(unittest.TestCase):
+    def test_cli_preflight_is_read_only_and_never_claims_g1(self):
+        secret = "PRIVATE-DO-NOT-PRINT"
+        config = SimpleNamespace(mode="connected", database_url=secret)
+        database, output = MagicMock(), io.StringIO()
+        database.return_value.__enter__.return_value.execute.return_value.fetchone.return_value = (
+            1,
+        )
+        with (
+            patch.dict(
+                os.environ,
+                {name: secret for name in ("DATABASE_URL", *script.PAYPAL_ENV)},
+                clear=True,
+            ),
+            patch("rally.config.settings", config),
+            patch("psycopg.connect", database),
+            patch("httpx.Client"),
+            patch.object(paypal, "access_token", return_value=secret),
+            patch.object(ledger, "perform") as mutate,
+            patch("rally.db.init_db") as migrate,
+            redirect_stdout(output),
+        ):
+            self.assertEqual(script.main(["preflight"]), 0)
+        database.assert_called_once_with(
+            secret, connect_timeout=5, options="-c default_transaction_read_only=on"
+        )
+        database.return_value.__enter__.return_value.execute.assert_called_once_with(
+            "SELECT 1"
+        )
+        mutate.assert_not_called()
+        migrate.assert_not_called()
+        self.assertNotIn(secret, output.getvalue())
+        self.assertIn("G1 is not proved by preflight", output.getvalue())
+
+    def test_failures_are_redacted_and_database_failure_does_not_skip_oauth(self):
+        output = io.StringIO()
+        secret = "PRIVATE-ERROR-CONTENT"
+        with (
+            patch.dict(
+                os.environ,
+                {name: secret for name in ("DATABASE_URL", *script.PAYPAL_ENV)},
+                clear=True,
+            ),
+            patch(
+                "rally.config.settings",
+                SimpleNamespace(mode="connected", database_url=secret),
+            ),
+            patch("psycopg.connect", side_effect=OSError(secret)),
+            patch("httpx.Client"),
+            patch.object(
+                paypal, "access_token", side_effect=RuntimeError(secret)
+            ) as oauth,
+            redirect_stdout(output),
+        ):
+            self.assertEqual(script.preflight(), 1)
+        oauth.assert_called_once()
+        self.assertIn('"postgresql": "OSError"', output.getvalue())
+        self.assertIn('"paypal_oauth": "RuntimeError"', output.getvalue())
+        self.assertNotIn(secret, output.getvalue())
+
+    def test_missing_configuration_or_fixture_mode_makes_no_connections(self):
+        for mode, values in [
+            ("connected", {}),
+            ("fixture", {name: "set" for name in ("DATABASE_URL", *script.PAYPAL_ENV)}),
+        ]:
+            with (
+                self.subTest(mode=mode),
+                patch.dict(os.environ, values, clear=True),
+                patch("rally.config.settings", SimpleNamespace(mode=mode)),
+                patch("psycopg.connect") as database,
+                patch("httpx.Client") as client,
+                redirect_stdout(io.StringIO()),
+            ):
+                self.assertEqual(script.preflight(), 1)
+            database.assert_not_called()
+            client.assert_not_called()
 
 
 class ProofDatabase:

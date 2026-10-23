@@ -2,6 +2,20 @@
 
 [PLAN.md](../PLAN.md) version 2 is authoritative: one shopper, three fictional Korean shops, one box from Seoul. Group buying and the earlier group-order screens are retired. [EVIDENCE.md](../EVIDENCE.md) records actual execution; [ARCHITECTURE.md](ARCHITECTURE.md) distinguishes current code from later milestones.
 
+## Before submission
+
+The current hosted review is not submission-ready. The small **Test mode** label remains in the finished judge app because the agreed scope uses PayPal sandbox accounts and test money. Completing the product means proving genuine sandbox API operations and connecting the live engine, not removing that label.
+
+The design journey is implemented. G1 still needs real USD/CAD holds and captures, void, refund, payout and a verified webhook. M2 must implement the sourcing and negotiation engine; M3 must connect it and PayPal checkout to these screens. The plan gates that main implementation on G1. M4/M5 operations and fresh-browser judge checks follow. There is no verified completion date for these unfinished gates.
+
+First run this from the repository on a host terminal with PostgreSQL and PayPal access:
+
+```bash
+PYTHONPATH=backend python scripts/paypal_sandbox.py --env-file /private/rally.env preflight
+```
+
+This checks required settings, a read-only PostgreSQL connection and sandbox OAuth with five-second network timeouts. It prints configuration names and exception types, never values, tokens or raw errors. It creates no purchase or payment operation, changes no schema and does not prove G1. A blocked check exits with status 1; a successful check exits with status 0. Continue with the three-approval procedure below only after access is working. This session cannot grant itself host network access; the existing Rootlane service serves static frontend files only.
+
 ## GD2: design journey, no money movement
 
 Use Node and the existing installed frontend dependencies:
@@ -50,7 +64,7 @@ A normal frontend build can expose browsing and the bag. A static preview cannot
 
 ## G1: three human PayPal approvals
 
-**Current blocker:** this coding runtime cannot connect to PostgreSQL or PayPal. Credentials are configured privately; no real mutation or provider ID has been produced. Run this procedure on an approved host that reaches both services and receives genuine webhooks.
+**Current blocker:** this coding runtime cannot connect to PostgreSQL or PayPal. Credentials are configured privately; no real mutation or provider ID has been produced. Run `preflight` above and this procedure on an approved host that reaches both services and receives genuine webhooks.
 
 Keep `DATABASE_URL`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MERCHANT_ID`, `PAYPAL_WEBHOOK_ID` and the separate shop's `PAYPAL_SHOP_EMAIL` private, with `RALLY_MODE=connected`. Apply the additive Rally schema migrations with `PYTHONPATH=backend python -m rally.db` after loading that environment. Do not point tests at a real purchase database or delete any volumes.
 

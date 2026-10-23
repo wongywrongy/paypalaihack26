@@ -1,5 +1,11 @@
 # Rally evidence
 
+## October 23, 2026 — connected-demo access rechecked
+
+At 01:41 UTC the new non-mutating `paypal_sandbox.py preflight` loaded the existing private environment and reported connected mode, no missing required settings, PostgreSQL `OperationalError` and sandbox OAuth `ConnectError`; exit status 1. An independent local bind also returned `PermissionError`. PayPal and model settings are present; no value or token was printed. Rootlane still runs only the approved static frontend service. No payment, schema, route or provider setting changed, and G1 remains unexecuted.
+
+The preflight command has regression coverage for a read-only SELECT, no ledger/migration calls, missing settings/fixture rejection, independent connectivity failures and secret/error redaction. Local suite: 35 passed, five PostgreSQL cases skipped; Ruff passed. These are fixture/unit checks and a blocked real connectivity probe, not provider lifecycle evidence. README and the demo guide now state explicitly that M2/M3 remain unfinished and the finished judge sandbox retains its Test mode label.
+
 ## October 23, 2026 — v2 design preview updated
 
 The latest revised plan at `fb2772c9` is in use. GD2 replaces the retired group-order UI with solo shopping across three Korean shops, 30 products/five destinations, persistent bag/permissions and event-driven recorded bartering. All 31 generated product photographs were visually inspected. Historical payment records and recovery code are preserved; hold currency is additive.
