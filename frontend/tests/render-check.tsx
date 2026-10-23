@@ -14,6 +14,21 @@ function render(path: string, test = false) {
   Object.defineProperty(globalThis, 'location', { configurable: true, value: { pathname: path, search: test ? '?test=recorded' : '' } });
   return renderToStaticMarkup(<App />);
 }
+const storageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+try {
+  for (const country of ['__proto__', 'toString', 'constructor', null, { US: true }]) {
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
+      getItem: () => JSON.stringify({ country, items: [], rules: { old_packaging_ok: true, add_small_extras_if_cheaper: true } }),
+    } });
+    const html = render('/shop');
+    assert.ok(html.includes('Ship to United States · USD'), 'invalid persisted country recovers to US');
+    assert.ok(html.includes('aria-label="Bag, 0 items"'), 'invalid state recovers to an empty bag');
+  }
+} finally {
+  if (storageDescriptor) Object.defineProperty(globalThis, 'localStorage', storageDescriptor);
+  else Reflect.deleteProperty(globalThis, 'localStorage');
+}
+console.log('Persisted prototype-key and malformed destinations safely recover.');
 for (const route of ['/shop','/ship-to','/ask','/bag','/deal','/paid','/track','/shops/orders','/shops/products','/shops/settings','/missing']) {
   for (const test of [false,true]) {
     const html = render(route, test);

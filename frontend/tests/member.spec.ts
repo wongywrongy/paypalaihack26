@@ -12,7 +12,10 @@ async function tabTo(page: Page, target: Locator) {
 }
 async function screenshot(page: Page, name: string) {
   await page.evaluate(() => document.fonts.ready);
-  await expect.poll(() => page.locator('img').evaluateAll(images => images.every(image => image.complete && image.naturalWidth > 0))).toBe(true);
+  // Capture the complete catalog deliberately; ordinary browsing keeps native lazy loading.
+  await page.locator('img[loading="lazy"]').evaluateAll(images => images.forEach(image => { (image as HTMLImageElement).loading = 'eager'; }));
+  await expect.poll(() => page.locator('img').evaluateAll(images => images.every(image => image.complete && image.naturalWidth > 0)), { timeout: 10000 }).toBe(true);
+  await page.locator('img').evaluateAll(images => Promise.all(images.map(image => image.decode())));
   const dir = resolve('design/screenshots/v2'); await mkdir(dir,{ recursive:true });
   await page.evaluate(() => window.scrollTo(0,0));
   await page.screenshot({ path:`${dir}/${name}.png`, fullPage:true, animations:'disabled', scale:'css' });
@@ -87,7 +90,11 @@ test('country sheet supports native keyboard, Escape and exact local prices',asy
   await page.goto(recorded('/shop'));
   const trigger=page.getByRole('button',{name:/Ship to United States/});
   await trigger.click();const dialog=page.getByRole('dialog',{name:'Ship to'});
-  await expect(dialog).toBeVisible();await page.keyboard.press('Escape');await expect(dialog).not.toBeVisible();await expect(trigger).toBeFocused();
+  await expect(dialog).toBeVisible();
+  expect(await dialog.evaluate(element => element.matches(':modal'))).toBe(true);
+  await trigger.focus();
+  expect(await dialog.evaluate(element => element.contains(document.activeElement))).toBe(true);
+  await page.keyboard.press('Escape');await expect(dialog).not.toBeVisible();await expect(trigger).toBeFocused();
   await page.keyboard.press('Enter');
   await page.getByRole('radio',{name:/Canada/}).check();
   await page.getByRole('button',{name:'Done',exact:true}).click();
@@ -195,4 +202,29 @@ test('recorded order keeps its checkout consent and currency separate from the e
   await expect(page.getByRole('switch',{name:/Older packaging is fine/})).not.toBeChecked();
   await expect(page.getByRole('switch',{name:/Add a small extra/})).not.toBeChecked();
   await expect(page.locator('.checkout-total > .money')).toContainText('C$');
+});
+
+
+test('prototype and malformed saved destinations recover to a valid empty US bag', async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/shop');
+  for (const country of ['__proto__', 'toString', 'constructor', null, { US: true }]) {
+    await page.evaluate(value => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: value, items: [], rules: { old_packaging_ok: true, add_small_extras_if_cheaper: true } })), country);
+    await page.reload();
+    await expect(page.getByRole('button', { name: /Ship to United States · USD/ })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Bag, 0 items' })).toBeVisible();
+  }
+  expect(errors).toEqual([]);
+});
+
+test('catalog defers lower product images and loads them without changing their reserved size', async ({ page }) => {
+  await page.goto('/shop'); await page.evaluate(() => document.fonts.ready);
+  const images = page.locator('.catalog img'); await expect(images).toHaveCount(30);
+  for (let index = 0; index < 4; index++) await expect(images.nth(index)).toHaveAttribute('loading', 'eager');
+  for (let index = 4; index < 30; index++) await expect(images.nth(index)).toHaveAttribute('loading', 'lazy');
+  const last = images.last(); const before = (await last.boundingBox())!;
+  await last.scrollIntoViewIfNeeded();
+  await expect.poll(() => last.evaluate(image => image.complete && image.naturalWidth > 0)).toBe(true);
+  await expect(last).toHaveAttribute('decoding', 'async');
+  expect((await last.boundingBox())!.height).toBeCloseTo(before.height, 1);
 });

@@ -2,7 +2,7 @@
 
 ## October 22, 2026 — version 2 and CAD foundation
 
-Imported the two signed branch revisions through `fb2772c9` (solo international shopping), preserving local purchases, payment operations and the approved running preview. Shell Git DNS is unavailable. GitHub connector import verified both signed commit identities and both trees. One oversized reference image, `design/mockup/flow.png`, could not be downloaded through the contents API and is omitted locally via the index; all application source, scenario data and individual reference screens are present.
+Imported the two signed branch revisions through `fb2772c9` (solo international shopping), preserving local purchases, payment operations and the approved running preview. Shell Git DNS is unavailable. GitHub connector import verified both signed commit identities and both trees. The oversized reference image `design/mockup/flow.png` initially exceeded the contents API limit; it was recovered from CI, verified as Git blob `53888802`, restored exactly, and its temporary index omission removed. The complete current source is present.
 
 [Backend run 39871010940](https://github.com/wongywrongy/paypalaihack26/actions/runs/39871010940), source `46041581`, passed **37 backend tests against PostgreSQL 16 with no skips**, including additive hold-currency migration and USD/CAD lifecycle contracts. Ruff, the parent frontend build/render checks, 48 parent-version Playwright cases and eight Taste checks passed; CLI console had zero errors/warnings. Those frontend counts concern the retired interface, not GD2. Provider responses were doubles; this is not G1 evidence.
 

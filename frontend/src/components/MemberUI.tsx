@@ -2,10 +2,10 @@ import { useState, type ReactNode } from 'react';
 import { currency, href, money, price, product, shops, type Breakdown as Costs, type CountryCode, type Line, type Product } from '../fixture';
 import { useBag } from '../state';
 export function Arrow({ back = false }: { back?: boolean }) { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d={back ? 'm14 6-6 6 6 6M8 12h12' : 'M4 12h15m-5-6 6 6-6 6'} /></svg>; }
-export function Photo({ item, older = false }: { item: Product; older?: boolean }) {
+export function Photo({ item, older = false, priority = false }: { item: Product; older?: boolean; priority?: boolean }) {
   const [failed, setFailed] = useState(false);
   const fallback = item.category === 'Cleanser' ? 'cleanser' : item.category === 'Toner' ? 'toner' : item.category === 'Moisturizer' || item.category === 'Eye' || item.category === 'Lip' ? 'cream' : item.category === 'Mask' || item.category === 'Care' ? 'masks' : item.category === 'Essence' ? older ? 'essence-old' : 'essence' : 'serum';
-  return <img className="product-photo" src={failed ? `/assets/product-fallback/${fallback}.svg` : `/assets/products/${item.id}${older ? '-older' : ''}.png`} onError={() => setFailed(true)} alt={`${item.brand} ${item.name}, ${item.size}${older ? ', older packaging' : ''}`} width="320" height="320" />;
+  return <img className="product-photo" src={failed ? `/assets/product-fallback/${fallback}.svg` : `/assets/products/${item.id}${older ? '-older' : ''}.png`} onError={() => setFailed(true)} alt={`${item.brand} ${item.name}, ${item.size}${older ? ', older packaging' : ''}`} loading={priority ? 'eager' : 'lazy'} decoding="async" fetchPriority={priority ? 'high' : 'auto'} width="320" height="320" />;
 }
 export function Header({ title, back }: { title?: string; back?: string }) {
   const { bag } = useBag();

@@ -54,6 +54,7 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/rally-playwright-cli" --no-save --package-lock=false --no-audit --no-fund @playwright/cli@0.1.22
           cli="$RUNNER_TEMP/rally-playwright-cli/node_modules/.bin/playwright-cli"
           google-chrome --version
+          node .github/scripts/taste-modal-check.mjs .runtime/taste/skills/taste-skill/scripts/lib/probe.mjs
           cd frontend
           mkdir -p design/screenshots/v2
           ./node_modules/.bin/vite --host 127.0.0.1 --port 5173 --strictPort > "$RUNNER_TEMP/rally-vite.log" 2>&1 &
@@ -65,7 +66,12 @@ jobs:
             sleep 1
           done
           curl --fail --silent --show-error --max-time 2 http://127.0.0.1:5173/shop > /dev/null
-          wait_fonts='async page => { await page.evaluate(() => document.fonts.ready); }'
+          wait_fonts='async page => {
+            await page.evaluate(() => { for (const image of document.images) image.loading = "eager"; });
+            await page.evaluate(() => document.fonts.ready);
+            await page.waitForFunction(() => [...document.images].every(image => image.complete && image.naturalWidth > 0));
+            await page.evaluate(() => Promise.all([...document.images].map(image => image.decode())));
+          }'
           check_layout='async page => {
             const layout = await page.evaluate(() => ({
               scrollWidth: document.documentElement.scrollWidth,
@@ -111,9 +117,11 @@ jobs:
           done
           exit "$review_status"
       - name: Install Chromium for browser tests
+        if: ${{ !cancelled() }}
         timeout-minutes: 3
         run: cd frontend && npx playwright install chromium
       - run: npm run test:browser --prefix frontend
+        if: ${{ !cancelled() }}
       - name: Export v2 captures for source review (temporary)
         if: always()
         run: |
@@ -134,11 +142,6 @@ jobs:
               data = path.read_bytes()
               assert isinstance(json.loads(data), dict)
               print("RALLY_V2_TASTE", path.parent.relative_to("frontend/test-results/taste"), base64.b64encode(data).decode("ascii"), flush=True)
-          # Restore the public reference diagram omitted by the contents API's 1 MiB limit.
-          source = Path("design/mockup/flow.png").read_bytes()
-          blob_sha = hashlib.sha1(b"blob " + str(len(source)).encode() + b"\0" + source).hexdigest()
-          assert blob_sha == "53888802bf860eeaf082555280f9e46e52758fba"
-          print("RALLY_V2_SOURCE_BLOB", blob_sha, base64.b64encode(source).decode("ascii"), flush=True)
           PY
       - uses: actions/upload-artifact@v4
         if: always()
