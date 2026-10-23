@@ -6,7 +6,7 @@
 
 The current hosted review is not submission-ready. The small **Test mode** label remains in the finished judge app because the agreed scope uses PayPal sandbox accounts and test money. Completing the product means proving genuine sandbox API operations and connecting the live engine, not removing that label.
 
-The design journey is implemented. G1 requires verified USD/CAD holds and captures, void, refund, payout and a genuine webhook; see EVIDENCE.md for completed steps. M2 must implement the sourcing and negotiation engine; M3 must connect it and PayPal checkout to these screens. The plan gates that main implementation on G1. M4/M5 operations and fresh-browser judge checks follow. There is no verified completion date for these unfinished gates.
+The design journey is implemented. G1 passed with genuine USD/CAD payments, void, refund, shop payout and an original signed webhook recovered through Rally; see EVIDENCE.md for the exact execution and provenance. M2 must implement the sourcing and negotiation engine; M3 must connect it and PayPal checkout to these screens. The plan gates that main implementation on G1. M4/M5 operations and fresh-browser judge checks follow. There is no verified completion date for these unfinished gates.
 
 First run this from the repository on a host terminal with PostgreSQL and PayPal access:
 
@@ -64,7 +64,7 @@ A normal frontend build can expose browsing and the bag. A static preview cannot
 
 ## G1: three human PayPal approvals
 
-**Current status:** host execution has completed the genuine USD authorization/capture/void/refund and CAD authorization/capture checks. The corrected $0.50 shop payout is provider-confirmed `SUCCESS` for both batch and item after the owner configured a separate receiving account; the original denied attempt is preserved. The existing Render webhook still targets the retired API, and the full verifier stops at the missing genuine verified/reconciled webhook. Complete all steps against a ledger database shared by the Rally API and worker. A successful provider GET or a simulator event does not establish a verified webhook.
+**Current status:** G1 passed at 08:45 UTC on October 23. USD authorization/capture/void/refund, CAD authorization/capture and the corrected $0.50 payout were independently confirmed. The genuine CAD webhook had reached the existing Render receiver. After explicit owner approval, its original bytes and signature headers were replayed through the local Rally ASGI handler and durable worker; PayPal signature verification and capture GET reconciliation both succeeded. The full verifier exited successfully. No financial operation was replayed. This proves payment capability and signed-event recovery; direct delivery to a deployed Rally API and the connected judge journey remain G3 work. [Reuse the existing Render resources](RENDER.md); do not provision another stack.
 
 Keep `DATABASE_URL`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MERCHANT_ID`, `PAYPAL_WEBHOOK_ID` and the separate shop's `PAYPAL_SHOP_EMAIL` private, with `RALLY_MODE=connected`. `start` applies the existing additive migrations in Rally's dedicated schema before reading run data or calling PayPal. It preserves existing purchases and payment operations. Do not point tests at a real purchase database or delete any volumes.
 

@@ -36,7 +36,7 @@ These are settled; ask before reopening any of them.
 | Currency | Shop prices stored in KRW and USD; quotes priced in USD and shown and charged in the destination currency at a rate locked for 15 minutes. | One price the shopper can trust at checkout. |
 | Terms traded | Unit price, older packaging, bundle discount, free sample kit, free shipping inside Korea (including a small add-on to reach a threshold). At most 3 replies per shop; whole deal under 30 seconds. | Enough to show real trading; fast enough to watch live. |
 | Model | Hosted model API for the deployed app; self-hosted only for development. | Must stay up through Dec 15. |
-| Hosting | Render with Postgres (existing render.yaml). | Already set up; Render is a sponsor. |
+| Hosting | Existing paid Render web service, worker and Postgres; see docs/RENDER.md. | Preserve existing resource IDs and plans; Render is a sponsor. |
 
 ## Shopper flow and simplicity rules
 
@@ -234,7 +234,7 @@ FX for the seed (illustrative, label as "rate as of"): 1 USD = 1.38 CAD, 0.75 GB
 
 ## PayPal integration
 
-PayPal is the backbone: every shopper payment is held, charged, released or refunded through it, every shop is paid by it, and agents never touch money. G1 has not passed yet; the payments code exists but has never reached the real sandbox, because the build host had no network.
+PayPal is the backbone: every shopper payment is held, charged, released or refunded through it, every shop is paid by it, and agents never touch money. G1 passed on October 23, 2026; EVIDENCE.md records the genuine USD/CAD lifecycle and shop payout, plus recovery and re-verification of an original signed webhook delivered to the existing Render receiver. The connected shopper flow is still G3 work.
 
 **Sandbox setup:** Rally business account (app credentials, merchant of record) with Payment Receiving Preferences set to accept CAD, GBP, EUR and AUD (otherwise those payments sit pending, per [PayPal](https://developer.paypal.com/api/rest/reference/currency-codes/)); three shop business accounts for payouts; personal buyer accounts for the demo and judges, at least one per currency. Payouts enabled for the app.
 
@@ -332,7 +332,7 @@ Six milestones in 21 days, each ending in a gate. Real PayPal proof and the rede
 
 ![Build timeline, Oct 22 to Nov 12](docs/plan/timeline.png)
 
-- [ ] G1 · Oct 25 — real sandbox on a host with network: authorize, lower final capture, void, refund, payout, verified webhook, plus one CAD payment received.
+- [x] G1 · verified Oct 23 — real USD authorize, lower final capture, void, refund, successful shop payout, original signed webhook recovered and reverified, plus CAD authorization/capture. See EVIDENCE.md; this is not G3 deployment proof.
 - [ ] GD2 · Oct 28 — all shopper screens, the live deal (played from `hero.events`) and Rally for shops render from the new scenario; 30 product images; Impeccable critique fixed; no "Example" copy.
 - [ ] G2 · Oct 30 — engine CLI: golden test to the cent, sourcing restrictions, both shops' negotiations accept as in the scenario.
 - [ ] G3 · Nov 4 — full shopper flow on Render with a real sandbox hold and capture and a live deal.

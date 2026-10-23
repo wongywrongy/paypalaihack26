@@ -1,6 +1,6 @@
 # Rally v2: implementation boundaries
 
-The current authorized work is GD2 (design) in parallel with G1 (real PayPal proof). [PLAN.md](../PLAN.md) defines the later engine, API, operations and judge gates. Its architecture drawing is the target, not evidence those modules have shipped.
+GD2 supplies the design implementation. G1 (real PayPal proof) passed on October 23 through genuine sandbox operations and recovery of an original signed webhook; EVIDENCE.md records the exact scope. [PLAN.md](../PLAN.md) defines the later engine, API, operations and judge gates. Its architecture drawing is the target, not evidence those modules have shipped.
 
 ```mermaid
 flowchart LR
@@ -34,7 +34,7 @@ The old pool/member domain remains for existing operations and the G1 capability
 
 ## Unproven and pending
 
-- G1 needs a host reaching PostgreSQL and PayPal, three explicit buyer approvals, a successful payout and a genuine reconciled webhook. CAD marked pending does not pass.
+- G1 passed through the local ledger, three human sandbox approvals and an original signed Render-delivered CAD webhook replayed through Rally. The public API and worker still run Coalition on `main`; direct Rally deployment and a connected shopper journey remain unproved. [Existing-resource deployment gates](RENDER.md).
 - M2 must replace cheapest-unit reference sourcing with exact lowest-all-in search. Those can pick different shops, including for the Canadian hero bag; reconcile the saved fixture and engine golden expectations before G2.
 - M3 supplies real scoped sessions, quotes, checkout, model decisions and the persisted SSE deal stream. The existing LLM adapter being present does not mean the v2 agents run.
 - M4 supplies hub operations, payouts/tracking, refund deadlines and benchmark results. The current tracking display is a test contract, not carrier evidence.

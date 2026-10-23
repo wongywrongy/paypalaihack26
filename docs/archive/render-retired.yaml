@@ -1,3 +1,5 @@
+# RETIRED: unbound provisioning template; do not apply or import.
+# It does not match the paid project resources. See ../RENDER.md.
 # Paid API, worker, and PostgreSQL. Review current Render prices before deployment.
 # Use same-site custom domains, e.g. shop.example.com and api.example.com, for buyer cookies.
 databases:
