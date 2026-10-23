@@ -237,28 +237,48 @@ test('catalog defers lower product images and loads them without changing their 
 
 
 test('category rail stays in one row and native keyboard focus reveals every category', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 664 });
-  await page.goto('/shop'); await page.evaluate(() => document.fonts.ready);
-  const rail = page.getByRole('navigation', { name: 'Product categories' });
-  const choices = rail.getByRole('button');
-  await expect(choices).toHaveCount(13);
-  const firstPhoto = (await page.locator('.catalog img').first().boundingBox())!;
-  expect(firstPhoto.y + 64).toBeLessThanOrEqual(664);
-  const care = rail.getByRole('button', { name: 'Care', exact: true });
-  await tabTo(page, care);
-  const frame = (await rail.boundingBox())!, focused = (await care.boundingBox())!;
-  expect(focused.x).toBeGreaterThanOrEqual(frame.x);
-  expect(focused.x + focused.width).toBeLessThanOrEqual(frame.x + frame.width);
-  expect(await rail.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
-  await page.keyboard.press('Enter');
-  await expect(page.locator('.catalog > li')).toHaveCount(1);
-  for (let index = 1; index < 13; index++) await page.keyboard.press('Shift+Tab');
-  await expect(rail.getByRole('button', { name: 'All', exact: true })).toBeFocused();
-  await page.keyboard.press('Enter');
-  await expect(page.locator('.catalog > li')).toHaveCount(30);
-  await page.addStyleTag({ content: ':root{font-size:187.5%!important}' });
-  expect(await rail.evaluate(element => getComputedStyle(element).flexWrap)).toBe('nowrap');
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  for (const width of [390, 768]) {
+    await page.setViewportSize({ width, height: 664 });
+    await page.goto('/shop'); await page.evaluate(() => document.fonts.ready);
+    const rail = page.getByRole('navigation', { name: 'Product categories' });
+    const choices = rail.getByRole('button');
+    await expect(choices).toHaveCount(13);
+    if (width === 390) {
+      const firstPhoto = (await page.locator('.catalog img').first().boundingBox())!;
+      expect(firstPhoto.y + 64).toBeLessThanOrEqual(664);
+    }
+    const textBounds = (element: HTMLElement | SVGElement) => {
+      const range = document.createRange(); range.selectNodeContents(element);
+      const rect = range.getBoundingClientRect(); return { left: rect.left, right: rect.right };
+    };
+    if (width === 768) {
+      const mask = rail.getByRole('button', { name: 'Mask', exact: true });
+      const clip = (await rail.boundingBox())!;
+      const before = await mask.evaluate(textBounds);
+      // Native overflow clips this raw text completely; it is not painted at the viewport edge.
+      expect(before.left).toBeGreaterThanOrEqual(clip.x + clip.width);
+      await tabTo(page, mask);
+      const revealed = await mask.evaluate(textBounds);
+      expect(revealed.left).toBeGreaterThanOrEqual(16);
+      expect(revealed.right).toBeLessThanOrEqual(width - 16);
+      expect(revealed.right).toBeLessThanOrEqual(clip.x + clip.width);
+    }
+    const care = rail.getByRole('button', { name: 'Care', exact: true });
+    await tabTo(page, care);
+    const frame = (await rail.boundingBox())!, focused = (await care.boundingBox())!;
+    expect(focused.x).toBeGreaterThanOrEqual(frame.x);
+    expect(focused.x + focused.width).toBeLessThanOrEqual(frame.x + frame.width);
+    expect(await rail.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.catalog > li')).toHaveCount(1);
+    for (let index = 1; index < 13; index++) await page.keyboard.press('Shift+Tab');
+    await expect(rail.getByRole('button', { name: 'All', exact: true })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.catalog > li')).toHaveCount(30);
+    await page.addStyleTag({ content: ':root{font-size:187.5%!important}' });
+    expect(await rail.evaluate(element => getComputedStyle(element).flexWrap)).toBe('nowrap');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  }
 });
 
 test('merchant earnings run from lowest to agreed while buyer savings run from agreed to listed', async ({ page }) => {
