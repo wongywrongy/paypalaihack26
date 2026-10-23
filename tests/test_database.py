@@ -529,6 +529,178 @@ class DatabaseContracts(unittest.TestCase):
                     )
                 self.assertEqual(evidence["webhooks"], ["WH-TEST"])
 
+    def test_cad_authorization_webhook_uses_original_currency(self):
+        with database.connect() as db:
+            db.execute(
+                "INSERT INTO payment_ops(id,kind,member_id,pool_id,request_id,status,provider_ref,request) VALUES(%s,'authorize',%s,%s,'cad-auth-test','completed','AUTH-CAD',%s)",
+                (
+                    uuid4(),
+                    self.member,
+                    self.pool,
+                    Jsonb({"currency": "CAD", "amount_cents": 200}),
+                ),
+            )
+        for currency in ("CAD", "USD"):
+            event_id = "WH-CAD-" + currency
+            event = {
+                "id": event_id,
+                "event_type": "PAYMENT.AUTHORIZATION.CREATED",
+                "resource": {
+                    "id": "AUTH-CAD",
+                    "links": [
+                        {
+                            "rel": "self",
+                            "href": paypal.BASE
+                            + "/v2/payments/authorizations/AUTH-CAD",
+                        }
+                    ],
+                },
+            }
+            with (
+                database.connect() as db,
+                patch.object(webhooks, "verify", return_value=True),
+                patch.object(
+                    webhooks,
+                    "paypal",
+                    return_value={
+                        "id": "AUTH-CAD",
+                        "status": "CREATED",
+                        "amount": paypal.money(200, currency),
+                    },
+                ) as provider,
+            ):
+                webhooks.receive(db, {}, json.dumps(event).encode())
+                row = db.execute(
+                    "SELECT id FROM webhook_events WHERE event_id=%s", (event_id,)
+                ).fetchone()
+                if currency == "CAD":
+                    webhooks.process(db, row["id"])
+                else:
+                    with self.assertRaisesRegex(
+                        paypal.RecoveryRequired, "amount mismatch"
+                    ):
+                        webhooks.process(db, row["id"])
+                observed = db.execute(
+                    "SELECT processed_at,provider_ref FROM webhook_events WHERE id=%s",
+                    (row["id"],),
+                ).fetchone()
+                self.assertEqual(
+                    observed["processed_at"] is not None, currency == "CAD"
+                )
+                if currency == "CAD":
+                    self.assertEqual(observed["provider_ref"], "AUTH-CAD")
+                provider.assert_called_once_with(
+                    "GET", "/v2/payments/authorizations/AUTH-CAD"
+                )
+
+    def test_corrected_payout_preserves_denial_and_ignores_late_old_batch(self):
+        spec = importlib.util.spec_from_file_location(
+            "sandbox_correction",
+            Path(__file__).parents[1] / "scripts/paypal_sandbox.py",
+        )
+        script = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(script)
+        run_id = uuid4()
+        resources, mutations = {}, []
+
+        def provider(method, path, body=None, **kwargs):
+            if method == "GET":
+                return copy.deepcopy(resources[path])
+            self.assertEqual((method, path), ("POST", "/v1/payments/payouts"))
+            mutations.append((kwargs["key"], copy.deepcopy(body)))
+            number = len(mutations)
+            data = {
+                "batch_header": {
+                    "payout_batch_id": "BATCH-" + str(number),
+                    "batch_status": "DENIED" if number == 1 else "PENDING",
+                    "sender_batch_header": body["sender_batch_header"],
+                },
+                "items": [
+                    {
+                        "transaction_status": "FAILED" if number == 1 else "PENDING",
+                        "payout_item": body["items"][0],
+                    }
+                ],
+            }
+            resources["/v1/payments/payouts/BATCH-" + str(number)] = data
+            return copy.deepcopy(data)
+
+        with (
+            database.connect() as db,
+            patch.dict(os.environ, {"PAYPAL_SHOP_EMAIL": "sender@example.test"}),
+            patch.object(ledger, "paypal", side_effect=provider),
+        ):
+            capture_member, _ = script.setup(db, run_id)
+            db.execute(
+                "INSERT INTO payment_ops(id,kind,member_id,pool_id,request_id,status,provider_ref,request) VALUES(%s,'refund',%s,%s,%s,'completed','REFUND-TEST',%s)",
+                (
+                    uuid4(),
+                    capture_member,
+                    run_id,
+                    script.key(run_id, "refund"),
+                    Jsonb({"amount_cents": 100}),
+                ),
+            )
+            db.execute(
+                "INSERT INTO shipments VALUES(%s,%s,'SANDBOX','TEST',now())",
+                (uuid4(), run_id),
+            )
+            db.commit()
+            ledger.perform(
+                db,
+                "payout",
+                script.key(run_id, "payout"),
+                pool_id=run_id,
+                amount_cents=50,
+            )
+            original = ledger.operation(db, script.key(run_id, "payout"))
+            with self.assertRaisesRegex(ValueError, "different sandbox business"):
+                script.retry_payout(db, run_id)
+            os.environ["PAYPAL_SHOP_EMAIL"] = "different-shop@example.test"
+            script.retry_payout(db, run_id)
+            correction_key = script.key(run_id, "payout-correction")
+            correction = ledger.operation(db, correction_key)
+            self.assertEqual(correction["status"], "pending")
+            with self.assertRaisesRegex(
+                paypal.RecoveryRequired, "needs reconciliation"
+            ):
+                script.retry_payout(db, run_id)
+            resources["/v1/payments/payouts/BATCH-2"]["batch_header"][
+                "batch_status"
+            ] = "SUCCESS"
+            resources["/v1/payments/payouts/BATCH-2"]["items"][0][
+                "transaction_status"
+            ] = "SUCCESS"
+            ledger.reconcile(db, correction_key)
+            script.retry_payout(db, run_id)
+            ledger.finish(db, original, resources["/v1/payments/payouts/BATCH-1"])
+            self.assertEqual(len(mutations), 2)
+            self.assertNotEqual(mutations[0][0], mutations[1][0])
+            self.assertEqual(
+                ledger.operation(db, original["request_id"])["status"], "failed"
+            )
+            self.assertEqual(
+                ledger.operation(db, original["request_id"])["request"],
+                original["request"],
+            )
+            selected = script.result(db, run_id, "payout")
+            self.assertEqual(
+                (selected["request_id"], selected["provider_ref"]),
+                (correction_key, "BATCH-2"),
+            )
+            projected = db.execute(
+                "SELECT batch_id,status,amount_cents FROM payouts WHERE pool_id=%s",
+                (run_id,),
+            ).fetchone()
+            self.assertEqual(
+                projected,
+                {"batch_id": "BATCH-2", "status": "SUCCESS", "amount_cents": 50},
+            )
+            os.environ["PAYPAL_SHOP_EMAIL"] = "third-shop@example.test"
+            with self.assertRaisesRegex(ValueError, "immutable"):
+                script.retry_payout(db, run_id)
+            self.assertEqual(len(mutations), 2)
+
     def test_bad_signature_is_persisted_without_fetching_or_processing_money(self):
         event_id = "WH-" + uuid4().hex
         raw = json.dumps(

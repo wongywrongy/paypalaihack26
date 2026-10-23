@@ -183,7 +183,9 @@ def process(db, event_id):
         for op in ops:
             if kind == "authorize":
                 if not amount_matches(
-                    data.get("amount", {}), op["request"]["amount_cents"]
+                    data.get("amount", {}),
+                    op["request"]["amount_cents"],
+                    op["request"].get("currency", "USD"),
                 ):
                     raise RecoveryRequired("Webhook authorization amount mismatch.")
                 if op["status"] in ("inflight", "unknown", "pending"):

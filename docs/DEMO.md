@@ -6,7 +6,7 @@
 
 The current hosted review is not submission-ready. The small **Test mode** label remains in the finished judge app because the agreed scope uses PayPal sandbox accounts and test money. Completing the product means proving genuine sandbox API operations and connecting the live engine, not removing that label.
 
-The design journey is implemented. G1 still needs real USD/CAD holds and captures, void, refund, payout and a verified webhook. M2 must implement the sourcing and negotiation engine; M3 must connect it and PayPal checkout to these screens. The plan gates that main implementation on G1. M4/M5 operations and fresh-browser judge checks follow. There is no verified completion date for these unfinished gates.
+The design journey is implemented. G1 requires verified USD/CAD holds and captures, void, refund, payout and a genuine webhook; see EVIDENCE.md for completed steps. M2 must implement the sourcing and negotiation engine; M3 must connect it and PayPal checkout to these screens. The plan gates that main implementation on G1. M4/M5 operations and fresh-browser judge checks follow. There is no verified completion date for these unfinished gates.
 
 First run this from the repository on a host terminal with PostgreSQL and PayPal access:
 
@@ -14,7 +14,7 @@ First run this from the repository on a host terminal with PostgreSQL and PayPal
 PYTHONPATH=backend python scripts/paypal_sandbox.py --env-file /private/rally.env preflight
 ```
 
-This checks required settings, a read-only PostgreSQL connection and sandbox OAuth with five-second network timeouts. It prints configuration names and exception types, never values, tokens or raw errors. It creates no purchase or payment operation, changes no schema and does not prove G1. A blocked check exits with status 1; a successful check exits with status 0. Continue with the three-approval procedure below only after access is working. This session cannot grant itself host network access; the existing Rootlane service serves static frontend files only.
+This checks required settings, a read-only PostgreSQL connection and sandbox OAuth with five-second network timeouts. It prints configuration names and exception types, never values, tokens or raw errors. It creates no purchase or payment operation, changes no schema and does not prove G1. A blocked check exits with status 1; a successful check exits with status 0. Approved host execution is now working; the normal coding sandbox still has restricted network access. Rootlane continues to serve static frontend files only.
 
 ## GD2: design journey, no money movement
 
@@ -64,7 +64,7 @@ A normal frontend build can expose browsing and the bag. A static preview cannot
 
 ## G1: three human PayPal approvals
 
-**Current blocker:** this coding runtime cannot connect to PostgreSQL or PayPal. Credentials are configured privately; no real mutation or provider ID has been produced. Run `preflight` above and this procedure on an approved host that reaches both services and receives genuine webhooks.
+**Current status:** host execution has completed the genuine USD authorization/capture/void/refund and CAD authorization/capture checks. The shop payout requires a separate receiving business account; the existing Render webhook still targets the retired API. Complete all steps against a ledger database shared by the Rally API and worker. A successful provider GET or a simulator event does not establish a verified webhook.
 
 Keep `DATABASE_URL`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MERCHANT_ID`, `PAYPAL_WEBHOOK_ID` and the separate shop's `PAYPAL_SHOP_EMAIL` private, with `RALLY_MODE=connected`. `start` applies the existing additive migrations in Rally's dedicated schema before reading run data or calling PayPal. It preserves existing purchases and payment operations. Do not point tests at a real purchase database or delete any volumes.
 
@@ -81,7 +81,7 @@ PYTHONPATH=backend python scripts/paypal_sandbox.py --env-file /private/rally.en
 2. Run `--run RUN-UUID charge`. Server code authorizes USD $2, final-captures **USD $1** and prints a second USD $2 approval URL.
 3. A human approves that second order. Run `--run RUN-UUID void-refund`: authorize/void the second hold, refund the first USD $1 capture.
 4. Run `--run RUN-UUID payout --carrier SANDBOX --tracking G1-CHECK`. The recorded shipment is simulated; the **USD $0.50 payout** is a genuine sandbox capability probe using the prefunded balance. Wait for successful batch and item, reconciling pending results.
-5. Run `--run RUN-UUID cad-start --return-url https://YOUR-HOST/paid --cancel-url https://YOUR-HOST/bag`. A human approves **CAD C$2** with a CAD buyer. Run `--run RUN-UUID cad-charge`: authorize C$2 and final-capture **C$1**.
+5. After the USD refund, run `--run RUN-UUID cad-start --return-url https://YOUR-HOST/paid --cancel-url https://YOUR-HOST/bag`. This can run while a payout configuration issue is being corrected. A human approves **CAD C$2** with a CAD buyer. Run `--run RUN-UUID cad-charge`: authorize C$2 and final-capture **C$1**. Final verification still requires the successful payout.
 6. After genuine webhook delivery/reconciliation, run `--run RUN-UUID verify`. It independently reads the provider resources and requires the completed USD lifecycle, successful payout batch/item, signature-verified reconciled webhook and **completed CAD receipt**. Pending CAD does not pass. Record its actual evidence line in EVIDENCE.md only after success.
 
 Append each suffix to:
@@ -93,6 +93,8 @@ PYTHONPATH=backend python scripts/paypal_sandbox.py --env-file /private/rally.en
 On interruption or ambiguity, use `--run RUN-UUID reconcile STEP`, then the original command with its original operation identity. Inspect unknown provider outcomes before retrying; never invent replacement keys. Existing USD runs remain resumable. `verify-usd` reports scoped legacy USD evidence and explicitly does not pass v2 G1.
 
 For an earlier `start` failure caused by missing tables (`UndefinedTable`), use the updated script with `--run` and the original UUID, return URL and cancel URL. It initializes the schema and reuses the original logical operation; an unresolved operation still blocks provider retries until reconciled. A migration error stops before any payment ledger call. Do not drop or recreate an existing schema to repair this failure.
+
+For `SELF_PAY_NOT_ALLOWED`, the configured shop recipient is the sending business account. Set `PAYPAL_SHOP_EMAIL` privately to a different sandbox business account. After the original payout is provider-confirmed failed, `--run RUN-UUID retry-payout` permits one explicit $0.50 recipient correction with a separate stable `payout-correction` operation. It preserves the original denied request and batch. Repeated calls cannot create another correction; pending/unknown outcomes require `reconcile payout-correction`, and a changed recipient after submission is rejected. The final verifier follows the correction and still requires its batch and item to succeed. Later events for the original denied batch cannot overwrite the current payout summary.
 
 The G1 script retains the existing pool/member storage solely as a capability probe; it is not the v2 purchasing engine. A PayPal browser return cannot confirm a payment. Final capture's uncaptured amount is not a separate remainder-void event, and bank hold release timing is not guaranteed.
 

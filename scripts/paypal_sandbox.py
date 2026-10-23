@@ -173,19 +173,83 @@ def cad_member(db, run_id):
         return member_id
 
 
-def result(db, run_id, step):
+def run_operation(db, run_id, step):
     from rally.payments.ledger import operation
 
-    op = operation(db, key(run_id, step))
+    if step == "payout":
+        corrected = operation(db, key(run_id, "payout-correction"))
+        if corrected:
+            return corrected
+    return operation(db, key(run_id, step))
+
+
+def result(db, run_id, step):
+    op = run_operation(db, run_id, step)
     if not op or op["status"] != "completed":
+        recovery_step = (
+            "payout-correction"
+            if step == "payout"
+            and op
+            and op["request_id"] == key(run_id, "payout-correction")
+            else step
+        )
         raise RuntimeError(
-            f"Complete {step} first; if interrupted or pending, run --run {run_id} reconcile {step}, then repeat this command."
+            f"Complete {step} first; if interrupted or pending, run --run {run_id} reconcile {recovery_step}, then repeat this command."
         )
     return op
 
 
+def retry_payout(db, run_id):
+    """One explicit G1 recipient correction; original failed terms remain immutable."""
+    from rally.payments.ledger import operation, perform, reconcile
+
+    result(db, run_id, "refund")
+    original = operation(db, key(run_id, "payout"))
+    db.commit()
+    if (
+        not original
+        or original["kind"] != "payout"
+        or original["status"] != "failed"
+        or not original["provider_ref"]
+    ):
+        raise RuntimeError("Only a provider-confirmed failed payout may be corrected.")
+    reconcile(db, original["request_id"])
+    original = operation(db, original["request_id"])
+    if original["status"] != "failed":
+        raise RuntimeError("Payout must still be failed after reconciliation.")
+    recipient = os.getenv("PAYPAL_SHOP_EMAIL", "").strip()
+    previous = original["request"]["body"]["items"][0]["receiver"]
+    if "@" not in recipient or recipient.casefold() == previous.casefold():
+        raise ValueError(
+            "Set PAYPAL_SHOP_EMAIL privately to a different sandbox business account."
+        )
+    correction = operation(db, key(run_id, "payout-correction"))
+    if (
+        correction
+        and correction["request"]["body"]["items"][0]["receiver"] != recipient
+    ):
+        raise ValueError(
+            "Correction recipient is immutable; inspect the existing operation."
+        )
+    changed = db.execute(
+        "UPDATE shops SET payout_email=%s WHERE id=%s AND id=(SELECT shop_id FROM pools WHERE id=%s AND organizer_id='g1-check') RETURNING id",
+        (recipient, "g1-" + str(run_id), run_id),
+    ).fetchone()
+    if not changed:
+        raise ValueError("Recipient correction is limited to this G1 test shop.")
+    db.commit()
+    return perform(
+        db,
+        "payout",
+        key(run_id, "payout-correction"),
+        pool_id=run_id,
+        amount_cents=50,
+        expected_receiver=recipient,
+    )
+
+
 def verify_run(db, run_id, *, require_cad=True):
-    from rally.payments.ledger import checked_result, operation, reconcile
+    from rally.payments.ledger import checked_result, reconcile
     from rally.payments.paypal import amount_matches, paypal, resource_path
 
     ids = {"run": str(run_id)}
@@ -206,10 +270,10 @@ def verify_run(db, run_id, *, require_cad=True):
             ("cad-capture", "capture"),
         )
     for step, kind in steps:
-        pending = operation(db, key(run_id, step))
+        pending = run_operation(db, run_id, step)
         db.commit()
         if pending and pending["status"] == "pending":
-            reconcile(db, key(run_id, step))
+            reconcile(db, pending["request_id"])
         op = result(db, run_id, step)
         currency = "CAD" if step.startswith("cad-") else "USD"
         if op["request"].get("currency", "USD") != currency:
@@ -310,6 +374,10 @@ def main(argv=None):
     payout.add_argument("--carrier", required=True)
     payout.add_argument("--tracking", required=True)
     commands.add_parser(
+        "retry-payout",
+        help="After a confirmed failed payout, send one explicitly corrected sandbox shop recipient using a new stable key.",
+    )
+    commands.add_parser(
         "verify",
         help="Verify full v2 G1: USD lifecycle, payout, genuine verified webhook and completed CAD payment.",
     )
@@ -319,7 +387,7 @@ def main(argv=None):
     )
     cad_start = commands.add_parser(
         "cad-start",
-        help="After USD payout succeeds: create a C$2 hold; buyer approval required.",
+        help="After the USD refund: create a C$2 hold; payout verification remains separate.",
     )
     cad_start.add_argument("--return-url", required=True)
     cad_start.add_argument("--cancel-url", required=True)
@@ -342,6 +410,7 @@ def main(argv=None):
             "void",
             "refund",
             "payout",
+            "payout-correction",
             "cad-order",
             "cad-authorize",
             "cad-capture",
@@ -396,8 +465,14 @@ def main(argv=None):
             reconcile(db, key(run_id, args.step))
             print("Reconciled", args.step)
             return
+        if args.command == "retry-payout":
+            retry_payout(db, run_id)
+            print(
+                "Corrected shop $0.50 payout submitted; reconcile payout-correction before verifying."
+            )
+            return
         if args.command == "cad-start":
-            result(db, run_id, "payout")
+            result(db, run_id, "refund")
             data = perform(
                 db,
                 "order",

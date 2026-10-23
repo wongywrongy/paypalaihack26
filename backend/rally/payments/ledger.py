@@ -234,21 +234,26 @@ def _finish(db, op, data):
             ("CAPTURED" if kind == "capture" else "VOIDED", request["resource_id"]),
         )
     elif kind == "payout":
-        db.execute(
-            "INSERT INTO payouts(id,pool_id,batch_id,amount_cents,status) VALUES(%s,%s,%s,%s,%s) ON CONFLICT(pool_id) DO UPDATE SET status=EXCLUDED.status",
-            (
-                uuid4(),
-                op["pool_id"],
-                ref,
-                request["amount_cents"],
+        latest = db.execute(
+            "SELECT id FROM payment_ops WHERE pool_id=%s AND kind='payout' ORDER BY created_at DESC,id DESC LIMIT 1",
+            (op["pool_id"],),
+        ).fetchone()
+        if latest and latest["id"] == op["id"]:
+            db.execute(
+                "INSERT INTO payouts(id,pool_id,batch_id,amount_cents,status) VALUES(%s,%s,%s,%s,%s) ON CONFLICT(pool_id) DO UPDATE SET batch_id=EXCLUDED.batch_id,amount_cents=EXCLUDED.amount_cents,status=EXCLUDED.status",
                 (
-                    (result.get("items") or [{}])[0].get("transaction_status")
-                    or "PROCESSING"
-                )
-                if result["batch_header"]["batch_status"] == "SUCCESS"
-                else result["batch_header"]["batch_status"],
-            ),
-        )
+                    uuid4(),
+                    op["pool_id"],
+                    ref,
+                    request["amount_cents"],
+                    (
+                        (result.get("items") or [{}])[0].get("transaction_status")
+                        or "PROCESSING"
+                    )
+                    if result["batch_header"]["batch_status"] == "SUCCESS"
+                    else result["batch_header"]["batch_status"],
+                ),
+            )
     db.execute(
         "UPDATE payment_ops SET status=%s,provider_ref=%s,response=%s WHERE id=%s",
         (
@@ -273,6 +278,7 @@ def perform(
     return_url=None,
     cancel_url=None,
     currency=None,
+    expected_receiver=None,
 ):
     if not settings.paypal_merchant_id:
         raise RecoveryRequired(
@@ -290,6 +296,12 @@ def perform(
         money(1, currency)
     if kind == "payout" and currency not in (None, "USD"):
         raise ValueError("Shop payouts must be USD.")
+    if expected_receiver is not None and (
+        kind != "payout"
+        or not isinstance(expected_receiver, str)
+        or "@" not in expected_receiver
+    ):
+        raise ValueError("An expected receiver is only valid for a shop payout.")
     with payment_lock(db, member_id or pool_id):
         db.execute(
             "SELECT pg_advisory_xact_lock(hashtextextended(%s,3))", (request_id,)
@@ -304,6 +316,8 @@ def perform(
         # Omitted currency preserves the identity of pre-v2 USD operations.
         if currency is not None:
             identity["currency"] = currency
+        if expected_receiver is not None:
+            identity["expected_receiver"] = expected_receiver
         if previous:
             if (
                 previous["kind"] != kind
@@ -448,6 +462,8 @@ def perform(
                 "SELECT * FROM shops WHERE id=%s", (pool["shop_id"],)
             ).fetchone()
             receiver = shop["payout_email"]
+            if expected_receiver is not None and receiver != expected_receiver:
+                raise ValueError("Payout receiver changed before submission.")
             if not receiver or "@" not in receiver:
                 raise ValueError("Shop sandbox payout email is required.")
             body = {

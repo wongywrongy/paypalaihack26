@@ -99,6 +99,46 @@ class SandboxPreflightContracts(unittest.TestCase):
 
 
 class SandboxStartContracts(unittest.TestCase):
+    def test_cad_approval_can_proceed_after_refund_while_payout_is_blocked(self):
+        run_id, cad_member = uuid4(), uuid4()
+        connection = MagicMock()
+        db = connection.__enter__.return_value
+        with (
+            patch.dict(os.environ, {name: "set" for name in script.PAYPAL_ENV}),
+            patch("rally.config.settings", SimpleNamespace(mode="connected")),
+            patch("rally.db.connect", return_value=connection),
+            patch.object(script, "members", return_value=(uuid4(), uuid4())),
+            patch.object(script, "result") as result,
+            patch.object(script, "cad_member", return_value=cad_member),
+            patch.object(
+                ledger,
+                "perform",
+                return_value={
+                    "links": [
+                        {
+                            "rel": "approve",
+                            "href": "https://www.sandbox.paypal.com/checkoutnow?token=CAD-TEST",
+                        }
+                    ]
+                },
+            ) as perform,
+            redirect_stdout(io.StringIO()),
+        ):
+            script.main(
+                [
+                    "--run",
+                    str(run_id),
+                    "cad-start",
+                    "--return-url",
+                    "https://shop.test/shop",
+                    "--cancel-url",
+                    "https://shop.test/bag",
+                ]
+            )
+        result.assert_called_once_with(db, run_id, "refund")
+        self.assertEqual(perform.call_args.kwargs["currency"], "CAD")
+        self.assertEqual(perform.call_args.kwargs["member_id"], cad_member)
+
     def test_start_migrates_before_database_queries_and_keeps_the_run_key(self):
         run_id, member, other = uuid4(), uuid4(), uuid4()
         sequence, output = [], io.StringIO()
@@ -180,6 +220,30 @@ class ProofDatabase:
         return SimpleNamespace(fetchall=lambda: [{"event_id": "WH-PROOF"}])
 
 
+class PayoutCorrectionGuards(unittest.TestCase):
+    def test_unresolved_or_successful_original_cannot_be_retried(self):
+        for status in ("ready", "inflight", "unknown", "pending", "completed"):
+            with (
+                self.subTest(status=status),
+                patch.object(script, "result"),
+                patch.object(
+                    ledger,
+                    "operation",
+                    return_value={
+                        "kind": "payout",
+                        "status": status,
+                        "provider_ref": "BATCH-1",
+                    },
+                ),
+                patch.object(ledger, "perform") as perform,
+                patch.object(ledger, "reconcile") as reconcile,
+            ):
+                with self.assertRaisesRegex(RuntimeError, "confirmed failed"):
+                    script.retry_payout(MagicMock(), uuid4())
+                perform.assert_not_called()
+                reconcile.assert_not_called()
+
+
 class SandboxProofContracts(unittest.TestCase):
     def setUp(self):
         self.run_id, self.member = uuid4(), uuid4()
@@ -257,6 +321,7 @@ class SandboxProofContracts(unittest.TestCase):
                     ],
                 }
             self.ops[script.key(self.run_id, step)] = {
+                "request_id": script.key(self.run_id, step),
                 "kind": kind,
                 "member_id": self.member,
                 "request": request,
@@ -304,3 +369,33 @@ class SandboxProofContracts(unittest.TestCase):
         capture["amount"] = paypal.money(100)
         with self.assertRaisesRegex(paypal.RecoveryRequired, "currency mismatch"):
             self.verify()
+
+    def test_completed_cad_cannot_hide_a_failed_payout(self):
+        self.ops[script.key(self.run_id, "payout")]["status"] = "failed"
+        with self.assertRaisesRegex(RuntimeError, "Complete payout first"):
+            self.verify()
+
+    def test_verifier_follows_explicit_correction_without_rewriting_denial(self):
+        failed = self.ops[script.key(self.run_id, "payout")]
+        corrected = copy.deepcopy(failed)
+        corrected["request_id"] = script.key(self.run_id, "payout-correction")
+        corrected["provider_ref"] = "CORRECTED-BATCH"
+        self.ops[corrected["request_id"]] = corrected
+        resource = copy.deepcopy(
+            self.resources[paypal.resource_path("payout", failed["provider_ref"])]
+        )
+        resource["batch_header"]["payout_batch_id"] = corrected["provider_ref"]
+        self.resources[paypal.resource_path("payout", corrected["provider_ref"])] = (
+            resource
+        )
+        failed["status"] = "failed"
+        corrected["status"] = "pending"
+        with patch.object(
+            ledger,
+            "reconcile",
+            side_effect=lambda db, request_id: self.ops[request_id].update(
+                status="completed"
+            ),
+        ):
+            self.assertEqual(self.verify()["payout"], "CORRECTED-BATCH")
+        self.assertEqual(failed["status"], "failed")

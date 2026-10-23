@@ -55,6 +55,9 @@ class MemoryLedger:
             return Rows([{"held": True}])
         if query.startswith("SELECT * FROM payment_ops WHERE request_id"):
             return Rows([self.ops[args[0]]]) if args[0] in self.ops else Rows([])
+        if query.startswith("SELECT id FROM payment_ops WHERE pool_id"):
+            payouts = [op for op in self.ops.values() if op["kind"] == "payout"]
+            return Rows([{"id": payouts[-1]["id"]}]) if payouts else Rows([])
         if query.startswith("SELECT * FROM pools"):
             return Rows([self.pool])
         if query.startswith("SELECT * FROM members"):
@@ -567,6 +570,52 @@ class PaymentContracts(unittest.TestCase):
                 self.perform(
                     "refund", "refund-2", resource_id="CAPTURE-1", amount_cents=3001
                 )
+
+    def test_payout_receiver_is_bound_to_the_approved_attempt(self):
+        with patch.object(ledger, "paypal") as provider:
+            with self.assertRaisesRegex(ValueError, "receiver changed"):
+                ledger.perform(
+                    self.db,
+                    "payout",
+                    "bound-payout",
+                    pool_id=self.db.pool["id"],
+                    amount_cents=50,
+                    expected_receiver="changed@example.test",
+                )
+            provider.assert_not_called()
+            self.assertEqual(self.db.ops, {})
+
+        def payout(method, path, body=None, **kwargs):
+            return {
+                "batch_header": {
+                    "payout_batch_id": "BATCH-BOUND",
+                    "batch_status": "SUCCESS",
+                    "sender_batch_header": body["sender_batch_header"],
+                },
+                "items": [
+                    {"transaction_status": "SUCCESS", "payout_item": body["items"][0]}
+                ],
+            }
+
+        with patch.object(ledger, "paypal", side_effect=payout) as provider:
+            ledger.perform(
+                self.db,
+                "payout",
+                "bound-payout",
+                pool_id=self.db.pool["id"],
+                amount_cents=50,
+                expected_receiver="shop@example.test",
+            )
+            with self.assertRaisesRegex(ValueError, "different payment terms"):
+                ledger.perform(
+                    self.db,
+                    "payout",
+                    "bound-payout",
+                    pool_id=self.db.pool["id"],
+                    amount_cents=50,
+                    expected_receiver="changed@example.test",
+                )
+            self.assertEqual(provider.call_count, 1)
 
     def test_payout_requires_tracking_and_v1_amount_schema(self):
         self.db.tracking = False
