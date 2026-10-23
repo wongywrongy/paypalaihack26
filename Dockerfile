@@ -20,4 +20,4 @@ COPY --from=frontend /app/frontend/dist frontend/dist
 ENV PYTHONPATH=/app/backend
 RUN useradd --create-home rally
 USER rally
-CMD ["sh", "-c", "python -m rally.db && uvicorn rally.api:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "python -m rally.db && exec uvicorn rally.api:app --host 0.0.0.0 --port ${PORT:-8000}"]

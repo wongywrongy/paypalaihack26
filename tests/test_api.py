@@ -10,6 +10,24 @@ from rally import api
 
 
 class ApiContracts(unittest.TestCase):
+    def test_existing_render_worker_command_migrates_then_starts_only_rally(self):
+        from coalition import worker
+
+        order = []
+        with (
+            patch.object(worker, "init_db", side_effect=lambda: order.append("migrate")),
+            patch.object(worker, "run_module", side_effect=lambda *args, **kwargs: order.append((args, kwargs))),
+        ):
+            worker.main()
+        self.assertEqual(order, ["migrate", (("rally.worker",), {"run_name": "__main__"})])
+        with (
+            patch.object(worker, "init_db", side_effect=RuntimeError("migration failed")),
+            patch.object(worker, "run_module") as start,
+        ):
+            with self.assertRaises(RuntimeError):
+                worker.main()
+            start.assert_not_called()
+
     def test_health_and_api_paths_do_not_fall_through_to_html(self):
         self.assertEqual(api.health()["app"], "rally")
         with self.assertRaises(HTTPException) as caught:
