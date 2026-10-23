@@ -69,6 +69,8 @@ Code validates all final terms, updates inventory and enqueues a capture atomica
 
 Shop handoff enqueues one USD payout per shop. Export requires every shop arrival and confirmed payout. PayPal Agent Toolkit's tracking handler is called through a guarded transport using the current Orders v2 tracking endpoint; tracking itself has a durable operation. `RALLY_AUTO_FULFILLMENT=1` opts into fictional scheduled arrivals after one minute, export after two, and delivery after four, subject to those same guards. It is off by default. No webhook establishes a parcel movement.
 
+Official references rechecked October 23: [SDK v6 client-ID setup](https://developer.paypal.com/sdk/js/set-up/), [29-day authorization and three-day honor period](https://developer.paypal.com/payment-methods/auth-honor/), [final capture](https://developer.paypal.com/api/payments/v2/authorizations-capture/), [void](https://developer.paypal.com/api/payments/v2/authorizations-void/), [refund](https://developer.paypal.com/api/payments/v2/captures-refund/) and [idempotency](https://developer.paypal.com/api/rest/reference/idempotency/). Rally captures promptly inside the honor period, sets final_capture true, and retains application operation keys beyond provider retention. Reconciliation precedes any ambiguous retry; the provider's limited idempotency retention is not treated as permanent protection.
+
 ## Privacy and frontend
 
 Public endpoints never return floors, costs, recipient emails or provider secrets. Shop credentials expose only that shop's data; the judge password is read-only. Hub credentials provide operational recovery, not secret access. Logs use exception types, not raw provider payloads. API responses are not cached; credentials remain server-side.

@@ -1,5 +1,11 @@
 # Rally evidence
 
+## October 23, 2026 — final rejection-state check and green application CI
+
+**75/75 backend contracts passed against isolated PostgreSQL, zero skips (27.604 seconds)**; Ruff/diff checks passed. A definitive authorization rejection now projects Needs review rather than leaving the shopper on a spinning approval; no charge or fulfillment is fabricated. Stock and original operations remain available for recovery. The additional regression verifies the provider rejection, honest state and no confirmed payment. Only its disposable database was removed.
+
+[Application CI 40016552598](https://github.com/wongywrongy/paypalaihack26/actions/runs/40016552598), source 32f4144, passed 73 PostgreSQL contracts, 94 browser cases, build/render/privacy checks, Ruff and ten Taste inspections with zero FAIL. Later source adds the two PostgreSQL preservation/rejection regressions and the two-line rejection projection; the final source CI is recorded separately when complete. Official PayPal SDK v6 setup, authorization/honor windows, final capture, void/refund and idempotency docs were rechecked; the obsolete authorization documentation link was corrected. GitHub recognizes the existing public repository's MIT license. No external configuration or payment operation changed.
+
 ## October 23, 2026 — historical receipt preservation verified
 
 Final suite: **74/74 backend tests passed against isolated PostgreSQL, zero skips (25.883 seconds)**; Ruff and diff checks passed. The additional contract executes the legacy SQL against transactional public-table fixtures: two valid original cookies return only their respective owners' exact consent/receipt, an expired or unowned cookie returns nothing, and hub recovery retains an unknown operation without raw response data. Fixtures are rolled back and only the disposable database is removed. A read-only Render schema check confirmed compatibility with the existing public columns; no hosted row changed. The API guide's legacy recovery path was corrected to `/api/hub/legacy/recovery`. The production implementation is unchanged from the preceding locally verified build.

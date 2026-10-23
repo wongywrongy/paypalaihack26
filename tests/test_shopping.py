@@ -173,6 +173,21 @@ class ShoppingContracts(unittest.TestCase):
         self.assertEqual(expired.status_code, 409)
         self.assertFalse(any(path.endswith("/authorize") for _, path in self.provider.calls))
 
+    def test_authorization_rejection_is_needs_review_not_a_spinning_approval(self):
+        bag, checkout = self.checkout()
+        self.provider.orders[checkout["paypal_order_id"]]["status"] = "APPROVED"
+        def rejected(method, path, *args, **kwargs):
+            if method == "POST" and path.endswith("/authorize"):
+                raise ProviderError("Provider rejected authorization", definitive=True)
+            return self.provider(method, path, *args, **kwargs)
+        with patch.object(ledger, "paypal", side_effect=rejected):
+            response = self.post(f"/bags/{bag['id']}/checkout/approve", {"order_id": checkout["paypal_order_id"]})
+        self.assertEqual(response.status_code, 503)
+        row = self.client.get("/api/orders/" + checkout["order_id"]).json()
+        self.assertEqual(row["payment_state"], "NEEDS_REVIEW")
+        self.assertIsNone(row["charged_minor"])
+        self.assertEqual(row["fulfillment_state"], "AWAITING_FUNDING")
+
     def test_interrupted_worker_preserves_partial_events_and_uses_checkout(self):
         bag, checkout = self.checkout()
         self.provider.orders[checkout["paypal_order_id"]]["status"] = "APPROVED"

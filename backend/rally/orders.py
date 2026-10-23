@@ -173,6 +173,8 @@ def approve(db, session_id, bag_id, paypal_order_id):
             current = operation(db, f"order:{row['id']}:authorize")
             if not current or current["status"] == "ready":
                 db.execute("UPDATE orders SET payment_state='AWAITING_APPROVAL',updated_at=now() WHERE id=%s AND payment_state='APPROVING'", (row["id"],))
+            elif current["status"] == "failed":
+                db.execute("UPDATE orders SET payment_state='NEEDS_REVIEW',updated_at=now() WHERE id=%s AND payment_state='APPROVING'", (row["id"],))
         raise
     auth = operation(db, f"order:{row['id']}:authorize")
     if auth["status"] == "completed":

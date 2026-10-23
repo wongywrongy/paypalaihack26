@@ -454,6 +454,6 @@ visible in the GitHub About section. Gate G5: a fresh browser completes the flow
 - [HTS chapter 33 tariff updates](https://koalagains.com/industry-tariff-report/chapters/33-essential-oils-and-cosmetics/tariff-updates) — Koala Gains, Oct 12, 2026
 - [EU 2026 duty de minimis removal](https://www.dhl.com/discover/en-cz/logistics-advice/import-export-advice/eu-2026-duty-de-minimis-removal) — DHL
 - [Currency codes](https://developer.paypal.com/api/rest/reference/currency-codes/) — PayPal Developer
-- [Authorization and honor period](https://developer.paypal.com/docs/checkout/standard/customize/authorization-honor/) — PayPal Developer
+- [Authorization and honor period](https://developer.paypal.com/payment-methods/auth-honor/) — PayPal Developer
 - [Olive Young Korea online shopping guide 2026](https://blog.delivered.co.kr/k-shopping/olive-young-korea-online-shopping-guide-2026-shop-ship-worldwide/) — Delivered Korea (a forwarding service)
 - [Devpost rules](https://paypalaihackathon.devpost.com/rules), [resources](https://paypalaihackathon.devpost.com/resources)
