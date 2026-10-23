@@ -64,7 +64,7 @@ A normal frontend build can expose browsing and the bag. A static preview cannot
 
 ## G1: three human PayPal approvals
 
-**Current status:** host execution has completed the genuine USD authorization/capture/void/refund and CAD authorization/capture checks. The shop payout requires a separate receiving business account; the existing Render webhook still targets the retired API. Complete all steps against a ledger database shared by the Rally API and worker. A successful provider GET or a simulator event does not establish a verified webhook.
+**Current status:** host execution has completed the genuine USD authorization/capture/void/refund and CAD authorization/capture checks. The corrected $0.50 shop payout is provider-confirmed `SUCCESS` for both batch and item after the owner configured a separate receiving account; the original denied attempt is preserved. The existing Render webhook still targets the retired API, and the full verifier stops at the missing genuine verified/reconciled webhook. Complete all steps against a ledger database shared by the Rally API and worker. A successful provider GET or a simulator event does not establish a verified webhook.
 
 Keep `DATABASE_URL`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MERCHANT_ID`, `PAYPAL_WEBHOOK_ID` and the separate shop's `PAYPAL_SHOP_EMAIL` private, with `RALLY_MODE=connected`. `start` applies the existing additive migrations in Rally's dedicated schema before reading run data or calling PayPal. It preserves existing purchases and payment operations. Do not point tests at a real purchase database or delete any volumes.
 

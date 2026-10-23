@@ -1,5 +1,11 @@
 # Rally evidence
 
+## October 23, 2026 — corrected shop payout succeeded; webhook gate remains
+
+After the owner changed the private shop recipient, run `97d8e055-b8c2-485a-b7b3-aa4dcb4df149` submitted its one explicit $0.50 USD `payout-correction`. Independent provider GET at 08:32 UTC confirmed batch `6RLFC2GD99X8E` and item `9PW4JQT66B5B4` both `SUCCESS`; reconciliation completed the durable operation. The original batch `GDNPX3B9UABK2` remains `DENIED` with its failed item and immutable request preserved. No recipient value or credential was printed. The full live G1 verifier passed its USD/CAD and payout checks, then correctly exited at the missing genuine signature-verified, reconciled webhook. **G1 remains incomplete.** No PayPal webhook, Render or DNS configuration changed.
+
+All 50 backend tests passed against an isolated PostgreSQL test database with zero skips; the temporary database was removed. A completed correction replay, with financial POSTs blocked, made one reconciliation GET, sent zero financial mutations and left all 12 payment-operation records unchanged.
+
 ## October 23, 2026 — genuine sandbox execution, G1 incomplete
 
 Approved host execution reached the existing local PostgreSQL and PayPal sandbox, applied the two additive Rally migrations, and resumed run `97d8e055-b8c2-485a-b7b3-aa4dcb4df149`. Three human approvals were obtained separately. Independent provider GETs confirmed USD authorization `9P561795VC456722T` for $2, final capture `626242339W550491U` for $1 (`COMPLETED`, final capture true), second authorization `99M97378YC6536108` for $2 (`VOIDED`), and refund `7W279451R63404358` for $1 (`COMPLETED`). CAD authorization `168364533C242001U` for C$2 reached `CAPTURED`; final capture `1CV66220A7996570D` for C$1 is `COMPLETED` with final capture true. Order IDs: `5JU58068M3669331N`, `55415364DH383701C`, `8GT57529VB6818919`.
