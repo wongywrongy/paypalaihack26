@@ -27,7 +27,7 @@ flowchart LR
   SSE --> U
 ```
 
-One web service, one worker process with separate AI/payment/maintenance threads, and the existing database. No broker, vector database, additional agent framework or service. SQL transactions finish before external requests. Durable job leases and immutable operation keys survive restart; SIGTERM stops new work and allows a bounded drain.
+One web service, one worker process with separate AI/payment/maintenance threads, and the existing database. The existing Render command `python -m coalition.worker` is a compatibility launcher only: initialize the separate Rally schema, then run `rally.worker`; no retired application is restored. No broker, vector database, additional agent framework or service. SQL transactions finish before external requests. Durable job leases and immutable operation keys survive restart; SIGTERM stops new work and allows a bounded drain.
 
 ## Modules
 

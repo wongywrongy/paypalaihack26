@@ -1,5 +1,9 @@
 # Rally evidence
 
+## October 23, 2026 — worker compatibility CI passed; reviewable release prepared
+
+[CI 40028686203](https://github.com/wongywrongy/paypalaihack26/actions/runs/40028686203), source 1475894, passed **76 PostgreSQL-backed tests and 94 browser cases**, Ruff and the build/render/privacy pipeline. The prepared release f03453f has identical application/test trees, preserving the original main history as a second merge parent; GitHub confirms [draft PR #1](https://github.com/wongywrongy/paypalaihack26/pull/1) is mergeable. It has not been merged or promoted to main. The main and live deployment remain 4561bf3; the same web/worker deploy IDs remain live, confirming the rejected configuration attempt made no change. Exact approval for the private configuration transfer and automatic live deployment is still pending. No payment mutation was attempted.
+
 ## October 23, 2026 — deployment preparation and explicit approval boundary
 
 76/76 PostgreSQL-backed contracts passed, zero skips (26.935 seconds), including the existing worker command initializing Rally before launching it and refusing to start after a migration error. The Docker API command now forwards shutdown with exec. The compatibility namespace contains no old application routes. The existing main and Rally histories have no common ancestor; a history-preserving release merge is prepared rather than a force push.
