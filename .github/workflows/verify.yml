@@ -105,10 +105,10 @@ jobs:
           "$cli" -s=rally-gd console error
           review_status=0
           for route in shop ship-to ask bag deal paid track shops/orders shops/products shops/settings; do
-            mkdir -p "test-results/taste/$route"
+            mkdir -p "design/screenshots/v2/taste/$route"
             url="http://127.0.0.1:5173/$route"
             if [[ "$route" != shops/* ]]; then url="$url?test=recorded"; fi
-            if (cd "$GITHUB_WORKSPACE" && node .runtime/taste/skills/taste-skill/scripts/inspect.mjs "$url" --app --widths 1440,768,390 --out "frontend/test-results/taste/$route") | tee "test-results/taste/$route/inspector.log"; then
+            if (cd "$GITHUB_WORKSPACE" && node .runtime/taste/skills/taste-skill/scripts/inspect.mjs "$url" --app --widths 1440,768,390 --out "frontend/design/screenshots/v2/taste/$route") | tee "design/screenshots/v2/taste/$route/inspector.log"; then
               printf 'Taste inspector %s passed\n' "$route"
             else
               printf 'Taste inspector %s failed (exit %s)\n' "$route" "$?"
@@ -138,17 +138,17 @@ jobs:
               assert len(data) <= 8 * 1024 * 1024, path.name
               assert data.startswith(b"\xff\xd8\xff") and data.endswith(b"\xff\xd9"), path.name
               print("RALLY_V2_IMAGE", path.name, hashlib.sha256(data).hexdigest(), base64.b64encode(data).decode("ascii"), flush=True)
-          for path in sorted(Path("frontend/test-results/taste").rglob("report.json")):
+          for path in sorted(Path("frontend/design/screenshots/v2/taste").rglob("report.json")):
               data = path.read_bytes()
               assert isinstance(json.loads(data), dict)
-              print("RALLY_V2_TASTE", path.parent.relative_to("frontend/test-results/taste"), base64.b64encode(data).decode("ascii"), flush=True)
+              print("RALLY_V2_TASTE", path.parent.relative_to("frontend/design/screenshots/v2/taste"), base64.b64encode(data).decode("ascii"), flush=True)
           PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: rally-browser-evidence
           path: |
-            frontend/design/screenshots/v2/*.png
+            frontend/design/screenshots/v2/
             frontend/test-results/
             frontend/.playwright-cli/*.log
           if-no-files-found: ignore

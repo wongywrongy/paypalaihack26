@@ -87,8 +87,8 @@ input { accent-color: var(--accent) }
 .shop-intro p { max-width: 65ch; font-size: 1.066667rem; color: var(--muted) }
 .ask-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-radius: 16px; background: var(--ink); color: var(--surface); padding: 18px; min-height: 64px; font-size: 1rem }
 .ask-bar svg { flex-shrink: 0 }
-.categories { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 24px }
-.categories button { border: 1px solid var(--line); border-radius: 999px; padding: 9px 15px; min-height: 44px; background: var(--surface); font-size: .866667rem; font-weight: 600 }
+.categories { display: flex; flex-wrap: nowrap; gap: 8px; max-width: calc(100% + 16px); overflow-x: auto; overscroll-behavior-x: contain; scroll-padding-inline: 8px; padding: 8px; margin: 14px -8px 16px }
+.categories button { flex-shrink: 0; border: 1px solid var(--line); border-radius: 999px; padding: 9px 15px; min-height: 44px; background: var(--surface); font-size: .866667rem; font-weight: 600 }
 .categories button[aria-pressed=true] { background: var(--ink); border-color: var(--ink); color: var(--surface) }
 .section-heading { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: 8px 14px; margin-bottom: 14px }
 .section-heading > span { color: var(--muted); font-size: .866667rem }
@@ -156,7 +156,9 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0 }
 .total-row { border-top: 1px solid var(--line); margin-top: 6px; font-weight: 700 }
 .hero-money { display: block; font-size: min(3.866667rem,14vw); font-weight: 400; line-height: 1.2; margin: 8px 0 14px }
 .deal-progress { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 20px }
-.deal-progress h1 { font-size: 1.133333rem; margin: 0 }
+.deal-progress h1 { font-size: 1.133333rem; margin: 0; flex: 1 1 160px }
+.playback-controls { display: flex; align-items: center; gap: 12px }
+.playback-toggle { font-size: .8rem; padding: 6px 0 }
 .clock { font-size: .866667rem; color: var(--muted) }
 .total-display { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px }
 .total-display > del { font-size: 1.066667rem; color: var(--muted) }
@@ -230,6 +232,7 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0 }
 .messages .agent-message:not(.rally-message) { background: var(--surface) }
 .savings-inline { background: var(--mint); padding: 8px 12px; border-radius: 999px; color: var(--saving)!important; font-weight: 600 }
 .payout { padding: 18px 0; border-top: 1px solid var(--line) }
+.table-scroll-hint { display: none }
 .table-scroll { overflow-x: auto; margin-top: 24px; background: var(--surface); border-radius: 16px }
 table { border-collapse: collapse; width: 100%; min-width: 880px; font-size: .866667rem }
 th,td { text-align: right; padding: 16px 14px; border-bottom: 1px solid var(--line) }
@@ -240,6 +243,6 @@ thead th { font-weight: 500; color: var(--muted); font-size: .8rem }
 .privacy-note { font-size: .933333rem; color: var(--muted) }
 .settings { max-width: 700px }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0 }
-@media(max-width:800px) { .catalog { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px } .shop-screen { max-width: 540px } .shop-intro h1 { font-size: 2.133333rem } .order-columns { grid-template-columns: minmax(0,1fr) } .order-sheet { padding: 16px } .workspace { padding: 0 20px 36px } .shop-header nav { flex-basis: 100%; order: 3 } .table-scroll th:first-child { position: sticky; left: 0; width: 180px; min-width: 180px; background: var(--surface); border-right: 1px solid var(--line); z-index: 1 } }
+@media(max-width:800px) { .table-scroll-hint { display: block } .catalog { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px } .shop-screen { max-width: 540px } .shop-intro h1 { font-size: 2.133333rem } .order-columns { grid-template-columns: minmax(0,1fr) } .order-sheet { padding: 16px } .workspace { padding: 0 20px 36px } .shop-header nav { flex-basis: 100%; order: 3 } .table-scroll th:first-child { position: sticky; left: 0; width: 180px; min-width: 180px; background: var(--surface); border-right: 1px solid var(--line); z-index: 1 } }
 @media(max-width:420px) { .shop-group,.deal-card { padding: 14px } .product-rows li { grid-template-columns: 48px minmax(0,1fr); gap: 4px 10px } .product-rows .product-photo { grid-row: span 2; width: 48px; height: 48px } .item-price { grid-column: 2 } .deal-product { grid-template-columns: 40px minmax(0,1fr); gap: 5px 10px } .deal-product .product-photo { width: 40px; height: 40px; grid-row: span 2 } .deal-product > strong { grid-column: 2; margin-top: 3px; display: flex; gap: 10px; flex-wrap: wrap } .deal-product del { margin: 0 } .price-track,.price-held,.line-detail { margin-left: 50px } .country-option { flex-wrap: wrap; padding: 12px } .country-option > .money { margin-left: 28px } }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior: auto!important } .price-marker { transition: none } .primary { transition-duration: 80ms } }

@@ -28,7 +28,7 @@ VITE_RALLY_TEST_HARNESS=1 npm run dev --prefix frontend
 5. After playback, See your order opens Paid and Track. Their fixed receipt and fulfillment data are test contracts. Refreshing the recorded Deal restarts playback; durable live stream recovery belongs to M3.
 6. The Playwright shop tests inject the shop-scoped contract for `/shops/orders`, `/shops/products` and `/shops/settings`. Inspect both desktop and phone screenshots. Without that authenticated response, ordinary shop routes stay locked; private prices never enter the public bundle.
 
-The ordinary production build has no test harness. A query parameter alone cannot enable recorded payments. `/deal`, `/paid` and `/track` require an order; no receipt is created by an animation, browser return or local bag edit. Keep the harness out of Render and ordinary Rootlane builds.
+The ordinary production build has no test harness. A query parameter alone cannot enable recorded payments. `/deal`, `/paid` and `/track` require an order; no receipt is created by an animation, browser return or local bag edit. Keep the harness out of Render and ordinary production builds. The explicitly enabled Rootlane design-review build is an exception for this recorded journey; its checkout remains disabled.
 
 Saved quote totals at checkout / after the recorded terms:
 
@@ -46,7 +46,7 @@ The calculator matches the reference scenario. These are not verified customs ra
 
 Rootlane manages the approved static frontend preview. It does not supply PayPal/Render API access, remote command execution, PostgreSQL access or payment callback configuration. Reuse the existing observed environment and its HTTPS link; do not create replacement services or routes.
 
-A normal frontend build can expose browsing and the bag. A static preview cannot run the G1 lifecycle or the connected M3 flow. The earlier deployed group-order preview is not v2 evidence. Any new build publication must preserve the existing index/assets for rollback and verify readiness; a reserved link alone is not a running app.
+A normal frontend build can expose browsing and the bag. A static preview cannot run the G1 lifecycle or the connected M3 flow. The existing link is being updated to the v2 design-review build; use `/shop?test=recorded` for browsing and `/deal?test=recorded` for recorded negotiation. This explicit review build enables the harness, while ordinary production builds exclude it. Private shop contracts are supplied only in CI, so shop pages remain locked on the static preview. Any new build publication must preserve the existing index/assets for rollback and verify readiness; a reserved link alone is not a running app.
 
 ## G1: three human PayPal approvals
 

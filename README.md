@@ -33,7 +33,7 @@ npm run dev --prefix frontend
 
 The frontend reads a generated public scenario through one typed module until M3 wires the real API. `frontend/scripts/project-scenario.mjs` allow-lists public fields; Vite rejects raw private scenario/test-fixture imports into the browser graph. Check projection freshness with `npm run test:render --prefix frontend` after changing the reference scenario.
 
-For the recorded GD2 journey only, start a separate local test server with `VITE_RALLY_TEST_HARNESS=1 npm run dev --prefix frontend` and open `/deal?test=recorded`. That flag is deliberately absent from Render and the normal build. The documented CI path injects shop responses; it is not production authentication. Backend modules:
+For the recorded GD2 journey only, the explicitly enabled Rootlane design-review build supports `/shop?test=recorded` and `/deal?test=recorded`. It serves recorded events, not a connected payment or model session. For local inspection, start a separate test server with `VITE_RALLY_TEST_HARNESS=1 npm run dev --prefix frontend` and open `/deal?test=recorded`. That flag is deliberately absent from Render and the normal build. The documented CI path injects shop responses; it is not production authentication. Backend modules:
 
 ```bash
 PYTHONPATH=backend .venv/bin/python -m rally.db

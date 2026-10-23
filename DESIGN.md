@@ -170,7 +170,7 @@ Apply Emil Kowalski's purpose and frequency test before adding motion. Primary h
 - Don't add a second accent color.
 
 ## GD2 interaction refinements
-The catalog is a responsive two-column product grid on phones and four columns on desktop. Category chips wrap instead of hiding categories off screen. Products show their exact size and shipping restriction; unavailable items cannot enter the bag. The native Ship to dialog keeps focus inside, closes with Escape and restores the trigger. Country, bag and permission changes persist locally; a country change removes restricted items with a visible status message.
+The catalog is a responsive two-column product grid on phones and four columns on desktop. Category chips use one native horizontal scrolling rail. Keyboard focus scrolls each category into view; focus padding and the rail’s own overflow preserve text resize without page overflow. Products show their exact size and shipping restriction; unavailable items cannot enter the bag. The native Ship to dialog keeps focus inside, closes with Escape and restores the trigger. Country, bag and permission changes persist locally; a country change removes restricted items with a visible status message.
 
 Deal events own visible prices and messages. A presentation source may pace recorded events for CI, but a timer cannot change payment status. Markers interpolate only between received values; the announced total remains exact and the visible total settles within 500 ms. Reduced motion updates immediately. Replay changes presentation only. Pausing preserves the latest received state and offers an explicit resume; no fake typing or looping activity.
 

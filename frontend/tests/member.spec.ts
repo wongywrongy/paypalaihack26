@@ -99,7 +99,7 @@ test('country sheet supports native keyboard, Escape and exact local prices',asy
   await page.getByRole('radio',{name:/Canada/}).check();
   await page.getByRole('button',{name:'Done',exact:true}).click();
   await expect(page.getByRole('button',{name:/Ship to Canada · CAD/})).toBeVisible();
-  await expect(page.locator('.catalog').getByText('from C$28.98',{exact:true})).toBeVisible();
+  await expect(page.locator('.catalog > li').filter({ has: page.getByRole('heading', { name: 'Rice Toner', exact: true }) }).getByText('from C$28.98',{exact:true})).toBeVisible();
   await page.getByRole('link',{name:'View bag · 4 items'}).click();
   await expect(page.locator('.checkout-total > .money')).toHaveText('C$160.87');
   await page.reload();await expect(page.locator('.checkout-total > .money')).toHaveText('C$160.87');
@@ -131,6 +131,11 @@ test('deal follows received prices, pauses and replays without financial request
   const financial:string[]=[];page.on('request',request=>{if(/paypal|\/api\//i.test(request.url()))financial.push(request.url());});
   await page.clock.install();await page.goto(recorded('/deal'));
   await expect(page.getByRole('heading',{name:'Rally is talking to 2 shops'})).toBeVisible();
+  const pause = page.getByRole('button', { name: 'Pause deal' });
+  await expect(pause).toHaveCount(1);
+  const pauseBox = (await pause.boundingBox())!;
+  expect(pauseBox.y + pauseBox.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  expect(pauseBox.y).toBeLessThan((await page.locator('.deal-card').first().boundingBox())!.y);
   await page.clock.runFor(7000);
   await expect(page.getByRole('status')).toHaveText('Your total, all in: $117.75');
   await expect(page.getByText('You allowed small extras',{exact:true})).toBeVisible();
@@ -140,6 +145,7 @@ test('deal follows received prices, pauses and replays without financial request
   await screenshot(page,`deal-live-${info.project.name}`);
   await page.getByRole('button',{name:'Resume deal'}).click();await page.clock.runFor(7000);
   await expect(page.getByRole('heading',{name:'Deal done'})).toBeVisible();
+  expect(await page.locator('.hero-money').textContent()).toBe('$106.79');
   await expect(page.getByRole('status')).toHaveText('Your total, all in: $106.79');
   await expect(page.getByRole('img',{name:'$19.00 agreed'})).toBeVisible();
   await expect(page.getByText('Price held',{exact:true})).toHaveCount(2);
@@ -227,4 +233,70 @@ test('catalog defers lower product images and loads them without changing their 
   await expect.poll(() => last.evaluate(image => image.complete && image.naturalWidth > 0)).toBe(true);
   await expect(last).toHaveAttribute('decoding', 'async');
   expect((await last.boundingBox())!.height).toBeCloseTo(before.height, 1);
+});
+
+
+test('category rail stays in one row and native keyboard focus reveals every category', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.goto('/shop'); await page.evaluate(() => document.fonts.ready);
+  const rail = page.getByRole('navigation', { name: 'Product categories' });
+  const choices = rail.getByRole('button');
+  await expect(choices).toHaveCount(13);
+  const firstPhoto = (await page.locator('.catalog img').first().boundingBox())!;
+  expect(firstPhoto.y + 64).toBeLessThanOrEqual(664);
+  const care = rail.getByRole('button', { name: 'Care', exact: true });
+  await tabTo(page, care);
+  const frame = (await rail.boundingBox())!, focused = (await care.boundingBox())!;
+  expect(focused.x).toBeGreaterThanOrEqual(frame.x);
+  expect(focused.x + focused.width).toBeLessThanOrEqual(frame.x + frame.width);
+  expect(await rail.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.catalog > li')).toHaveCount(1);
+  for (let index = 1; index < 13; index++) await page.keyboard.press('Shift+Tab');
+  await expect(rail.getByRole('button', { name: 'All', exact: true })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.catalog > li')).toHaveCount(30);
+  await page.addStyleTag({ content: ':root{font-size:187.5%!important}' });
+  expect(await rail.evaluate(element => getComputedStyle(element).flexWrap)).toBe('nowrap');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
+
+test('merchant earnings run from lowest to agreed while buyer savings run from agreed to listed', async ({ page }) => {
+  await page.clock.install(); await shopContract(page);
+  await page.goto(recorded('/shops/orders'));
+  await expect(page.getByRole('heading', { name: 'Orders', exact: true })).toBeVisible();
+  for (const [label, ratio] of [['$19.00 agreed, $3.00 over your lowest', 3/5], ['$16.00 agreed, $4.00 over your lowest', 4/11]] as const) {
+    const track = page.getByRole('img', { name: label, exact: true });
+    const frame = (await track.boundingBox())!, rail = (await track.locator('.saved-rail').boundingBox())!;
+    expect(rail.x).toBeCloseTo(frame.x, 0);
+    expect(rail.width / frame.width).toBeCloseTo(ratio, 2);
+  }
+  await page.goto(recorded('/deal'));
+  await expect(page.getByRole('heading', { name: 'Rally is talking to 2 shops' })).toBeVisible();
+  await page.clock.runFor(14000);
+  const track = page.getByRole('img', { name: '$19.00 agreed', exact: true });
+  const frame = (await track.boundingBox())!, rail = (await track.locator('.saved-rail').boundingBox())!;
+  expect(rail.x - frame.x).toBeCloseTo(frame.width / 2, 0);
+  expect(rail.x + rail.width).toBeCloseTo(frame.x + frame.width, 0);
+});
+
+
+test('adding a routine preserves unique existing selections and refuses overflow without dropping items', async ({ page }) => {
+  await page.goto('/shop');
+  const existing = ['byeol-vitc', 'dal-rice-toner'];
+  await page.evaluate(items => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items, rules: { old_packaging_ok: false, add_small_extras_if_cheaper: true } })), existing);
+  await page.goto('/ask');
+  await page.getByRole('link', { name: 'Add routine to bag' }).click();
+  await expect(page.locator('.product-rows li')).toHaveCount(5);
+  await expect(page.locator('.product-copy strong').filter({ hasText: 'Vitamin C Serum' })).toHaveCount(1);
+  await expect(page.locator('.product-copy strong').filter({ hasText: 'Rice Toner' })).toHaveCount(1);
+  await expect(page.getByRole('switch', { name: /Older packaging is fine/ })).not.toBeChecked();
+  const full = catalog.filter(item => allowed(item, 'US') && !hero.cart.includes(item.id)).slice(0,8).map(item => item.id);
+  await page.evaluate(items => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items, rules: { old_packaging_ok: true, add_small_extras_if_cheaper: true } })), full);
+  await page.goto('/ask');
+  await expect(page.getByRole('button', { name: 'Add routine to bag' })).toBeDisabled();
+  await expect(page.getByText('This routine would make 12 items. Your bag can hold eight. Remove 4 items before adding it.', { exact: true })).toBeVisible();
+  await page.getByRole('link', { name: 'Edit bag' }).click();
+  await expect(page.locator('.product-rows li')).toHaveCount(8);
+  expect((await page.locator('.product-copy strong').allTextContents()).sort()).toEqual(full.map(id => catalog.find(item => item.id === id)!.name).sort());
 });

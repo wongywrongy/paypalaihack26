@@ -5,11 +5,12 @@ export function PriceTrack({ line, country, lowest }: { line: PriceState; countr
   const firstOffer = events.find(event => event.actor === 'rally' && Object.keys(event.lines || {}).some(id => id.split(':')[0] === line.id));
   const opening = Object.entries(firstOffer?.lines || {}).find(([id]) => id.split(':')[0] === line.id)?.[1] ?? line.asking;
   const min = lowest ?? Math.min(opening, line.offer ?? opening);
-  const position = (value: number) => Math.max(7, Math.min(93, 7 + (value - min) / Math.max(1, line.listed - min) * 86));
+  const inset = lowest === undefined ? 7 : 0;
+  const position = (value: number) => Math.max(inset, Math.min(100 - inset, inset + (value - min) / Math.max(1, line.listed - min) * (100 - 2 * inset)));
   if (line.held) return <p className="price-held">Price held{lowest === undefined ? '' : ` · ${price(line.asking - lowest, country)} over your lowest`}</p>;
   return <div className={`price-track ${line.agreed ? 'settled' : ''}`} role="img" aria-label={line.agreed ? `${price(line.asking, country)} agreed${lowest === undefined ? '' : `, ${price(line.asking - lowest, country)} over your lowest`}` : `Rally offers ${line.offer === undefined ? 'not sent' : price(line.offer, country)}; shop asks ${price(line.asking, country)}`}>
     <div className="track-rail" />{lowest !== undefined && <span className="lowest-tick">Lowest {price(lowest, country)}</span>}
-    {line.agreed ? <><div className="saved-rail" style={{ left: `${position(line.asking)}%`, width: `${100 - position(line.asking)}%` }} /><span className="agreed-price money" style={{ left: `${Math.max(22,Math.min(78,position(line.asking)))}%` }}>{price(line.asking, country)} agreed</span></> : <><span className="price-marker shop-marker" style={{ left: `${position(line.asking)}%` }}><span className="money">{price(line.asking, country)}</span></span>{line.offer !== undefined && <span className="price-marker rally-marker" style={{ left: `${position(line.offer)}%` }}><span className="money">{price(line.offer, country)}</span></span>}</>}
+    {line.agreed ? <><div className="saved-rail" style={{ left: `${lowest === undefined ? position(line.asking) : 0}%`, width: `${lowest === undefined ? 100 - position(line.asking) : position(line.asking)}%` }} /><span className="agreed-price money" style={{ left: `${Math.max(22,Math.min(78,position(line.asking)))}%` }}>{price(line.asking, country)} agreed</span></> : <><span className="price-marker shop-marker" style={{ left: `${position(line.asking)}%` }}><span className="money">{price(line.asking, country)}</span></span>{line.offer !== undefined && <span className="price-marker rally-marker" style={{ left: `${position(line.offer)}%` }}><span className="money">{price(line.offer, country)}</span></span>}</>}
   </div>;
 }
 export default function DealCard({ value, country, floors }: { value: ShopState; country: CountryCode; floors?: Record<string,number> }) {
