@@ -181,6 +181,7 @@ class AuctionAuthority(unittest.TestCase):
         selected = {line.offer_id for line in result['lines']}
         self.assertEqual(selected & set(bundle.bundle.offer_ids), set(bundle.bundle.offer_ids))
         self.assertEqual(result['domestic_usd'], {'haneul': 0})
+        self.assertEqual(result['bundled'], {'mul-gel-cleanser', 'sae-cica-cream'})
         self.assertIsNone(self.bids.utility(bundle, c, won_offer_ids={'haneul/mul-gel-cleanser'}))
 
     def test_prompts_contain_only_public_terms_and_selection_cannot_grant_authority(self):

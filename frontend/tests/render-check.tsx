@@ -1,3 +1,4 @@
+import { applyAuctionEvent, initialAuction } from '../src/auction';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -7,7 +8,7 @@ import { Orders, Products, Settings } from '../src/routes/shops/Workspace';
 import shopData from './fixtures/shop-private.json' with { type: 'json' };
 import type { ShopSnapshot } from '../src/shop-api';
 import { applyEvent, initialDeal } from '../src/deal';
-import { allowed, catalog, cents, countries, countryCodes, events, finalLines, hero, landed, listedLines, money, quote, recordedMode } from '../src/fixture';
+import { auctionEvents, auctionBreakdown, allowed, catalog, cents, countries, countryCodes, events, finalLines, hero, landed, listedLines, money, quote, recordedMode } from '../src/fixture';
 
 const forbidden = /\b(example|preview|fixture|simulated|demo)\b/i;
 function render(path: string, test = false) {
@@ -74,3 +75,24 @@ const color=(token:string)=>{const hex=css.match(new RegExp(`--${token}:\\s*#([\
 const luminance=(hex:string)=>hex.match(/\w\w/g)!.map(c=>parseInt(c,16)/255).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4).reduce((sum,c,i)=>sum+c*[.2126,.7152,.0722][i],0);
 for(const [fg,bg] of [['muted','ground'],['surface','accent'],['ink','butter'],['saving','mint']]) { const [light,dark]=[luminance(color(fg)),luminance(color(bg))].sort((a,b)=>b-a); assert.ok((light+.05)/(dark+.05)>=4.5); }
 console.log('All five currency golden quotes, public projection, event replay, scoped shop SSR and static contrast passed. Browser screenshots and real payments are separate gates.');
+
+const auction = auctionEvents.reduce(applyAuctionEvent, initialAuction(11882));
+assert.equal(auction.total, 10192); assert.equal(auction.done, true);
+assert.equal(auction.items['mul-gel-cleanser'].winner, 'haneul');
+assert.deepEqual(auctionEvents.filter(event => event.kind === 'round').map(event => event.total), [11029, 10542, 10192]);
+assert.equal(applyAuctionEvent(auction, auctionEvents.at(-1)!), auction);
+assert.throws(() => applyAuctionEvent(auction, { id: 'over-hold', seq: 99, t: 12, kind: 'done', total: 11883 }));
+for (const [country, total] of Object.entries({ US: 10192, CA: 13825, GB: 8055, DE: 9621, AU: 14835 })) assert.equal(auctionBreakdown(country as keyof typeof countries).total, total);
+console.log('Auction replay, round totals, winners, ceiling, idempotency and five currency goldens passed.');
+
+const awarded = auctionEvents.find(event => event.kind === 'award')!;
+if (awarded.kind === 'award') {
+  const split = applyAuctionEvent(auction, { ...awarded, id: 'rival-cream', winners: { ...awarded.winners, 'mul-gel-cleanser': { shop: 'haneul', unit: 1100, variant: null, bundle: false }, 'sae-cica-cream': { shop: 'bada', unit: 1600, variant: null, bundle: false } } });
+  assert.equal(split.items['mul-gel-cleanser'].lanes.find(lane => lane.won)!.perks.includes('bundle'), false, 'a partial bundle never appears as a receipt perk');
+}
+
+if (awarded.kind === 'award') {
+  const winners = Object.fromEntries(Object.entries(awarded.winners).map(([pid, winner]) => [pid, { ...winner, unit: winner.unit - 50, bundle: false }]));
+  const overridden = applyAuctionEvent(auction, { ...awarded, id: 'individual-award', winners });
+  for (const item of Object.values(overridden.items)) assert.equal(item.lanes.find(lane => lane.won)!.perks.includes('bundle'), false);
+}

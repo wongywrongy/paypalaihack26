@@ -1,4 +1,6 @@
 # Rally
+
+> **v3 precedence:** [Shop bidding](docs/plan/BIDDING.md) governs new orders. Shops bid in three open rounds with per-item lanes; round dots and the clock are shown to shoppers. Older packaging and Bundles replace the add-on rule. Mint also marks gifts and awarded winners. At ≥1100 px the Deal uses a two-column board; phones keep a compact sticky total and put final actions after Your box. The exchange/add-on/narrow-desktop descriptions below apply to v2 orders and their replay only. Existing tokens, type, accessibility and copy rules remain in force.
 <!-- impeccable:product-schema 1 -->
 ## Platform
 web

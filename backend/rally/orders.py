@@ -13,6 +13,7 @@ from .config import settings
 from .db import connect, enqueue
 from .fx import AS_OF, RATES, convert
 from .negotiation.auction import run_auction
+from .negotiation.award import domestic_for
 from .negotiation.engine import negotiate
 from .payments.ledger import operation, payment_lock, perform, reconcile
 from .payments.paypal import RecoveryRequired
@@ -200,6 +201,17 @@ def persist_event(order_id, event):
         append_event(db, order_id, event)
 
 
+def checkout_award(t, catalog, rounds=0):
+    lines = tuple(Line(**line) for line in t["lines"])
+    winners = {catalog.offers[line.offer_id]["product_id"]: {"shop": catalog.offers[line.offer_id]["shop_id"], "unit": convert(line.unit_usd_cents, t["currency"], t["rate"]), "bundle": False, "variant": "older" if catalog.offers[line.offer_id]["variant"] == "older" else None} for line in lines}
+    domestic = {catalog.offers[line.offer_id]["shop_id"]: domestic_for(catalog.offers[line.offer_id]["shop_id"], lines, catalog, free=False) for line in lines}
+    return {"domestic_usd": domestic, "winners": winners, "rounds": rounds}
+
+
+def retained_award(t, retained):
+    return {"id": str(uuid4()), "kind": "award", "actor": "rally", "t": 0, "chosen_by": "CODE", "total": t["breakdown"]["total"], "note": "Your original checkout allocation is retained.", "winners": retained["winners"], "extras": [], "domestic": {s: convert(v, t["currency"], t["rate"]) for s, v in retained["domestic_usd"].items()}}
+
+
 def run_negotiation(order_id):
     with connect() as db:
         lock(db, order_id)
@@ -211,12 +223,15 @@ def run_negotiation(order_id):
             return
         t = row["checkout_terms"]
         catalog = store.catalog(db, order_id)
-        interrupted = db.execute("SELECT 1 FROM deal_events WHERE order_id=%s LIMIT 1", (order_id,)).fetchone()
+        interrupted = db.execute("SELECT data FROM deal_events WHERE order_id=%s ORDER BY seq LIMIT 1", (order_id,)).fetchone()
         db.execute("UPDATE orders SET state='NEGOTIATING',payment_state='NEGOTIATING',updated_at=now() WHERE id=%s", (order_id,))
     lines = tuple(Line(**line) for line in t["lines"])
     if interrupted:
         result = {"lines": lines, "extras": (), "breakdown": t["breakdown"]}
         persist_event(order_id, {"id": str(uuid4()), "t": 0, "kind": "error", "note": "The exchange was interrupted. Your checkout terms are retained.", "total": t["breakdown"]["total"]})
+        if interrupted["data"].get("v") == 3:
+            result.update(checkout_award(t, catalog))
+            persist_event(order_id, retained_award(t, result))
         persist_event(order_id, {"id": str(uuid4()), "t": 0, "kind": "done", "note": "Checkout terms retained for payment processing.", "total": t["breakdown"]["total"]})
     else:
         engine = run_auction if t.get("deal_mode", "exchange" if "add_small_extras_if_cheaper" in t["rules"] else settings.deal_mode) == "auction" else negotiate
@@ -235,6 +250,10 @@ def run_negotiation(order_id):
         except ValueError:
             final = t
             append_event(db, order_id, {"id": str(uuid4()), "t": 0, "kind": "error", "note": "An offered item became unavailable. Your original checkout items and price are retained.", "total": t["breakdown"]["total"]})
+            if "winners" in result:
+                retained = checkout_award(t, catalog, result["rounds"])
+                final = {**t, "extras": [], "domestic_usd": retained["domestic_usd"], "auction": {"rounds": retained["rounds"], "winners": retained["winners"]}}
+                append_event(db, order_id, retained_award(t, retained))
             append_event(db, order_id, {"id": str(uuid4()), "t": 0, "kind": "done", "note": "Checkout terms retained for payment processing.", "total": t["breakdown"]["total"]})
         assert final["breakdown"]["total"] <= t["breakdown"]["total"]
         db.execute("UPDATE orders SET final_terms=%s,payment_state='COMPLETING_PAYMENT',updated_at=now() WHERE id=%s", (Jsonb(final), order_id))

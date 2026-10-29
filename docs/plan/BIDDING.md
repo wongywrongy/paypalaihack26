@@ -120,9 +120,11 @@ All events keep today's envelope: `id`, `seq`, `t`, `kind`, `note`, `total` (cur
 | `bid` | shop | `round`, `shop`, `items: {pid or pid:older: unit}`, `bundle: {items, price} or null`, `perks: {pid: ["older","kit","bundle","freeship"]}` |
 | `pass` | shop | `round`, `shop`, `items: [pid]` |
 | `round` | rally | `round`, `leaders: {pid: shop}` |
-| `award` | rally | `winners: {pid: {shop, unit, variant}}`, `extras`, `domestic: {shop: minor}` |
+| `award` | rally | `winners: {pid: {shop, unit, variant, bundle}}`, `extras`, `domestic: {shop: minor}` |
 | `error` | rally | `shop` optional (a shop's bid failed; its previous bid stands) |
 | `done` | — | final `total` |
+
+`winners[pid].bundle` is code-owned: true only when the exact award uses that indivisible bundle. Receipts use this flag, never a historical bid.
 
 Units in events are shopper-currency minor units (converted at the locked quote rate), like today. The Deal screen picks the v3 reducer when the first event is `start` with `v: 3`; older orders keep the existing reducer and view.
 

@@ -12,6 +12,7 @@ def domestic_for(shop_id, lines, catalog, *, free):
 
 def best_allocation(bids, start, destination, catalog, rules):
     bids = list(bids.values()) if isinstance(bids, dict) else list(bids)
+    arrival = {id(bid): index for index, bid in enumerate(bids)}
     pids = [catalog.offers[line.offer_id]["product_id"] for line in start["lines"]]
     options = {pid: [] for pid in pids}
     for line in start["lines"]:
@@ -45,10 +46,10 @@ def best_allocation(bids, start, destination, catalog, rules):
             breakdown = calculate(chosen, destination, catalog, extras=extras, shipping=domestic, rate=start.get("rate"))
         except ValueError:
             return
-        key = (breakdown["total"], len(shops), -len(extras), sum(bid.round if bid else 0 for bid in origins), tuple(line.offer_id for line in chosen))
+        key = (breakdown["total"], len(shops), -len(extras), tuple(sorted((bid.round, arrival[id(bid)]) if bid else (0, -1) for bid in origins)), tuple(line.offer_id for line in chosen))
         if best_key is None or key < best_key:
             best_key = key
-            best = {"lines": chosen, "extras": extras, "domestic_usd": domestic, "breakdown": breakdown,
+            best = {"bundled": {catalog.offers[line.offer_id]["product_id"] for line, bid in zip(chosen, origins, strict=True) if bid and bid.bundle and line.offer_id in bid.bundle.offer_ids}, "lines": chosen, "extras": extras, "domestic_usd": domestic, "breakdown": breakdown,
                     "leaders": {catalog.offers[line.offer_id]["product_id"]: catalog.offers[line.offer_id]["shop_id"] for line in chosen}}
     search((), set(), ())
     if best is None:

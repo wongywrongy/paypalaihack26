@@ -1,46 +1,22 @@
+import { isAuction } from '../auction';
+import { AuctionPlayback, ConnectedAuction } from '../components/AuctionDeal';
+import AnimatedTotal from '../components/DealTotal';
+import { auctionEvents } from '../fixture';
 import { useEffect, useState } from 'react';
-import { applyEvent, initialDeal, reconcileDeal, recordedDealSource } from '../deal';
-import { type ShopId, events, finalLines, hero, href, landed, listedLines, local, money, recordedMode, recordedOrder } from '../fixture';
+import { applyEvent, initialDeal, reconcileDeal } from '../deal';
+import { money, recordedMode, recordedOrder } from '../fixture';
 import { Action, Screen, Unavailable } from '../components/MemberUI';
 import DealCard from '../components/DealCard';
 import { apiUrl, checkedEvent, loadSession, orderHref, paymentComplete, request, type PublicDealEvent } from '../connected';
 import { useOrder } from '../order-state';
 import PayPalApproval from '../components/PayPalApproval';
-function useReducedMotion() {
-  const [reduced, setReduced] = useState(() => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches);
-  useEffect(() => { const media = matchMedia('(prefers-reduced-motion: reduce)'); const listener = () => setReduced(media.matches); media.addEventListener('change', listener); return () => media.removeEventListener('change', listener); }, []);
-  return reduced;
-}
-function AnimatedTotal({ amount, currency, settled }: { amount: number; currency: 'USD'|'CAD'|'GBP'|'EUR'|'AUD'; settled: boolean }) {
-  const reduced = useReducedMotion();
-  const [shown, setShown] = useState(amount);
-  useEffect(() => {
-    if (reduced || settled) { setShown(amount); return; }
-    const start = performance.now(), from = shown;
-    let frame: number;
-    const tick = (now: number) => { const progress = Math.min(1, (now - start) / 500); setShown(Math.round(from + (amount - from) * progress)); if (progress < 1) frame = requestAnimationFrame(tick); };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [amount, reduced, settled]);
-  return <><strong className="hero-money money" aria-hidden="true">{money(settled || reduced ? amount : shown, currency)}</strong><span className="sr-only" role="status">Your total, all in: {money(amount, currency)}</span></>;
-}
-export default function Deal() { return recordedMode() ? <RecordedDeal /> : <ConnectedDeal />; }
-function RecordedDeal() {
-  const country = recordedOrder.country;
-  const [state, setState] = useState(initialDeal);
-  const [playing, setPlaying] = useState(true);
-  useEffect(() => {
-    if (!playing || state.done) return;
-    return recordedDealSource(event => setState(previous => applyEvent(previous, event)), state.applied.length);
-  }, [playing, state.done]);
-  const checkout = landed(listedLines, country);
-  const currentLines = state.shops.dalbit?.accepted ? finalLines : state.shops.bada?.accepted ? [...listedLines, finalLines.find(line => line.added)!] : listedLines;
-  const exact = state.done || state.shops.dalbit?.accepted ? landed(finalLines, country, 50) : state.shops.bada?.accepted ? landed(currentLines, country) : checkout;
-  function replay() { setState(initialDeal()); setPlaying(true); }
-  return <Screen title="Order RL-24817"><div className="deal-progress"><h1>{state.done ? 'Deal done' : playing ? 'Rally is talking to 2 shops' : 'Deal paused'}</h1><div className="playback-controls"><span className="clock money">{state.done ? `${state.elapsed} seconds` : `0:${String(state.elapsed).padStart(2,'0')}`}</span>{!state.done && <button className="text-link playback-toggle" onClick={() => setPlaying(!playing)}>{playing ? 'Pause deal' : 'Resume deal'}</button>}</div></div><p className="fine order-context">{recordedOrder.destination} · {recordedOrder.currency} · order choices saved at checkout</p><p className="muted">Your total, all in</p><div className="total-display"><AnimatedTotal amount={exact.total} currency={exact.currency} settled={state.done} />{exact.total < checkout.total && <del className="money">{money(checkout.total, checkout.currency)}</del>}</div><p className="hold-line">{state.done ? `You pay ${money(exact.total, exact.currency)}. PayPal releases the other ${money(checkout.total - exact.total, exact.currency)}.` : `PayPal is holding ${money(checkout.total, checkout.currency)}. You pay the final price, never more.`}</p><div className="track-legend"><span><i className="legend-rally" />Rally’s offer</span><span><i className="legend-shop" />Shop’s price</span><span><i className="legend-save" />You save</span></div>{(['dalbit','bada'] as ShopId[]).map(id => <DealCard key={id} value={state.shops[id]!} country={country} />)}{state.done && <><Action to="/paid">See your order</Action><button className="text-link centered" onClick={replay}>Watch the deal again</button></>}</Screen>;
-}
+export default function Deal() { return recordedMode() ? <AuctionPlayback events={auctionEvents} maximum={11882} country={recordedOrder.country} id={recordedOrder.id} paid /> : <ConnectedDeal />; }
 function ConnectedDeal() {
-  const { id, order, error, refresh } = useOrder();
+  const value = useOrder();
+  return value.order && isAuction(value.order.events) ? <ConnectedAuction order={value.order} refresh={value.refresh} /> : <ExchangeDeal value={value} />;
+}
+function ExchangeDeal({ value }: { value: ReturnType<typeof useOrder> }) {
+  const { id, order, error, refresh } = value;
   const [state, setState] = useState<ReturnType<typeof initialDeal> | null>(null);
   const [playing, setPlaying] = useState(true), [replaying, setReplaying] = useState(false);
   const [queue, setQueue] = useState<PublicDealEvent[]>([]), [connection, setConnection] = useState('');
@@ -73,7 +49,7 @@ function ConnectedDeal() {
     stream.onopen = () => setConnection('');
     stream.onerror = () => setConnection('Connection interrupted. Rally is reconnecting; your deal keeps running.');
     const receive = (message: MessageEvent) => {
-      try { const event = checkedEvent(JSON.parse(message.data), order.maximum_minor); if (event.kind === 'done') stream.close(); setQueue(previous => previous.some(value => value.id === event.id) ? previous : [...previous, event]); }
+      try { const event = checkedEvent(JSON.parse(message.data), order.maximum_minor); if (event.kind === 'start' && event.v === 3) { stream.close(); value.setOrder({ ...order, events: [event] }); return; } if (event.kind === 'done') stream.close(); setQueue(previous => previous.some(value => value.id === event.id) ? previous : [...previous, event]); }
       catch (error) { setConnection((error as Error).message); stream.close(); }
     };
     stream.addEventListener('deal', receive as EventListener);

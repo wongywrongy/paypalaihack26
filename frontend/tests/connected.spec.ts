@@ -255,3 +255,21 @@ test('terminal fallback restores authoritative checkout rows and clears rejected
   await expect(page.locator('.product-rows li')).toHaveCount(4);
   await expect(page.getByText('Sample kit, 5 minis', { exact: true })).toHaveCount(0);
 });
+
+test('v3 server events restore winners, replay, and paid receipt without payment writes', async ({ page }) => {
+  const { auctionEvents, auctionFinalLines, auctionBreakdown } = await import('../src/fixture');
+  const api = await mockPublicApi(page);
+  const base = publicOrder(), breakdown = auctionBreakdown('US');
+  const order = { ...base, lines: auctionFinalLines, breakdown, charged_minor: breakdown.total, uncaptured_minor: base.maximum_minor - breakdown.total, events: auctionEvents };
+  await page.route('**/api/orders/order-public', route => route.fulfill({ json: order }));
+  await page.clock.install(); await page.goto('/deal?order=order-public');
+  await expect(page.getByRole('heading', { name: 'Bidding complete' })).toBeVisible();
+  await expect(page.locator('.hero-money')).toHaveText('$101.92');
+  await expect(page.locator('.auction-lane.won')).toHaveCount(4);
+  await page.getByRole('button', { name: 'Watch the bidding again' }).click();
+  await page.clock.runFor(20000);
+  await expect(page.locator('.hero-money')).toHaveText('$101.92');
+  await page.getByRole('link', { name: 'See your order' }).click();
+  await expect(page.locator('.hero-money')).toHaveText('$101.92');
+  expect(api.calls.filter(call => call.method !== 'GET')).toEqual([]);
+});

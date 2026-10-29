@@ -156,7 +156,8 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
     finally:
         executor.shutdown(wait=False, cancel_futures=True)
     assert best["breakdown"]["total"] <= start["breakdown"]["total"]
-    winners = {catalog.offers[line.offer_id]["product_id"]: {"shop": catalog.offers[line.offer_id]["shop_id"], "unit": convert(line.unit_usd_cents, currency, rate), "variant": catalog.offers[line.offer_id]["variant"]} for line in best["lines"]}
+    winners = {catalog.offers[line.offer_id]["product_id"]: {"shop": catalog.offers[line.offer_id]["shop_id"], "unit": convert(line.unit_usd_cents, currency, rate), "bundle": catalog.offers[line.offer_id]["product_id"] in best["bundled"], "variant": "older" if catalog.offers[line.offer_id]["variant"] == "older" else None} for line in best["lines"]}
     event("award", "Your best complete delivered total is ready.", winners=winners, extras=list(best["extras"]), domestic={s: convert(v, currency, rate) for s, v in best["domestic_usd"].items()})
     event("done", "Bidding is complete.")
+    best.pop("bundled", None)
     return {**best, "events": events, "winners": winners, "rounds": rounds, "model_calls": calls, "elapsed_seconds": round(monotonic() - started, 3)}

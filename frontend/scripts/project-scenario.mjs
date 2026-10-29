@@ -2,9 +2,11 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 const root = new URL('../', import.meta.url);
 const source = JSON.parse(readFileSync(new URL('../../design/scenario/scenario.json', import.meta.url), 'utf8'));
+const auction = JSON.parse(readFileSync(new URL('../../design/scenario/auction.json', import.meta.url), 'utf8'));
 const pick = (value, keys) => Object.fromEntries(keys.filter(key => value[key] !== undefined).map(key => [key, value[key]]));
 // Build-time allowlist: the raw scenario (including shop economics) never enters Vite's graph.
 const projection = {
+  auction: pick(auction, ['cart', 'rules', 'bids', 'rounds', 'award', 'golden']),
   fx_usd: source.fx_usd,
   rally_fee_usd: source.rally_fee_usd,
   shops: Object.fromEntries(Object.entries(source.shops).map(([id, shop]) => [id, pick(shop, ['name', 'city', 'kind', 'ships_abroad', 'domestic', 'free_over'])])),

@@ -162,3 +162,12 @@ PLAN.md on `rally` (October 22) is authoritative. The original workspace and dat
 
 - Full unittest discovery on disposable Postgres: 96 tests, all passed. Added authorized auction → persistent v3 events → moved reservations → ledger capture test, and verified Haneul receives goods only ($29) for its free-domestic bid. Outbid shops receive public lanes with only their own private floors. Provider HTTP is doubled, not hosted evidence.
 - Ruff passed. Fresh B1 browser run with installed Chromium: 94 passed (desktop/mobile). Build and render results are recorded above. New frontend auction screens remain next.
+
+### B2 · October 29, 2026 · v3 frontend and complete local gate
+
+- `PYTHONPATH=backend python -m unittest discover -s tests -v` with disposable `RALLY_TEST_DATABASE_URL`: 97 tests passed, no skips. Added interruption recovery that appends a checkout award; no historical records rewritten.
+- `ruff check --isolated --select E4,E7,E9,F,I --ignore E402 backend tests scripts`: passed. `npm run build --prefix frontend`: passed (existing lazy AG Grid chunk size advisory remains). `npm run test:render --prefix frontend`: passed, including five auction goldens, duplicate events, hold ceiling, bundle override and copy/contrast checks.
+- `npm run test:browser --prefix frontend -- --workers=4` with installed `RALLY_CHROMIUM_EXECUTABLE`: 98 passed across desktop/mobile. Includes v2 compatibility, v3 server replay/receipt, no payment writes during replay, own-shop floors, reduced motion, 320/768 px, 200% text zoom and compact 390×664 sticky layout.
+- Earlier B2 browser attempts exposed stale Bag assertions, replay timer scheduling, mobile header space, zoom overflow and a breakdown locator made ambiguous by the charge strip; corrected and rerun. A new floor assertion was narrowed to bag products after exposing the full own-shop catalog.
+- Impeccable reviewer scored both listed findings resolved: mobile lanes remain readable, and Bundle receipts use the exact solver's awarded-bundle flag. Documenter confirmed incumbent tokens/type and requested only v3 precedence notes/pill shapes; detector returned no findings. Existing design sidecar predates DESIGN.md; optional document refresh remains unperformed. Captures in ignored .runtime/frontend-screenshots.
+- Local doubles only. No hosted, real-model, Channel3-search or PayPal mutation evidence added.

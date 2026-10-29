@@ -348,7 +348,30 @@ class ShoppingContracts(unittest.TestCase):
             outbid = fulfillment.merchant_orders(db, "bada")["orders"][0]
             self.assertEqual(outbid["payout"]["status"], "outbid")
             self.assertEqual(outbid["events"][0]["v"], 3)
-            self.assertTrue(all(not key.startswith("haneul/") for key in outbid["lowest"]))
+            self.assertEqual({pid: outbid["lowest"][pid] for pid in ("mul-gel-cleanser", "dal-rice-toner", "sae-cica-cream")}, {"mul-gel-cleanser": 1000, "dal-rice-toner": 1650, "sae-cica-cream": 1600})
+
+    def test_interrupted_auction_emits_the_retained_checkout_award(self):
+        from rally.catalog import Catalog
+        from rally.negotiation.auction import run_auction
+        from rally.sourcing import source
+
+        catalog = Catalog()
+        recording = run_auction(source(self.payload["items"], "US", catalog), "US", catalog, self.payload["rules"], choose=lambda role, payload: {"indexes": [0], "note": "Ask."} if role == "buyer" else {"index": 0, "note": "Bid."})
+        with patch.object(orders, "settings", replace(self.config, deal_mode="auction")):
+            bag, checkout = self.checkout()
+        oid = checkout["order_id"]
+        self.provider.orders[checkout["paypal_order_id"]]["status"] = "APPROVED"
+        self.post(f"/bags/{bag['id']}/checkout/approve", {"order_id": checkout["paypal_order_id"]})
+        orders.persist_event(oid, recording["events"][0])
+        with patch.object(orders, "run_auction") as model:
+            self.assertTrue(worker.run_once("ai"))
+            model.assert_not_called()
+        self.assertTrue(worker.run_once("payments"))
+        row = self.client.get("/api/orders/" + oid).json()
+        self.assertEqual(row["charged_minor"], 11882)
+        self.assertEqual(row["events"][-2]["kind"], "award")
+        self.assertEqual(row["events"][-2]["winners"]["mul-gel-cleanser"]["shop"], "bada")
+        self.assertEqual(row["auction"]["winners"], row["events"][-2]["winners"])
 
     def login(self, role, password, shop_id=None):
         response = self.post("/login", {"role": role, "password": password, "shop_id": shop_id})
