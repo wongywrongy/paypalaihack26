@@ -31,7 +31,7 @@ class Settings:
     # json_object: schema goes in the system prompt only (providers without json_schema).
     llm_response_format: str = env("LLM_RESPONSE_FORMAT", "json_schema")
     # auction (v3, default for new orders once implemented) or exchange (v2 engine).
-    deal_mode: str = env("RALLY_DEAL_MODE", "exchange")
+    deal_mode: str = env("RALLY_DEAL_MODE", "auction")
 
     def model_for(self, role=None):
         if role == "shop" and self.llm_model_shop:

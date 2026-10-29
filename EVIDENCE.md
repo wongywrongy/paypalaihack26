@@ -171,3 +171,7 @@ PLAN.md on `rally` (October 22) is authoritative. The original workspace and dat
 - Earlier B2 browser attempts exposed stale Bag assertions, replay timer scheduling, mobile header space, zoom overflow and a breakdown locator made ambiguous by the charge strip; corrected and rerun. A new floor assertion was narrowed to bag products after exposing the full own-shop catalog.
 - Impeccable reviewer scored both listed findings resolved: mobile lanes remain readable, and Bundle receipts use the exact solver's awarded-bundle flag. Documenter confirmed incumbent tokens/type and requested only v3 precedence notes/pill shapes; detector returned no findings. Existing design sidecar predates DESIGN.md; optional document refresh remains unperformed. Captures in ignored .runtime/frontend-screenshots.
 - Local doubles only. No hosted, real-model, Channel3-search or PayPal mutation evidence added.
+
+### Auction default · October 29, 2026
+
+B2 gates passed before changing the default. New quotes default to auction; explicit RALLY_DEAL_MODE=exchange and frozen historical quote modes retain exchange. Full disposable-Postgres unittest discovery after the default change: 97 tests passed, no skips.
