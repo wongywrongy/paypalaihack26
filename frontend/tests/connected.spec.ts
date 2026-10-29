@@ -287,3 +287,27 @@ test('optional market ranges stay in US dollars beside local prices', async ({ p
   await expect(page.locator('.market-range')).toHaveCount(1);
   await expect(page.getByRole('button', { name: /Ship to Canada · CAD/ })).toBeVisible();
 });
+
+for (const version of [2, 3]) {
+  test(`v${version} deal uses a short order number and keeps live notes public`, async ({ page }, testInfo) => {
+    await mockPublicApi(page);
+    const id = 'a1b2c345-6789-4abc-9876-123456789abc';
+    const base = publicOrder();
+    const { auctionEvents, auctionFinalLines, auctionBreakdown } = await import('../src/fixture');
+    const detail = 'A private failure detail should never become a live message.';
+    const events = [...auctionEvents, { id: 'late-error', seq: auctionEvents.length + 1, t: 12, kind: 'error', actor: 'rally', note: detail }];
+    const order = version === 3 ? { ...base, id, lines: auctionFinalLines, breakdown: auctionBreakdown('US'), events } : { ...base, id };
+    await page.route(`**/api/orders/${id}`, route => route.fulfill({ json: order }));
+    await page.goto(`/deal?order=${id}`);
+    await expect(page.locator('.header-title')).toHaveText('Order RL-A1B2C');
+    await expect(page.getByText(/order choices saved at checkout/)).toHaveCount(0);
+    await expect(page.getByText(id, { exact: false })).toHaveCount(0);
+    if (version === 3) {
+      await expect(page.locator('.auction-live-message')).toHaveText(auctionEvents.find(event => event.kind === 'award')!.note!);
+      await expect(page.getByText(detail, { exact: true })).toHaveCount(0);
+    }
+    await page.evaluate(() => document.fonts.ready);
+    await mkdir('../.runtime/connected-screens', { recursive: true });
+    await page.screenshot({ path: `../.runtime/connected-screens/${testInfo.project.name}-short-order-v${version}.png`, fullPage: true, animations: 'disabled' });
+  });
+}

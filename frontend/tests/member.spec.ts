@@ -204,7 +204,8 @@ test('recorded order keeps its checkout consent and currency separate from the e
   await page.clock.install();
   await page.addInitScript(() => localStorage.setItem('rally-shopping-v2',JSON.stringify({country:'CA',items:['dal-rice-toner'],rules:{old_packaging_ok:false,bundles_ok:false}})));
   await page.goto(recorded('/deal'));
-  await expect(page.getByText('California · USD · order choices saved at checkout',{exact:true})).toBeVisible();
+  await expect(page.locator('.header-title')).toHaveText('Order RL-24817');
+  await expect(page.getByText(/order choices saved at checkout/)).toHaveCount(0);
   await page.clock.runFor(20000);
   await expect(page.locator('.hero-money')).toHaveText('$101.92');
   await page.getByRole('link',{name:'See your order'}).click();

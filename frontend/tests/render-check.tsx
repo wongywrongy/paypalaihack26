@@ -1,3 +1,5 @@
+import { orderNumber } from '../src/connected';
+import { AuctionPlayback } from '../src/components/AuctionDeal';
 import MarketRange from '../src/components/MarketRange';
 import { applyAuctionEvent, initialAuction } from '../src/auction';
 import assert from 'node:assert/strict';
@@ -100,3 +102,18 @@ if (awarded.kind === 'award') {
 
 assert.equal(renderToStaticMarkup(<MarketRange />), '');
 assert.ok(renderToStaticMarkup(<MarketRange reference={{ low_usd_cents: 1800, median_usd_cents: 2200, high_usd_cents: 2600, n: 3, as_of: '2026-10-29' }} />).includes('$18–26'));
+
+const orderId = 'a1b2c345-6789-4abc-9876-123456789abc';
+assert.equal(orderNumber(orderId), 'RL-A1B2C');
+assert.equal(orderNumber('RL-24817'), 'RL-24817');
+const permittedNotes = new Set(auctionEvents.filter(event => ['bid', 'ask', 'round', 'award'].includes(event.kind)).map(event => event.note));
+assert.ok(auction.feed.every(line => permittedNotes.has(line.text)));
+for (const kind of ['error', 'done', 'pass'] as const) {
+  const quiet = applyAuctionEvent(auction, { id: `quiet-${kind}`, seq: 100, t: 12, kind, shop: 'haneul', items: [], note: 'This must never be the live message.' });
+  assert.deepEqual(quiet.feed, auction.feed);
+}
+const dealHtml = renderToStaticMarkup(<BagProvider><AuctionPlayback events={auctionEvents} maximum={11882} country="US" id={orderId} paid replayInitially={false} /></BagProvider>);
+assert.ok(dealHtml.includes('Order RL-A1B2C'));
+assert.ok(!dealHtml.includes('order choices saved at checkout'));
+assert.ok(!dealHtml.includes(`Order ${orderId}`));
+console.log('Short order header and bid/ask/round/award-only live messages passed.');

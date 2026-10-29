@@ -155,6 +155,7 @@ The shops and brands are fictional, so Channel3 never supplies a seller or a pro
 ## Frontend
 
 - **Bag:** items listed one by one (no shop grouping); each shows best listed price and "N shops bid". Switches "Older packaging" and "Bundles". Line under the PayPal button: "PayPal holds $X. Shops can only bid it down."
+- **Deal:** the header shows `RL-` plus the first five uppercase order-id characters (the full id stays in API calls/links). No checkout-choices metadata line. The live message uses only bid, ask, round and award notes; errors and terminal markers never replace it.
 - **Deal (v3 view):** sticky header with round dots, clock, the big total counting down at each round, a "less" chip, the hold line, and one live message line. One card per item with a lane per eligible shop: marker position by price, leader in berry, new bid flash, Pass state, perk chips (butter for shopper-permitted terms: Older packaging, Bundle; mint for gifts: Sample kit, Ships free in Korea). At award: winning lane mint, others dimmed, item pill "Won by <shop>", saving vs best listed. Then "Your box" (per shop: items, perks, amount; "Outbid" for shops that won nothing), "See your order", "Watch the bidding again".
 - **Desktop ≥ 1100 px:** the two-column bidding board from the design (total and feed left, 2×2 item grid right). This is the layout for the video.
 - **Paid:** each line shows the winning shop, older packaging / bundle tags, struck best-listed price; hold / charged / released strip as today.

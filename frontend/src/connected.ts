@@ -61,6 +61,7 @@ export function checkedEvent(value: PublicDealEvent, maximum: number): PublicDea
   if (event.kind === 'award' && (!event.winners || !event.domestic || !Array.isArray(event.extras) || Object.values(event.winners).some(winner => !winner.shop || !minor(winner.unit)))) throw new Error('Invalid bidding award. Reload your order.');
   return value;
 }
+export function orderNumber(id: string) { return id.startsWith('RL-') ? id : `RL-${id.slice(0, 5).toUpperCase()}`; }
 export function orderHref(path: string, id: string) { return `${path}?order=${encodeURIComponent(id)}`; }
 export function selectedOrder() {
   const fromUrl = new URLSearchParams(location.search).get('order');

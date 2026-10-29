@@ -43,7 +43,7 @@ export function applyAuctionEvent(previous: AuctionState, event: AuctionEvent): 
   next.applied.push(event.id); next.elapsed = event.t;
   if (event.total !== undefined) next.total = event.total;
   if ('round' in event) next.round = event.round;
-  if (event.note) next.feed.push({ t: event.t, who: 'shop' in event && event.shop ? event.shop : 'rally', text: event.note });
+  if (event.note && ['bid', 'ask', 'round', 'award'].includes(event.kind)) next.feed.push({ t: event.t, who: 'shop' in event && event.shop ? event.shop : 'rally', text: event.note });
   if (event.kind === 'start') {
     if (previous.started) throw new Error('Bidding already started');
     next.started = true;
