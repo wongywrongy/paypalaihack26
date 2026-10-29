@@ -12,6 +12,7 @@ from .catalog import Line
 from .config import settings
 from .db import connect, enqueue
 from .fx import AS_OF, RATES, convert
+from .negotiation.auction import run_auction
 from .negotiation.engine import negotiate
 from .payments.ledger import operation, payment_lock, perform, reconcile
 from .payments.paypal import RecoveryRequired
@@ -38,7 +39,7 @@ def rules_checked(rules):
 def terms(items, country, rules, catalog):
     result = source(items, country, catalog)
     currency = result["breakdown"]["currency"]
-    return {"country": country, "currency": currency, "items": items, "rules": rules_checked(rules), "lines": [asdict(line) for line in result["lines"]], "breakdown": result["breakdown"], "rate": RATES[currency], "fx_as_of": AS_OF, "merchant": "Rally sandbox business", "merchant_id": settings.paypal_merchant_id, "route": "Korean shops → Seoul hub → shopper", "cost_certainty": "complete simulated schedule; Rally absorbs any overrun", "quote_version": 1, "inventory_reservation": None}
+    return {"country": country, "currency": currency, "items": items, "rules": rules_checked(rules), "lines": [asdict(line) for line in result["lines"]], "breakdown": result["breakdown"], "rate": RATES[currency], "fx_as_of": AS_OF, "merchant": "Rally sandbox business", "merchant_id": settings.paypal_merchant_id, "route": "Korean shops → Seoul hub → shopper", "cost_certainty": "complete simulated schedule; Rally absorbs any overrun", "quote_version": 3, "deal_mode": settings.deal_mode, "inventory_reservation": None}
 
 
 def quote_public(row, catalog):
@@ -189,7 +190,8 @@ def append_event(db, order_id, event):
     seq = db.execute("SELECT COALESCE(max(seq),0)+1 AS n FROM deal_events WHERE order_id=%s", (order_id,)).fetchone()["n"]
     value = {**event, "seq": seq}
     # Diagnostic selection authority stays server-side.
-    value.pop("chosen_by", None)
+    if value.get("chosen_by") not in ("CODE", "LLM", "FIXTURE"):
+        value.pop("chosen_by", None)
     db.execute("INSERT INTO deal_events(id,order_id,seq,data) VALUES(%s,%s,%s,%s) ON CONFLICT(id) DO NOTHING", (identifier(event["id"]), order_id, seq, Jsonb(value)))
 
 
@@ -217,8 +219,11 @@ def run_negotiation(order_id):
         persist_event(order_id, {"id": str(uuid4()), "t": 0, "kind": "error", "note": "The exchange was interrupted. Your checkout terms are retained.", "total": t["breakdown"]["total"]})
         persist_event(order_id, {"id": str(uuid4()), "t": 0, "kind": "done", "note": "Checkout terms retained for payment processing.", "total": t["breakdown"]["total"]})
     else:
-        result = negotiate({"lines": lines, "breakdown": t["breakdown"], "rate": t["rate"]}, t["country"], catalog, t["rules"], emit=lambda event: persist_event(order_id, event))
+        engine = run_auction if t.get("deal_mode", "exchange" if "add_small_extras_if_cheaper" in t["rules"] else settings.deal_mode) == "auction" else negotiate
+        result = engine({"lines": lines, "breakdown": t["breakdown"], "rate": t["rate"]}, t["country"], catalog, t["rules"], emit=lambda event: persist_event(order_id, event), **({"pace": True} if engine is run_auction else {}))
     final = {**t, "lines": [asdict(line) for line in result["lines"]], "extras": list(result["extras"]), "breakdown": result["breakdown"]}
+    if "winners" in result:
+        final.update(domestic_usd=result["domestic_usd"], auction={"rounds": result["rounds"], "winners": result["winners"]})
     with connect() as db:
         lock(db, order_id)
         row = owned(db, order_id)
@@ -292,7 +297,7 @@ def public_order(db, order_id, session_id=None):
     refunds = db.execute("SELECT status,COALESCE(sum((request->>'amount_cents')::integer),0) AS amount FROM payment_ops WHERE member_id=%s AND kind='refund' GROUP BY status", (row["member_id"],)).fetchall()
     refunded = sum(r["amount"] for r in refunds if r["status"] == "completed")
     pending_refund = sum(r["amount"] for r in refunds if r["status"] in ("pending", "unknown", "inflight"))
-    return {"id": str(row["id"]), "bag_id": str(row["bag_id"]), "country": t["country"], "currency": t["currency"], "state": row["state"], "payment_state": row["payment_state"], "fulfillment_state": row["fulfillment_state"], "maximum_minor": maximum, "charged_minor": charged, "refunded_minor": refunded, "refund_pending_minor": pending_refund, "uncaptured_minor": maximum - charged if charged is not None else 0, "checkout": quote_public(quote_row, catalog), "lines": lines, "extras": final.get("extras", []), "breakdown": final["breakdown"], "events": events, "tracking": tracking, "ship_by": row["ship_by"].isoformat()}
+    return {"id": str(row["id"]), "bag_id": str(row["bag_id"]), "country": t["country"], "currency": t["currency"], "state": row["state"], "payment_state": row["payment_state"], "fulfillment_state": row["fulfillment_state"], "maximum_minor": maximum, "charged_minor": charged, "refunded_minor": refunded, "refund_pending_minor": pending_refund, "uncaptured_minor": maximum - charged if charged is not None else 0, "checkout": quote_public(quote_row, catalog), "lines": lines, "extras": final.get("extras", []), "auction": final.get("auction"), "domestic_usd": final.get("domestic_usd"), "breakdown": final["breakdown"], "events": events, "tracking": tracking, "ship_by": row["ship_by"].isoformat()}
 
 
 def cancel(db, order_id, session_id=None, *, compensation=False):

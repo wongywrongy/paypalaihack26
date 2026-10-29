@@ -46,7 +46,8 @@ def handoff(db, order_id, shop_id, carrier, tracking):
         return {"queued": True}
     db.execute("INSERT INTO order_shipments(id,order_id,shop_id,leg,carrier,tracking) VALUES(%s,%s,%s,'shop_to_hub',%s,%s)", (uuid4(), order_id, shop_id, carrier, tracking))
     pool = uuid4()
-    total = sum(line["unit_usd_cents"] for line in lines) + shipping(tuple(Line(**line) for line in lines), catalog)
+    domestic = row["final_terms"].get("domestic_usd", {}).get(shop_id, shipping(tuple(Line(**line) for line in lines), catalog))
+    total = sum(line["unit_usd_cents"] for line in lines) + domestic
     db.execute("INSERT INTO pools(id,shop_id,organizer_id,lock_at,ship_by,deliver_to) VALUES(%s,%s,'v2-shop-payment',now(),now()+interval '10 days',%s)", (pool, shop_id, Jsonb({"hub": "Seoul"})))
     db.execute("INSERT INTO shipments(id,pool_id,carrier,tracking_number) VALUES(%s,%s,%s,%s)", (uuid4(), pool, carrier, tracking))
     db.execute("INSERT INTO order_shop_payments(order_id,shop_id,pool_id,amount_usd) VALUES(%s,%s,%s,%s)", (order_id, shop_id, pool, total))
@@ -188,13 +189,17 @@ def merchant_orders(db, shop_id):
     for item in rows:
         row = orders.owned(db, item["id"])
         lines = shop_lines(row, shop_id, catalog)
-        if not lines:
+        auction_events = [e["data"] for e in db.execute("SELECT data FROM deal_events WHERE order_id=%s ORDER BY seq", (row["id"],)).fetchall()]
+        auction = bool(auction_events and auction_events[0].get("v") == 3)
+        if not lines and not (auction and shop_id in {s for shops in auction_events[0]["shops"].values() for s in shops}):
             continue
         t = row["checkout_terms"]
         payment = operation(db, f"order:{row['id']}:shop:{shop_id}:payout")
         extras = tuple(e for e in (row["final_terms"] or {}).get("extras", []) if e.startswith(shop_id))
         from .negotiation.shop_agent import utility
 
-        gain = utility(tuple(Line(**line) for line in lines), extras, catalog)
-        result.append({"id": str(row["id"]), "country": t["country"], "currency": t["currency"], "payment_state": row["payment_state"], "fulfillment_state": row["fulfillment_state"], "lines": orders.public_lines(lines, t["currency"], catalog, t["rate"]), "checkout_lines": orders.public_lines(shop_lines(row, shop_id, catalog, checkout=True), t["currency"], catalog, t["rate"]), "lowest": {o["product_id"] + (":older" if o["variant"] == "older" else ""): convert(o["floor_usd"], t["currency"], t["rate"]) for o in catalog.offers.values() if o["shop_id"] == shop_id}, "gain_minor": convert(max(0, gain or 0), t["currency"], t["rate"]), "gain_currency": t["currency"], "events": [e["data"] for e in db.execute("SELECT data FROM deal_events WHERE order_id=%s AND data->>'shop'=%s ORDER BY seq", (row["id"], shop_id)).fetchall()], "ship_by": row["ship_by"].isoformat(), "payout": {"status": payment["status"] if payment else "awaiting_handoff", "amount_minor": payment["request"]["amount_cents"] if payment else 0, "currency": "USD"}})
+        gain = utility(tuple(Line(**line) for line in lines), extras, catalog) if lines else 0
+        if lines and "domestic_usd" in (row["final_terms"] or {}):
+            gain -= shipping(tuple(Line(**line) for line in lines), catalog) - row["final_terms"]["domestic_usd"][shop_id]
+        result.append({"id": str(row["id"]), "country": t["country"], "currency": t["currency"], "payment_state": row["payment_state"], "fulfillment_state": row["fulfillment_state"], "lines": orders.public_lines(lines, t["currency"], catalog, t["rate"]), "checkout_lines": orders.public_lines(shop_lines(row, shop_id, catalog, checkout=True), t["currency"], catalog, t["rate"]), "lowest": {o["product_id"] + (":older" if o["variant"] == "older" else ""): convert(o["floor_usd"], t["currency"], t["rate"]) for o in catalog.offers.values() if o["shop_id"] == shop_id}, "gain_minor": convert(max(0, gain or 0), t["currency"], t["rate"]), "gain_currency": t["currency"], "maximum_minor": t["breakdown"]["total"], "events": auction_events if auction else [e for e in auction_events if e.get("shop") == shop_id], "ship_by": row["ship_by"].isoformat(), "payout": {"status": payment["status"] if payment else "awaiting_handoff" if lines else "outbid", "amount_minor": payment["request"]["amount_cents"] if payment else 0, "currency": "USD"}})
     return {"orders": result}

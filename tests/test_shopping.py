@@ -81,7 +81,7 @@ class ShoppingContracts(unittest.TestCase):
 
     def setUp(self):
         database_tests.DatabaseContracts.setUp(self)
-        self.config = replace(self.config, public_url="http://localhost:8000", paypal_client_id="CLIENT-TEST")
+        self.config = replace(self.config, public_url="http://localhost:8000", paypal_client_id="CLIENT-TEST", deal_mode="exchange")
         self.patches = [patch.object(module, "settings", self.config) for module in (orders, sessions, shopping, api)]
         for p in self.patches:
             p.start()
@@ -312,6 +312,43 @@ class ShoppingContracts(unittest.TestCase):
             worker.run_once("ai")
         worker.run_once("payments")
         return checkout["order_id"]
+
+    def test_auction_moves_reservations_and_free_shipping_is_not_paid_to_shop(self):
+        from rally import fulfillment
+        from rally.negotiation.auction import run_auction
+
+        config = replace(self.config, deal_mode="auction")
+        def fixture(start, destination, catalog, rules, **kwargs):
+            kwargs["pace"] = False
+            return run_auction(start, destination, catalog, rules, choose=lambda role, payload: {"indexes": [0], "note": "Please bid."} if role == "buyer" else {"index": 0, "note": "Our bid."}, **kwargs)
+        with patch.object(orders, "settings", config), patch.object(orders, "run_auction", side_effect=fixture):
+            bag, checkout = self.checkout()
+            oid = checkout["order_id"]
+            self.provider.orders[checkout["paypal_order_id"]]["status"] = "APPROVED"
+            self.post(f"/bags/{bag['id']}/checkout/approve", {"order_id": checkout["paypal_order_id"]})
+            self.assertTrue(worker.run_once("ai"))
+        with database.connect() as db:
+            row = orders.owned(db, oid)
+            self.assertEqual(row["final_terms"]["auction"]["rounds"], 3)
+            self.assertEqual(row["final_terms"]["domestic_usd"], {"haneul": 0, "dalbit": 0})
+            reservations = {r["offer_id"]: r["state"] for r in db.execute("SELECT * FROM order_reservations WHERE order_id=%s", (oid,)).fetchall()}
+            self.assertEqual(reservations["bada/mul-gel-cleanser"], "released")
+            self.assertEqual(reservations["haneul/mul-gel-cleanser"], "reserved")
+            self.assertEqual(db.execute("SELECT stock FROM catalog_offers WHERE id='bada/mul-gel-cleanser'").fetchone()["stock"], 100)
+            self.assertEqual(db.execute("SELECT stock FROM catalog_offers WHERE id='haneul/mul-gel-cleanser'").fetchone()["stock"], 99)
+        self.assertTrue(worker.run_once("payments"))
+        receipt = self.client.get("/api/orders/" + oid).json()
+        self.assertEqual(receipt["charged_minor"], 10192)
+        self.assertEqual(receipt["events"][0]["v"], 3)
+        self.assertEqual(receipt["auction"]["winners"]["mul-gel-cleanser"]["shop"], "haneul")
+        with database.connect() as db:
+            fulfillment.handoff(db, orders.identifier(oid), "haneul", "Rally", "LOCAL-HANEUL")
+            payment = db.execute("SELECT * FROM order_shop_payments WHERE order_id=%s AND shop_id='haneul'", (oid,)).fetchone()
+            self.assertEqual(payment["amount_usd"], 2900)
+            outbid = fulfillment.merchant_orders(db, "bada")["orders"][0]
+            self.assertEqual(outbid["payout"]["status"], "outbid")
+            self.assertEqual(outbid["events"][0]["v"], 3)
+            self.assertTrue(all(not key.startswith("haneul/") for key in outbid["lowest"]))
 
     def login(self, role, password, shop_id=None):
         response = self.post("/login", {"role": role, "password": password, "shop_id": shop_id})

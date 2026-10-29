@@ -157,3 +157,8 @@ PLAN.md on `rally` (October 22) is authoritative. The original workspace and dat
 - Full unittest discovery with disposable Postgres: 95 tests, all passed, no skips. Existing AuctionContracts assertions unchanged; added authority, bundle atomicity, malicious selector and zero-deadline coverage. Exchange goldens remain covered independently.
 - Reference correction: Bada round-2 toner is $20 (was $19). At $19 its three-item subtotal clears $33 shipping, producing $104.42 and Bada as toner leader. The correction preserves the specified $105.42 round and all final goldens under exact search.
 - Ruff E4/E7/E9/F/I passed; frontend build and render checks passed. Browser attempt could not find its default Chromium; the installed-executable retry passed 27 tests before the prior runner closed the shared server. A fresh complete run is pending. No hosted or model-provider evidence.
+
+### B2 worker boundary · October 29, 2026
+
+- Full unittest discovery on disposable Postgres: 96 tests, all passed. Added authorized auction → persistent v3 events → moved reservations → ledger capture test, and verified Haneul receives goods only ($29) for its free-domestic bid. Outbid shops receive public lanes with only their own private floors. Provider HTTP is doubled, not hosted evidence.
+- Ruff passed. Fresh B1 browser run with installed Chromium: 94 passed (desktop/mobile). Build and render results are recorded above. New frontend auction screens remain next.
