@@ -10,7 +10,7 @@ New orders follow **[BIDDING.md v3, October 29](docs/plan/BIDDING.md)**: solo sh
 
 Shop → Ask for a routine → Bag → PayPal approval → live Deal → Paid → Track is connected to one FastAPI application and PostgreSQL. Exact sourcing includes shared shipping and import assumptions. Separate buyer/shop Bitdeer-compatible model contexts select candidate indexes and write public notes; deterministic code controls prices, permissions, stock, consent and settlement. Negotiation events persist immediately and restore through SSE/polling. Separate shop workspaces, an AG Grid products view, hub handoffs, shop payouts, tracking, refunds and safe recovery controls are implemented.
 
-**Verification is separate from implementation.** The v3 local gate passes 102 Python contracts against disposable PostgreSQL, 100 desktop/mobile browser tests, Ruff, build and render checks. The no-payment 500-case fixture benchmark is committed. Bitdeer structured output and the connected benchmark remain unverified because credentials/model ids were not supplied. The optional Channel3 importer is implemented; its committed snapshot is empty pending a key and a real import. Genuine G1 sandbox USD/CAD payment evidence is historical and does not establish a hosted v3 run. Human PayPal sandbox approvals on Render remain required; see [executed evidence](EVIDENCE.md).
+**Verification is separate from implementation.** The v3 local gate passes 109 Python contracts against disposable PostgreSQL, 156 desktop/mobile browser tests, Ruff, build and render checks. The no-payment 500-case fixture benchmark is committed. Bitdeer structured output and the connected benchmark remain unverified because credentials/model ids were not supplied. The optional Channel3 importer is implemented; its committed snapshot is empty pending a key and a real import. Genuine G1 sandbox USD/CAD payment evidence is historical and does not establish a hosted v3 run. Human PayPal sandbox approvals on Render remain required; see [executed evidence](EVIDENCE.md).
 
 [Rootlane design review](https://neo.taile1abc7.ts.net:20001/shop?test=recorded) · [Recorded deal](https://neo.taile1abc7.ts.net:20001/deal?test=recorded). These links are the previously approved v2 static review, not hosted v3 verification. Recorded checkout is disabled. It is distinct from the connected application. The existing Render service still runs the older application until the reviewed cutover.
 
@@ -52,7 +52,7 @@ PYTHONPATH=backend .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/ruff check --isolated --select E4,E7,E9,F,I --ignore E402 backend tests scripts
 npm run build --prefix frontend
 npm run test:render --prefix frontend
-npm run test:browser --prefix frontend
+npm run test:browser --prefix frontend -- --workers=2
 PYTHONPATH=backend .venv/bin/python scripts/engine.py --fixture --country US
 PYTHONPATH=backend .venv/bin/python scripts/benchmark.py --fixture --count 500 --output docs/benchmark-auction.json
 ```
@@ -61,15 +61,15 @@ Published [auction fixture benchmark](docs/benchmark-auction.json), seed **20261
 
 | Currency | A: listed exact sourcing | D: exchange | E: bidding |
 | --- | ---: | ---: | ---: |
-| AUD | 2094138 | 1969852 | 1886227 |
-| CAD | 2048482 | 1932390 | 1845747 |
-| EUR | 1368774 | 1300253 | 1246152 |
-| GBP | 1083665 | 1023761 | 979008 |
-| USD | 1529002 | 1430461 | 1367476 |
+| AUD | 2094138 | 1969852 | 1824828 |
+| CAD | 2048482 | 1932390 | 1779554 |
+| EUR | 1368774 | 1300253 | 1203972 |
+| GBP | 1083665 | 1023761 | 946554 |
+| USD | 1529002 | 1430461 | 1318212 |
 
 These are synthetic fixture results, not customer savings or live-model evidence. B is not executed in fixture mode. The [v2 fixture report](docs/benchmark.json) and exchange tests remain available; use `RALLY_DEAL_MODE=exchange` for new exchange quotes. Quote modes and historical orders are preserved. The connected B/D/E benchmark caches validated public prompts by model role, model id and response format; it performs no payments.
 
-Auction checkout/final goldens are USD **11882/10192**, CAD **16087/13825**, GBP **9361/8055**, EUR **11105/9621**, AUD **17260/14835**. The reference's round-2 Bada toner is $20 (owner-approved correction); $19 would clear its shipping threshold and change that round's exact optimum. Actual model choices can differ or retain checkout terms.
+Auction checkout/final goldens are USD **11882/10192**, CAD **16087/13825**, GBP **9361/8055**, EUR **11105/9621**, AUD **17260/14835**. The reference's round-2 Bada toner is $20 (owner-approved correction); $19 would clear its shipping threshold and change that round's exact optimum. These exact goldens belong to the recorded-review fixture only. Normal index-0 bidding is generative and currently reaches **USD $95.35**, with Haneul’s bundle/free shipping and Dalbit’s kit; it never reads the recording. Actual model selections can differ. Failed, timed-out or invalid selections use code’s best-ranked valid candidate, marked CODE, with server-side failure counts.
 
 ## Private model and market setup
 
@@ -77,7 +77,7 @@ Fill the ignored local `.env` from `.env.example`. For the existing Render web/w
 
 ```bash
 PYTHONPATH=backend python scripts/engine.py --env-file .env
-PYTHONPATH=backend python scripts/benchmark.py --connected --env-file .env --count 500 --output docs/benchmark-bitdeer.json
+PYTHONPATH=backend python scripts/benchmark.py --connected --env-file .env --count 500 --output docs/benchmark-auction-connected.json
 # CHANNEL3_API_KEY is dev-only, read solely from this private file:
 PYTHONPATH=backend python scripts/market_snapshot.py --env-file .env
 npm run scenario:project --prefix frontend

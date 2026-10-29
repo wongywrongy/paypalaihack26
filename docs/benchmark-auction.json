@@ -17,7 +17,7 @@
       "B": null,
       "C": 1025670,
       "D": 1023761,
-      "E": 979008,
+      "E": 946554,
       "cases": 95
     },
     "AUD": {
@@ -25,7 +25,7 @@
       "B": null,
       "C": 1977793,
       "D": 1969852,
-      "E": 1886227,
+      "E": 1824828,
       "cases": 98
     },
     "USD": {
@@ -33,7 +33,7 @@
       "B": null,
       "C": 1435475,
       "D": 1430461,
-      "E": 1367476,
+      "E": 1318212,
       "cases": 99
     },
     "EUR": {
@@ -41,7 +41,7 @@
       "B": null,
       "C": 1303835,
       "D": 1300253,
-      "E": 1246152,
+      "E": 1203972,
       "cases": 97
     },
     "CAD": {
@@ -49,7 +49,7 @@
       "B": null,
       "C": 1938631,
       "D": 1932390,
-      "E": 1845747,
+      "E": 1779554,
       "cases": 108
     }
   },
@@ -62,7 +62,7 @@
   "auction_beats_checkout": 497,
   "bundle_split_violations": 0,
   "mean_savings_basis_points": 562,
-  "execution_seconds": 86.191,
+  "execution_seconds": 117.672,
   "model_failures": 0,
   "hosted_benchmark_verified": false
 }
