@@ -320,6 +320,7 @@ class ShoppingContracts(unittest.TestCase):
         config = replace(self.config, deal_mode="auction")
         def fixture(start, destination, catalog, rules, **kwargs):
             kwargs["pace"] = False
+            kwargs["recorded_review"] = True
             return run_auction(start, destination, catalog, rules, choose=lambda role, payload: {"indexes": [0], "note": "Please bid."} if role == "buyer" else {"index": 0, "note": "Our bid."}, **kwargs)
         with patch.object(orders, "settings", config), patch.object(orders, "run_auction", side_effect=fixture):
             bag, checkout = self.checkout()

@@ -69,7 +69,7 @@ class AuctionContracts(unittest.TestCase):
 
     def run_hero(self, country="US", rules=FULL_RULES):
         checkout = source(REFERENCE["cart"], country, self.catalog)
-        return checkout, self.run_auction(checkout, country, self.catalog, dict(rules), choose=fixture)
+        return checkout, self.run_auction(checkout, country, self.catalog, dict(rules), choose=fixture, recorded_review=True)
 
     def test_fixture_reproduces_reference_goldens_in_all_currencies(self):
         for country, (maximum, final) in REFERENCE["golden"].items():
@@ -206,3 +206,58 @@ class AuctionAuthority(unittest.TestCase):
         self.assertEqual(result['breakdown'], start['breakdown'])
         self.assertEqual(result['model_calls'], 0)
         self.assertEqual(result['events'][-1]['kind'], 'done')
+
+
+class GeneratedBidding(unittest.TestCase):
+    def test_generative_hero_uses_bundle_and_shipping_without_recording(self):
+        from unittest.mock import patch
+
+        from rally.negotiation.auction import run_auction
+
+        catalog = Catalog()
+        checkout = source(REFERENCE["cart"], "US", catalog)
+        read_text = Path.read_text
+        def no_recording(path, *args, **kwargs):
+            if path.name == "auction.json":
+                raise AssertionError("Generative bidding must not read the recording")
+            return read_text(path, *args, **kwargs)
+        with patch.object(Path, "read_text", no_recording):
+            result = run_auction(checkout, "US", catalog, FULL_RULES, choose=fixture)
+        self.assertLessEqual(result["breakdown"]["total"], 10192)
+        for pid in ("mul-gel-cleanser", "sae-cica-cream"):
+            self.assertEqual(result["winners"][pid]["shop"], "haneul")
+            self.assertTrue(result["winners"][pid]["bundle"])
+        self.assertEqual(result["domestic_usd"]["haneul"], 0)
+        haneul = next(e for e in reversed(result["events"]) if e["kind"] == "bid" and e["shop"] == "haneul")
+        bada = next(e for e in reversed(result["events"]) if e["kind"] == "bid" and e["shop"] == "bada")
+        self.assertGreater(haneul["items"]["sae-cica-cream"], bada["items"]["sae-cica-cream"])
+        self.assertTrue(haneul["bundle"])
+        self.assertIn("freeship", haneul["perks"]["sae-cica-cream"])
+        self.assertIn("dalbit-sample-kit", result["extras"])
+
+    def test_shipping_policy_and_actual_winning_utility_are_enforced(self):
+        from rally.negotiation.award import best_allocation
+        from rally.negotiation.bids import candidates, eligible
+        from rally.negotiation.schema import Bid
+
+        catalog = Catalog()
+        start = source(REFERENCE["cart"], "US", catalog)
+        offers = eligible(REFERENCE["cart"], "US", catalog, FULL_RULES)
+        choices = candidates("bada", 1, offers, None, {}, [], catalog, FULL_RULES, current={}, start=start, destination="US")
+        self.assertTrue(any(bid.free_domestic for bid in choices))
+        catalog.policies["bada"]["free_domestic"] = False
+        choices = candidates("bada", 1, offers, None, {}, [], catalog, FULL_RULES, current={}, start=start, destination="US")
+        self.assertFalse(any(bid.free_domestic for bid in choices))
+        # The pickup fee cannot be funded by items this shop merely hoped to win.
+        bid = Bid(shop_id="bada", round=3, items=[{"offer_id": "bada/sae-cica-cream", "unit_usd_cents": 1600}], free_domestic=True, note="Our price.")
+        cream = source(["sae-cica-cream"], "US", catalog)
+        result = best_allocation([bid], cream, "US", catalog, FULL_RULES)
+        self.assertEqual(result["lines"], cream["lines"])
+
+    def test_connected_mode_cannot_enable_recording(self):
+        from rally.negotiation.auction import run_auction
+
+        catalog = Catalog()
+        start = source(REFERENCE["cart"], "US", catalog)
+        with self.assertRaisesRegex(ValueError, "explicit fixture selector"):
+            run_auction(start, "US", catalog, FULL_RULES, recorded_review=True)

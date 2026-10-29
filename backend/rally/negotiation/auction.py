@@ -24,7 +24,7 @@ def rules_checked(rules):
     return rules
 
 
-def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, max_seconds=MAX_SECONDS, pace=False):
+def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, max_seconds=MAX_SECONDS, pace=False, recorded_review=False):
     rules_checked(rules)
     started = monotonic()
     deadline = started + max(0, min(MAX_SECONDS, max_seconds))
@@ -72,7 +72,9 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
     # Only an explicit test selector uses the committed recording. Every recorded
     # candidate still crosses the same authority validator as a connected bid.
     recording = None
-    if choose:
+    if recorded_review and choose is None:
+        raise ValueError("Recorded review requires an explicit fixture selector.")
+    if recorded_review:
         data = json.loads((Path(__file__).resolve().parents[3] / "design/scenario/auction.json").read_text())
         if set(product_ids) == set(data["cart"]) and all(rules.values()):
             recording = data
@@ -103,7 +105,7 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
                 event("ask", note if round_no > 1 else ask.note, chosen_by=by, round=round_no, shop=ask.shop_id, items=ask.product_ids)
             pending = []
             for shop in shops:
-                options = bids.candidates(shop, round_no, offers, current.get(shop), public_leaders(), selected, catalog, rules)
+                options = bids.candidates(shop, round_no, offers, current.get(shop), public_leaders(), selected, catalog, rules, current=current, start=start, destination=destination)
                 recorded = None
                 if recording:
                     recorded = next(row for row in recording["bids"] if row["shop"] == shop and row["round"] == round_no)
@@ -119,7 +121,7 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
                 payload = {"shop": catalog.shops[shop]["name"], "goals": bids.PUBLIC_GOALS[shop], "round": round_no,
                            "market": {pid: value for pid in product_ids if (value := market.reference(pid))}, "leaders": public_leaders(), "asks": [a.model_dump() for a in selected],
                            "options": [{**b.model_dump(by_alias=True), "utility_rank": rank + 1,
-                                        "wins": [catalog.offers[i.offer_id]["product_id"] for i in b.items if i.unit_usd_cents <= public_leaders()[catalog.offers[i.offer_id]["product_id"]]["unit"]]} for rank, b in enumerate(options)]}
+                                        "wins": bids.assessment(b, current.get(shop), current, start, destination, catalog, rules)[1]} for rank, b in enumerate(options)]}
                 try:
                     future, timeout = submit(Choice, "shop", payload)
                     pending.append((shop, options, future, timeout, monotonic(), recorded))

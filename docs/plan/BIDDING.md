@@ -66,7 +66,9 @@ Inputs: the immutable checkout quote (lines, breakdown, rate), destination, cata
 Candidates per shop per round come from `shop_agent` authority: target prices from `discount_bp`, floors, aged-stock bonus (older variant, `days_on_shelf`), sample kit, free domestic shipping, and bundles over two items the shop sells in this bag. Each candidate gets:
 
 - `utility` (existing formula, extended for bundles and free domestic shipping), and
-- `wins`: whether it would lead the item at the current public leaders.
+- `wins`: the items awarded to this shop by the exact complete-cost search when this candidate replaces its standing bid. Rank by those all-in wins, the complete award objective (total, shops, kit), then utility; unit-price comparison never decides a win.
+
+Policies include `bundle_discount_bp` (Haneul 500, Bada 0, Dalbit 300), `free_domestic`, and a private `utility_threshold` (default zero). Bundle discounts clamp each unit at its floor; select a two-item pair with the shop publicly runner-up on at least one item. Shipping and kit variants compete on the same delivered-cost search. Free shipping is allowed for any permitted shop only if utility on its actual awarded items meets its threshold. Persisted older policies inherit these new defaults without rewriting orders.
 
 The model sees: the shop's display name, its public goals (e.g. "move older packaging", "prefer two-item orders"), the current public leaders and prices, the buyer's asks, and the candidates with `utility_rank` and `wins`. It never sees floors, costs or other shops' private data. Leading prices are public in an open auction.
 
@@ -107,7 +109,7 @@ Golden schedules for this recorded scenario, checkout → final, minor units (ve
 
 All floors in the scenario hold: Bada cleanser ≥ 10.00, cream ≥ 16.00; Haneul cleanser ≥ 10.50, cream ≥ 16.50; Dalbit toner ≥ 16.00, older essence ≥ 12.00.
 
-These are the fixture-selector results (deterministic candidate order). Live model runs can differ; the video shows the actual run.
+These are recorded-review results, available only with an explicit selector and `recorded_review=True`. Connected runs and normal index-0 fixture selectors never read auction.json. The generative hero currently finishes at $95.35 (within the $101.92 target), with Haneul winning cleanser/cream as a discounted bundle with free domestic shipping despite Bada’s lower cream unit price; Dalbit supplies toner/older essence and the kit. It does not reproduce the recording’s exact prices: policy discounts and earlier free-shipping competition generate different bids. All five recorded goldens remain replay contracts, not claimed live-model outcomes.
 
 ## Events (deal_events.data, schema v3)
 

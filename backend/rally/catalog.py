@@ -34,7 +34,7 @@ class Catalog:
                     authority = private[identifier + ":old"]
                     self.offers[identifier + ":older"] = {**self.offers[identifier], "id": identifier + ":older", "variant": "older", "list_usd": ((listed * 80 // 100 + 50) // 100) * 100, "stock": int(authority["stock"]), "days_on_shelf": int(authority["days_on_shelf"]), "floor_usd": minor(authority["floor"]), "cost_usd": minor(authority["cost"])}
         # Fictional shop policies are configured authority, never model knowledge.
-        self.policies = {shop: {"discount_bp": 0 if shop == "bada" else 1000, "sample_kit": shop == "dalbit", "sample_cost": 150, "pickup_cost": 150 if shop == "bada" else 0} for shop in self.shops}
+        self.policies = {shop: {"discount_bp": 0 if shop == "bada" else 1000, "bundle_discount_bp": {"haneul": 500, "bada": 0, "dalbit": 300}[shop], "free_domestic": True, "utility_threshold": 0, "sample_kit": shop == "dalbit", "sample_cost": 150, "pickup_cost": 150 if shop == "bada" else 0} for shop in self.shops}
 
     def allowed(self, product_id, destination):
         from .countries import country

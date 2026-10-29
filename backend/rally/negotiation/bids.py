@@ -3,6 +3,7 @@
 from itertools import combinations
 
 from ..catalog import Line
+from ..fx import basis
 from .rally_agent import shipping
 from .schema import Bid, BidItem, Bundle
 from .shop_agent import target
@@ -32,39 +33,75 @@ def merge(previous, bid):
                                   "extras": bid.extras or previous.extras})
 
 
-def candidates(shop_id, round_no, eligible_offers, previous, leaders, asks, catalog, rules):
+def assessment(bid, previous, current, start, destination, catalog, rules):
+    from .award import best_allocation
+
+    standing = merge(previous, bid)
+    result = best_allocation({**current, bid.shop_id: standing}, start, destination, catalog, rules)
+    won = {line.offer_id for line in result["lines"] if catalog.offers[line.offer_id]["shop_id"] == bid.shop_id}
+    # Checkout fallback lines can win alongside a bid; score the actual paid units.
+    actual = standing.model_copy(update={"items": [BidItem(offer_id=line.offer_id, unit_usd_cents=line.unit_usd_cents) for line in result["lines"] if line.offer_id in won], "bundle": None, "extras": [e for e in result["extras"] if e.startswith(bid.shop_id)], "free_domestic": result["domestic_usd"].get(bid.shop_id) == 0})
+    score = utility(actual, catalog, won_offer_ids=won)
+    wins = [catalog.offers[o]["product_id"] for o in sorted(won)]
+    return result, wins, score
+
+
+def candidates(shop_id, round_no, eligible_offers, previous, leaders, asks, catalog, rules, *, current, start, destination):
     options = []
-    for offers in eligible_offers.values():
+    runner_up = set()
+    for pid, offers in eligible_offers.items():
         own = [o for o in offers if o["shop_id"] == shop_id]
         if not own or len({o["shop_id"] for o in offers}) == 1:
             continue
+        public = {}
+        for offer in offers:
+            standing = current.get(offer["shop_id"])
+            price = next((i.unit_usd_cents for i in standing.items if i.offer_id == offer["id"]), offer["list_usd"]) if standing else offer["list_usd"]
+            public[offer["shop_id"]] = min(public.get(offer["shop_id"], price), price)
+        if sorted(public, key=lambda s: (public[s], s))[1] == shop_id:
+            runner_up.add(pid)
         offer = min(own, key=lambda o: (o["variant"] != "older", o["list_usd"], o["id"]))
         unit = max(offer["floor_usd"], target(Line(offer["id"], 1, offer["list_usd"]), catalog) - (round_no - 1) * 100)
         old = next((i.unit_usd_cents for i in previous.items if i.offer_id == offer["id"]), offer["list_usd"]) if previous else offer["list_usd"]
         options.append(BidItem(offer_id=offer["id"], unit_usd_cents=min(unit, old)))
     if not options:
         return []
-    extras = ["dalbit-sample-kit"] if catalog.policies[shop_id]["sample_kit"] and round_no > 1 else []
-    base = Bid(shop_id=shop_id, round=round_no, items=options, extras=extras, note="Our available item prices.")
-    result = [base]
-    if rules["bundles_ok"] and len(options) >= 2:
-        # At most one two-item bundle per candidate; no exponential subset search.
-        pair = min(combinations(options, 2), key=lambda pair: sum(i.unit_usd_cents for i in pair))
-        bundle = Bundle(offer_ids=[i.offer_id for i in pair], price_usd_cents=sum(i.unit_usd_cents for i in pair))
-        result.append(base.model_copy(update={"bundle": bundle, "free_domestic": round_no == 3 and shop_id == "haneul"}))
-    result.append(base.model_copy(update={"items": [BidItem(offer_id=i.offer_id, unit_usd_cents=min(catalog.offers[i.offer_id]["list_usd"], i.unit_usd_cents + 100)) for i in options]}))
-    valid = []
-    for bid in result:
-        try:
-            validate(bid, previous, eligible_offers, catalog, rules)
-            valid.append(bid)
-        except ValueError:
-            continue
-    # Prefer commercial utility among candidates that actually compete publicly.
-    def rank(bid):
-        wins = sum(i.unit_usd_cents <= leaders.get(catalog.offers[i.offer_id]["product_id"], {}).get("unit", catalog.offers[i.offer_id]["list_usd"]) for i in bid.items)
-        return (-wins, -(utility(bid, catalog, won_offer_ids={i.offer_id for i in bid.items}) or 0))
-    return sorted(valid, key=rank)[:3]
+    policy = catalog.policies[shop_id]
+    variants = []
+    for concession in (0, 100):
+        items = []
+        for item in options:
+            offer = catalog.offers[item.offer_id]
+            ceiling = next((i.unit_usd_cents for i in previous.items if i.offer_id == item.offer_id), offer["list_usd"]) if previous else offer["list_usd"]
+            items.append(BidItem(offer_id=item.offer_id, unit_usd_cents=min(ceiling, item.unit_usd_cents + concession)))
+        base = Bid(shop_id=shop_id, round=round_no, items=items, note="Our available item prices.")
+        variants.append(base)
+        pairs = [pair for pair in combinations(items, 2) if any(catalog.offers[i.offer_id]["product_id"] in runner_up for i in pair)]
+        if rules["bundles_ok"] and pairs:
+            pair = min(pairs, key=lambda pair: (sum(i.unit_usd_cents for i in pair), tuple(i.offer_id for i in pair)))
+            ids = {i.offer_id for i in pair}
+            discounted = [BidItem(offer_id=i.offer_id, unit_usd_cents=max(catalog.offers[i.offer_id]["floor_usd"], basis(i.unit_usd_cents, 10000 - policy["bundle_discount_bp"]))) if i.offer_id in ids else i for i in items]
+            bundle = Bundle(offer_ids=[i.offer_id for i in pair], price_usd_cents=sum(i.unit_usd_cents for i in discounted if i.offer_id in ids))
+            variants.append(base.model_copy(update={"items": discounted, "bundle": bundle, "note": "Our two-item bundle price."}))
+    scored, seen = [], set()
+    for base in variants:
+        for free in ((False, True) if policy["free_domestic"] else (False,)):
+            for kit in ((False, True) if policy["sample_kit"] and shop_id == "dalbit" else (False,)):
+                bid = base.model_copy(update={"free_domestic": free, "extras": ["dalbit-sample-kit"] if kit else []})
+                key = bid.model_dump_json(by_alias=True)
+                if key in seen:
+                    continue
+                seen.add(key)
+                try:
+                    validate(bid, previous, eligible_offers, catalog, rules)
+                    allocation, wins, score = assessment(bid, previous, current, start, destination, catalog, rules)
+                    if score is None or score < policy["utility_threshold"]:
+                        continue
+                    rank = (-len(wins), allocation["breakdown"]["total"], len(set(allocation["leaders"].values())), -len(allocation["extras"]), -score)
+                    scored.append((rank, bid))
+                except ValueError:
+                    continue
+    return [bid for _, bid in sorted(scored, key=lambda row: row[0])[:3]]
 
 
 def validate(bid, previous, eligible_offers, catalog, rules):
@@ -96,7 +133,7 @@ def validate(bid, previous, eligible_offers, catalog, rules):
         raise ValueError("Invalid pass.")
     if bid.extras and (bid.extras != ["dalbit-sample-kit"] or bid.shop_id != "dalbit" or not catalog.policies[bid.shop_id]["sample_kit"]):
         raise ValueError("Unknown shop gift.")
-    if bid.free_domestic and not bid.items:
+    if bid.free_domestic and (not bid.items or not catalog.policies[bid.shop_id]["free_domestic"]):
         raise ValueError("Shipping requires a bid from this shop.")
     return bid
 
