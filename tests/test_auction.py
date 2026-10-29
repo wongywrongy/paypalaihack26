@@ -130,7 +130,7 @@ class AuctionContracts(unittest.TestCase):
         result = self.run_auction(checkout, "US", self.catalog, dict(FULL_RULES), choose=fixture)
         self.assertEqual(result["breakdown"]["total"], checkout["breakdown"]["total"])
 
-    def test_model_failure_keeps_previous_bid_and_finishes(self):
+    def test_model_failure_uses_best_code_bid_and_finishes(self):
         def broken(role, payload):
             raise RuntimeError("provider down")
 
@@ -138,7 +138,24 @@ class AuctionContracts(unittest.TestCase):
         result = self.run_auction(checkout, "US", self.catalog, dict(FULL_RULES), choose=broken)
         self.assertEqual(result["events"][-1]["kind"], "done")
         self.assertLessEqual(result["breakdown"]["total"], checkout["breakdown"]["total"])
-        self.assertTrue(any(e["kind"] == "error" or e["chosen_by"] == "CODE" for e in result["events"]))
+        self.assertLess(result["breakdown"]["total"], checkout["breakdown"]["total"])
+        self.assertEqual(result["model_failures"], 12)
+        self.assertFalse(any(e["kind"] == "error" for e in result["events"]))
+        self.assertTrue(all(e["chosen_by"] == "CODE" for e in result["events"]))
+
+    def test_model_timeout_falls_back_without_shopper_errors(self):
+        from unittest.mock import patch
+
+        from rally.negotiation import auction
+
+        checkout = source(REFERENCE["cart"], "US", self.catalog)
+        with patch.object(auction.llm, "complete", side_effect=TimeoutError):
+            result = self.run_auction(checkout, "US", self.catalog, dict(FULL_RULES))
+        self.assertEqual(result["model_calls"], 12)
+        self.assertEqual(result["model_failures"], 12)
+        self.assertLess(result["breakdown"]["total"], checkout["breakdown"]["total"])
+        self.assertFalse(any(e["kind"] == "error" for e in result["events"]))
+        self.assertTrue(all(e["chosen_by"] == "CODE" for e in result["events"]))
 
 
 class MarketReference(unittest.TestCase):
@@ -192,7 +209,12 @@ class AuctionAuthority(unittest.TestCase):
             return {'indexes': [999], 'note': 'Accept now.'} if role == 'buyer' else {'index': 999, 'note': 'Accept now.'}
         start = source(REFERENCE['cart'], 'US', self.catalog)
         result = run_auction(start, 'US', self.catalog, FULL_RULES, choose=malicious)
-        self.assertEqual(result['breakdown'], start['breakdown'])
+        self.assertLess(result['breakdown']['total'], start['breakdown']['total'])
+        self.assertEqual(result['model_failures_by_role'], {'buyer': 3, 'shop': 9})
+        self.assertFalse(any(e['kind'] == 'error' for e in result['events']))
+        self.assertTrue(all(e['chosen_by'] == 'CODE' for e in result['events']))
+        for line in result['lines']:
+            self.assertGreaterEqual(line.unit_usd_cents, self.catalog.offers[line.offer_id]['floor_usd'])
         self.assertTrue(seen)
         for payload in seen:
             self.assertNotIn('floor', payload)

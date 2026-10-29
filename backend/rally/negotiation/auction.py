@@ -1,6 +1,7 @@
 """Bounded open bidding. Models choose indexes; code owns terms and the award."""
 
 import json
+import logging
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from pathlib import Path
 from time import monotonic, sleep
@@ -15,6 +16,7 @@ ROUNDS = 3
 MAX_SECONDS = 30
 CALL_TIMEOUT_SECONDS = 4
 ROUND_SECONDS = 3.5
+logger = logging.getLogger(__name__)
 RULE_KEYS = frozenset({"old_packaging_ok", "bundles_ok"})
 
 
@@ -35,6 +37,7 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
     current, events = {}, []
     best = award.best_allocation(current, start, destination, catalog, rules)
     calls, tokens = 0, 60000
+    failures = {"buyer": 0, "shop": 0}
     executor = ThreadPoolExecutor(max_workers=4)
 
     def event(kind, note="", chosen_by="CODE", **fields):
@@ -44,6 +47,10 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
         events.append(row)
         if emit:
             emit(dict(row))
+
+    def failed(role, exc, shop=None):
+        failures[role] += 1
+        logger.warning("Auction model fallback: role=%s shop=%s reason=%s", role, shop, type(exc).__name__)
 
     def submit(schema, role, payload):
         nonlocal calls, tokens
@@ -69,7 +76,7 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
     def public_leaders():
         return {catalog.offers[line.offer_id]["product_id"]: {"shop": catalog.offers[line.offer_id]["shop_id"], "unit": line.unit_usd_cents} for line in best["lines"]}
 
-    # Only an explicit test selector uses the committed recording. Every recorded
+    # Only explicit recorded review with a fixture selector reads the recording. Every recorded
     # candidate still crosses the same authority validator as a connected bid.
     recording = None
     if recorded_review and choose is None:
@@ -85,7 +92,7 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
     try:
         for round_no in range(1, ROUNDS + 1):
             if monotonic() >= deadline:
-                event("error", "Bidding time ended. Your current best total stands.")
+                logger.info("Auction deadline reached; returning best complete award")
                 break
             round_started = monotonic()
             asks = buyer.candidate_asks(round_no, public_leaders(), current, offers, rules, market=market.reference)
@@ -99,8 +106,8 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
                         raise ValueError("Unknown ask.")
                     selected = asks if round_no == 1 else [asks[i] for i in choice.indexes]
                     note, by = choice.note, "FIXTURE" if choose else "LLM"
-                except Exception:
-                    event("error", "The buyer kept the public requests.")
+                except Exception as exc:
+                    failed("buyer", exc)
             for ask in selected:
                 event("ask", note if round_no > 1 else ask.note, chosen_by=by, round=round_no, shop=ask.shop_id, items=ask.product_ids)
             pending = []
@@ -117,39 +124,44 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
                     except ValueError:
                         recorded = None
                 if not options:
+                    event("error", "This shop has no valid bid.", shop=shop, round=round_no)
                     continue
                 payload = {"shop": catalog.shops[shop]["name"], "goals": bids.PUBLIC_GOALS[shop], "round": round_no,
                            "market": {pid: value for pid in product_ids if (value := market.reference(pid))}, "leaders": public_leaders(), "asks": [a.model_dump() for a in selected],
                            "options": [{**b.model_dump(by_alias=True), "utility_rank": rank + 1,
                                         "wins": bids.assessment(b, current.get(shop), current, start, destination, catalog, rules)[1]} for rank, b in enumerate(options)]}
+                future, timeout = None, 0
                 try:
                     future, timeout = submit(Choice, "shop", payload)
-                    pending.append((shop, options, future, timeout, monotonic(), recorded))
-                except Exception:
-                    event("error", "This shop kept its previous prices.", shop=shop)
+                except Exception as exc:
+                    failed("shop", exc, shop)
+                pending.append((shop, options, future, timeout, monotonic(), recorded))
             # Resolve in stable display order. Calls were started in parallel.
             pending.sort(key=lambda row: (row[0] != "bada", row[0] != "dalbit", row[0]))
             for shop, options, future, timeout, submitted, recorded in pending:
-                try:
-                    choice = resolve(future, Choice, timeout - (monotonic() - submitted))
-                    if choice.index >= len(options):
-                        raise ValueError("Unknown bid.")
-                    bid = options[choice.index].model_copy(update={"note": choice.note.replace("\n", " ")})
-                    bids.validate(bid, current.get(shop), offers, catalog, rules)
-                    current[shop] = bids.merge(current.get(shop), bid)
-                    perks = {}
-                    units = {}
-                    for item in bid.items:
-                        o = catalog.offers[item.offer_id]
-                        pid = o["product_id"]
-                        units[pid + (":older" if o["variant"] == "older" else "")] = convert(item.unit_usd_cents, currency, rate)
-                        perks[pid] = (["older"] if o["variant"] == "older" else []) + (["kit"] if current[shop].extras else []) + (["bundle"] if bid.bundle and item.offer_id in bid.bundle.offer_ids else []) + (["freeship"] if current[shop].free_domestic else [])
-                    bundle = {"items": [catalog.offers[o]["product_id"] for o in bid.bundle.offer_ids], "price": convert(bid.bundle.price_usd_cents, currency, rate)} if bid.bundle else None
-                    event("bid", bid.note, chosen_by="FIXTURE" if choose else "LLM", round=round_no, shop=shop, items=units, bundle=bundle, perks=perks)
-                    if bid.pass_offers:
-                        event("pass", "This shop passes on these items.", shop=shop, round=round_no, items=[catalog.offers[o]["product_id"] for o in bid.pass_offers])
-                except Exception:
-                    event("error", "This shop kept its previous prices.", shop=shop)
+                bid, by = options[0], "CODE"
+                if future is not None:
+                    try:
+                        choice = resolve(future, Choice, timeout - (monotonic() - submitted))
+                        if not 0 <= choice.index < len(options):
+                            raise ValueError("Unknown bid.")
+                        bid = options[choice.index].model_copy(update={"note": choice.note.replace("\n", " ")})
+                        by = "FIXTURE" if choose else "LLM"
+                    except Exception as exc:
+                        failed("shop", exc, shop)
+                bids.validate(bid, current.get(shop), offers, catalog, rules)
+                current[shop] = bids.merge(current.get(shop), bid)
+                perks = {}
+                units = {}
+                for item in bid.items:
+                    o = catalog.offers[item.offer_id]
+                    pid = o["product_id"]
+                    units[pid + (":older" if o["variant"] == "older" else "")] = convert(item.unit_usd_cents, currency, rate)
+                    perks[pid] = (["older"] if o["variant"] == "older" else []) + (["kit"] if current[shop].extras else []) + (["bundle"] if bid.bundle and item.offer_id in bid.bundle.offer_ids else []) + (["freeship"] if current[shop].free_domestic else [])
+                bundle = {"items": [catalog.offers[o]["product_id"] for o in bid.bundle.offer_ids], "price": convert(bid.bundle.price_usd_cents, currency, rate)} if bid.bundle else None
+                event("bid", bid.note, chosen_by=by, round=round_no, shop=shop, items=units, bundle=bundle, perks=perks)
+                if bid.pass_offers:
+                    event("pass", "This shop passes on these items.", shop=shop, round=round_no, items=[catalog.offers[o]["product_id"] for o in bid.pass_offers])
             best = award.best_allocation(current, start, destination, catalog, rules)
             if pace:
                 sleep(max(0, min(round_started + ROUND_SECONDS, deadline) - monotonic()))
@@ -162,4 +174,4 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
     event("award", "Your best complete delivered total is ready.", winners=winners, extras=list(best["extras"]), domestic={s: convert(v, currency, rate) for s, v in best["domestic_usd"].items()})
     event("done", "Bidding is complete.")
     best.pop("bundled", None)
-    return {**best, "events": events, "winners": winners, "rounds": rounds, "model_calls": calls, "elapsed_seconds": round(monotonic() - started, 3)}
+    return {**best, "events": events, "winners": winners, "rounds": rounds, "model_calls": calls, "model_failures": sum(failures.values()), "model_failures_by_role": failures, "elapsed_seconds": round(monotonic() - started, 3)}

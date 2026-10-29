@@ -192,3 +192,9 @@ B2 gates passed before changing the default. New quotes default to auction; expl
 - Full disposable-Postgres discovery: **105 passed, no skips** (61.380 s after exact-search pruning; initial unpruned run also passed, 182.210 s). Exact-search pruning uses an optimistic zero-shipping bound and keeps equal-total allocations for tie-breaks.
 - Ruff E4/E7/E9/F/I passed. Frontend build and render checks passed. Browser suite with the installed Chromium and **2 workers, matching CI: 100 passed** (1.6 min), first normal local repetition. No connected-model, market or payment calls.
 - Inspected failing PR run 40969076644: 99 browser cases passed; the mobile reflow case exhausted its shared 30 s test budget over 27 navigations. Local baseline passed; reproduction and isolation are tracked in review 4 below.
+
+### Review 2 · code fallback · October 29, 2026
+
+- Provider exceptions, timeouts and invalid indexes now choose the best valid code candidate; buyer failures use the top asks and code note. Events identify CODE selections, model failures are counted by role and logged with exception class only, and shopper error events are reserved for shops without valid candidates.
+- Full disposable-Postgres discovery: **106 passed, no skips** (59.023 s). Includes malicious indexes, provider exceptions, timeout fallback, hold/floor invariants and prompts without floor/cost fields. Ruff passed after correcting one import-spacing finding. Frontend build and render checks passed; full browser suite **100 passed with 2 workers** (second normal local repetition).
+- Private configuration presence checks only: neither the owner root .env nor the worktree .env has Bitdeer configured or a Channel3 key. No keys printed and no connected calls made.

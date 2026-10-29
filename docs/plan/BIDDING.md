@@ -24,7 +24,7 @@ PayPal holds the shopper's maximum. Every shop that stocks an item bids for it i
 | Sourcing | Checkout picks one shop per item; the deal haggles with that shop | Checkout still prices the cheapest complete listed allocation (that is the hold). The auction may move any item to another shop |
 | Model | One hosted model | Bitdeer AI (OpenAI-compatible). Shop agents and the buyer agent may use different model families |
 
-Unchanged: the LLM never accepts, never sees floors or costs, never moves money. Code validates every bid. Capture is at or below the hold. A failed model call keeps that shop's previous bid (or its listed price).
+Unchanged: the LLM never accepts, never sees floors or costs, never moves money. Code validates every bid. Capture is at or below the hold. A failed, timed-out or invalid model selection uses code's top-ranked valid candidate, marked `chosen_by=CODE`.
 
 ## Protocol
 
@@ -37,6 +37,8 @@ Inputs: the immutable checkout quote (lines, breakdown, rate), destination, cata
    - Code validates each bid: offer exists and is in stock, `floor ≤ price ≤ list`, never higher than the same shop's previous bid for that item (bids only go down), the older variant only if permitted, a bundle only if `bundles_ok`, a free-shipping perk only from that shop.
    - Code computes the best complete allocation over all current bids (exact search, below) and emits a `round` event with leaders and the round total.
 3. **Award.** After round 3, code computes the final allocation, asserts `total ≤ hold`, and emits one `award` event plus `done`. If nothing beat the checkout, the checkout allocation stands. There is still no failed order.
+Model failures are logged server-side and counted in the result (`model_failures`, `model_failures_by_role`); they do not emit shopper `error` events. Shops use the top-ranked valid candidate; the buyer uses the top asks and code's `round_note`. Only a shop with no valid candidate emits `error`.
+
 4. **Bounds.** 3 rounds; one model call per shop per round, plus one buyer call per round; whole auction ≤ 30 s wall clock; per-call timeout 4 s; token budget per order as today. Rounds are paced for viewing: about 3.5 s each in the live event stream (the Deal screen also holds each event ≥ 600 ms).
 
 ### Bids
@@ -123,7 +125,7 @@ All events keep today's envelope: `id`, `seq`, `t`, `kind`, `note`, `total` (cur
 | `pass` | shop | `round`, `shop`, `items: [pid]` |
 | `round` | rally | `round`, `leaders: {pid: shop}` |
 | `award` | rally | `winners: {pid: {shop, unit, variant, bundle}}`, `extras`, `domestic: {shop: minor}` |
-| `error` | rally | `shop` optional (a shop's bid failed; its previous bid stands) |
+| `error` | rally | `shop` (this shop has no valid candidate) |
 | `done` | — | final `total` |
 
 `winners[pid].bundle` is code-owned: true only when the exact award uses that indivisible bundle. Receipts use this flag, never a historical bid.
@@ -178,7 +180,7 @@ Real shops or real brand names (video rules forbid unlicensed trademarks, and si
 
 ## Risks
 
-- **Model latency.** Fallback per call keeps the shop's previous bid; the auction still ends on time.
+- **Model latency.** A failed, timed-out or invalid selection falls back to code's best-ranked valid bid; the buyer falls back to the top asks and code's round note. The auction still ends on time.
 - **Bitdeer structured output.** `json_object` fallback plus pydantic validation; invalid output counts as a failed call.
 - **Combinatorics.** Bundles limited to two items per shop and one bundle per shop per round.
 - **Existing tests assume the old rules keys.** Update them deliberately; keep the exchange engine's own tests under `RALLY_DEAL_MODE=exchange`.
