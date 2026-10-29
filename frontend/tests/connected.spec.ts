@@ -175,13 +175,15 @@ test('hub ship form sends tracking through the authenticated API', async ({ page
   expect(writes[0]).toEqual({ carrier: 'DHL', tracking: 'TEST-TRACK-1' });
 });
 
-test('connected surfaces reflow and keep their actions visible at phone, tablet and desktop widths', async ({ page }) => {
-  await mockPublicApi(page);
-  await page.addInitScript(() => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items: ['dal-rice-toner'], rules: { old_packaging_ok: true, bundles_ok: true } })));
-  await mkdir('../.runtime/connected-screens', { recursive: true });
-  for (const width of [390, 768, 1440]) {
-    await page.setViewportSize({ width, height: 900 });
-    for (const path of ['/shop', '/ask', '/bag', '/deal?order=order-public', '/paid?order=order-public', '/track?order=order-public', '/orders', '/shops/orders', '/hub']) {
+// Each route/width gets its own page and deadline. The old 27-visit case shared
+// one 30 s budget, so runner load could time out an otherwise healthy screen.
+for (const width of [390, 768, 1440]) {
+  for (const path of ['/shop', '/ask', '/bag', '/deal?order=order-public', '/paid?order=order-public', '/track?order=order-public', '/orders', '/shops/orders', '/hub']) {
+    test(`connected reflow at ${width}px: ${path}`, async ({ page }, testInfo) => {
+      await mockPublicApi(page);
+      await page.addInitScript(() => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items: ['dal-rice-toner'], rules: { old_packaging_ok: true, bundles_ok: true } })));
+      await mkdir('../.runtime/connected-screens', { recursive: true });
+      await page.setViewportSize({ width, height: 900 });
       await page.goto(path);
       await page.evaluate(() => document.fonts.ready);
       if (path === '/shop') await expect(page.locator('.catalog > li')).toHaveCount(30);
@@ -195,10 +197,10 @@ test('connected surfaces reflow and keep their actions visible at phone, tablet 
       await expect.poll(() => page.locator('img').evaluateAll(images => images.every(image => image.complete && image.naturalWidth > 0))).toBe(true);
       await page.locator('img').evaluateAll(images => Promise.all(images.map(image => image.decode())));
       const name = path.split('?')[0].replaceAll('/', '-') || 'shop';
-      await page.screenshot({ path: `../.runtime/connected-screens/${width}${name}.png`, fullPage: path !== '/shop', animations: 'disabled' });
-    }
+      await page.screenshot({ path: `../.runtime/connected-screens/${testInfo.project.name}-${width}${name}.png`, fullPage: path !== '/shop', animations: 'disabled' });
+    });
   }
-});
+}
 
 test('earlier purchases preserve owned original terms without reopening checkout', async ({ page }) => {
   await mockPublicApi(page);
