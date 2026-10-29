@@ -50,7 +50,7 @@ def complete(
     with httpx.Client(timeout=timeout, follow_redirects=False) as client:
         if settings.llm_protocol == "anthropic":
             response = client.post(
-                settings.llm_base_url + "/v1/messages",
+                settings.llm_base_url.rstrip("/") + "/v1/messages",
                 headers={
                     "x-api-key": settings.llm_api_key,
                     "anthropic-version": "2023-06-01",
@@ -73,7 +73,7 @@ def complete(
             )
         else:
             response = client.post(
-                settings.llm_base_url + "/v1/chat/completions",
+                settings.llm_base_url.rstrip("/") + "/v1/chat/completions",
                 headers={"Authorization": "Bearer " + settings.llm_api_key},
                 json={
                     "model": model,

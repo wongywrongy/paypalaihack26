@@ -145,3 +145,9 @@ PLAN.md on `rally` (October 22) is authoritative. The original workspace and dat
 - **Retired GD passed:** ten group-order captures were recovered and hash-verified; two independent Impeccable assessments inspected them. That 34/40 assessment applies only to the retired interface. [Historical screenshots and limits](frontend/design/GD.md). V2 GD2 requires its own rendered verification and critique. Screen-reader, native zoom and physical-device checks remain unexecuted.
 - **M2–M5 not started:** current PLAN.md requires G1 before the main engine work. V2 design uses an explicit recorded-event test harness; it does not establish connected payment success. [Current G1 procedure](docs/DEMO.md#g1-three-human-paypal-approvals) specifies the three human approvals and reconciliation steps.
 - The new migration targets only `rally`; existing public tables and Compose volume names are preserved. No database or volume deletion was performed.
+
+### B0 · October 29, 2026 · local adapter contracts
+
+- Full unittest discovery with disposable Postgres on localhost:55439: 91 tests, OK, 9 auction contracts still skipped pending B1. No payment providers called.
+- Adapter HTTP doubles verified shop/buyer model routing, json_schema and json_object request shapes, and strict output validation.
+- Owner will fill the ignored local .env. Bitdeer GET /v1/models and scripts/engine.py connected run skipped: no supplied credentials/model ids. Provider json_schema support remains unverified; json_object is supported if needed.
