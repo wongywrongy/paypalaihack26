@@ -6,7 +6,7 @@ const initial = (): BagState => {
   const fallback: BagState = { country: 'US', items: recordedMode() ? [...hero.cart] : [], rules: { ...hero.rules } };
   try {
     const saved = JSON.parse(localStorage.getItem('rally-shopping-v2') || 'null');
-    if (!saved || typeof saved.country !== 'string' || !Object.hasOwn(countries, saved.country) || !Array.isArray(saved.items) || saved.items.length > 8 || new Set(saved.items).size !== saved.items.length || !saved.items.every((id: unknown) => typeof id === 'string' && catalog.some(item => item.id === id && allowed(item, saved.country))) || typeof saved.rules?.old_packaging_ok !== 'boolean' || typeof saved.rules?.add_small_extras_if_cheaper !== 'boolean') return fallback;
+    if (!saved || typeof saved.country !== 'string' || !Object.hasOwn(countries, saved.country) || !Array.isArray(saved.items) || saved.items.length > 8 || new Set(saved.items).size !== saved.items.length || !saved.items.every((id: unknown) => typeof id === 'string' && catalog.some(item => item.id === id && allowed(item, saved.country))) || typeof saved.rules?.old_packaging_ok !== 'boolean' || typeof saved.rules?.bundles_ok !== 'boolean') return fallback;
     return saved;
   } catch { return fallback; }
 };

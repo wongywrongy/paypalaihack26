@@ -18,7 +18,7 @@ export function SiteFooter() {
     setBusy(true);
     try {
       if (!recordedMode()) await request('/reset', { method: 'POST', body: {} });
-      setBag({ country: 'US', items: [], rules: { old_packaging_ok: true, add_small_extras_if_cheaper: true } });
+      setBag({ country: 'US', items: [], rules: { old_packaging_ok: true, bundles_ok: true } });
       location.assign(href('/shop'));
     } catch (error) { setNotice((error as Error).message); setBusy(false); }
   }

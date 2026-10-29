@@ -18,7 +18,7 @@ const storageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStor
 try {
   for (const country of ['__proto__', 'toString', 'constructor', null, { US: true }]) {
     Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
-      getItem: () => JSON.stringify({ country, items: [], rules: { old_packaging_ok: true, add_small_extras_if_cheaper: true } }),
+      getItem: () => JSON.stringify({ country, items: [], rules: { old_packaging_ok: true, bundles_ok: true } }),
     } });
     const html = render('/shop');
     assert.ok(html.includes('Ship to United States · USD'), 'invalid persisted country recovers to US');

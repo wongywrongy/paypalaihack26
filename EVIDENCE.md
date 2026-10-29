@@ -151,3 +151,9 @@ PLAN.md on `rally` (October 22) is authoritative. The original workspace and dat
 - Full unittest discovery with disposable Postgres on localhost:55439: 91 tests, OK, 9 auction contracts still skipped pending B1. No payment providers called.
 - Adapter HTTP doubles verified shop/buyer model routing, json_schema and json_object request shapes, and strict output validation.
 - Owner will fill the ignored local .env. Bitdeer GET /v1/models and scripts/engine.py connected run skipped: no supplied credentials/model ids. Provider json_schema support remains unverified; json_object is supported if needed.
+
+### B1 · October 29, 2026 · auction engine
+
+- Full unittest discovery with disposable Postgres: 95 tests, all passed, no skips. Existing AuctionContracts assertions unchanged; added authority, bundle atomicity, malicious selector and zero-deadline coverage. Exchange goldens remain covered independently.
+- Reference correction: Bada round-2 toner is $20 (was $19). At $19 its three-item subtotal clears $33 shipping, producing $104.42 and Bada as toner leader. The correction preserves the specified $105.42 round and all final goldens under exact search.
+- Ruff E4/E7/E9/F/I passed; frontend build and render checks passed. Browser attempt could not find its default Chromium; the installed-executable retry passed 27 tests before the prior runner closed the shared server. A fresh complete run is pending. No hosted or model-provider evidence.

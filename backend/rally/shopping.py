@@ -107,7 +107,7 @@ def assist(body: AssistInput, request: Request):
     result = assistant.suggest(body.text, body.country, catalog)
     rows = [{"id": pid, "reason": reason, "step": catalog.products[pid]["category"], "shop": catalog.offers[next(line.offer_id for line in result["quote"]["lines"] if catalog.offers[line.offer_id]["product_id"] == pid)]["shop_id"]} for pid, reason in zip(result["items"], result["reasons"], strict=True)]
     with connect() as db:
-        value = orders.estimate(db, session["id"], {"items": result["items"], "country": body.country, "rules": body.rules or {"old_packaging_ok": False, "add_small_extras_if_cheaper": False}})
+        value = orders.estimate(db, session["id"], {"items": result["items"], "country": body.country, "rules": body.rules or {"old_packaging_ok": False, "bundles_ok": False}})
     return {"request": body.text, "items": rows, "quote": value, "chosen_by": result["chosen_by"]}
 
 

@@ -30,7 +30,7 @@ def lock(db, order_id):
 
 
 def rules_checked(rules):
-    if not isinstance(rules, dict) or set(rules) != {"old_packaging_ok", "add_small_extras_if_cheaper"} or any(type(v) is not bool for v in rules.values()):
+    if not isinstance(rules, dict) or set(rules) != {"old_packaging_ok", "bundles_ok"} or any(type(v) is not bool for v in rules.values()):
         raise ValueError("Choose both shopping permissions explicitly.")
     return rules
 

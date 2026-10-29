@@ -90,7 +90,7 @@ Bag: Low-pH Gel Cleanser, Rice Toner, Snail Essence, Cica Barrier Cream. Both ru
 | 1.5 | Dalbit | toner 20, essence 18 (older packaging) |
 | 2.0 | Haneul | cleanser 13, toner 22, essence 23, cream 20 |
 | 3.0 | Round 1 | best **$110.29** |
-| 4.5 | Bada | cleanser 11, cream 17, toner 19 |
+| 4.5 | Bada | cleanser 11, cream 17, toner 20 |
 | 5.0 | Dalbit | toner 19 + sample kit, essence 17 |
 | 5.5 | Haneul | cleanser 12, essence 21, cream 19; passes on toner |
 | 6.5 | Round 2 | best **$105.42** |
@@ -98,6 +98,8 @@ Bag: Low-pH Gel Cleanser, Rice Toner, Snail Essence, Cica Barrier Cream. Both ru
 | 8.5 | Dalbit | essence 16 |
 | 9.0 | Haneul | bundle cleanser + cream $29 (11 + 18), free shipping in Korea |
 | 10.5 | Award | Haneul wins cleanser + cream, Dalbit wins toner + essence (older) + kit: **$101.92** |
+
+Round 2 uses Bada toner $20: at $19, its three-item subtotal clears free domestic shipping and the exact best total would instead be $104.42.
 
 Bada's final option (cleanser 11 + cream 16, $3.50 domestic) totals $102.99, so Haneul's bundle wins by $1.07 all in although Bada bid less on the cream.
 

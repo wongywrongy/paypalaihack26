@@ -90,7 +90,7 @@ class ShoppingContracts(unittest.TestCase):
         self.transport.start()
         self.client = TestClient(api.app)
         self.csrf = self.client.get("/api/session").json()["csrf_token"]
-        self.payload = {"country": "US", "items": ["mul-gel-cleanser", "dal-rice-toner", "dal-snail-essence", "sae-cica-cream"], "rules": {"old_packaging_ok": True, "add_small_extras_if_cheaper": True}}
+        self.payload = {"country": "US", "items": ["mul-gel-cleanser", "dal-rice-toner", "dal-snail-essence", "sae-cica-cream"], "rules": {"old_packaging_ok": True, "bundles_ok": True}}
 
     def tearDown(self):
         self.client.close()
@@ -130,14 +130,14 @@ class ShoppingContracts(unittest.TestCase):
         receipt = self.client.get("/api/orders/" + oid)
         self.assertEqual(receipt.status_code, 200, receipt.text)
         value = receipt.json()
-        self.assertEqual(value["charged_minor"], 10679)
+        self.assertEqual(value["charged_minor"], 10786)
         self.assertEqual(value["payment_state"], "CHARGED")
-        self.assertEqual(value["uncaptured_minor"], 1203)
+        self.assertEqual(value["uncaptured_minor"], 1096)
         self.assertEqual(value["fulfillment_state"], "MERCHANT_CONFIRMED")
-        self.assertTrue(any(line["added"] for line in value["lines"]))
+        self.assertFalse(any(line["added"] for line in value["lines"]))
         self.post("/reset", {})
         self.post("/bags", {**self.payload, "items": ["hay-foam"]})
-        self.assertEqual(self.client.get("/api/orders").json()["orders"][0]["charged_minor"], 10679)
+        self.assertEqual(self.client.get("/api/orders").json()["orders"][0]["charged_minor"], 10786)
         before = list(self.provider.calls)
         self.assertTrue(self.client.get("/api/orders/" + oid).json()["events"])
         self.assertEqual(self.provider.calls, before)
@@ -276,7 +276,7 @@ class ShoppingContracts(unittest.TestCase):
             worker.run_once("payments")
             row = self.client.get("/api/orders/" + oid).json()
         self.assertEqual(row["maximum_minor"], 16087)
-        self.assertEqual(row["charged_minor"], 14449)
+        self.assertEqual(row["charged_minor"], 14683)
         self.assertEqual(sum(line["unit"] for line in row["lines"]), row["breakdown"]["goods"])
 
     def test_scheduled_logistics_is_opt_in_and_waits_for_confirmed_payouts(self):
@@ -342,11 +342,11 @@ class ShoppingContracts(unittest.TestCase):
                 tracking = db.execute("SELECT status FROM tracking_operations WHERE order_id=%s", (oid,)).fetchone()
                 self.assertEqual(tracking["status"], "completed")
             refund = self.post(f"/hub/orders/{oid}/true-up", {"actual_minor": 1000})
-            self.assertEqual(refund.json()["refund_minor"], 479)
+            self.assertEqual(refund.json()["refund_minor"], 436)
             worker.run_once("payments")
             receipt = self.client.get("/api/orders/" + oid).json()
             self.assertEqual(receipt["payment_state"], "CHARGED")
-            self.assertEqual(receipt["refunded_minor"], 479)
+            self.assertEqual(receipt["refunded_minor"], 436)
             self.assertEqual(receipt["fulfillment_state"], "SHIPPED")
             before = len(self.provider.calls)
             self.post(f"/hub/orders/{oid}/true-up", {"actual_minor": 1000})

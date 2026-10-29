@@ -61,7 +61,7 @@ class Bid(BaseModel):
     bundle: Bundle | None = None
     free_domestic: bool = False
     extras: list[str] = Field(default_factory=list, max_length=1)
-    pass_offers: list[str] = Field(default_factory=list, max_length=9)
+    pass_offers: list[str] = Field(default_factory=list, max_length=9, alias="pass")
     note: str = Field(min_length=1, max_length=240)
 
 

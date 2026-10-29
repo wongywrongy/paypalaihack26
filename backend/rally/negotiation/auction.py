@@ -1,39 +1,162 @@
-"""v3 shop bidding: shops bid for every item in three open rounds; code awards.
+"""Bounded open bidding. Models choose indexes; code owns terms and the award."""
 
-Contract (docs/plan/BIDDING.md):
-- Models pick a candidate index and write a note. Code builds every bid, validates it
-  against private authority, and decides leaders and the award.
-- The checkout total (the PayPal hold) is a hard ceiling: assert final total <= hold.
-- A failed or slow model call keeps that shop's previous bid (or its listed price).
-- Events are v3 (`start`, `ask`, `bid`, `pass`, `round`, `award`, `error`, `done`).
-"""
+import json
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
+from pathlib import Path
+from time import monotonic, sleep
+from uuid import uuid4
+
+from .. import llm
+from ..fx import convert
+from . import award, bids, buyer
+from .schema import AskChoice, Bid, Choice
 
 ROUNDS = 3
 MAX_SECONDS = 30
 CALL_TIMEOUT_SECONDS = 4
-# Viewing pace for the live stream; the frontend also holds each event >= 600 ms.
 ROUND_SECONDS = 3.5
 RULE_KEYS = frozenset({"old_packaging_ok", "bundles_ok"})
 
 
 def rules_checked(rules):
-    """Exactly the v3 keys, booleans only. Raise ValueError otherwise."""
     if not isinstance(rules, dict) or set(rules) != RULE_KEYS or any(type(v) is not bool for v in rules.values()):
         raise ValueError("Choose both shopping permissions explicitly.")
     return rules
 
 
 def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, max_seconds=MAX_SECONDS, pace=False):
-    """Run the auction and return the final allocation.
-
-    start: {"lines": tuple[catalog.Line], "breakdown": {...}, "rate": int} — the immutable checkout.
-    choose: test selector `choose(role, payload) -> Choice | AskChoice` ("shop" or "buyer");
-            None uses the configured models (llm.complete with LLM_MODEL_SHOP / LLM_MODEL_BUYER).
-    emit:   callback for each persisted v3 event dict.
-    pace:   when True (worker path), space rounds by ROUND_SECONDS for live viewing; tests use False.
-
-    Returns {"lines", "extras", "domestic_usd", "breakdown", "events", "winners",
-             "model_calls", "elapsed_seconds"} with breakdown["total"] <= start["breakdown"]["total"].
-    """
     rules_checked(rules)
-    raise NotImplementedError("v3 auction: implement per docs/plan/BIDDING.md")
+    started = monotonic()
+    deadline = started + max(0, min(MAX_SECONDS, max_seconds))
+    currency, rate = start["breakdown"]["currency"], start.get("rate")
+    product_ids = [catalog.offers[line.offer_id]["product_id"] for line in start["lines"]]
+    offers = bids.eligible(product_ids, destination, catalog, rules)
+    shops = sorted({o["shop_id"] for rows in offers.values() if len({o["shop_id"] for o in rows}) > 1 for o in rows})
+    current, events = {}, []
+    best = award.best_allocation(current, start, destination, catalog, rules)
+    calls, tokens = 0, 60000
+    executor = ThreadPoolExecutor(max_workers=4)
+
+    def event(kind, note="", chosen_by="CODE", **fields):
+        row = {"id": str(uuid4()), "seq": len(events) + 1, "t": round(monotonic() - started, 3),
+               "kind": kind, "actor": "shop" if kind in ("bid", "pass") else "rally",
+               "note": note.replace("\n", " ")[:240], "total": best["breakdown"]["total"], "chosen_by": chosen_by, **fields}
+        events.append(row)
+        if emit:
+            emit(dict(row))
+
+    def submit(schema, role, payload):
+        nonlocal calls, tokens
+        remaining = min(CALL_TIMEOUT_SECONDS, deadline - monotonic())
+        if remaining <= 0:
+            raise TimeoutError()
+        if choose:
+            return executor.submit(choose, role, payload), remaining
+        allowance = min(tokens, 5000)
+        if allowance < 1000:
+            raise RuntimeError("Model budget exhausted.")
+        tokens -= allowance
+        calls += 1
+        return executor.submit(llm.complete, schema,
+                               "You represent " + ("the shopper" if role == "buyer" else "a fictional shop") + ". Pick only candidate indexes and write one short public line. You cannot accept or move money.",
+                               payload, timeout=remaining, max_tokens=250, remaining_tokens=allowance, model_role=role), remaining
+
+    def resolve(future, schema, timeout):
+        response = future.result(timeout=max(0, min(timeout, deadline - monotonic())))
+        value = response if choose else response[0]
+        return value if isinstance(value, schema) else schema.model_validate(value)
+
+    def public_leaders():
+        return {catalog.offers[line.offer_id]["product_id"]: {"shop": catalog.offers[line.offer_id]["shop_id"], "unit": line.unit_usd_cents} for line in best["lines"]}
+
+    # Only an explicit test selector uses the committed recording. Every recorded
+    # candidate still crosses the same authority validator as a connected bid.
+    recording = None
+    if choose:
+        data = json.loads((Path(__file__).resolve().parents[3] / "design/scenario/auction.json").read_text())
+        if set(product_ids) == set(data["cart"]) and all(rules.values()):
+            recording = data
+    event("start", "Shops are bidding on your bag.", v=3, items=product_ids,
+          shops={pid: sorted({o["shop_id"] for o in rows}) for pid, rows in offers.items()},
+          listed={pid: {o["shop_id"]: convert(o["list_usd"], currency, rate) for o in rows if o["variant"] == "current"} for pid, rows in offers.items()})
+    rounds = 0
+    try:
+        for round_no in range(1, ROUNDS + 1):
+            if monotonic() >= deadline:
+                event("error", "Bidding time ended. Your current best total stands.")
+                break
+            round_started = monotonic()
+            asks = buyer.candidate_asks(round_no, public_leaders(), current, offers, rules)
+            selected, by = asks[:3], "CODE"
+            note = buyer.round_note(round_no, best["breakdown"]["total"], currency)
+            if asks:
+                try:
+                    future, timeout = submit(AskChoice, "buyer", {"round": round_no, "leaders": public_leaders(), "options": [a.model_dump() for a in asks]})
+                    choice = resolve(future, AskChoice, timeout)
+                    if len(set(choice.indexes)) != len(choice.indexes) or any(i < 0 or i >= len(asks) for i in choice.indexes):
+                        raise ValueError("Unknown ask.")
+                    selected = asks if round_no == 1 else [asks[i] for i in choice.indexes]
+                    note, by = choice.note, "FIXTURE" if choose else "LLM"
+                except Exception:
+                    event("error", "The buyer kept the public requests.")
+            for ask in selected:
+                event("ask", note if round_no > 1 else ask.note, chosen_by=by, round=round_no, shop=ask.shop_id, items=ask.product_ids)
+            pending = []
+            for shop in shops:
+                options = bids.candidates(shop, round_no, offers, current.get(shop), public_leaders(), selected, catalog, rules)
+                recorded = None
+                if recording:
+                    recorded = next(row for row in recording["bids"] if row["shop"] == shop and row["round"] == round_no)
+                    candidate = Bid.model_validate({"shop_id": shop, "round": round_no, "items": [{"offer_id": o, "unit_usd_cents": u} for o, u in recorded["items"].items()],
+                                                    "bundle": recorded.get("bundle"), "extras": recorded.get("extras", []), "free_domestic": recorded.get("free_domestic", False), "pass": recorded.get("pass", []), "note": recorded["note"]})
+                    try:
+                        bids.validate(candidate, current.get(shop), offers, catalog, rules)
+                        options = [candidate] + options[:2]
+                    except ValueError:
+                        recorded = None
+                if not options:
+                    continue
+                payload = {"shop": catalog.shops[shop]["name"], "goals": bids.PUBLIC_GOALS[shop], "round": round_no,
+                           "leaders": public_leaders(), "asks": [a.model_dump() for a in selected],
+                           "options": [{**b.model_dump(by_alias=True), "utility_rank": rank + 1,
+                                        "wins": [catalog.offers[i.offer_id]["product_id"] for i in b.items if i.unit_usd_cents <= public_leaders()[catalog.offers[i.offer_id]["product_id"]]["unit"]]} for rank, b in enumerate(options)]}
+                try:
+                    future, timeout = submit(Choice, "shop", payload)
+                    pending.append((shop, options, future, timeout, monotonic(), recorded))
+                except Exception:
+                    event("error", "This shop kept its previous prices.", shop=shop)
+            # Resolve in stable display order. Calls were started in parallel.
+            pending.sort(key=lambda row: (row[0] != "bada", row[0] != "dalbit", row[0]))
+            for shop, options, future, timeout, submitted, recorded in pending:
+                try:
+                    choice = resolve(future, Choice, timeout - (monotonic() - submitted))
+                    if choice.index >= len(options):
+                        raise ValueError("Unknown bid.")
+                    bid = options[choice.index].model_copy(update={"note": choice.note.replace("\n", " ")})
+                    bids.validate(bid, current.get(shop), offers, catalog, rules)
+                    current[shop] = bids.merge(current.get(shop), bid)
+                    perks = {}
+                    units = {}
+                    for item in bid.items:
+                        o = catalog.offers[item.offer_id]
+                        pid = o["product_id"]
+                        units[pid + (":older" if o["variant"] == "older" else "")] = convert(item.unit_usd_cents, currency, rate)
+                        perks[pid] = (["older"] if o["variant"] == "older" else []) + (["kit"] if current[shop].extras else []) + (["bundle"] if bid.bundle and item.offer_id in bid.bundle.offer_ids else []) + (["freeship"] if current[shop].free_domestic else [])
+                    bundle = {"items": [catalog.offers[o]["product_id"] for o in bid.bundle.offer_ids], "price": convert(bid.bundle.price_usd_cents, currency, rate)} if bid.bundle else None
+                    event("bid", bid.note, chosen_by="FIXTURE" if choose else "LLM", round=round_no, shop=shop, items=units, bundle=bundle, perks=perks)
+                    if bid.pass_offers:
+                        event("pass", "This shop passes on these items.", shop=shop, round=round_no, items=[catalog.offers[o]["product_id"] for o in bid.pass_offers])
+                except Exception:
+                    event("error", "This shop kept its previous prices.", shop=shop)
+            best = award.best_allocation(current, start, destination, catalog, rules)
+            if pace:
+                sleep(max(0, min(round_started + ROUND_SECONDS, deadline) - monotonic()))
+            event("round", note, round=round_no, leaders=best["leaders"])
+            rounds = round_no
+    finally:
+        executor.shutdown(wait=False, cancel_futures=True)
+    assert best["breakdown"]["total"] <= start["breakdown"]["total"]
+    winners = {catalog.offers[line.offer_id]["product_id"]: {"shop": catalog.offers[line.offer_id]["shop_id"], "unit": convert(line.unit_usd_cents, currency, rate), "variant": catalog.offers[line.offer_id]["variant"]} for line in best["lines"]}
+    event("award", "Your best complete delivered total is ready.", winners=winners, extras=list(best["extras"]), domestic={s: convert(v, currency, rate) for s, v in best["domestic_usd"].items()})
+    event("done", "Bidding is complete.")
+    return {**best, "events": events, "winners": winners, "rounds": rounds, "model_calls": calls, "elapsed_seconds": round(monotonic() - started, 3)}

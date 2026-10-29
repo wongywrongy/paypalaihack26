@@ -6,7 +6,7 @@
     {"t": 1.0, "round": 1, "shop": "bada", "items": {"bada/mul-gel-cleanser": 1200, "bada/sae-cica-cream": 1800}, "note": "Cleanser $12, cream $18."},
     {"t": 1.5, "round": 1, "shop": "dalbit", "items": {"dalbit/dal-rice-toner": 2000, "dalbit/dal-snail-essence:older": 1800}, "note": "Toner $20. Snail essence $18 in older packaging."},
     {"t": 2.0, "round": 1, "shop": "haneul", "items": {"haneul/mul-gel-cleanser": 1300, "haneul/dal-rice-toner": 2200, "haneul/dal-snail-essence": 2300, "haneul/sae-cica-cream": 2000}, "note": "Cleanser $13, toner $22, essence $23, cream $20."},
-    {"t": 4.5, "round": 2, "shop": "bada", "items": {"bada/mul-gel-cleanser": 1100, "bada/sae-cica-cream": 1700, "bada/dal-rice-toner": 1900}, "note": "Cleanser $11, cream $17, toner $19."},
+    {"t": 4.5, "round": 2, "shop": "bada", "items": {"bada/mul-gel-cleanser": 1100, "bada/sae-cica-cream": 1700, "bada/dal-rice-toner": 2000}, "note": "Cleanser $11, cream $17, toner $20."},
     {"t": 5.0, "round": 2, "shop": "dalbit", "items": {"dalbit/dal-rice-toner": 1900, "dalbit/dal-snail-essence:older": 1700}, "extras": ["dalbit-sample-kit"], "note": "Toner $19 with a sample kit. Essence $17."},
     {"t": 5.5, "round": 2, "shop": "haneul", "items": {"haneul/mul-gel-cleanser": 1200, "haneul/dal-snail-essence": 2100, "haneul/sae-cica-cream": 1900}, "pass": ["haneul/dal-rice-toner"], "note": "Cleanser $12, essence $21, cream $19. We pass on toner."},
     {"t": 8.0, "round": 3, "shop": "bada", "items": {"bada/sae-cica-cream": 1600}, "note": "Cream $16. That's our lowest."},

@@ -124,9 +124,9 @@ test('routine and permissions persist while checkout remains the ceiling and can
   await page.getByRole('button', { name: 'Find my routine' }).click();
   await page.getByRole('link',{name:'Add routine to bag'}).click();
   await expect(page.locator('.checkout-total > .money')).toHaveText('$118.82');
-  await page.getByRole('switch',{name:/Older packaging is fine/}).uncheck();
-  await page.getByRole('switch',{name:/Add a small extra/}).uncheck();
-  await page.reload();await expect(page.getByRole('switch',{name:/Older packaging is fine/})).not.toBeChecked();
+  await page.getByRole('switch',{name:/Older packaging/}).uncheck();
+  await page.getByRole('switch',{name:/Bundles/}).uncheck();
+  await page.reload();await expect(page.getByRole('switch',{name:/Older packaging/})).not.toBeChecked();
   await expect(page.locator('.checkout-total > .money')).toHaveText('$118.82');
   await expect(page.getByRole('button',{name:'Pay with PayPal'})).toBeVisible();
   await page.goto('/paid');await expect(page.getByRole('heading',{name:'Your order is not available'})).toBeVisible();
@@ -201,7 +201,7 @@ test('the SVG icon is served as a real resource',async({page})=>{
 
 test('recorded order keeps its checkout consent and currency separate from the editable bag', async ({ page }) => {
   await page.clock.install();
-  await page.addInitScript(() => localStorage.setItem('rally-shopping-v2',JSON.stringify({country:'CA',items:['dal-rice-toner'],rules:{old_packaging_ok:false,add_small_extras_if_cheaper:false}})));
+  await page.addInitScript(() => localStorage.setItem('rally-shopping-v2',JSON.stringify({country:'CA',items:['dal-rice-toner'],rules:{old_packaging_ok:false,bundles_ok:false}})));
   await page.goto(recorded('/deal'));
   await expect(page.getByText('California · USD · order choices saved at checkout',{exact:true})).toBeVisible();
   await page.clock.runFor(14000);
@@ -210,8 +210,8 @@ test('recorded order keeps its checkout consent and currency separate from the e
   await expect(page.locator('.hero-money')).toHaveText('$106.79');
   await page.goto('/bag');
   await expect(page.locator('.product-rows li')).toHaveCount(1);
-  await expect(page.getByRole('switch',{name:/Older packaging is fine/})).not.toBeChecked();
-  await expect(page.getByRole('switch',{name:/Add a small extra/})).not.toBeChecked();
+  await expect(page.getByRole('switch',{name:/Older packaging/})).not.toBeChecked();
+  await expect(page.getByRole('switch',{name:/Bundles/})).not.toBeChecked();
   await expect(page.locator('.checkout-total > .money')).toContainText('C$');
 });
 
@@ -220,7 +220,7 @@ test('prototype and malformed saved destinations recover to a valid empty US bag
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto('/shop');
   for (const country of ['__proto__', 'toString', 'constructor', null, { US: true }]) {
-    await page.evaluate(value => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: value, items: [], rules: { old_packaging_ok: true, add_small_extras_if_cheaper: true } })), country);
+    await page.evaluate(value => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: value, items: [], rules: { old_packaging_ok: true, bundles_ok: true } })), country);
     await page.reload();
     await expect(page.getByRole('button', { name: /Ship to United States · USD/ })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Bag, 0 items' })).toBeVisible();
@@ -309,7 +309,7 @@ test('merchant earnings run from lowest to agreed while buyer savings run from a
 test('adding a routine preserves unique existing selections and refuses overflow without dropping items', async ({ page }) => {
   await page.goto('/shop');
   const existing = ['byeol-vitc', 'dal-rice-toner'];
-  await page.evaluate(items => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items, rules: { old_packaging_ok: false, add_small_extras_if_cheaper: true } })), existing);
+  await page.evaluate(items => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items, rules: { old_packaging_ok: false, bundles_ok: true } })), existing);
   await page.goto('/ask');
   await page.getByLabel('What would you like your routine to do?').fill('A gentle routine for dry skin');
   await page.getByRole('button', { name: 'Find my routine' }).click();
@@ -317,9 +317,9 @@ test('adding a routine preserves unique existing selections and refuses overflow
   await expect(page.locator('.product-rows li')).toHaveCount(5);
   await expect(page.locator('.product-copy strong').filter({ hasText: 'Vitamin C Serum' })).toHaveCount(1);
   await expect(page.locator('.product-copy strong').filter({ hasText: 'Rice Toner' })).toHaveCount(1);
-  await expect(page.getByRole('switch', { name: /Older packaging is fine/ })).not.toBeChecked();
+  await expect(page.getByRole('switch', { name: /Older packaging/ })).not.toBeChecked();
   const full = catalog.filter(item => allowed(item, 'US') && !hero.cart.includes(item.id)).slice(0,8).map(item => item.id);
-  await page.evaluate(items => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items, rules: { old_packaging_ok: true, add_small_extras_if_cheaper: true } })), full);
+  await page.evaluate(items => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items, rules: { old_packaging_ok: true, bundles_ok: true } })), full);
   await page.goto('/ask');
   await page.getByLabel('What would you like your routine to do?').fill('A gentle routine for dry skin');
   await page.getByRole('button', { name: 'Find my routine' }).click();

@@ -88,7 +88,7 @@ test('SDK6 redirect return resumes approval without creating another PayPal orde
 
 test('destination amounts are rendered once and history reopens immutable receipts', async ({ page }) => {
   await mockPublicApi(page, { country: 'CA' });
-  await page.addInitScript(() => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'CA', items: ['dal-rice-toner'], rules: { old_packaging_ok: false, add_small_extras_if_cheaper: false } })));
+  await page.addInitScript(() => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'CA', items: ['dal-rice-toner'], rules: { old_packaging_ok: false, bundles_ok: false } })));
   await page.goto('/paid?order=order-public');
   await expect(page.locator('.hero-money')).toHaveText('C$144.49');
   await expect(page.locator('.product-rows .item-price').first()).toHaveText('C$16.56');
@@ -127,7 +127,7 @@ test('unavailable catalog and rejected quotes have useful retry paths', async ({
   await expect(page.getByRole('status')).toHaveText('Your shops are temporarily unavailable.');
   await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
   await expect(page.locator('.catalog > li')).toHaveCount(0);
-  await page.addInitScript(() => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items: ['dal-rice-toner'], rules: { old_packaging_ok: true, add_small_extras_if_cheaper: true } })));
+  await page.addInitScript(() => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items: ['dal-rice-toner'], rules: { old_packaging_ok: true, bundles_ok: true } })));
   await page.route('**/api/bags', route => route.fulfill({ status: 409, json: { detail: 'This item is out of stock. Remove it from your bag.' } }));
   await page.goto('/bag');
   await expect(page.getByRole('status')).toHaveText('This item is out of stock. Remove it from your bag.');
@@ -177,7 +177,7 @@ test('hub ship form sends tracking through the authenticated API', async ({ page
 
 test('connected surfaces reflow and keep their actions visible at phone, tablet and desktop widths', async ({ page }) => {
   await mockPublicApi(page);
-  await page.addInitScript(() => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items: ['dal-rice-toner'], rules: { old_packaging_ok: true, add_small_extras_if_cheaper: true } })));
+  await page.addInitScript(() => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items: ['dal-rice-toner'], rules: { old_packaging_ok: true, bundles_ok: true } })));
   await mkdir('../.runtime/connected-screens', { recursive: true });
   for (const width of [390, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });

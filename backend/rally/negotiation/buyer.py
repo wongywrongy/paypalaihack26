@@ -1,18 +1,41 @@
-"""Buyer (Rally) side of v3 bidding: code builds candidate asks; the model picks
-up to three and writes the round note. Asks are public text plus item ids only."""
+"""Buyer requests are public language; they carry no money authority."""
+
+from .schema import Ask
 
 
 def candidate_asks(round_no, leaders, bids, eligible_offers, rules, market=None):
-    """Ask candidates for this round (rally.negotiation.schema.Ask):
-    - round 1: one "bid" ask per shop for the items it can sell;
-    - later: "beat" asks to the runner-up shop per item, with the gap to the leader;
-    - "bundle" asks to shops with two or more eligible items, only if rules["bundles_ok"];
-    - include the market reference (rally.market.reference) in the payload when present.
-    """
-    raise NotImplementedError("v3 buyer")
+    shops = {}
+    for pid, offers in eligible_offers.items():
+        if len({o["shop_id"] for o in offers}) < 2:
+            continue
+        for offer in offers:
+            shops.setdefault(offer["shop_id"], set()).add(pid)
+    if round_no == 1:
+        return [Ask(round=round_no, shop_id=s, product_ids=sorted(pids), kind="bid", note="Bid on these items.") for s, pids in sorted(shops.items())]
+    result = []
+    rows = list(bids.values()) if isinstance(bids, dict) else bids
+    for pid, offers in eligible_offers.items():
+        if pid not in leaders or len({o["shop_id"] for o in offers}) < 2:
+            continue
+        prices = {}
+        for offer in offers:
+            unit = min((i.unit_usd_cents for bid in rows for i in bid.items if i.offer_id == offer["id"]), default=offer["list_usd"])
+            shop = offer["shop_id"]
+            prices[shop] = min(prices.get(shop, unit), unit)
+        leader = leaders[pid]
+        other = sorted((price, s) for s, price in prices.items() if s != leader["shop"])
+        if other:
+            price, shop = other[0]
+            gap = max(0, price - leader["unit"])
+            reference = market(pid) if market else None
+            note = f"Can you beat the leader? The gap is USD {gap / 100:.2f}."
+            if reference:
+                note += f" US market ${reference['low_usd_cents'] / 100:g}–{reference['high_usd_cents'] / 100:g}."
+            result.append(Ask(round=round_no, shop_id=shop, product_ids=[pid], kind="beat", note=note))
+    if rules["bundles_ok"]:
+        result += [Ask(round=round_no, shop_id=s, product_ids=sorted(pids), kind="bundle", note="Can a two-item bundle lower the delivered total?") for s, pids in sorted(shops.items()) if len(pids) >= 2]
+    return result
 
 
 def round_note(round_no, total_minor, currency):
-    """Code fallback note when the buyer model is unavailable, e.g.
-    "Round 1 best: $110.29 all in. Anyone lower?"."""
-    raise NotImplementedError("v3 buyer")
+    return f"Round {round_no} best: {currency} {total_minor / 100:.2f} all in. Anyone lower?"

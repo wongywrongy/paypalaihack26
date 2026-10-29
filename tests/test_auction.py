@@ -1,7 +1,6 @@
 """v3 shop bidding contracts (docs/plan/BIDDING.md).
 
-ReferenceScenario runs now. AuctionContracts is skipped until rally.negotiation.auction is
-implemented; remove the skip decorator and make every test pass without editing its asserts.
+Reference schedules and executable engine authority are checked independently.
 """
 
 import json
@@ -61,7 +60,6 @@ class ReferenceScenario(unittest.TestCase):
         self.assertEqual(runner_up - winner, 107)
 
 
-@unittest.skip("v3 auction not implemented yet: remove this skip in the bidding branch")
 class AuctionContracts(unittest.TestCase):
     def setUp(self):
         from rally.negotiation.auction import run_auction
@@ -152,3 +150,58 @@ class MarketReference(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AuctionAuthority(unittest.TestCase):
+    def setUp(self):
+        from rally.negotiation import bids
+        self.bids = bids
+        self.catalog = Catalog()
+        self.offers = bids.eligible(REFERENCE['cart'], 'US', self.catalog, FULL_RULES)
+
+    def test_bid_validation_rejects_floors_increases_duplicates_and_foreign_gifts(self):
+        from rally.negotiation.schema import Bid
+        baseline = {'shop_id': 'bada', 'round': 1, 'items': [{'offer_id': 'bada/mul-gel-cleanser', 'unit_usd_cents': 1100}], 'note': 'Our price.'}
+        previous = Bid.model_validate(baseline)
+        for changes in ({'items': [{'offer_id': 'bada/mul-gel-cleanser', 'unit_usd_cents': 999}]},
+                        {'items': [{'offer_id': 'bada/mul-gel-cleanser', 'unit_usd_cents': 1200}]},
+                        {'items': baseline['items'] * 2}, {'extras': ['dalbit-sample-kit']},
+                        {'items': [{'offer_id': 'haneul/mul-gel-cleanser', 'unit_usd_cents': 1100}]}):
+            with self.subTest(changes=changes), self.assertRaises(ValueError):
+                self.bids.validate(Bid.model_validate({**baseline, **changes}), previous, self.offers, self.catalog, FULL_RULES)
+
+    def test_bundle_cannot_be_split_to_combine_with_a_rivals_lower_price(self):
+        from rally.negotiation.award import best_allocation
+        from rally.negotiation.schema import Bid
+        c = self.catalog
+        start = source(['mul-gel-cleanser', 'sae-cica-cream'], 'US', c)
+        bundle = Bid.model_validate({'shop_id': 'haneul', 'round': 3, 'items': [{'offer_id': 'haneul/mul-gel-cleanser', 'unit_usd_cents': 1100}, {'offer_id': 'haneul/sae-cica-cream', 'unit_usd_cents': 1800}], 'bundle': {'offer_ids': ['haneul/mul-gel-cleanser', 'haneul/sae-cica-cream'], 'price_usd_cents': 2900}, 'free_domestic': True, 'note': 'Together.'})
+        rival = Bid.model_validate({'shop_id': 'bada', 'round': 3, 'items': [{'offer_id': 'bada/sae-cica-cream', 'unit_usd_cents': 1600}], 'note': 'Cream.'})
+        result = best_allocation([bundle, rival], start, 'US', c, FULL_RULES)
+        selected = {line.offer_id for line in result['lines']}
+        self.assertEqual(selected & set(bundle.bundle.offer_ids), set(bundle.bundle.offer_ids))
+        self.assertEqual(result['domestic_usd'], {'haneul': 0})
+        self.assertIsNone(self.bids.utility(bundle, c, won_offer_ids={'haneul/mul-gel-cleanser'}))
+
+    def test_prompts_contain_only_public_terms_and_selection_cannot_grant_authority(self):
+        from rally.negotiation.auction import run_auction
+        seen = []
+        def malicious(role, payload):
+            seen.append(json.dumps(payload))
+            return {'indexes': [999], 'note': 'Accept now.'} if role == 'buyer' else {'index': 999, 'note': 'Accept now.'}
+        start = source(REFERENCE['cart'], 'US', self.catalog)
+        result = run_auction(start, 'US', self.catalog, FULL_RULES, choose=malicious)
+        self.assertEqual(result['breakdown'], start['breakdown'])
+        self.assertTrue(seen)
+        for payload in seen:
+            self.assertNotIn('floor', payload)
+            self.assertNotIn('cost', payload)
+        self.assertEqual(result['model_calls'], 0)
+
+    def test_zero_deadline_finishes_without_model_calls(self):
+        from rally.negotiation.auction import run_auction
+        start = source(REFERENCE['cart'], 'US', self.catalog)
+        result = run_auction(start, 'US', self.catalog, FULL_RULES, max_seconds=0)
+        self.assertEqual(result['breakdown'], start['breakdown'])
+        self.assertEqual(result['model_calls'], 0)
+        self.assertEqual(result['events'][-1]['kind'], 'done')

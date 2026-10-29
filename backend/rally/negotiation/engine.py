@@ -38,6 +38,8 @@ def validate(lines, extras, initial, shop, destination, rules, catalog):
 
 
 def negotiate(start, destination, catalog, rules, *, choose=None, emit=None, max_seconds=30):
+    if set(rules) == {"old_packaging_ok", "bundles_ok"}:
+        rules = {"old_packaging_ok": rules["old_packaging_ok"], "add_small_extras_if_cheaper": False}
     if set(rules) != {"old_packaging_ok", "add_small_extras_if_cheaper"} or any(type(v) is not bool for v in rules.values()):
         raise ValueError("Explicit shopper rules are required.")
     started = monotonic()
