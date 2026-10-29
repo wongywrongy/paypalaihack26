@@ -5,6 +5,7 @@ it stores only aggregate prices (no retailer names, titles, images or URLs).
 """
 
 import json
+from datetime import date
 from functools import lru_cache
 from pathlib import Path
 
@@ -16,7 +17,10 @@ FIELDS = ("low_usd_cents", "median_usd_cents", "high_usd_cents", "n", "as_of")
 def _load():
     if not SNAPSHOT.is_file():
         return {}
-    data = json.loads(SNAPSHOT.read_text())
+    try:
+        data = json.loads(SNAPSHOT.read_text())
+    except (OSError, ValueError):
+        return {}
     return data if isinstance(data, dict) else {}
 
 
@@ -28,5 +32,9 @@ def reference(product_id):
     if not all(type(row[key]) is int and row[key] > 0 for key in FIELDS[:4]):
         return None
     if not row["low_usd_cents"] <= row["median_usd_cents"] <= row["high_usd_cents"]:
+        return None
+    try:
+        date.fromisoformat(row["as_of"])
+    except (TypeError, ValueError):
         return None
     return {key: row[key] for key in FIELDS}

@@ -6,7 +6,7 @@ from pathlib import Path
 from time import monotonic, sleep
 from uuid import uuid4
 
-from .. import llm
+from .. import llm, market
 from ..fx import convert
 from . import award, bids, buyer
 from .schema import AskChoice, Bid, Choice
@@ -86,12 +86,12 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
                 event("error", "Bidding time ended. Your current best total stands.")
                 break
             round_started = monotonic()
-            asks = buyer.candidate_asks(round_no, public_leaders(), current, offers, rules)
+            asks = buyer.candidate_asks(round_no, public_leaders(), current, offers, rules, market=market.reference)
             selected, by = asks[:3], "CODE"
             note = buyer.round_note(round_no, best["breakdown"]["total"], currency)
             if asks:
                 try:
-                    future, timeout = submit(AskChoice, "buyer", {"round": round_no, "leaders": public_leaders(), "options": [a.model_dump() for a in asks]})
+                    future, timeout = submit(AskChoice, "buyer", {"round": round_no, "market": {pid: value for pid in product_ids if (value := market.reference(pid))}, "leaders": public_leaders(), "options": [a.model_dump() for a in asks]})
                     choice = resolve(future, AskChoice, timeout)
                     if len(set(choice.indexes)) != len(choice.indexes) or any(i < 0 or i >= len(asks) for i in choice.indexes):
                         raise ValueError("Unknown ask.")
@@ -117,7 +117,7 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
                 if not options:
                     continue
                 payload = {"shop": catalog.shops[shop]["name"], "goals": bids.PUBLIC_GOALS[shop], "round": round_no,
-                           "leaders": public_leaders(), "asks": [a.model_dump() for a in selected],
+                           "market": {pid: value for pid in product_ids if (value := market.reference(pid))}, "leaders": public_leaders(), "asks": [a.model_dump() for a in selected],
                            "options": [{**b.model_dump(by_alias=True), "utility_rank": rank + 1,
                                         "wins": [catalog.offers[i.offer_id]["product_id"] for i in b.items if i.unit_usd_cents <= public_leaders()[catalog.offers[i.offer_id]["product_id"]]["unit"]]} for rank, b in enumerate(options)]}
                 try:

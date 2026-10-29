@@ -1,6 +1,7 @@
 import json
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -23,6 +24,9 @@ class SimulationContracts(unittest.TestCase):
         self.assertEqual(first["charge_above_hold"], 0)
         self.assertEqual(first["shop_below_authority"], 0)
         self.assertEqual(first["d_model_choices"], 0)
+        self.assertEqual(first["e_model_choices"], 0)
+        self.assertEqual(first["bundle_split_violations"], 0)
+        self.assertTrue(all(totals["E"] <= totals["A"] for totals in first["currency_totals"].values()))
         self.assertTrue(all(totals["B"] is None for totals in first["currency_totals"].values()))
 
     def test_benchmark_cache_reuses_only_validated_matching_prompts(self):
@@ -37,6 +41,23 @@ class SimulationContracts(unittest.TestCase):
             self.assertEqual(provider.call_count, 2)
             for path in Path(directory).glob("*.json"):
                 self.assertEqual(set(json.loads(path.read_text())), {"result", "tokens"})
+
+    def test_cache_distinguishes_role_models_and_response_formats(self):
+        from rally.sim import cache as model_cache
+
+        provider = Mock(return_value=(Choice(index=0, note="Public terms."), 15))
+        with tempfile.TemporaryDirectory() as directory:
+            cache = ModelCache(provider, directory)
+            config = replace(model_cache.settings, llm_model_shop="shop-a", llm_response_format="json_object")
+            with patch.object(model_cache, "settings", config):
+                cache(Choice, "shop", {}, model_role="shop")
+                cache(Choice, "shop", {}, model_role="shop")
+            self.assertEqual(provider.call_count, 1)
+            with patch.object(model_cache, "settings", replace(config, llm_model_shop="shop-b")):
+                cache(Choice, "shop", {}, model_role="shop")
+            with patch.object(model_cache, "settings", replace(config, llm_response_format="json_schema")):
+                cache(Choice, "shop", {}, model_role="shop")
+            self.assertEqual(provider.call_count, 3)
 
     def test_routine_fallback_preserves_explicit_budget_and_stock_constraints(self):
         catalog = Catalog()

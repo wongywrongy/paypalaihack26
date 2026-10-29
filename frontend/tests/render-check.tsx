@@ -1,3 +1,4 @@
+import MarketRange from '../src/components/MarketRange';
 import { applyAuctionEvent, initialAuction } from '../src/auction';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -96,3 +97,6 @@ if (awarded.kind === 'award') {
   const overridden = applyAuctionEvent(auction, { ...awarded, id: 'individual-award', winners });
   for (const item of Object.values(overridden.items)) assert.equal(item.lanes.find(lane => lane.won)!.perks.includes('bundle'), false);
 }
+
+assert.equal(renderToStaticMarkup(<MarketRange />), '');
+assert.ok(renderToStaticMarkup(<MarketRange reference={{ low_usd_cents: 1800, median_usd_cents: 2200, high_usd_cents: 2600, n: 3, as_of: '2026-10-29' }} />).includes('$18–26'));

@@ -273,3 +273,15 @@ test('v3 server events restore winners, replay, and paid receipt without payment
   await expect(page.locator('.hero-money')).toHaveText('$101.92');
   expect(api.calls.filter(call => call.method !== 'GET')).toEqual([]);
 });
+
+test('optional market ranges stay in US dollars beside local prices', async ({ page }) => {
+  const { catalog, shops, local, cents } = await import('../src/fixture');
+  await mockPublicApi(page, { country: 'CA' });
+  await page.addInitScript(() => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'CA', items: [], rules: { old_packaging_ok: true, bundles_ok: true } })));
+  const reference = { low_usd_cents: 1800, median_usd_cents: 2200, high_usd_cents: 2600, n: 3, as_of: '2026-10-29' };
+  await page.route('**/api/catalog?country=*', route => route.fulfill({ json: { shops, prices_currency: 'USD', products: catalog.map(item => ({ ...item, price: local(Math.min(...Object.values(item.prices).map(value => cents(value!))), 'CA'), currency: 'CAD', available: true, market: item.id === 'dal-rice-toner' ? reference : null })) } }));
+  await page.goto('/shop');
+  await expect(page.getByText('US market $18–26', { exact: true })).toBeVisible();
+  await expect(page.locator('.market-range')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: /Ship to Canada · CAD/ })).toBeVisible();
+});

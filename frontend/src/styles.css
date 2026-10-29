@@ -348,3 +348,5 @@ thead th { font-weight: 500; color: var(--muted); font-size: .8rem }
 .payment-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr)); gap: 12px; padding: 16px 0; border-block: 1px solid var(--line); margin: 20px 0 }
 .payment-strip dt { font-size: .8rem; color: var(--muted) }
 .payment-strip dd { font-size: .866667rem; margin: 6px 0 0 }
+
+.market-range { margin: 8px 0 12px; color: var(--muted); overflow-wrap: anywhere }

@@ -1,14 +1,18 @@
+import { useBag } from '../state';
+import MarketRange from './MarketRange';
 import { type AuctionState, type Perk } from '../auction';
 import { money, product, shops, type Currency, type ShopId } from '../fixture';
 import { Photo } from './MemberUI';
 const labels: Record<Perk, string> = { older: 'Older packaging', kit: 'Sample kit', bundle: 'Bundle', freeship: 'Ships free in Korea' };
 export function AuctionBoard({ state, currency, ownShop, floors }: { state: AuctionState; currency: Currency; ownShop?: ShopId; floors?: Record<string, number> }) {
+  const { store } = useBag();
   return <div className="auction-items">{Object.values(state.items).map(item => {
+    const details = store?.products.find(product => product.id === item.id) || product(item.id);
     const winning = item.lanes.find(lane => lane.won);
     const prices = item.lanes.flatMap(lane => lane.price === null ? [] : [lane.price]);
     const high = Math.max(item.bestListed, ...prices), low = Math.min(...prices) * .85;
     return <section className="auction-item" key={item.id} aria-label={`${product(item.id).name} bids`}>
-      <div className="auction-product"><Photo item={product(item.id)} older={!!winning?.perks.includes('older')} /><div><h2>{product(item.id).name}</h2><p className="fine">{product(item.id).brand} · {product(item.id).size}</p>{winning ? <p className="winner-label">Won by {shops[winning.shop].name}</p> : <p className="fine">{item.lanes.length === 1 ? `Only at ${shops[item.lanes[0].shop].name}` : `${item.lanes.length} shops bid`}</p>}</div></div>
+      <div className="auction-product"><Photo item={product(item.id)} older={!!winning?.perks.includes('older')} /><div><h2>{product(item.id).name}</h2><p className="fine">{product(item.id).brand} · {product(item.id).size}</p>{winning ? <p className="winner-label">Won by {shops[winning.shop].name}</p> : <p className="fine">{item.lanes.length === 1 ? `Only at ${shops[item.lanes[0].shop].name}` : `${item.lanes.length} shops bid`}</p>}</div></div><MarketRange reference={details.market} />
       <div className="auction-lanes">{item.lanes.map(lane => {
         const position = lane.price === null ? 100 : Math.max(0, Math.min(100, (lane.price - low) / Math.max(1, high - low) * 100));
         const floor = lane.shop === ownShop ? floors?.[item.id + (lane.perks.includes('older') ? ':older' : '')] : undefined;

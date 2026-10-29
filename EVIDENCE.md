@@ -175,3 +175,13 @@ PLAN.md on `rally` (October 22) is authoritative. The original workspace and dat
 ### Auction default · October 29, 2026
 
 B2 gates passed before changing the default. New quotes default to auction; explicit RALLY_DEAL_MODE=exchange and frozen historical quote modes retain exchange. Full disposable-Postgres unittest discovery after the default change: 97 tests passed, no skips.
+
+### B3 and final PR gate · October 29, 2026
+
+- Final `PYTHONPATH=backend python -m unittest discover -s tests -v` on disposable Postgres: **102 tests passed, no skips** (61.419 s). Includes market filtering/privacy, role payloads/cache identity, all five auction/exchange goldens and persistent order/payment contracts with doubles.
+- Final Ruff E4/E7/E9/F/I check passed. `npm run build --prefix frontend` passed; `npm run test:render --prefix frontend` passed; `npm run test:browser --prefix frontend -- --workers=4` with installed Chromium passed **100 cases** across desktop/mobile. Optional US market range stays USD beside CAD prices; absent ranges stay hidden. Git diff whitespace check passed.
+- `PYTHONPATH=backend python scripts/engine.py --fixture`: USD final 10192, 3 rounds, zero provider calls. Not connected evidence.
+- `PYTHONPATH=backend python scripts/benchmark.py --fixture --count 500 --output docs/benchmark-auction.json`: 497 supported, 3 unsupported, E below checkout in 497; charge_above_hold=0, shop_below_authority=0, bundle_split_violations=0, zero model choices/calls, hosted_benchmark_verified=false. Report includes per-currency A/D/E totals; prior v2 report retained.
+- Read public Channel3 docs on this date: https://channel3.ai/docs/llms.txt and https://channel3.ai/docs/openapi/openapi.json (direct HTTP succeeded; web fetch could not access the docs). Verified POST https://api.trychannel3.com/v1/search, x-api-key, US/USD config, products/offers/price schema. Importer HTTP tests use doubles, not actual searches.
+- Owner will fill the ignored .env; no model or Channel3 credentials were supplied. Bitdeer GET /v1/models, connected scripts/engine.py, provider json_schema/json_object compatibility, Channel3 search/import and connected benchmark remain **not run**. Committed market.json is intentionally empty; no prices or retailer material fabricated.
+- Hosted USD/CAD human PayPal sandbox approval remains pending. No PayPal, Render or DNS settings changed; no external payment mutations performed.

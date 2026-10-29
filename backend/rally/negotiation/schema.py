@@ -54,7 +54,7 @@ class Bundle(BaseModel):
 
 
 class Bid(BaseModel):
-    model_config = ConfigDict(extra="forbid", strict=True)
+    model_config = ConfigDict(extra="forbid", strict=True, populate_by_name=True)
     shop_id: str
     round: StrictInt = Field(ge=1, le=3)
     items: list[BidItem] = Field(max_length=9)

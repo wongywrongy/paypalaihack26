@@ -52,6 +52,7 @@ class Catalog:
         return int(Decimal(self.products[product_id]["weight_kg"]) * 1000)
 
     def public(self, destination):
+        from . import market
         from .countries import country
         from .fx import convert
 
@@ -61,5 +62,5 @@ class Catalog:
             offers = [o for o in self.offers.values() if o["product_id"] == p["id"] and o["variant"] == "current"]
             available = [o for o in offers if o["stock"] > 0]
             prices = {o["shop_id"]: f"{o['list_usd'] // 100}.{o['list_usd'] % 100:02d}" for o in available or offers}
-            products.append({**p, "prices": prices, "price": convert(min(o["list_usd"] for o in available or offers), currency), "currency": currency, "available": self.allowed(p["id"], destination) and bool(available)})
+            products.append({**p, "market": market.reference(p["id"]), "prices": prices, "price": convert(min(o["list_usd"] for o in available or offers), currency), "currency": currency, "available": self.allowed(p["id"], destination) and bool(available)})
         return {"products": products, "shops": self.shops, "prices_currency": "USD"}
