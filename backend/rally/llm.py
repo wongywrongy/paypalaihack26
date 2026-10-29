@@ -16,8 +16,10 @@ def complete(
     max_tokens=1000,
     provider_schema=False,
     remaining_tokens=None,
+    model_role=None,
 ):
-    if not settings.llm_api_key or not settings.llm_base_url or not settings.llm_model:
+    model = settings.model_for(model_role)
+    if not settings.llm_api_key or not settings.llm_base_url or not model:
         raise RuntimeError(
             "Model unavailable. Configure the authenticated backend model endpoint."
         )
@@ -54,7 +56,7 @@ def complete(
                     "anthropic-version": "2023-06-01",
                 },
                 json={
-                    "model": settings.llm_model,
+                    "model": model,
                     "max_tokens": max_tokens,
                     "system": system,
                     "messages": [{"role": "user", "content": json.dumps(payload)}],
@@ -74,10 +76,11 @@ def complete(
                 settings.llm_base_url + "/v1/chat/completions",
                 headers={"Authorization": "Bearer " + settings.llm_api_key},
                 json={
-                    "model": settings.llm_model,
+                    "model": model,
                     "max_tokens": max_tokens,
                     "response_format": {"type": "json_object"}
-                    if settings.llm_protocol == "ollama" and not provider_schema
+                    if (settings.llm_protocol == "ollama" and not provider_schema)
+                    or settings.llm_response_format == "json_object"
                     else {
                         "type": "json_schema",
                         "json_schema": {

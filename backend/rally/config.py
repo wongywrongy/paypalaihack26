@@ -25,10 +25,28 @@ class Settings:
     llm_protocol: str = env("LLM_PROTOCOL", "openai")
     llm_base_url: str = env("LLM_BASE_URL")
     ollama_upstream: str = env("OLLAMA_UPSTREAM")
+    # v3 bidding (docs/plan/BIDDING.md). Role models fall back to LLM_MODEL.
+    llm_model_shop: str = env("LLM_MODEL_SHOP")
+    llm_model_buyer: str = env("LLM_MODEL_BUYER")
+    # json_object: schema goes in the system prompt only (providers without json_schema).
+    llm_response_format: str = env("LLM_RESPONSE_FORMAT", "json_schema")
+    # auction (v3, default for new orders once implemented) or exchange (v2 engine).
+    deal_mode: str = env("RALLY_DEAL_MODE", "exchange")
+
+    def model_for(self, role=None):
+        if role == "shop" and self.llm_model_shop:
+            return self.llm_model_shop
+        if role in ("buyer", "rally") and self.llm_model_buyer:
+            return self.llm_model_buyer
+        return self.llm_model
 
     def __post_init__(self):
         if self.mode not in ("fixture", "connected"):
             raise ValueError("RALLY_MODE must be fixture or connected.")
+        if self.llm_response_format not in ("json_schema", "json_object"):
+            raise ValueError("LLM_RESPONSE_FORMAT must be json_schema or json_object.")
+        if self.deal_mode not in ("auction", "exchange"):
+            raise ValueError("RALLY_DEAL_MODE must be auction or exchange.")
         if self.mode == "fixture" and not os.getenv("RALLY_TESTING"):
             raise ValueError(
                 "Fixture mode requires RALLY_TESTING; hosted demos use sandbox."

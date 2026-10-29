@@ -1,5 +1,7 @@
 # Rally — build plan
 
+> **v3, Oct 29 (owner-approved): shops bid for every item.** [docs/plan/BIDDING.md](docs/plan/BIDDING.md) replaces "Negotiation engine" below and updates the locked rows for the live deal, shopper rules, terms traded and model. Where they disagree, BIDDING.md wins.
+
 Source of truth for coding agents. Mirrors the shared plan doc as of Oct 22, 2026 (version 2: international shopping). Reference screens: [`design/mockup/`](design/mockup/README.md). Reference numbers: [`design/scenario/`](design/scenario/).
 
 ## Summary
