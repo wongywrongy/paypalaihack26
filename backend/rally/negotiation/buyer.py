@@ -1,9 +1,10 @@
 """Buyer requests are public language; they carry no money authority."""
 
+from ..fx import convert, money
 from .schema import Ask
 
 
-def candidate_asks(round_no, leaders, bids, eligible_offers, rules, market=None):
+def candidate_asks(round_no, leaders, bids, eligible_offers, rules, market=None, *, currency="USD", rate=None):
     shops = {}
     for pid, offers in eligible_offers.items():
         if len({o["shop_id"] for o in offers}) < 2:
@@ -28,7 +29,7 @@ def candidate_asks(round_no, leaders, bids, eligible_offers, rules, market=None)
             price, shop = other[0]
             gap = max(0, price - leader["unit"])
             reference = market(pid) if market else None
-            note = f"Can you beat the leader? The gap is USD {gap / 100:.2f}."
+            note = f"Can you beat the leader? The gap is {money(convert(gap, currency, rate), currency)}."
             if reference:
                 note += f" US market ${reference['low_usd_cents'] / 100:g}–{reference['high_usd_cents'] / 100:g}."
             result.append(Ask(round=round_no, shop_id=shop, product_ids=[pid], kind="beat", note=note))
@@ -38,4 +39,4 @@ def candidate_asks(round_no, leaders, bids, eligible_offers, rules, market=None)
 
 
 def round_note(round_no, total_minor, currency):
-    return f"Round {round_no} best: {currency} {total_minor / 100:.2f} all in. Anyone lower?"
+    return f"Round {round_no} best: {money(total_minor, currency)} all in. Anyone lower?"

@@ -283,3 +283,41 @@ class GeneratedBidding(unittest.TestCase):
         start = source(REFERENCE["cart"], "US", catalog)
         with self.assertRaisesRegex(ValueError, "explicit fixture selector"):
             run_auction(start, "US", catalog, FULL_RULES, recorded_review=True)
+
+
+class BuyerNotes(unittest.TestCase):
+    def test_round_note_has_currency_symbol_in_all_five_currencies(self):
+        from rally.negotiation.buyer import round_note
+
+        for currency, amount, expected in (("USD", 11882, "$118.82"), ("CAD", 16087, "C$160.87"), ("GBP", 9361, "£93.61"), ("EUR", 11105, "€111.05"), ("AUD", 17260, "A$172.60")):
+            with self.subTest(currency=currency):
+                self.assertEqual(round_note(1, amount, currency), f"Round 1 best: {expected} all in. Anyone lower?")
+
+    def test_buyer_note_is_on_asks_round_note_uses_new_total_and_code(self):
+        from rally.fx import money
+        from rally.negotiation.auction import run_auction
+
+        def selector(role, payload):
+            return {"indexes": [0], "note": "Please sharpen this bid."} if role == "buyer" else fixture(role, payload)
+        catalog = Catalog()
+        for country in REFERENCE["golden"]:
+            checkout = source(REFERENCE["cart"], country, catalog)
+            result = run_auction(checkout, country, catalog, FULL_RULES, choose=selector)
+            asks = [e for e in result["events"] if e["kind"] == "ask"]
+            self.assertEqual({e["round"] for e in asks}, {1, 2, 3})
+            self.assertTrue(all(e["note"] == "Please sharpen this bid." for e in asks))
+            for event in (e for e in result["events"] if e["kind"] == "round"):
+                self.assertEqual(event["chosen_by"], "CODE")
+                self.assertEqual(event["note"], f"Round {event['round']} best: {money(event['total'], checkout['breakdown']['currency'])} all in. Anyone lower?")
+
+    def test_beat_note_converts_the_gap_and_uses_currency_symbol(self):
+        from rally.fx import convert, money
+        from rally.negotiation.bids import eligible
+        from rally.negotiation.buyer import candidate_asks
+
+        catalog = Catalog()
+        offers = eligible(["mul-gel-cleanser"], "US", catalog, FULL_RULES)
+        leaders = {"mul-gel-cleanser": {"shop": "haneul", "unit": 1000}}
+        for currency in ("USD", "CAD", "GBP", "EUR", "AUD"):
+            asks = candidate_asks(2, leaders, {}, offers, FULL_RULES, currency=currency)
+            self.assertEqual(asks[0].note, f"Can you beat the leader? The gap is {money(convert(200, currency), currency)}.")

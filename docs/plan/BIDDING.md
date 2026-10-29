@@ -35,7 +35,7 @@ Inputs: the immutable checkout quote (lines, breakdown, rate), destination, cata
    - The buyer agent sends up to 3 asks (see Buyer agent). Round 1 has one ask per shop: "Bid on these items."
    - All shops bid in parallel. For each shop, code generates candidate bids from its authority, scores them, and sends the top 3 to the shop's model. The model picks one by index and writes a one-line public note. A shop may pass on any item.
    - Code validates each bid: offer exists and is in stock, `floor ≤ price ≤ list`, never higher than the same shop's previous bid for that item (bids only go down), the older variant only if permitted, a bundle only if `bundles_ok`, a free-shipping perk only from that shop.
-   - Code computes the best complete allocation over all current bids (exact search, below) and emits a `round` event with leaders and the round total.
+   - The buyer-selected note is attached to every selected `ask`, including round 1. Code then computes the best complete allocation over all current bids (exact search, below) and emits a `round` event with leaders, the new total and a code-generated `round_note`. Public round and beat notes format money with destination symbols ($, C$, £, €, A$), using the locked rate for beat gaps.
 3. **Award.** After round 3, code computes the final allocation, asserts `total ≤ hold`, and emits one `award` event plus `done`. If nothing beat the checkout, the checkout allocation stands. There is still no failed order.
 Model failures are logged server-side and counted in the result (`model_failures`, `model_failures_by_role`); they do not emit shopper `error` events. Shops use the top-ranked valid candidate; the buyer uses the top asks and code's `round_note`. Only a shop with no valid candidate emits `error`.
 

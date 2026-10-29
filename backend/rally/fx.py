@@ -26,3 +26,9 @@ def convert(cents, currency, rate=None):
 
 def basis(cents, points):
     return (cents * points + 5000) // 10000
+
+
+def money(cents, currency):
+    """Format an already-converted amount for public notes."""
+    symbols = {"USD": "$", "CAD": "C$", "GBP": "£", "EUR": "€", "AUD": "A$"}
+    return f"{symbols[currency]}{cents / 100:.2f}"

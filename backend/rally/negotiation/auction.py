@@ -95,7 +95,7 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
                 logger.info("Auction deadline reached; returning best complete award")
                 break
             round_started = monotonic()
-            asks = buyer.candidate_asks(round_no, public_leaders(), current, offers, rules, market=market.reference)
+            asks = buyer.candidate_asks(round_no, public_leaders(), current, offers, rules, market=market.reference, currency=currency, rate=rate)
             selected, by = asks[:3], "CODE"
             note = buyer.round_note(round_no, best["breakdown"]["total"], currency)
             if asks:
@@ -109,7 +109,7 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
                 except Exception as exc:
                     failed("buyer", exc)
             for ask in selected:
-                event("ask", note if round_no > 1 else ask.note, chosen_by=by, round=round_no, shop=ask.shop_id, items=ask.product_ids)
+                event("ask", note, chosen_by=by, round=round_no, shop=ask.shop_id, items=ask.product_ids)
             pending = []
             for shop in shops:
                 options = bids.candidates(shop, round_no, offers, current.get(shop), public_leaders(), selected, catalog, rules, current=current, start=start, destination=destination)
@@ -165,7 +165,7 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
             best = award.best_allocation(current, start, destination, catalog, rules)
             if pace:
                 sleep(max(0, min(round_started + ROUND_SECONDS, deadline) - monotonic()))
-            event("round", note, round=round_no, leaders=best["leaders"])
+            event("round", buyer.round_note(round_no, best["breakdown"]["total"], currency), round=round_no, leaders=best["leaders"])
             rounds = round_no
     finally:
         executor.shutdown(wait=False, cancel_futures=True)
