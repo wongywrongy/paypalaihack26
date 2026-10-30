@@ -76,7 +76,7 @@ export const SCENES: Scene[] = [
       { clip: '04-storefront-bag', at: 0, dur: 11 },
       { clip: '05-paypal-hold', at: 11, dur: 7 },
     ],
-    callouts: [{ at: 6, dur: 4.8, text: 'All-in: shipping, duty, tax', x: 0.575, y: 0.575, px: 0.17, py: 0.575 }],
+    callouts: [{ at: 6, dur: 4.8, text: 'All-in: shipping, duty, tax', x: 0.575, y: 0.575, px: 0.17, py: 0.68 }],
     ribbon: { done: [1, 2], ticks: [] },
     band: { at: 11.4, dur: 6.4, text: 'PayPal authorizes {held} — a hard ceiling. Shops can only bid it down.' },
     cues: [
