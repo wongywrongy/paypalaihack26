@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import re
 from time import monotonic
 
 from fastapi import APIRouter, HTTPException, Request, Response
@@ -47,12 +48,21 @@ class LoginInput(BaseModel):
     password: str = Field(min_length=1, max_length=256)
 
 
+# A judge plays both sides in one window: ordinary shopper writes plus Haneul's workspace.
+# Hub, recovery and other shops stay closed.
+JUDGE_SHOPPER_WRITES = re.compile(r"^/api/(quotes|assist|bags|reset|login|logout)$|^/api/bags/[^/]+(/checkout(/approve)?)?$|^/api/orders/[^/]+/cancel$")
+
+
+def judge_may_write(path):
+    return path.startswith("/api/shops/haneul/") or bool(JUDGE_SHOPPER_WRITES.match(path))
+
+
 def owner(db, request, *, write=False):
     session, raw = sessions.current(db, request)
     if write:
         sessions.check_write(request, raw)
-        if session.get("judge_writer") and not (request.url.path.startswith("/api/shops/haneul/") or request.url.path in ("/api/login", "/api/logout")):
-            raise HTTPException(403, "This account can only manage Haneul listings, goals and parcel handoffs.")
+        if session.get("judge_writer") and not judge_may_write(request.url.path):
+            raise HTTPException(403, "This account can only shop and manage Haneul listings, goals and parcel handoffs.")
     return session
 
 

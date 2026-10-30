@@ -27,7 +27,7 @@ test('ordinary shopper flow uses server routine, quote, SDK6 approval, deal and 
   await expect(page.locator('.hero-money')).toHaveText('$106.79');
   await page.reload(); await expect(page.locator('.hero-money')).toHaveText('$106.79');
   const writesBeforeReplay = api.calls.filter(call => call.method !== 'GET').length;
-  await page.getByRole('link', { name: 'Watch how Rally got this price' }).click();
+  await page.getByRole('link', { name: 'Replay bidding' }).click();
   await page.getByRole('button', { name: 'Pause updates' }).click();
   await expect(page.getByText('Only the replay is paused. Your saved order is unchanged.', { exact: true })).toBeVisible();
   await expect(page.getByText('Only your view is paused. Rally keeps working on your deal.', { exact: true })).toHaveCount(0);
@@ -157,7 +157,7 @@ test('shop private grid and controls respect read-only accounts', async ({ page 
   await expect(page.getByText('Your account is read-only.', { exact: true })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'Lowest price' })).toBeVisible();
   await expect(page.getByRole('gridcell', { name: '$16.00', exact: true })).toBeVisible();
-  await page.getByRole('link', { name: 'Agent settings', exact: true }).click();
+  await page.getByRole('link', { name: 'Agent', exact: true }).click();
   await expect(page.getByLabel('Your shop goal')).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Review rules' })).toBeDisabled();
 });
@@ -271,7 +271,7 @@ test('v3 server events restore winners, replay, and paid receipt without payment
   await expect(page.getByRole('heading', { name: 'Bidding complete' })).toBeVisible();
   await expect(page.locator('.hero-money')).toHaveText('$100.69');
   await expect(page.locator('.auction-lane.won')).toHaveCount(4);
-  await page.getByRole('button', { name: 'Watch the bidding again' }).click();
+  await page.getByRole('button', { name: 'Replay bidding' }).click();
   await page.clock.runFor(20000);
   await expect(page.locator('.hero-money')).toHaveText('$100.69');
   await page.getByRole('link', { name: 'See your order' }).click();

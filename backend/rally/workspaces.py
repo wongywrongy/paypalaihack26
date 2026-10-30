@@ -263,3 +263,37 @@ def shop_activity(shop_id: str, request: Request):
     with connect() as db:
         shop_owner(db, request, shop_id)
         return {"auctions": history(db, shop_id)}
+
+
+@router.get("/shops/{shop_id}/home")
+def shop_home(shop_id: str, request: Request):
+    """Setup progress from saved facts only: a later order counts only after the shop's latest change."""
+    from datetime import datetime
+
+    from .activity import history
+    from .payments.ledger import operation
+    with connect() as db:
+        shop_owner(db, request, shop_id)
+        catalog = store.catalog(db)
+        policy = catalog.policies[shop_id]
+        since = db.execute("SELECT max(created_at) AS at FROM listing_changes WHERE shop_id=%s AND action LIKE 'reset%%'", (shop_id,)).fetchone()["at"]
+        price = db.execute("SELECT offer_id,after,created_at FROM listing_changes WHERE shop_id=%s AND action='listing' AND (%s::timestamptz IS NULL OR created_at>%s) ORDER BY id DESC LIMIT 1", (shop_id, since, since)).fetchone()
+        applied = policy.get("applied_at")
+        applied_at = datetime.fromisoformat(applied) if applied else None
+        goal_done = bool(applied_at and (since is None or applied_at > since))
+        changed = max([t for t in (since, price and price["created_at"], goal_done and applied_at) if t] or [None])
+        rows = history(db, shop_id)
+        won = next((r for r in rows if r["won"] and (changed is None or datetime.fromisoformat(r["created_at"]) > changed)), None)
+        handed = won and db.execute("SELECT created_at FROM order_shipments WHERE order_id=%s AND shop_id=%s AND leg='shop_to_hub'", (won["id"], shop_id)).fetchone()
+        payout = won and operation(db, f"order:{won['id']}:shop:{shop_id}:payout")
+        paid_total = db.execute("SELECT coalesce(sum((request->>'amount_cents')::integer),0) AS cents,count(*) AS n FROM payment_ops WHERE kind='payout' AND status='completed' AND request_id LIKE %s", (f"order:%:shop:{shop_id}:payout",)).fetchone()
+        offer = price and catalog.offers.get(price["offer_id"])
+        steps = [
+            {"key": "prices", "done": bool(price), "product_id": offer and offer["product_id"], "floor_usd": price and price["after"].get("floor_usd")},
+            {"key": "goal", "done": goal_done, "summary": policy.get("summary") if goal_done else None},
+            {"key": "order", "done": bool(won), "order_id": won and won["id"], "won": won and won["won"], "items": won and won["items"]},
+            {"key": "handoff", "done": bool(handed), "order_id": won and won["id"]},
+            {"key": "paid", "done": bool(payout and payout["status"] == "completed"), "status": payout and payout["status"], "amount_usd": payout and payout["request"].get("amount_cents")},
+        ]
+        return {"steps": steps, "goal": {k: policy.get(k) for k in ("goal_text", "summary", "strategy", "applied_at")},
+                "recent": rows[:3], "payouts": {"total_usd": paid_total["cents"], "count": paid_total["n"]}}

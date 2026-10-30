@@ -155,7 +155,7 @@ test('auction follows bids, pauses and replays without financial requests', asyn
   await expect(page.locator('.bid-floor')).toHaveCount(0);
   if (info.project.name === 'desktop') expect(await page.locator('.auction-board').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(2);
   await screenshot(page, `deal-done-${info.project.name}`);
-  await page.getByRole('button', { name: 'Watch the bidding again' }).click(); await page.clock.runFor(20000);
+  await page.getByRole('button', { name: 'Replay bidding' }).click(); await page.clock.runFor(20000);
   await expect(page.getByRole('status')).toHaveText('Your total, all in: $101.92');
   await page.getByRole('link', { name: 'See your order' }).click(); await expect(page.locator('.hero-money')).toHaveText('$101.92');
   await expect(page.getByText('Haneul Beauty · Bundle', { exact: true })).toHaveCount(2);

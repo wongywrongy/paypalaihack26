@@ -1,20 +1,20 @@
-# Rally video capture script
+# Rally video: one linear story, under 3 minutes
 
-Target 2:40–2:55, no unlicensed music or unrelated brands. Use the deployed ordinary app, not the recorded Rootlane review, for the final submission. Complete a genuine connected order first; never put fixture totals over a real receipt. Hide personal credentials, provider tokens, writer passwords and private merchant configuration during recording.
+The product path and the video are the same path: Rally for shops **Home** → storefront → bidding → receipt → hand-off → PayPal payout. The setup guide on Home is the on-screen chapter list, so judges who watch the video and then open the app see the same five steps.
 
-| Time | Picture | Narration |
+Record the deployed app in one browser window at 1440×900, signed in as Haneul with the judge writer. Complete a genuine connected order first; never put fixture totals over a real receipt. Hide passwords, the PayPal sandbox login and any provider tokens. No music with lyrics or third-party brands.
+
+| Time | Picture | Narration (say only what this run shows) |
 | --- | --- | --- |
-| 0:00–0:15 | Catalog; ship-to chip | “Buying across Korean shops means separate checkout and delivery decisions. Rally brings this limited catalog into one order, in your currency.” |
-| 0:15–0:30 | Switch US → Canada; browse | “Choose a destination and see the complete price in local currency. These shops and delivery costs are simulated for this sandbox demonstration.” |
-| 0:30–0:50 | Ask for routine; open bag | “Ask for a routine or choose products yourself. Rally checks stock, destination restrictions and the complete cost across shops.” |
-| 0:50–1:05 | Expand breakdown; show two permissions | “This is my maximum. I permit older packaging and a small extra only when it lowers the total.” |
-| 1:05–1:20 | Real PayPal sandbox approval, credentials hidden | “I approve the maximum myself in PayPal sandbox. The agent cannot give payment consent.” |
-| 1:20–1:50 | Actual live Deal screen | “The buyer and shop contexts propose terms. Code checks the prices, stock, permissions and complete total. Here is what this run actually changed.” Describe only the offers/outcome visible in this run; an immediate acceptance or unchanged price is valid. |
-| 1:50–2:05 | Confirmed receipt; refresh; Your orders | “The worker captured this confirmed final amount, within my approved maximum. My receipt and the deal remain saved after refresh.” |
-| 2:05–2:25 | Shop-scoped order and payout; hub tracking | “A simulated hub arrival triggers a separate sandbox shop payout. Shipment updates are simulated; payment and tracking API results are verified separately.” Show only confirmed results. |
-| 2:25–2:45 | One small architecture graphic + repo/license | “Models propose; code decides; PayPal moves test money. We keep durable operations and reconcile uncertain outcomes before retrying. The public repository records exactly what we verified.” |
-| 2:45–2:55 | Product and URL | “Rally: Korean skincare, one box, your currency.” |
+| 0:00–0:15 | Shopper storefront, three shop names visible | "Korean skincare is a $2.2 billion export to the US, and most of it comes from small shops. Buying from three of them means three checkouts, three parcels, and since de minimis ended, three customs bills." |
+| 0:15–0:30 | Rally for shops **Home**: setup guide at 0 of 5 | "Rally turns them into one checkout. I'm Haneul Beauty, a Seoul shop. Rally walks me through five steps." |
+| 0:30–0:45 | Products: change Cica Barrier Cream's lowest price; guide ticks 1 | "My lowest price is private. Shoppers, other shops and even my agent's prompt never see it." |
+| 0:45–1:05 | Agent: tap a suggestion, **Review rules**; rules that changed light up; **Apply** | "I say what I want in plain words. A model turns it into bounded rules, I see exactly what changed, and nothing applies until I press Apply." |
+| 1:05–1:20 | Home: **Open your storefront** → bag with cleanser + cream, bundles on | "Now I'm the shopper. One price for everything, delivered, duties included." |
+| 1:20–1:35 | PayPal sandbox approval (credentials hidden) | "PayPal holds this total. It is the ceiling. The agents can only bid it down." |
+| 1:35–2:05 | Live bidding board, all three rounds | "Three shop agents bid in three rounds: price cuts, bundles, free shipping inside Korea. Code checks every bid against each shop's private limits and picks the lowest complete delivered total." Name only the moves this run made. |
+| 2:05–2:20 | Receipt: charged vs held, **One box from N shops**, **Your shop bid on this order** | "Rally captures less than the hold. One box, one customs entry. And because I'm also signed in as Haneul, the receipt shows my shop's result." |
+| 2:20–2:40 | **Hand off in Rally for shops** → **Record hand-off** → payout timeline to Paid; Home at 5 of 5 | "I hand off the parcel and PayPal pays my shop right away. That's the whole loop: price, goal, order, hand-off, payout." |
+| 2:40–2:55 | Architecture card + repo | "Models propose, code decides, PayPal moves the money: Orders v2 authorization and partial capture, Payouts, webhooks, all through an idempotent ledger." |
 
-Do not claim a fixed saving or a hosted benchmark result unless this run established it. The $2 mask tradeoff is a useful example only if the actual agents choose it. Keep any accelerated fulfillment/replay honestly identified in narration. Use the actual paid total and the amount left uncaptured; do not promise immediate bank hold release.
-
-The agent can capture storefront/deal/receipt footage after the app is deployed. The owner must approve the real PayPal popup and publish the final video under their chosen account; no credential entry should appear in the footage.
+Do not claim a saving, win or payout amount this run did not produce. The shops, brands and logistics are fictional; say so once in the description, not over the product.
