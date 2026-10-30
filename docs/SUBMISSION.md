@@ -10,7 +10,13 @@ The shopper chooses the products and explicitly permits older packaging and bund
 
 The deal is visible item by item and survives refresh. Shops have scoped workspaces with their own private commercial information and an AG Grid products view. A confirmed fictional hub arrival queues a genuine sandbox payout; export tracking uses the PayPal Agent Toolkit through a durable transport. Import overestimates can be refunded; unshipped orders past their deadline are refunded. Unknown provider outcomes remain unresolved until reconciliation.
 
-The intended benefit is simpler cross-shop purchasing with a visible complete price and fewer separate parcels to organize. We have not measured customer savings, environmental benefit or social impact, and do not guarantee a discount.
+## Potential impact
+
+Korean cosmetics exports reached a record $11.4 billion in 2025 (+11.8%), with the United States the top destination at $2.2 billion (+15%), according to Ministry of Food and Drug Safety data reported by [Korea JoongAng Daily](https://www.koreajoongangdaily.com/business/korea-surpasses-us-in-cosmetics-exports-with-record-114-billion/12713991). Small businesses carry a growing share: SME online exports hit a quarterly record of $300 million in Q1 2026 (+38.2%), about two thirds of it cosmetics (+74.2%), per the Ministry of SMEs and Startups via [Korea JoongAng Daily](https://www.koreajoongangdaily.com/business/online-exports-of-smes-surpass-300m-in-q1-on-cosmetics/12522634). Since the US suspended duty-free de minimis treatment for all countries on August 29, 2025 ([CBP guidance summary](https://kpmg.com/us/en/taxnewsflash/news/2025/08/us-cbp-implements-eo-suspending-duty-free-de-minimis-treatment.html)), every separate parcel from a separate shop can bring its own duty and fees.
+
+Rally addresses both sides of that gap. Shoppers get one checkout across shops, one box, duties paid up front and a total that can only go down after PayPal authorizes it. Shops, including ones that ship only within Korea, reach buyers abroad without building export logistics, keep their floors private, steer an agent in plain words, and are paid by PayPal payouts as soon as they hand off. The same pattern, a PayPal hold as a hard ceiling with competing merchant agents underneath, applies to any multi-merchant cross-border cart.
+
+Within the product we show only what each order establishes: the shops in the box, what the shopper did not pay compared with the hold, and the shop's payout. We have not measured customer savings at scale, environmental benefit or social impact, and do not guarantee a discount.
 
 ## What we built with
 
@@ -30,7 +36,7 @@ G1 genuinely verified USD/CAD sandbox authorizations and final captures, a void,
 
 Provide the working Render URL, a Personal PayPal sandbox buyer login, and the **Haneul-only judge writer password** privately in the submission’s testing notes. The environment name is `RALLY_JUDGE_WRITER_PASSWORD`; its value must never appear in this repository, public README, video or chat. Retain `RALLY_JUDGE_PASSWORD` for read-only access to Bada and Dalbit. Never share other shop writers’ passwords, the hub password, API keys, OAuth tokens or database credentials.
 
-Use a separate private browser window for Haneul and the ordinary window for shopping. Follow README’s 90-second path: edit cream’s lowest price, compile/review/Apply a goal, create a fresh shopper quote, approve PayPal, then hand off Haneul’s winning parcel. Existing quotes stay frozen. Reset to launch settings is audited and respects active reservations. Judges cannot use payment recovery or hand off another shop’s parcel.
+Use one browser window. Follow README's five steps from Rally for shops Home: edit cream's lowest price, review and Apply a goal, open the storefront and approve PayPal, then hand off Haneul's winning parcel from the receipt. Existing quotes stay frozen. Reset to launch settings is audited and respects active reservations. Judges cannot use payment recovery or hand off another shop’s parcel.
 
 Owner configuration on the **existing** Render resources: Bitdeer endpoint/key/model role ids and response format on web and worker; `RALLY_JUDGE_WRITER_PASSWORD` on web; `CHANNEL3_API_KEY` on worker for daily refresh. `RALLY_AUTO_FULFILLMENT=1` is optional and advances hub logistics only after all winning shops explicitly hand off. Without it, the private hub writer records hub steps. Do not change services, PayPal/DNS configuration or historical data as part of testing.
 

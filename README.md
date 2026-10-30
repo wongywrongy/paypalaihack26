@@ -4,17 +4,19 @@
 
 [Live marketplace plan](docs/plan/LIVE.md) · [Shop bidding plan](docs/plan/BIDDING.md) · [Build plan](PLAN.md) · [Architecture and data model](docs/ARCHITECTURE.md) · [Demo procedure](docs/DEMO.md) · [Owner action list](docs/ACTIONS.md) · [Executed evidence](EVIDENCE.md) · [Screenshots](docs/screenshots/README.md) · [MIT license](LICENSE)
 
-## Judges: try both sides in 90 seconds
+## Judges: one window, five steps
 
-Rally is a two-sided marketplace for fictional Korean skincare shops. Shoppers authorize a maximum through PayPal sandbox; live Bitdeer shop agents compete over three open rounds. Code awards the lowest complete delivered total, including bundles and shipping, and captures at or below that maximum. Merchants edit their listings and set their agent’s goals in Rally for shops.
+Rally is a two-sided marketplace for fictional Korean skincare shops. Shoppers authorize a maximum through PayPal sandbox; live Bitdeer shop agents compete over three open rounds. Code awards the lowest complete delivered total, including bundles and shipping, and captures at or below that maximum. Merchants set prices and goals in Rally for shops and get paid by PayPal payouts.
 
-1. Open [the shopper](https://paypalaihack26.onrender.com/shop) and, in a **separate private browser window**, open [Rally for shops](https://paypalaihack26.onrender.com/shops/products). Separate windows keep shopper and merchant credentials independent.
-2. Sign in to **Haneul Beauty** with the writer password supplied in private testing notes. In Products, edit Cica Barrier Cream’s lowest price within the displayed cost/list bounds. Enter USD amounts; press Enter to save. Changes are audited and resettable.
-3. Open Agent settings. Write a goal such as “Win two-item bundles; offer free shipping in Korea.” Press **Review rules**, inspect the bounded rules, then **Apply**. Until Apply, the existing rules stay active.
-4. In the shopper window, build a fresh bag with cleanser and cream, enable Bundles, and approve the PayPal hold using the private **Personal sandbox buyer**. Watch the bids and winning shops; refresh and replay use this order’s own saved events. An edit affects fresh quotes, not existing checkout consent or receipts. Competition does not guarantee Haneul wins.
-5. In Haneul’s Orders, hand off a parcel **only if Haneul won items**. That queues its USD sandbox payout for its goods plus the shipping amount awarded to it; a free-shipping winner receives no domestic fee. Other winning shops need their own writers’ handoffs. Hub actions and payment recovery remain owner-only.
+Use one browser window. Rally for shops opens on **Home**, whose setup guide walks the whole loop and ticks each step off from saved data:
 
-This branch implements [LIVE.md](docs/plan/LIVE.md), which overrides earlier plans. Hosted v4 needs the reviewed branch merged and deployed before this merchant path is available. Do not treat local checks as a hosted v4 payment result.
+1. Open [Rally for shops](https://paypalaihack26.onrender.com/shops) and sign in to **Haneul Beauty** with the writer password from the private testing notes.
+2. **Set your prices.** Open products and change Cica Barrier Cream's lowest price (Enter to save). Edits are bounded, versioned and audited.
+3. **Give your agent a goal.** Pick a suggestion or write your own, press **Review rules**, see which rules your words changed, then **Apply**.
+4. **Win a Rally order.** Press **Open your storefront**, put cleanser and cream in a bag with bundles allowed, and approve the PayPal hold with the private **Personal sandbox buyer**. Watch the shops bid. Your receipt shows **Your shop bid on this order**; Haneul can still lose, because the lowest complete total wins.
+5. **Hand off and get paid.** Press **Hand off in Rally for shops**, keep **Rally pickup** and press **Record hand-off**. That queues Haneul's USD sandbox payout; Home shows it as paid when PayPal confirms.
+
+The **Selling** chip in the shopper header switches back to Rally for shops at any point. **Reset to launch settings** (the ⋯ menu on Home, Products or Agent) restores Haneul's listings and rules, and restarts the setup guide; orders and payouts are kept. Hub actions, other shops and payment recovery stay owner-only.
 
 ## What works
 
