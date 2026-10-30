@@ -77,7 +77,8 @@ export function Ribbon({ scene, compact }: { scene: Scene; compact?: boolean }) 
   const ribbon = scene.ribbon!;
   const tickFrame = (step: number) => ribbon.done.includes(step) ? -60 : (ribbon.ticks.find(row => row.step === step)?.at ?? Infinity) * fps;
   return <div style={{ position: 'absolute', left: compact ? 22 : 44, top: compact ? 64 : 150, width: compact ? 48 : 350, display: 'flex', flexDirection: 'column', gap: compact ? 22 : 18 }}>
-    {!compact && <div style={{ fontSize: 44, fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.1, marginBottom: 22 }}>{scene.chapter}</div>}
+    {!compact && <div style={{ fontSize: 44, fontWeight: 800, letterSpacing: '-.03em', lineHeight: 1.1 }}>{scene.chapter}</div>}
+    {!compact && <div style={{ fontFamily: MONO, fontSize: 24, color: C.muted, marginBottom: 14 }}>{STEPS.filter((_, i) => tickFrame(i + 1) <= frame).length} of 5</div>}
     {STEPS.map((label, i) => {
       const from = tickFrame(i + 1), done = Number.isFinite(from) ? enter(frame, fps, from) : 0;
       return <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>

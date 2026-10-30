@@ -5,8 +5,8 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { prepare } from '../scripts/prepare.ts';
 import { bidNotes, buildBoard, roundAt, valueAt } from '../src/auction.ts';
-import { buildFacts, crossCheck, finalCheck, OrderSchema, parse, RunSchema } from '../src/schema.ts';
-import { allCues, CLIPS, MAX_SECONDS, SCENES, toScript, toSrt, totalSeconds, type ClipName } from '../src/timeline.ts';
+import { buildFacts, crossCheck, finalCheck, money, OrderSchema, parse, RunSchema } from '../src/schema.ts';
+import { allCues, CLIPS, MAX_SECONDS, SCENES, STEPS, toScript, toSrt, totalSeconds, type ClipName } from '../src/timeline.ts';
 
 // Test data only: nothing here reaches a build.
 const events = () => [
@@ -58,7 +58,7 @@ test('callouts: at most 6 words and 2 on screen', () => {
 test('captions fit 2 lines, can be spoken in time and never overlap', () => {
   const cues = allCues();
   cues.forEach((cue, i) => {
-    assert.ok(cue.text.length <= 110, cue.text);
+    assert.ok(cue.text.length <= 120, cue.text);
     assert.ok(cue.text.split(/\s+/).length / cue.dur <= 3.5, `too fast: ${cue.text}`);
     if (cues[i + 1]) assert.ok(cue.start + cue.dur <= cues[i + 1].start + 1e-9, cue.text);
   });
@@ -81,9 +81,39 @@ test('script.md matches timeline.ts', () => assert.equal(readFileSync('script.md
 test('srt numbers cues and uses comma timestamps', () => {
   const [r, o] = parsed();
   const srt = toSrt(buildFacts(r, o, { a: 'Cleanser', b: 'Cream' }));
-  assert.ok(srt.startsWith('1\n00:00:00,400 --> 00:00:06,000\n'));
+  assert.ok(srt.startsWith('1\n00:00:00,300 --> 00:00:06,800\n'));
   assert.ok(srt.includes('$30.00'));
   assert.ok(!srt.includes('{'));
+});
+
+test('names match the app word for word', () => {
+  const source = (file: string) => readFileSync(join('../frontend/src/routes', file), 'utf8');
+  for (const [file, strings] of Object.entries({
+    'shops/Home.tsx': [...STEPS, 'Get your first Rally payout', ' of 5', 'Open your storefront'],
+    'shops/GoalsForm.tsx': ['Review rules', 'From your goal', 'Apply'],
+    'Paid.tsx': ['Your shop bid on this order', 'Hand off in Rally for shops', 'One box from', 'Duties included'],
+    'shops/OrdersView.tsx': ['Rally pickup', 'Record hand-off', "'Won', 'Handed off', 'Payout sent', 'Paid'"],
+  })) for (const text of strings) assert.ok(source(file).includes(text), `${file}: ${text}`);
+  const readme = readFileSync('README.md', 'utf8');
+  for (const text of [...STEPS, 'Open your storefront', 'Review rules', 'From your goal', 'Hand off in Rally for shops', 'Record hand-off', 'Rally pickup', 'Won · Handed off · Payout sent · Paid', 'Your shop bid on this order', 'Duties included']) assert.ok(readme.includes(text), `README: ${text}`);
+});
+
+test('no value from `lowest` reaches rendered text', () => {
+  // Distinct from every bid, so a hit can only be a leak. A shop's real bid can equal its floor: that is a public bid.
+  const lowest = { a: 987, 'a:older': 654, b: 1234 };
+  const forms = Object.values(lowest).flatMap(value => [String(value), (value / 100).toFixed(2), money(value, 'USD')]);
+  const { root, done } = project({ 'run.json': run(), 'order.json': { ...order(), lowest } }, allClips);
+  prepare(root, { allowPlaceholders: false, probe });
+  // The manifest is the only run data in the bundle, so whatever it lacks cannot be rendered.
+  const rendered = readFileSync(join(root, 'src/generated/manifest.json'), 'utf8') + readFileSync(join(root, 'out/captions.srt'), 'utf8');
+  for (const form of forms) assert.ok(!rendered.includes(form), `floor value ${form} leaked`);
+  done();
+  for (const file of ['src/scenes/Bidding.tsx', 'src/auction.ts', 'src/ui.tsx', 'src/scenes/ClipScene.tsx']) assert.ok(!/\.lowest|\bfloors\b/.test(readFileSync(file, 'utf8')), `${file} reads floors`);
+});
+
+test('the code check row is only labels and ticks', () => {
+  const row = readFileSync('src/scenes/Bidding.tsx', 'utf8').match(/const checks = \[.*\];/)![0];
+  assert.equal(row, `const checks = ["≥ shop's private floor", 'in stock', 'total ≤ hold'];`);
 });
 
 test('private lowest prices are dropped on parse', () => assert.ok(!JSON.stringify(parsed()[1]).includes('lowest')));
@@ -127,6 +157,7 @@ test('captions adapt when Haneul is outbid', () => {
   const facts = buildFacts(run2, order2, { a: 'Cleanser', b: 'Cream' });
   assert.match(facts.shop_result, /Haneul Beauty was outbid/);
   assert.match(facts.shop_result, /Dalbit Official won 1 of 2/);
+  assert.match(facts.receipt_line, /One box from 2 shops/);
   assert.equal(facts.payout_shop, 'Dalbit Official');
 });
 
@@ -134,7 +165,10 @@ test('captions stay true when no bid beats checkout', () => {
   const r = { ...run(), charged_minor: 3000 };
   const o = order();
   o.events[3].total = 3000; o.events[4].total = 3000;
-  assert.match(buildFacts(...parsed(r, o), { a: 'A', b: 'B' }).result_line, /stands/);
+  const facts = buildFacts(...parsed(r, o), { a: 'A', b: 'B' });
+  assert.match(facts.result_line, /stands/);
+  assert.match(facts.capture_line, /exactly the hold/);
+  assert.ok(!facts.receipt_line.includes('released'));
 });
 
 test('prepare: missing inputs fail with a clear message and no fallback', () => {

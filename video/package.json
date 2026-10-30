@@ -8,7 +8,8 @@
     "render": "node scripts/prepare.ts && remotion render src/index.ts Rally out/rally.mp4 --codec=h264 --crf=18",
     "stills": "node scripts/prepare.ts --allow-placeholders && node scripts/stills.ts",
     "test": "node --test test/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "voice": "node scripts/prepare.ts --allow-placeholders && node scripts/voice.ts"
   },
   "dependencies": {
     "@remotion/cli": "4.0.539",

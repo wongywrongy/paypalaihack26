@@ -41,10 +41,12 @@ export function Title() {
   </Center>;
 }
 
+// Cited from docs/SUBMISSION.md, "Potential impact".
+const FOOD_DRUG = 'Ministry of Food and Drug Safety, via Korea JoongAng Daily';
 const STATS = [
-  { value: '$11.4B', mono: true, label: 'Korean cosmetics exports, 2025', source: 'Ministry of Food and Drug Safety' },
-  { value: '$2.2B', mono: true, label: 'to the US, +15%', source: 'Ministry of Food and Drug Safety' },
-  { value: '+38.2%', mono: false, label: 'SME online exports, cosmetics +74.2%, Q1 2026', source: 'Ministry of SMEs and Startups' },
+  { value: '$11.4B', mono: true, label: 'Korean cosmetics exports, 2025', source: FOOD_DRUG },
+  { value: '$2.2B', mono: true, label: 'to the US, +15%', source: FOOD_DRUG },
+  { value: '+38.2%', mono: false, label: 'SME online exports, cosmetics +74.2%, Q1 2026', source: 'Ministry of SMEs and Startups, via Korea JoongAng Daily' },
 ];
 
 export function Close() {
@@ -60,7 +62,7 @@ export function Close() {
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 540px)', gap: 30 }}>{STATS.map((stat, i) => <div key={stat.value} style={{ background: C.surface, borderRadius: 20, boxShadow: SHADOW, padding: '38px 34px', textAlign: 'left', ...rise(enter(frame, fps, 6 + i * 14)) }}>
       <div style={{ fontFamily: stat.mono ? MONO : undefined, fontSize: 86, fontWeight: stat.mono ? 400 : 800, letterSpacing: '-.03em', lineHeight: 1.1, color: C.accent }}>{stat.value}</div>
       <div style={{ fontSize: 31, fontWeight: 600, marginTop: 10, minHeight: 84, lineHeight: 1.3 }}>{stat.label}</div>
-      <div style={{ fontSize: 21, color: C.muted, marginTop: 10 }}>{stat.source}</div>
+      <div style={{ fontSize: 20, color: C.muted, marginTop: 10, minHeight: 52 }}>{stat.source}</div>
     </div>)}</div>
     <div style={{ fontSize: 50, fontWeight: 700, letterSpacing: '-.02em', marginTop: 56, ...rise(enter(frame, fps, 6 * fps)) }}>Works for any multi-merchant, cross-border cart.</div>
   </Center>;
