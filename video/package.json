@@ -1,0 +1,25 @@
+{
+  "name": "rally-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "node scripts/prepare.ts --allow-placeholders && remotion studio src/index.ts",
+    "preview": "node scripts/prepare.ts --allow-placeholders && remotion render src/index.ts Rally out/preview.mp4 --codec=h264 --scale=0.6666666666666666",
+    "render": "node scripts/prepare.ts && remotion render src/index.ts Rally out/rally.mp4 --codec=h264 --crf=18",
+    "stills": "node scripts/prepare.ts --allow-placeholders && node scripts/stills.ts",
+    "test": "node --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.539",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.539",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "typescript": "5.9.3"
+  }
+}
