@@ -1,0 +1,7 @@
+node_modules/
+out/
+.remotion/
+src/generated/
+public/generated/
+# Owner inputs. order.json carries the shop's private lowest prices, and this repository is public.
+run/
