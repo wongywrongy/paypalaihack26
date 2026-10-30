@@ -264,3 +264,10 @@ B2 gates passed before changing the default. New quotes default to auction; expl
 - Existing merchant Orders refreshes its saved lanes every two seconds while open. No synthetic bids, activity or payout statuses were added.
 - Full disposable-Postgres discovery: **117 passed, no skips** (74.006 s). Ruff, frontend build/render passed; full browser suite **162 passed with 2 workers** (1.6 min), including Activity on desktop/mobile. The database contract checks saved outcome contents and the 20-auction limit after 23 orders.
 - Provider/payment calls in these contracts remain doubles; no hosted configuration or historical records changed.
+
+### L4 · October 30, 2026 · live Channel3 medians
+
+- Additive market_references and per-product refresh-attempt tables. The existing maintenance lane attempts one product per tick, at most once/product/day when its private key is set; each request is bounded to ten seconds. Auctions never call Channel3. Failed refreshes retain prior aggregate prices; missing/unsuitable live rows fall back to the committed snapshot.
+- Public cards and both agent roles receive only median/n/date, filtered to n≥5 and high≤2.5×low. No retailer content is persisted. Raw ranges remain private to the aggregate store/importer.
+- Full disposable-Postgres discovery: **119 passed, no skips** (125.889 s). Ruff and frontend build passed. Render initially caught the old range assertion; updated it to the median and weak-sample/dispersion guards, then all render checks passed. Full browser suite **162 passed, 2 workers** (3.7 min).
+- The owner keys are present (presence only; values never printed). An actual Channel3 refresh into an isolated local schema is underway; its results will be recorded separately when complete. No hosted or payment configuration changed.

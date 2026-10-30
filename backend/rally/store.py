@@ -38,4 +38,5 @@ def catalog(db, order_id=None):
     if order_id:
         for row in db.execute("SELECT offer_id,qty FROM order_reservations WHERE order_id=%s AND state='reserved'", (order_id,)).fetchall():
             result.offers[row["offer_id"]]["stock"] += row["qty"]
+    result.market_references = {row["product_id"]: row for row in db.execute("SELECT product_id,low_usd_cents,median_usd_cents,high_usd_cents,n,as_of::text AS as_of FROM market_references").fetchall()}
     return result

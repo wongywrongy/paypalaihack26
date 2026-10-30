@@ -250,13 +250,6 @@
       "prices": {
         "haneul": "14",
         "bada": "12"
-      },
-      "market": {
-        "low_usd_cents": 2600,
-        "median_usd_cents": 5950,
-        "high_usd_cents": 8000,
-        "n": 4,
-        "as_of": "2026-10-30"
       }
     },
     {
@@ -294,13 +287,6 @@
         "haneul": "24",
         "bada": "22",
         "dalbit": "21"
-      },
-      "market": {
-        "low_usd_cents": 1773,
-        "median_usd_cents": 1870,
-        "high_usd_cents": 4919,
-        "n": 4,
-        "as_of": "2026-10-30"
       }
     },
     {
@@ -313,13 +299,6 @@
       "prices": {
         "haneul": "18",
         "bada": "16"
-      },
-      "market": {
-        "low_usd_cents": 1116,
-        "median_usd_cents": 3400,
-        "high_usd_cents": 5500,
-        "n": 4,
-        "as_of": "2026-10-30"
       }
     },
     {
@@ -369,13 +348,6 @@
       "prices": {
         "haneul": "26",
         "bada": "24"
-      },
-      "market": {
-        "low_usd_cents": 3996,
-        "median_usd_cents": 6850,
-        "high_usd_cents": 14200,
-        "n": 8,
-        "as_of": "2026-10-30"
       }
     },
     {
@@ -399,13 +371,6 @@
       "prices": {
         "haneul": "27",
         "bada": "25"
-      },
-      "market": {
-        "low_usd_cents": 3996,
-        "median_usd_cents": 6850,
-        "high_usd_cents": 14200,
-        "n": 8,
-        "as_of": "2026-10-30"
       }
     },
     {
@@ -418,13 +383,6 @@
       "prices": {
         "dalbit": "34",
         "haneul": "37"
-      },
-      "market": {
-        "low_usd_cents": 4900,
-        "median_usd_cents": 11899,
-        "high_usd_cents": 43000,
-        "n": 3,
-        "as_of": "2026-10-30"
       }
     },
     {
@@ -449,13 +407,6 @@
       "prices": {
         "haneul": "20",
         "bada": "18"
-      },
-      "market": {
-        "low_usd_cents": 900,
-        "median_usd_cents": 4099,
-        "high_usd_cents": 6700,
-        "n": 4,
-        "as_of": "2026-10-30"
       }
     },
     {
@@ -467,13 +418,6 @@
       "weight_kg": "0.13",
       "prices": {
         "haneul": "24"
-      },
-      "market": {
-        "low_usd_cents": 2097,
-        "median_usd_cents": 3080,
-        "high_usd_cents": 10400,
-        "n": 5,
-        "as_of": "2026-10-30"
       }
     },
     {
@@ -486,13 +430,6 @@
       "prices": {
         "dalbit": "26",
         "haneul": "28"
-      },
-      "market": {
-        "low_usd_cents": 2500,
-        "median_usd_cents": 6350,
-        "high_usd_cents": 22500,
-        "n": 4,
-        "as_of": "2026-10-30"
       }
     },
     {
@@ -505,13 +442,6 @@
       "prices": {
         "haneul": "23",
         "bada": "21"
-      },
-      "market": {
-        "low_usd_cents": 970,
-        "median_usd_cents": 1799,
-        "high_usd_cents": 2100,
-        "n": 3,
-        "as_of": "2026-10-30"
       }
     },
     {
@@ -585,13 +515,6 @@
       "prices": {
         "haneul": "12",
         "bada": "11"
-      },
-      "market": {
-        "low_usd_cents": 313,
-        "median_usd_cents": 1804,
-        "high_usd_cents": 2800,
-        "n": 4,
-        "as_of": "2026-10-30"
       }
     },
     {
@@ -607,14 +530,7 @@
       },
       "not_to": [
         "US"
-      ],
-      "market": {
-        "low_usd_cents": 1600,
-        "median_usd_cents": 5989,
-        "high_usd_cents": 24800,
-        "n": 5,
-        "as_of": "2026-10-30"
-      }
+      ]
     },
     {
       "id": "gur-sun-stick",

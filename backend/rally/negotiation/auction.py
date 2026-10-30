@@ -31,6 +31,8 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
     started = monotonic()
     deadline = started + max(0, min(MAX_SECONDS, max_seconds))
     currency, rate = start["breakdown"]["currency"], start.get("rate")
+    def reference(pid):
+        return market.reference(pid, getattr(catalog, "market_references", None))
     product_ids = [catalog.offers[line.offer_id]["product_id"] for line in start["lines"]]
     offers = bids.eligible(product_ids, destination, catalog, rules)
     shops = sorted({o["shop_id"] for rows in offers.values() if len({o["shop_id"] for o in rows}) > 1 for o in rows})
@@ -95,12 +97,12 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
                 logger.info("Auction deadline reached; returning best complete award")
                 break
             round_started = monotonic()
-            asks = buyer.candidate_asks(round_no, public_leaders(), current, offers, rules, market=market.reference, currency=currency, rate=rate)
+            asks = buyer.candidate_asks(round_no, public_leaders(), current, offers, rules, market=reference, currency=currency, rate=rate)
             selected, by = asks[:3], "CODE"
             note = buyer.round_note(round_no, best["breakdown"]["total"], currency)
             if asks:
                 try:
-                    future, timeout = submit(AskChoice, "buyer", {"round": round_no, "market": {pid: value for pid in product_ids if (value := market.reference(pid))}, "leaders": public_leaders(), "options": [a.model_dump() for a in asks]})
+                    future, timeout = submit(AskChoice, "buyer", {"round": round_no, "market": {pid: value for pid in product_ids if (value := reference(pid))}, "leaders": public_leaders(), "options": [a.model_dump() for a in asks]})
                     choice = resolve(future, AskChoice, timeout)
                     if len(set(choice.indexes)) != len(choice.indexes) or any(i < 0 or i >= len(asks) for i in choice.indexes):
                         raise ValueError("Unknown ask.")
@@ -127,7 +129,7 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
                     event("error", "This shop has no valid bid.", shop=shop, round=round_no)
                     continue
                 payload = {"shop": catalog.shops[shop]["name"], "goals": catalog.policies[shop].get("summary", "Bid within your permitted strategy."), "memory": getattr(catalog, "memories", {}).get(shop, "No auction history supplied."), "round": round_no,
-                           "market": {pid: value for pid in product_ids if (value := market.reference(pid))}, "leaders": public_leaders(), "asks": [a.model_dump() for a in selected],
+                           "market": {pid: value for pid in product_ids if (value := reference(pid))}, "leaders": public_leaders(), "asks": [a.model_dump() for a in selected],
                            "options": [{**b.model_dump(by_alias=True), "utility_rank": rank + 1,
                                         "wins": bids.assessment(b, current.get(shop), current, start, destination, catalog, rules)[1]} for rank, b in enumerate(options)]}
                 future, timeout = None, 0

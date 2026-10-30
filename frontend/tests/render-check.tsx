@@ -101,7 +101,7 @@ if (awarded.kind === 'award') {
 }
 
 assert.equal(renderToStaticMarkup(<MarketRange />), '');
-assert.ok(renderToStaticMarkup(<MarketRange reference={{ low_usd_cents: 1800, median_usd_cents: 2200, high_usd_cents: 2600, n: 3, as_of: '2026-10-29' }} />).includes('$18–26'));
+assert.ok(renderToStaticMarkup(<MarketRange reference={{ low_usd_cents: 1800, median_usd_cents: 2200, high_usd_cents: 2600, n: 5, as_of: '2026-10-29' }} />).includes('$22'));
 
 const orderId = 'a1b2c345-6789-4abc-9876-123456789abc';
 assert.equal(orderNumber(orderId), 'RL-A1B2C');
@@ -117,3 +117,5 @@ assert.ok(dealHtml.includes('Order RL-A1B2C'));
 assert.ok(!dealHtml.includes('order choices saved at checkout'));
 assert.ok(!dealHtml.includes(`Order ${orderId}`));
 console.log('Short order header and bid/ask/round/award-only live messages passed.');
+
+for (const [n, high] of [[4,2600],[5,5000]]) assert.equal(renderToStaticMarkup(<MarketRange reference={{low_usd_cents:1800,median_usd_cents:2200,high_usd_cents:high,n,as_of:'2026-10-30'}} />), '');

@@ -11,7 +11,7 @@ const projection = {
   fx_usd: source.fx_usd,
   rally_fee_usd: source.rally_fee_usd,
   shops: Object.fromEntries(Object.entries(source.shops).map(([id, shop]) => [id, pick(shop, ['name', 'city', 'kind', 'ships_abroad', 'domestic', 'free_over'])])),
-  catalog: source.catalog.map(product => ({ ...pick(product, ['id', 'brand', 'name', 'size', 'category', 'weight_kg', 'prices', 'old_packaging', 'not_to', 'aerosol']), ...(market[product.id] ? { market: pick(market[product.id], ['low_usd_cents', 'median_usd_cents', 'high_usd_cents', 'n', 'as_of']) } : {}) })),
+  catalog: source.catalog.map(product => ({ ...pick(product, ['id', 'brand', 'name', 'size', 'category', 'weight_kg', 'prices', 'old_packaging', 'not_to', 'aerosol']), ...(market[product.id]?.n >= 5 && market[product.id].high_usd_cents * 2 <= market[product.id].low_usd_cents * 5 ? { market: pick(market[product.id], ['median_usd_cents', 'n', 'as_of']) } : {}) })),
   countries: Object.fromEntries(Object.entries(source.countries).map(([id, country]) => [id, pick(country, ['name', 'region', 'currency', 'tax_name', 'duty_note', 'deal', 'listed'])])),
   hero: pick(source.hero, ['country', 'request', 'cart', 'rules', 'listed', 'deal', 'hold', 'charged', 'released', 'mask_saves', 'direct', 'saved_vs_listed', 'saved_vs_direct', 'events']),
 };

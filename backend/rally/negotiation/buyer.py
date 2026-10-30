@@ -31,7 +31,7 @@ def candidate_asks(round_no, leaders, bids, eligible_offers, rules, market=None,
             reference = market(pid) if market else None
             note = f"Can you beat the leader? The gap is {money(convert(gap, currency, rate), currency)}."
             if reference:
-                note += f" US market ${reference['low_usd_cents'] / 100:g}–{reference['high_usd_cents'] / 100:g}."
+                note += f" Typical US price ${reference['median_usd_cents'] / 100:g}."
             result.append(Ask(round=round_no, shop_id=shop, product_ids=[pid], kind="beat", note=note))
     if rules["bundles_ok"]:
         result += [Ask(round=round_no, shop_id=s, product_ids=sorted(pids), kind="bundle", note="Can a two-item bundle lower the delivered total?") for s, pids in sorted(shops.items()) if len(pids) >= 2]

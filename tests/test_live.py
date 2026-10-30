@@ -189,6 +189,41 @@ class LiveContracts(ShoppingContracts):
                     db.execute('INSERT INTO deal_events(id,order_id,seq,data) VALUES(%s,%s,%s,%s)',(uuid4(),order,seq,Jsonb(e['data'])))
             self.assertEqual(len(activity.history(db,'haneul')),20)
 
+    def test_daily_market_refresh_filters_and_retains_last_good_prices(self):
+        from datetime import date
+
+        import httpx
+        from rally import market, store
+        from test_market import listing
+        with database.connect() as db:
+            store.seed(db)
+            db.execute("INSERT INTO market_refresh_attempts SELECT id,now() FROM catalog_products WHERE id!='dal-rice-toner'")
+        class Client:
+            def __init__(self, **kwargs):
+                self.kwargs=kwargs
+            def __enter__(self):
+                return self
+            def __exit__(self,*args):
+                pass
+            def post(self,url,**kwargs):
+                return httpx.Response(200,request=httpx.Request('POST',url),json={'products':[listing(str(i),18+i*2) for i in range(5)]})
+        with patch.dict(os.environ,{'CHANNEL3_API_KEY':'test-key'}),patch('httpx.Client',Client):
+            result=market.refresh_one()
+            self.assertTrue(result['shown'])
+            self.assertIsNone(market.refresh_one())
+        with database.connect() as db:
+            value=store.catalog(db).public('US')
+            reference=next(p for p in value['products'] if p['id']=='dal-rice-toner')['market']
+            self.assertEqual(reference,{'median_usd_cents':2200,'n':5,'as_of':date.today().isoformat()})
+            db.execute("UPDATE market_refresh_attempts SET attempted_at=now()-interval '1 day' WHERE product_id='dal-rice-toner'")
+        with patch.dict(os.environ,{'CHANNEL3_API_KEY':'test-key'}),patch('httpx.Client',side_effect=RuntimeError('Unavailable')):
+            self.assertTrue(market.refresh_one()['failed'])
+        with database.connect() as db:
+            self.assertEqual(market.reference('dal-rice-toner',store.catalog(db).market_references),reference)
+        with patch.dict(os.environ,{'CHANNEL3_API_KEY':''}),patch('httpx.Client') as client:
+            self.assertIsNone(market.refresh_one())
+            client.assert_not_called()
+
 
 # Inheritance reuses the integration harness, not its tests.
 for _name in dir(ShoppingContracts):
