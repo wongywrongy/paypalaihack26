@@ -253,3 +253,11 @@ def apply_goals(shop_id: str, body: ApplyGoal, request: Request):
         db.execute("UPDATE shop_policies SET policy=%s,goal_draft=NULL WHERE shop_id=%s", (Jsonb(policy), shop_id))
         audit(db, session, shop_id, None, "apply goals", row["policy"], policy)
         return {k: policy[k] for k in ("goal_text", "strategy", "summary", "applied_at")}
+
+
+@router.get("/shops/{shop_id}/activity")
+def shop_activity(shop_id: str, request: Request):
+    from .activity import history
+    with connect() as db:
+        shop_owner(db, request, shop_id)
+        return {"auctions": history(db, shop_id)}

@@ -126,7 +126,7 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
                 if not options:
                     event("error", "This shop has no valid bid.", shop=shop, round=round_no)
                     continue
-                payload = {"shop": catalog.shops[shop]["name"], "goals": catalog.policies[shop].get("summary", "Bid within your permitted strategy."), "round": round_no,
+                payload = {"shop": catalog.shops[shop]["name"], "goals": catalog.policies[shop].get("summary", "Bid within your permitted strategy."), "memory": getattr(catalog, "memories", {}).get(shop, "No auction history supplied."), "round": round_no,
                            "market": {pid: value for pid in product_ids if (value := market.reference(pid))}, "leaders": public_leaders(), "asks": [a.model_dump() for a in selected],
                            "options": [{**b.model_dump(by_alias=True), "utility_rank": rank + 1,
                                         "wins": bids.assessment(b, current.get(shop), current, start, destination, catalog, rules)[1]} for rank, b in enumerate(options)]}

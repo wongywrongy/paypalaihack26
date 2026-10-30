@@ -227,6 +227,8 @@ def run_negotiation(order_id):
             for offer_id, frozen in t["authority"]["offers"].items():
                 catalog.offers[offer_id] = {**frozen, "stock": catalog.offers[offer_id]["stock"]}
             catalog.policies = t["authority"]["policies"]
+        from .activity import history, public_summary
+        catalog.memories = {shop: public_summary(history(db, shop)) for shop in catalog.shops}
         interrupted = db.execute("SELECT data FROM deal_events WHERE order_id=%s ORDER BY seq LIMIT 1", (order_id,)).fetchone()
         db.execute("UPDATE orders SET state='NEGOTIATING',payment_state='NEGOTIATING',updated_at=now() WHERE id=%s", (order_id,))
     lines = tuple(Line(**line) for line in t["lines"])

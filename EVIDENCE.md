@@ -257,3 +257,10 @@ B2 gates passed before changing the default. New quotes default to auction; expl
 - Auction prompts use code-generated public strategy summaries, never raw merchant instructions or private margin fields. Hostile goal text cannot change floors or add acceptance/payment authority.
 - Full disposable-Postgres discovery: **116 passed, no skips** (74.642 s); Ruff, frontend build/render passed; **160 browser cases passed with 2 workers** (1.7 min), including review-before-Apply and read-only controls.
 - End-to-end provider-double contract passed: cream floor/goal edit → changed fresh auction → capture ≤ hold → Haneul handoff → exact goods plus awarded domestic payout queued. Real provider execution remains separate and pending for this change.
+
+### L3 · October 30, 2026 · saved auction memory and Activity
+
+- Additive shop_agent_memory view limits each shop to its latest 20 joined, awarded auctions. Agent payloads receive actual win/loss and bundle counts; private margins remain workspace-only because publishing margin alongside a bid would disclose its floor. Activity shows saved bids, winning complete total/terms and ledger payout status. Reasons identify the exact solver objective and actual awarded perks without inventing a counterfactual saving.
+- Existing merchant Orders refreshes its saved lanes every two seconds while open. No synthetic bids, activity or payout statuses were added.
+- Full disposable-Postgres discovery: **117 passed, no skips** (74.006 s). Ruff, frontend build/render passed; full browser suite **162 passed with 2 workers** (1.6 min), including Activity on desktop/mobile. The database contract checks saved outcome contents and the 20-auction limit after 23 orders.
+- Provider/payment calls in these contracts remain doubles; no hosted configuration or historical records changed.

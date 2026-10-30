@@ -33,7 +33,7 @@ try {
   else Reflect.deleteProperty(globalThis, 'localStorage');
 }
 console.log('Persisted prototype-key and malformed destinations safely recover.');
-for (const route of ['/shop','/ship-to','/ask','/bag','/deal','/paid','/track','/shops/orders','/shops/products','/shops/settings','/missing']) {
+for (const route of ['/shop','/ship-to','/ask','/bag','/deal','/paid','/track','/shops/orders','/shops/products','/shops/settings','/shops/activity','/missing']) {
   for (const test of [false,true]) {
     const html = render(route, test);
     assert.ok(html.includes('<h1'), route);

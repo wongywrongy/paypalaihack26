@@ -50,3 +50,16 @@ test('goal rules are reviewed before Apply and read-only accounts cannot change 
   expect(applied).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test('Activity shows saved bids, deciding total and payout without private authority', async ({ page }) => {
+  await page.route('**/api/session', r => r.fulfill({ json: { csrf_token: 'csrf', role: 'shop', shop_id: 'haneul', read_only: true } }));
+  await page.route('**/api/shops/haneul/orders', r => r.fulfill({ json: { orders: [] } }));
+  await page.route('**/api/shops/haneul/products', r => r.fulfill({ json: { products: [], changes: [] } }));
+  await page.route('**/api/shops/haneul/settings', r => r.fulfill({ json: { discount_bp: 1000, sample_kit: false } }));
+  await page.route('**/api/shops/haneul/activity', r => r.fulfill({ json: { auctions: [{ id: 'abcde-order', created_at: new Date().toISOString(), items: ['sae-cica-cream'], bids: [{ round: 3, items: { 'sae-cica-cream': 1800 } }], won: ['sae-cica-cream'], total: 10192, currency: 'USD', reason: 'Lowest complete delivered total: $101.92. Winning terms include a bundle.', payout_status: 'completed' }] } }));
+  await page.goto('/shops/activity');
+  await expect(page.getByRole('cell', { name: /Lowest complete delivered total/ })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'completed', exact: true })).toBeAttached();
+  await expect(page.getByRole('rowheader', { name: /RL-ABCDE/ })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});

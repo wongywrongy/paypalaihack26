@@ -148,6 +148,47 @@ class LiveContracts(ShoppingContracts):
             self.assertEqual(db.execute("SELECT status FROM jobs WHERE dedupe_key=%s",(f'shop-payout:{oid}:haneul',)).fetchone()['status'],'ready')
             self.assertEqual(final['authority']['offers']['haneul/sae-cica-cream']['floor_usd'],1500)
 
+    def test_activity_memory_is_bounded_saved_and_public_summary_hides_margin(self):
+        from dataclasses import replace
+
+        from rally import activity, orders, worker
+        from rally.negotiation.auction import run_auction
+        def auction(*args, **kwargs):
+            kwargs['pace']=False
+            return run_auction(*args, **kwargs, choose=lambda role,payload: {'indexes':[0],'note':'Ask.'} if role=='buyer' else {'index':0,'note':'Bid.'})
+        with patch.object(orders,'settings',replace(self.config,deal_mode='auction')), patch.object(orders,'run_auction',side_effect=auction):
+            bag,checkout=self.checkout()
+            oid=checkout['order_id']
+            self.provider.orders[checkout['paypal_order_id']]['status']='APPROVED'
+            self.post(f"/bags/{bag['id']}/checkout/approve",{'order_id':checkout['paypal_order_id']})
+            worker.run_once('ai')
+            worker.run_once('payments')
+        self.login('shop','writer-test','haneul')
+        rows=self.client.get('/api/shops/haneul/activity').json()['auctions']
+        self.assertEqual(len(rows),1)
+        self.assertEqual(rows[0]['id'],oid)
+        self.assertIn('sae-cica-cream',rows[0]['won'])
+        self.assertEqual(rows[0]['payout_status'],'awaiting_handoff')
+        self.assertIn('Lowest complete delivered total:',rows[0]['reason'])
+        summary=activity.public_summary(rows)
+        self.assertIn('Last 1 auctions',summary)
+        self.assertNotIn('margin',summary)
+        self.assertNotIn('floor',summary)
+        with database.connect() as db:
+            from uuid import uuid4
+
+            from psycopg.types.json import Jsonb
+            source=orders.owned(db,oid)
+            events=db.execute('SELECT data FROM deal_events WHERE order_id=%s ORDER BY seq',(oid,)).fetchall()
+            for _ in range(22):
+                pool,member,quote,order=[uuid4() for _ in range(4)]
+                self.seed(db,pool,member)
+                db.execute('INSERT INTO quotes(id,session_id,terms,expires_at) VALUES(%s,%s,%s,now())',(quote,source['session_id'],Jsonb(source['checkout_terms'])))
+                db.execute("INSERT INTO orders(id,quote_id,session_id,pool_id,member_id,final_terms,ship_by) VALUES(%s,%s,%s,%s,%s,%s,now())",(order,quote,source['session_id'],pool,member,Jsonb(source['final_terms'])))
+                for seq,e in enumerate(events,1):
+                    db.execute('INSERT INTO deal_events(id,order_id,seq,data) VALUES(%s,%s,%s,%s)',(uuid4(),order,seq,Jsonb(e['data'])))
+            self.assertEqual(len(activity.history(db,'haneul')),20)
+
 
 # Inheritance reuses the integration harness, not its tests.
 for _name in dir(ShoppingContracts):
