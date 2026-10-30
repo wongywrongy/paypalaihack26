@@ -152,13 +152,14 @@ test('shop private grid and controls respect read-only accounts', async ({ page 
   await page.route('**/api/shops/dalbit/products', route => route.fulfill({ json: { currency: 'USD', products: [{ id: 'dal-rice-toner', offer_id: 'dalbit/dal-rice-toner', listed: 2100, lowest: 1600, cost: 900, stock: 20, days: 4, goal: 'Maintain margin' }] } }));
   await page.route('**/api/shops/dalbit/orders', route => route.fulfill({ json: { orders: [] } }));
   await page.route('**/api/shops/dalbit/settings', route => route.fulfill({ json: { discount_bp: 1000, sample_kit: true } }));
+  await page.route('**/api/shops/dalbit/goals', r => r.fulfill({ json: { goal_text: 'Move older packaging', summary: 'Prefer older packaging', strategy: { max_round_discount_bp: 1000, min_margin_over_floor_cents: 0, prefer_older: true, bundles: 'allow', free_domestic: 'to_win', kit: true } } }));
   await page.goto('/shops/products');
   await expect(page.getByText('Your account is read-only.', { exact: true })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'Lowest price' })).toBeVisible();
   await expect(page.getByRole('gridcell', { name: '$16.00', exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Agent settings', exact: true }).click();
-  await expect(page.getByLabel('Maximum discount (%)')).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Save agent settings' })).toBeDisabled();
+  await expect(page.getByLabel('Your shop goal')).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Review rules' })).toBeDisabled();
 });
 
 test('hub ship form sends tracking through the authenticated API', async ({ page }) => {
@@ -261,29 +262,31 @@ test('terminal fallback restores authoritative checkout rows and clears rejected
 test('v3 server events restore winners, replay, and paid receipt without payment writes', async ({ page }) => {
   const { auctionEvents, auctionFinalLines, auctionBreakdown } = await import('../src/fixture');
   const api = await mockPublicApi(page);
-  const base = publicOrder(), breakdown = auctionBreakdown('US');
-  const order = { ...base, lines: auctionFinalLines, breakdown, charged_minor: breakdown.total, uncaptured_minor: base.maximum_minor - breakdown.total, events: auctionEvents };
+  const base = publicOrder(), original = auctionBreakdown('US');
+  const breakdown = { ...original, goods: original.goods - 123, total: original.total - 123 };
+  const ownEvents = auctionEvents.map(event => event.kind === 'award' ? { ...event, id: 'owned-award', total: breakdown.total, note: 'This order’s saved award.', winners: { ...event.winners, 'sae-cica-cream': { ...event.winners['sae-cica-cream'], unit: event.winners['sae-cica-cream'].unit - 123 } } } : event.kind === 'done' ? { ...event, total: breakdown.total } : event);
+  const order = { ...base, lines: auctionFinalLines.map(line => line.id === 'sae-cica-cream' ? { ...line, unit: line.unit - 123 } : line), breakdown, charged_minor: breakdown.total, uncaptured_minor: base.maximum_minor - breakdown.total, events: ownEvents };
   await page.route('**/api/orders/order-public', route => route.fulfill({ json: order }));
   await page.clock.install(); await page.goto('/deal?order=order-public');
   await expect(page.getByRole('heading', { name: 'Bidding complete' })).toBeVisible();
-  await expect(page.locator('.hero-money')).toHaveText('$101.92');
+  await expect(page.locator('.hero-money')).toHaveText('$100.69');
   await expect(page.locator('.auction-lane.won')).toHaveCount(4);
   await page.getByRole('button', { name: 'Watch the bidding again' }).click();
   await page.clock.runFor(20000);
-  await expect(page.locator('.hero-money')).toHaveText('$101.92');
+  await expect(page.locator('.hero-money')).toHaveText('$100.69');
   await page.getByRole('link', { name: 'See your order' }).click();
-  await expect(page.locator('.hero-money')).toHaveText('$101.92');
+  await expect(page.locator('.hero-money')).toHaveText('$100.69');
   expect(api.calls.filter(call => call.method !== 'GET')).toEqual([]);
 });
 
-test('optional market ranges stay in US dollars beside local prices', async ({ page }) => {
+test('filtered typical US prices stay in dollars beside local prices', async ({ page }) => {
   const { catalog, shops, local, cents } = await import('../src/fixture');
   await mockPublicApi(page, { country: 'CA' });
   await page.addInitScript(() => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'CA', items: [], rules: { old_packaging_ok: true, bundles_ok: true } })));
-  const reference = { low_usd_cents: 1800, median_usd_cents: 2200, high_usd_cents: 2600, n: 3, as_of: '2026-10-29' };
+  const reference = { low_usd_cents: 1800, median_usd_cents: 2200, high_usd_cents: 2600, n: 5, as_of: '2026-10-29' };
   await page.route('**/api/catalog?country=*', route => route.fulfill({ json: { shops, prices_currency: 'USD', products: catalog.map(item => ({ ...item, price: local(Math.min(...Object.values(item.prices).map(value => cents(value!))), 'CA'), currency: 'CAD', available: true, market: item.id === 'dal-rice-toner' ? reference : null })) } }));
   await page.goto('/shop');
-  await expect(page.getByText('US market $18–26', { exact: true })).toBeVisible();
+  await expect(page.getByText('Typical US price $22', { exact: true })).toBeVisible();
   await expect(page.locator('.market-range')).toHaveCount(1);
   await expect(page.getByRole('button', { name: /Ship to Canada · CAD/ })).toBeVisible();
 });

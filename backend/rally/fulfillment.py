@@ -1,6 +1,7 @@
 """Operator-authored fulfillment is separate from confirmed PayPal money."""
 
 import os
+from copy import copy
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -144,11 +145,7 @@ def scheduled_steps():
             row = orders.owned(db, item["id"])
             if row["ship_by"] <= datetime.now(timezone.utc) and row["fulfillment_state"] != "SHIPPED":
                 continue
-            if row["fulfillment_state"] == "MERCHANT_CONFIRMED":
-                catalog = store.catalog(db)
-                for shop in sorted({catalog.offers[line["offer_id"]]["shop_id"] for line in row["final_terms"]["lines"]}):
-                    handoff(db, row["id"], shop, "Rally test logistics", f"RALLY-{row['id']}-{shop}")
-            elif row["fulfillment_state"] == "AT_HUB" and item["age"] >= 120:
+            if row["fulfillment_state"] == "AT_HUB" and item["age"] >= 120:
                 payments = db.execute("SELECT shop_id FROM order_shop_payments WHERE order_id=%s", (row["id"],)).fetchall()
                 if payments and all((operation(db, f"order:{row['id']}:shop:{p['shop_id']}:payout") or {}).get("status") == "completed" for p in payments):
                     ship(db, row["id"], "Rally test logistics", f"RALLY-{row['id']}")
@@ -183,11 +180,16 @@ def process_job(db, job):
 
 
 def merchant_orders(db, shop_id):
-    catalog = store.catalog(db)
+    live_catalog = store.catalog(db)
     rows = db.execute("SELECT id FROM orders ORDER BY created_at DESC LIMIT 100").fetchall()
     result = []
     for item in rows:
         row = orders.owned(db, item["id"])
+        catalog = copy(live_catalog)
+        authority = row["checkout_terms"].get("authority")
+        if authority:
+            catalog.offers = {**catalog.offers, **authority["offers"]}
+            catalog.policies = authority["policies"]
         lines = shop_lines(row, shop_id, catalog)
         auction_events = [e["data"] for e in db.execute("SELECT data FROM deal_events WHERE order_id=%s ORDER BY seq", (row["id"],)).fetchall()]
         auction = bool(auction_events and auction_events[0].get("v") == 3)

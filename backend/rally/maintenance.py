@@ -57,3 +57,5 @@ def run_once():
     from .fulfillment import scheduled_steps
 
     scheduled_steps()
+    from .market import refresh_one
+    refresh_one()

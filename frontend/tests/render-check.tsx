@@ -33,7 +33,7 @@ try {
   else Reflect.deleteProperty(globalThis, 'localStorage');
 }
 console.log('Persisted prototype-key and malformed destinations safely recover.');
-for (const route of ['/shop','/ship-to','/ask','/bag','/deal','/paid','/track','/shops/orders','/shops/products','/shops/settings','/missing']) {
+for (const route of ['/shop','/ship-to','/ask','/bag','/deal','/paid','/track','/shops/orders','/shops/products','/shops/settings','/shops/activity','/missing']) {
   for (const test of [false,true]) {
     const html = render(route, test);
     assert.ok(html.includes('<h1'), route);
@@ -43,6 +43,7 @@ for (const route of ['/shop','/ship-to','/ask','/bag','/deal','/paid','/track','
     console.log(`SSR ${route}: ${test ? 'recorded URL query' : 'ordinary URL'} render and copy guard passed`);
   }
 }
+if (import.meta.env?.VITE_RALLY_TEST_HARNESS === '1') {
 for (const Page of [Orders, Products, Settings]) {
   const html = renderToStaticMarkup(<BagProvider><Page data={shopData as ShopSnapshot} /></BagProvider>);
   assert.doesNotMatch(html.replace(/<[^>]*>/g,''), forbidden);
@@ -101,7 +102,7 @@ if (awarded.kind === 'award') {
 }
 
 assert.equal(renderToStaticMarkup(<MarketRange />), '');
-assert.ok(renderToStaticMarkup(<MarketRange reference={{ low_usd_cents: 1800, median_usd_cents: 2200, high_usd_cents: 2600, n: 3, as_of: '2026-10-29' }} />).includes('$18–26'));
+assert.ok(renderToStaticMarkup(<MarketRange reference={{ low_usd_cents: 1800, median_usd_cents: 2200, high_usd_cents: 2600, n: 5, as_of: '2026-10-29' }} />).includes('$22'));
 
 const orderId = 'a1b2c345-6789-4abc-9876-123456789abc';
 assert.equal(orderNumber(orderId), 'RL-A1B2C');
@@ -117,3 +118,7 @@ assert.ok(dealHtml.includes('Order RL-A1B2C'));
 assert.ok(!dealHtml.includes('order choices saved at checkout'));
 assert.ok(!dealHtml.includes(`Order ${orderId}`));
 console.log('Short order header and bid/ask/round/award-only live messages passed.');
+
+for (const [n, high] of [[4,2600],[5,5000]]) assert.equal(renderToStaticMarkup(<MarketRange reference={{low_usd_cents:1800,median_usd_cents:2200,high_usd_cents:high,n,as_of:'2026-10-30'}} />), '');
+
+} else { assert.deepEqual(auctionEvents, []); assert.deepEqual(events, []); console.log('Ordinary production mode has no authored auction or exchange events.'); }

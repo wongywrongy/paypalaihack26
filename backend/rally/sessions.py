@@ -69,10 +69,12 @@ def login(db, row, request, response, role, shop_id, password):
         raise HTTPException(429, "Please wait before trying to sign in again.")
     expected = os.getenv("RALLY_HUB_PASSWORD" if role == "hub" else "RALLY_SHOP_PASSWORD_" + shop_id.upper(), "")
     judge = os.getenv("RALLY_JUDGE_PASSWORD", "") if role == "shop" else ""
-    read_only = bool(judge and hmac.compare_digest(password.encode(), judge.encode()))
-    if not read_only and not (expected and hmac.compare_digest(password.encode(), expected.encode())):
+    writer = os.getenv("RALLY_JUDGE_WRITER_PASSWORD", "") if role == "shop" and shop_id == "haneul" else ""
+    judge_writer = bool(writer and hmac.compare_digest(password.encode(), writer.encode()))
+    read_only = not judge_writer and bool(judge and hmac.compare_digest(password.encode(), judge.encode()))
+    if not judge_writer and not read_only and not (expected and hmac.compare_digest(password.encode(), expected.encode())):
         raise HTTPException(401, "Workspace sign-in did not match.")
     raw = secrets.token_urlsafe(32)
-    db.execute("UPDATE shopper_sessions SET token_hash=%s,role=%s,shop_id=%s,read_only=%s WHERE id=%s", (digest(raw), role, shop_id if role == "shop" else None, read_only, row["id"]))
+    db.execute("UPDATE shopper_sessions SET token_hash=%s,role=%s,shop_id=%s,read_only=%s,judge_writer=%s WHERE id=%s", (digest(raw), role, shop_id if role == "shop" else None, read_only, judge_writer, row["id"]))
     set_cookie(response, raw)
     return {"csrf_token": csrf(raw), "paypal_client_id": settings.paypal_client_id, "role": role, "shop_id": shop_id if role == "shop" else None, "read_only": read_only}

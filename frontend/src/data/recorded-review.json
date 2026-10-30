@@ -1,0 +1,436 @@
+{
+  "auction": {
+    "cart": [
+      "mul-gel-cleanser",
+      "dal-rice-toner",
+      "dal-snail-essence",
+      "sae-cica-cream"
+    ],
+    "rules": {
+      "old_packaging_ok": true,
+      "bundles_ok": true
+    },
+    "bids": [
+      {
+        "t": 1,
+        "round": 1,
+        "shop": "bada",
+        "items": {
+          "bada/mul-gel-cleanser": 1200,
+          "bada/sae-cica-cream": 1800
+        },
+        "note": "Cleanser $12, cream $18."
+      },
+      {
+        "t": 1.5,
+        "round": 1,
+        "shop": "dalbit",
+        "items": {
+          "dalbit/dal-rice-toner": 2000,
+          "dalbit/dal-snail-essence:older": 1800
+        },
+        "note": "Toner $20. Snail essence $18 in older packaging."
+      },
+      {
+        "t": 2,
+        "round": 1,
+        "shop": "haneul",
+        "items": {
+          "haneul/mul-gel-cleanser": 1300,
+          "haneul/dal-rice-toner": 2200,
+          "haneul/dal-snail-essence": 2300,
+          "haneul/sae-cica-cream": 2000
+        },
+        "note": "Cleanser $13, toner $22, essence $23, cream $20."
+      },
+      {
+        "t": 4.5,
+        "round": 2,
+        "shop": "bada",
+        "items": {
+          "bada/mul-gel-cleanser": 1100,
+          "bada/sae-cica-cream": 1700,
+          "bada/dal-rice-toner": 2000
+        },
+        "note": "Cleanser $11, cream $17, toner $20."
+      },
+      {
+        "t": 5,
+        "round": 2,
+        "shop": "dalbit",
+        "items": {
+          "dalbit/dal-rice-toner": 1900,
+          "dalbit/dal-snail-essence:older": 1700
+        },
+        "extras": [
+          "dalbit-sample-kit"
+        ],
+        "note": "Toner $19 with a sample kit. Essence $17."
+      },
+      {
+        "t": 5.5,
+        "round": 2,
+        "shop": "haneul",
+        "items": {
+          "haneul/mul-gel-cleanser": 1200,
+          "haneul/dal-snail-essence": 2100,
+          "haneul/sae-cica-cream": 1900
+        },
+        "pass": [
+          "haneul/dal-rice-toner"
+        ],
+        "note": "Cleanser $12, essence $21, cream $19. We pass on toner."
+      },
+      {
+        "t": 8,
+        "round": 3,
+        "shop": "bada",
+        "items": {
+          "bada/sae-cica-cream": 1600
+        },
+        "note": "Cream $16. That's our lowest."
+      },
+      {
+        "t": 8.5,
+        "round": 3,
+        "shop": "dalbit",
+        "items": {
+          "dalbit/dal-snail-essence:older": 1600
+        },
+        "note": "Essence $16. Toner stays $19 with the kit."
+      },
+      {
+        "t": 9,
+        "round": 3,
+        "shop": "haneul",
+        "items": {
+          "haneul/mul-gel-cleanser": 1100,
+          "haneul/sae-cica-cream": 1800
+        },
+        "bundle": {
+          "offer_ids": [
+            "haneul/mul-gel-cleanser",
+            "haneul/sae-cica-cream"
+          ],
+          "price_usd_cents": 2900
+        },
+        "free_domestic": true,
+        "note": "Cleanser and cream together for $29. Shipping in Korea free."
+      }
+    ],
+    "rounds": [
+      {
+        "round": 1,
+        "t": 3,
+        "total_usd_cents": 11029,
+        "leaders": {
+          "mul-gel-cleanser": "bada",
+          "dal-rice-toner": "dalbit",
+          "dal-snail-essence": "dalbit",
+          "sae-cica-cream": "bada"
+        }
+      },
+      {
+        "round": 2,
+        "t": 6.5,
+        "total_usd_cents": 10542,
+        "leaders": {
+          "mul-gel-cleanser": "bada",
+          "dal-rice-toner": "dalbit",
+          "dal-snail-essence": "dalbit",
+          "sae-cica-cream": "bada"
+        }
+      },
+      {
+        "round": 3,
+        "t": 10.5,
+        "total_usd_cents": 10192,
+        "leaders": {
+          "mul-gel-cleanser": "haneul",
+          "dal-rice-toner": "dalbit",
+          "dal-snail-essence": "dalbit",
+          "sae-cica-cream": "haneul"
+        }
+      }
+    ],
+    "award": {
+      "lines": [
+        {
+          "offer_id": "haneul/mul-gel-cleanser",
+          "unit_usd_cents": 1100
+        },
+        {
+          "offer_id": "haneul/sae-cica-cream",
+          "unit_usd_cents": 1800
+        },
+        {
+          "offer_id": "dalbit/dal-rice-toner",
+          "unit_usd_cents": 1900
+        },
+        {
+          "offer_id": "dalbit/dal-snail-essence:older",
+          "unit_usd_cents": 1600
+        }
+      ],
+      "extras": [
+        "dalbit-sample-kit"
+      ],
+      "domestic_usd": {
+        "haneul": 0,
+        "dalbit": 0
+      },
+      "runner_up_usd_cents": 10299,
+      "note": "Haneul's bundle ships free: $1.07 less all in than Bada's lower cream."
+    },
+    "golden": {
+      "US": [
+        11882,
+        10192
+      ],
+      "CA": [
+        16087,
+        13825
+      ],
+      "GB": [
+        9361,
+        8055
+      ],
+      "DE": [
+        11105,
+        9621
+      ],
+      "AU": [
+        17260,
+        14835
+      ]
+    }
+  },
+  "hero": {
+    "country": "US",
+    "request": "Dry, sensitive skin. A simple routine: cleanser, toner, essence and a cream. Under $120 all in.",
+    "cart": [
+      "mul-gel-cleanser",
+      "dal-rice-toner",
+      "dal-snail-essence",
+      "sae-cica-cream"
+    ],
+    "rules": {
+      "old_packaging_ok": true,
+      "add_small_extras_if_cheaper": true
+    },
+    "listed": {
+      "lines": [
+        {
+          "id": "mul-gel-cleanser",
+          "shop": "bada",
+          "unit": "12"
+        },
+        {
+          "id": "dal-rice-toner",
+          "shop": "dalbit",
+          "unit": "21"
+        },
+        {
+          "id": "dal-snail-essence",
+          "shop": "dalbit",
+          "unit": "23"
+        },
+        {
+          "id": "sae-cica-cream",
+          "shop": "bada",
+          "unit": "19"
+        }
+      ],
+      "breakdown": {
+        "goods": "75",
+        "domestic": "3.50",
+        "shipping": "21",
+        "duty": "9.38",
+        "tax": "6.94",
+        "fee": "3",
+        "total": "118.82",
+        "kg": "1.07"
+      }
+    },
+    "deal": {
+      "lines": [
+        {
+          "id": "mul-gel-cleanser",
+          "shop": "bada",
+          "unit": "12"
+        },
+        {
+          "id": "dal-rice-toner",
+          "shop": "dalbit",
+          "unit": "19"
+        },
+        {
+          "id": "dal-snail-essence",
+          "shop": "dalbit",
+          "unit": "16",
+          "variant": "old packaging"
+        },
+        {
+          "id": "sae-cica-cream",
+          "shop": "bada",
+          "unit": "19"
+        },
+        {
+          "id": "dal-cica-mask",
+          "shop": "bada",
+          "unit": "2",
+          "added_by_agent": true
+        }
+      ],
+      "extras": [
+        {
+          "id": "dalbit-sample-kit",
+          "shop": "dalbit",
+          "name": "Sample kit, 5 minis",
+          "unit": "0"
+        }
+      ],
+      "breakdown": {
+        "goods": "68",
+        "domestic": "0",
+        "shipping": "21",
+        "duty": "8.50",
+        "tax": "6.29",
+        "fee": "3",
+        "total": "106.79",
+        "kg": "1.15"
+      }
+    },
+    "hold": "118.82",
+    "charged": "106.79",
+    "released": "12.03",
+    "mask_saves": "1.07",
+    "direct": {
+      "goods": "80",
+      "shipping": "34",
+      "duty": "10.00",
+      "tax": "7.40",
+      "carrier_fees": "20",
+      "total": "151.40",
+      "due_at_door": "37.40",
+      "parcels": 2
+    },
+    "saved_vs_listed": "12.03",
+    "saved_vs_direct": "44.61",
+    "events": [
+      {
+        "t": 1,
+        "shop": "dalbit",
+        "actor": "rally",
+        "kind": "offer",
+        "lines": {
+          "dal-rice-toner": "17",
+          "dal-snail-essence:older": "14"
+        },
+        "extras": [
+          "dalbit-sample-kit"
+        ],
+        "note": "Older packaging works for this shopper. $17 and $14, with a sample kit?"
+      },
+      {
+        "t": 2,
+        "shop": "bada",
+        "actor": "rally",
+        "kind": "offer",
+        "lines": {
+          "mul-gel-cleanser": "11",
+          "sae-cica-cream": "17"
+        },
+        "note": "$11 for the cleanser and $17 for the cream?"
+      },
+      {
+        "t": 4,
+        "shop": "bada",
+        "actor": "shop",
+        "kind": "counter",
+        "lines": {
+          "mul-gel-cleanser": "12",
+          "sae-cica-cream": "19"
+        },
+        "note": "Our prices are firm. Shipping is free over $33."
+      },
+      {
+        "t": 5,
+        "shop": "dalbit",
+        "actor": "shop",
+        "kind": "counter",
+        "lines": {
+          "dal-rice-toner": "20",
+          "dal-snail-essence:older": "16"
+        },
+        "extras": [
+          "dalbit-sample-kit"
+        ],
+        "note": "Toner $20, older packaging $16. Sample kit with both."
+      },
+      {
+        "t": 6,
+        "shop": "bada",
+        "actor": "rally",
+        "kind": "offer",
+        "lines": {
+          "mul-gel-cleanser": "12",
+          "sae-cica-cream": "19",
+          "dal-cica-mask": "2"
+        },
+        "domestic": "0",
+        "note": "Add one $2 sheet mask so it ships free?"
+      },
+      {
+        "t": 7,
+        "shop": "bada",
+        "actor": "shop",
+        "kind": "accept",
+        "total": "117.75",
+        "note": "Done. It ships free."
+      },
+      {
+        "t": 9,
+        "shop": "dalbit",
+        "actor": "rally",
+        "kind": "offer",
+        "lines": {
+          "dal-rice-toner": "18",
+          "dal-snail-essence:older": "15"
+        },
+        "extras": [
+          "dalbit-sample-kit"
+        ],
+        "note": "$18 and $15, and we have a deal."
+      },
+      {
+        "t": 12,
+        "shop": "dalbit",
+        "actor": "shop",
+        "kind": "counter",
+        "final": true,
+        "lines": {
+          "dal-rice-toner": "19",
+          "dal-snail-essence:older": "16"
+        },
+        "extras": [
+          "dalbit-sample-kit"
+        ],
+        "note": "$19 and $16 with the sample kit. Final offer."
+      },
+      {
+        "t": 13,
+        "shop": "dalbit",
+        "actor": "rally",
+        "kind": "accept",
+        "total": "106.79",
+        "note": "Accepted."
+      },
+      {
+        "t": 14,
+        "kind": "done",
+        "total": "106.79"
+      }
+    ]
+  }
+}

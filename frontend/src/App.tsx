@@ -12,7 +12,7 @@ import Orders from './routes/shops/Orders';
 import Products from './routes/shops/Products';
 import Settings from './routes/shops/Settings';
 import { Action, Screen } from './components/MemberUI';
-const routes = { '/': Shop, '/shop': Shop, '/ask': Ask, '/bag': Bag, '/deal': Deal, '/paid': Paid, '/track': Track, '/orders': OrderHistory, '/hub': Hub, '/shops/orders': Orders, '/shops/products': Products, '/shops/settings': Settings, '/shops/payouts': () => <ShopConsole tab="payouts" /> };
+const routes = { '/': Shop, '/shop': Shop, '/ask': Ask, '/bag': Bag, '/deal': Deal, '/paid': Paid, '/track': Track, '/orders': OrderHistory, '/hub': Hub, '/shops/orders': Orders, '/shops/products': Products, '/shops/settings': Settings, '/shops/payouts': () => <ShopConsole tab="payouts" />, '/shops/activity': () => <ShopConsole tab="activity" /> };
 export default function App() {
   const path = location.pathname.replace(/\/$/, '') || '/';
   const Page = routes[path as keyof typeof routes];

@@ -1,5 +1,5 @@
 // Private values exist only in the authenticated shop response, never the public projection.
-export type ShopProduct = { id: string; variant?: string; listed: number; lowest: number; cost: number; stock?: number; days?: number; goal: string };
+export type ShopProduct = { id: string; offer_id?: string; version?: number; variant?: string; listed: number; lowest: number; cost: number; stock?: number; days?: number; goal: string };
 export type ShopSnapshot = { shopId: 'dalbit'; readOnly: boolean; products: ShopProduct[]; order: { id: string; payout: number; gain: number; sampleCost: number; status: string }; settings: { older: boolean; autoAccept: boolean } };
 export async function loadShop(signal: AbortSignal): Promise<ShopSnapshot> {
   const response = await fetch('/api/shops/dalbit/workspace', { credentials: 'same-origin', signal });
@@ -18,3 +18,5 @@ export type MerchantOrder = {
   payout: { status: string; amount_minor: number; currency: 'USD' };
 };
 export type AgentSettings = { discount_bp: number; sample_kit: boolean };
+
+export type ListingChange = { id: number; offer_id: string | null; action: string; before: Record<string, number>; after: Record<string, number>; created_at: string };

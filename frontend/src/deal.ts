@@ -3,7 +3,7 @@ import type { Order, PublicDealEvent } from './connected';
 export type PriceState = { id: string; listed: number; opening?: number; offer?: number; asking: number; agreed: boolean; held: boolean; older: boolean; added: boolean };
 export type ShopState = { id: ShopId; status: string; lines: Record<string, PriceState>; message: string; actor: 'rally' | 'shop'; kit: boolean; domesticFree: boolean; accepted: boolean };
 export type DealState = { elapsed: number; totalUsd: number; maximum: number; done: boolean; applied: string[]; shops: Partial<Record<ShopId, ShopState>> };
-export function initialDeal(lines = listedLines, maximum = cents(hero.hold)): DealState {
+export function initialDeal(lines = listedLines, maximum = cents(hero.hold || '0')): DealState {
   const state: DealState = { elapsed: 0, totalUsd: maximum, maximum, done: false, applied: [], shops: {} };
   for (const line of lines) {
     const shop = state.shops[line.shop] ||= { id: line.shop, status: 'Waiting', lines: {}, message: 'Ready to talk.', actor: 'rally', kit: false, domesticFree: false, accepted: false };
