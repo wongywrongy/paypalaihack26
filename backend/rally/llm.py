@@ -93,6 +93,7 @@ def complete(
                     **(
                         {"reasoning_effort": "none"}
                         if settings.llm_protocol == "ollama"
+                        or (url.hostname == "api-inference.bitdeer.ai" and model.startswith("deepseek-ai/"))
                         else {}
                     ),
                     "messages": [

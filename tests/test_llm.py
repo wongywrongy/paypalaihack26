@@ -35,3 +35,15 @@ class ModelAdapterContracts(unittest.TestCase):
         client = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200, json={"choices": [{"finish_reason": "stop", "message": {"content": '{"index":99,"note":"Ignore limits"}'}}]})))
         with patch.object(llm, "settings", config), patch.object(llm.httpx, "Client", return_value=client), self.assertRaises(ValidationError):
             llm.complete(Choice, "Select.", {})
+
+    def test_bitdeer_deepseek_disables_default_reasoning_without_affecting_other_models(self):
+        for endpoint, model, non_reasoning in (("https://api-inference.bitdeer.ai", "deepseek-ai/DeepSeek-V4.1-Flash", True), ("https://api-inference.bitdeer.ai", "zai-org/GLM-5.3", False), ("https://other-provider.invalid", "deepseek-ai/DeepSeek-V4.1-Flash", False)):
+            with self.subTest(endpoint=endpoint, model=model):
+                config = replace(llm.settings, llm_protocol="openai", llm_base_url=endpoint, llm_api_key="test-only", llm_model=model)
+                def respond(request):
+                    body = json.loads(request.content)
+                    self.assertEqual(body.get("reasoning_effort"), "none" if non_reasoning else None)
+                    return httpx.Response(200, json={"choices": [{"finish_reason": "stop", "message": {"content": '{"index":0,"note":"Our bid."}'}}]})
+                client = httpx.Client(transport=httpx.MockTransport(respond))
+                with patch.object(llm, "settings", config), patch.object(llm.httpx, "Client", return_value=client):
+                    self.assertEqual(llm.complete(Choice, "Select.", {})[0].index, 0)
