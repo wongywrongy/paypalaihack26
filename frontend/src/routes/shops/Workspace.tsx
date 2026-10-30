@@ -4,9 +4,9 @@ import { auctionEvents, href, money, product, recordedMode } from '../../fixture
 import { loadShop, type ShopSnapshot } from '../../shop-api';
 import { AuctionBoard, AuctionBox } from '../../components/AuctionBoard';
 import { Photo, Unavailable } from '../../components/MemberUI';
-import Console from './Console';
-export default function Workspace({ tab }: { tab: 'orders'|'products'|'settings' }) {
-  return recordedMode() ? <RecordedWorkspace tab={tab} /> : <Console tab={tab} />;
+import Console, { type Tab } from './Console';
+export default function Workspace({ tab }: { tab: Tab }) {
+  return recordedMode() ? <RecordedWorkspace tab={tab === 'products' || tab === 'settings' ? tab : 'orders'} /> : <Console tab={tab} />;
 }
 function RecordedWorkspace({ tab }: { tab: 'orders'|'products'|'settings' }) {
   const [data, setData] = useState<ShopSnapshot | null>(null);

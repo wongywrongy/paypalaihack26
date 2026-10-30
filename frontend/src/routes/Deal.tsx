@@ -1,3 +1,4 @@
+import { Icon } from '../components/Controls';
 import { isAuction } from '../auction';
 import { AuctionPlayback, ConnectedAuction } from '../components/AuctionDeal';
 import AnimatedTotal from '../components/DealTotal';
@@ -71,7 +72,7 @@ function ExchangeDeal({ value }: { value: ReturnType<typeof useOrder> }) {
     const timer = setInterval(refresh, 2000); return () => clearInterval(timer);
   }, [order?.id, order?.payment_state]);
   if (!id) return <Unavailable />;
-  if (!order || !state) return <Screen title="Your order"><h1>Your deal</h1><p role="status">{error || connection || 'Loading your deal…'}</p>{(error || connection) && <button className="text-link" onClick={refresh}>Try again</button>}</Screen>;
+  if (!order || !state) return <Screen title="Your order"><h1>Your deal</h1><p role="status">{error || connection || 'Loading your deal…'}</p>{(error || connection) && <button className="button secondary small" onClick={refresh}><Icon name="refresh" size={15} />Try again</button>}</Screen>;
   function replay() { setState(initialDeal(order!.checkout.lines, order!.maximum_minor)); setQueue(order!.events); setPlaying(true); setReplaying(true); }
   const paid = paymentComplete(order), canceled = order.payment_state === 'VOIDED';
   const view = reconcileDeal(state, order);

@@ -1,3 +1,4 @@
+import { Icon } from '../components/Controls';
 import { useEffect, useState } from 'react';
 import { request } from '../connected';
 import { money, type Currency } from '../fixture';
@@ -41,7 +42,7 @@ export default function HubRecovery() {
     {!!current?.jobs?.length && <section><h3>Saved jobs</h3><p className="fine">Reconcile unresolved PayPal operations first. Resuming keeps the original operation references and payment limits.</p><ul className="order-history">{current.jobs.map(job => <li className="shop-group" key={job.id}><h4>{job.kind.replaceAll('_', ' ')}</h4><p>{job.status.replaceAll('_', ' ')}</p>{job.status === 'recovery' && <button className="text-link" disabled={!!busy} onClick={() => resume(job)}>{busy === `job:${job.id}` ? 'Resuming saved job…' : 'Resume saved job'}</button>}</li>)}</ul></section>}
     {!!current?.tracking?.length && <section><h3>PayPal tracking updates</h3><ul className="order-history">{current.tracking.map(item => <li className="shop-group" key={item.request_id}><h4>Order {item.order_id}</h4><p>{item.status.replaceAll('_', ' ')}</p><p className="fine">Request: {item.request_id}</p></li>)}</ul></section>}
     <h3>Earlier payment operations</h3>{earlier?.actions && <p className="fine">{earlier.actions}</p>}{earlierError ? <p role="alert">{earlierError}</p> : !earlier ? <p role="status">Loading earlier operations…</p> : !earlier.operations.length ? <p>No earlier operations need a check.</p> : <ul className="order-history">{earlier.operations.map(operation => <li className="shop-group" key={operation.id}><h4>{operation.kind.replaceAll('_', ' ')}</h4><p>{operation.status.replaceAll('_', ' ')}</p>{operation.currency && operation.amount_minor !== undefined && <strong className="money">{money(operation.amount_minor, operation.currency)}</strong>}<OperationReference operation={operation} /><p className="fine">Read-only. Review the original PayPal activity before resolving this payment.</p></li>)}</ul>}
-    {status && <p role="status">{status}</p>}<button className="text-link" onClick={() => setRevision(value => value + 1)}>Refresh recovery</button>
+    {status && <p role="status">{status}</p>}<button className="button secondary small" onClick={() => setRevision(value => value + 1)}><Icon name="refresh" size={15} />Refresh recovery</button>
   </section>;
 }
 function OperationReference({ operation }: { operation: Operation }) {

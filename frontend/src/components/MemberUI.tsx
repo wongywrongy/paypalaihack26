@@ -1,8 +1,10 @@
+import { Icon } from './Controls';
 import MarketRange from './MarketRange';
-import React, { useState, type ReactNode } from 'react';
+import React, { useEffect, useState, type ReactNode } from 'react';
 import { currency, href, money, price, product, recordedMode, shops, type Breakdown as Costs, type CountryCode, type Line, type Product } from '../fixture';
 import { useBag } from '../state';
-import { request } from '../connected';
+import { loadSession, request } from '../connected';
+import type { ShopId } from '../fixture';
 export function Arrow({ back = false }: { back?: boolean }) { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d={back ? 'm14 6-6 6 6 6M8 12h12' : 'M4 12h15m-5-6 6 6-6 6'} /></svg>; }
 export function Photo({ item, older = false, priority = false }: { item: Product; older?: boolean; priority?: boolean }) {
   const [failed, setFailed] = useState(false);
@@ -11,7 +13,17 @@ export function Photo({ item, older = false, priority = false }: { item: Product
 }
 export function Header({ title, back }: { title?: string; back?: string }) {
   const { bag } = useBag();
-  return <header className="header">{back ? <a href={href(back)} className="back" aria-label="Go back"><Arrow back /></a> : <a href={href('/shop')} className="wordmark">rally<span aria-hidden="true">.</span></a>}{title && <span className="header-title">{title}</span>}<span className="test-mode">Test mode</span>{!title && <a className="bag-link" href={href('/bag')} aria-label={`Bag, ${bag.items.length} ${bag.items.length === 1 ? 'item' : 'items'}`}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M5 7h14l-1 14H6L5 7Zm4 0V5a3 3 0 0 1 6 0v2" /></svg><span key={bag.items.length} className="bag-count">{bag.items.length}</span></a>}</header>;
+  return <header className="header">{back ? <a href={href(back)} className="back" aria-label="Go back"><Arrow back /></a> : <a href={href('/shop')} className="wordmark">rally<span aria-hidden="true">.</span></a>}{title && <span className="header-title">{title}</span>}<span className="test-mode">Test mode</span><ShopSwitch />{!title && <a className="bag-link" href={href('/bag')} aria-label={`Bag, ${bag.items.length} ${bag.items.length === 1 ? 'item' : 'items'}`}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M5 7h14l-1 14H6L5 7Zm4 0V5a3 3 0 0 1 6 0v2" /></svg><span key={bag.items.length} className="bag-count">{bag.items.length}</span></a>}</header>;
+}
+/** Shown when this browser is also signed in to a shop: one tap to the other side. */
+export function useShopSession() {
+  const [shop, setShop] = useState<ShopId | null>(null);
+  useEffect(() => { if (recordedMode()) return; let live = true; loadSession().then(session => { if (live && session.role === 'shop' && session.shop_id) setShop(session.shop_id); }).catch(() => undefined); return () => { live = false; }; }, []);
+  return shop;
+}
+function ShopSwitch() {
+  const shop = useShopSession();
+  return shop ? <a className="shop-switch" href="/shops" aria-label={`Selling as ${shops[shop].name}. Open Rally for shops`}><span className="shop-avatar" aria-hidden="true">{shops[shop].name[0]}</span>Selling</a> : null;
 }
 export function SiteFooter() {
   const { setBag, setNotice } = useBag(); const [busy, setBusy] = useState(false);
@@ -23,7 +35,7 @@ export function SiteFooter() {
       location.assign(href('/shop'));
     } catch (error) { setNotice((error as Error).message); setBusy(false); }
   }
-  return <footer className="site-footer"><a href="/orders">Your orders</a><a href="/shops/orders">Sell on Rally</a><button className="text-link" onClick={reset} disabled={busy}>{busy ? 'Clearing bag…' : 'Start over'}</button><a href="/assets/dependency-notices.txt">Licenses</a></footer>;
+  return <footer className="site-footer"><a href="/orders">Your orders</a><a href="/shops">Sell on Rally</a><button className="text-link" onClick={reset} disabled={busy}>{busy ? 'Clearing bag…' : 'Start over'}</button><a href="/assets/dependency-notices.txt">Licenses</a></footer>;
 }
 export function Screen({ children, title, back, wide = false }: { children: ReactNode; title?: string; back?: string; wide?: boolean }) { const { notice } = useBag(); return <main className={wide ? 'shop-screen' : 'member'}><Header title={title} back={back} /><div className="screen-content">{notice && <p className="status-note" role="status">{notice}</p>}{children}</div><SiteFooter /></main>; }
 export function Action({ to, children, onClick }: { to?: string; children: ReactNode; onClick?: () => void }) { return <div className="actions">{to ? <a className="primary" href={href(to)} onClick={onClick}>{children}<Arrow /></a> : <button className="primary" onClick={onClick}>{children}<Arrow /></button>}</div>; }
@@ -32,7 +44,7 @@ export function ProductRows({ lines, country, remove, aside, beforeBidding = fal
   const { store } = useBag();
   return <ul className="product-rows">{lines.map((line, index) => {
     const item = store?.products.find(item => item.id === line.id) || product(line.id);
-    return <li key={line.id} style={{ '--i': index } as React.CSSProperties}><Photo item={item} older={line.variant === 'older'} /><div className="product-copy"><strong>{item.name}</strong><span>{item.brand} · {item.size}</span><small>{beforeBidding ? `Best listed ${recordedMode() ? price(line.unit, country) : money(line.unit, currency(country))} · ${Object.keys(item.prices).length} shops bid` : (store?.shops[line.shop] || shops[line.shop]).name}{line.variant === 'older' ? ' · Older packaging' : ''}{line.bundle ? ' · Bundle' : ''}{line.added ? ' · added for free shipping' : ''}</small><MarketRange reference={item.market} />{remove && <button className="text-link remove" aria-label={`Remove ${item.name}`} onClick={() => remove(line.id)}>Remove</button>}</div><span className="item-side"><span className="money item-price">{!beforeBidding && <>{line.bestListed !== undefined && line.bestListed > line.unit && <del>{recordedMode() ? price(line.bestListed, country) : money(line.bestListed, currency(country))}</del>}{recordedMode() ? price(line.unit, country) : money(line.unit, currency(country))}</>}</span>{aside && <small className="item-aside">{aside(line)}</small>}</span></li>;
+    return <li key={line.id} style={{ '--i': index } as React.CSSProperties}><Photo item={item} older={line.variant === 'older'} /><div className="product-copy"><strong>{item.name}</strong><span>{item.brand} · {item.size}</span><small>{beforeBidding ? `Best listed ${recordedMode() ? price(line.unit, country) : money(line.unit, currency(country))} · ${Object.keys(item.prices).length} shops bid` : (store?.shops[line.shop] || shops[line.shop]).name}{line.variant === 'older' ? ' · Older packaging' : ''}{line.bundle ? ' · Bundle' : ''}{line.added ? ' · added for free shipping' : ''}</small><MarketRange reference={item.market} />{remove && <button className="icon-button remove" aria-label={`Remove ${item.name}`} onClick={() => remove(line.id)}><Icon name="x" size={16} /></button>}</div><span className="item-side"><span className="money item-price">{!beforeBidding && <>{line.bestListed !== undefined && line.bestListed > line.unit && <del>{recordedMode() ? price(line.bestListed, country) : money(line.bestListed, currency(country))}</del>}{recordedMode() ? price(line.unit, country) : money(line.unit, currency(country))}</>}</span>{aside && <small className="item-aside">{aside(line)}</small>}</span></li>;
   })}</ul>;
 }
 export function Unavailable({ title = 'Your order is not available', shop = false }: { title?: string; shop?: boolean }) { return <Screen title={shop ? 'Rally for shops' : 'Your order'} back="/shop"><h1>{title}</h1><p>{shop ? 'Sign in to your shop account to see orders, products and agent settings.' : 'Complete checkout to see your order here.'}</p><Action to="/shop">Back to the shop</Action></Screen>; }

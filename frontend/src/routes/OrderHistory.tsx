@@ -1,3 +1,4 @@
+import { Icon } from '../components/Controls';
 import { useEffect, useState } from 'react';
 import { Action, Screen } from '../components/MemberUI';
 import { money, type Currency } from '../fixture';
@@ -23,7 +24,7 @@ export default function OrderHistory() {
     });
     return () => controller.abort();
   }, [retry]);
-  const retryButton = <button className="text-link" onClick={() => setRetry(value => value + 1)}>Try again</button>;
+  const retryButton = <button className="button secondary small" onClick={() => setRetry(value => value + 1)}><Icon name="refresh" size={15} />Try again</button>;
   return <Screen title="Your orders" back="/shop"><h1>Your orders</h1>
     {error ? <><p role="alert">{error}</p>{retryButton}</> : !orders ? <p role="status">Loading your orders…</p> : orders.length ? <ul className="order-history">{orders.map(order => <li className="shop-group" key={order.id}><a href={orderHref(paymentComplete(order) ? '/paid' : '/deal', order.id)}><h2>Order {order.id}</h2><strong className="money">{money(order.payment_state === 'REFUNDED' ? order.refunded_minor || 0 : order.charged_minor ?? order.maximum_minor, order.currency)}</strong><p>{paymentComplete(order) ? order.payment_state === 'REFUNDED' ? 'Refunded to PayPal' : 'Paid with PayPal' : order.payment_state === 'VOIDED' ? 'Canceled · hold release timing varies' : 'Your checkout and deal'}</p></a></li>)}</ul> : <p>No recent orders.</p>}
     {earlierError ? <section><h2>Earlier purchases</h2><p role="alert">Earlier receipts could not load. {earlierError}</p>{retryButton}</section> : earlier === null ? <p role="status">Loading earlier receipts…</p> : !!earlier.length && <section><h2>Earlier purchases</h2><ul className="order-history">{earlier.map(purchase => <EarlierReceipt key={purchase.id} purchase={purchase} />)}</ul></section>}
