@@ -98,20 +98,25 @@ export function buildFacts(run: Run, order: Order, names: Record<string, string>
   const count = Object.keys(run.winners).length;
   const shops = new Set(order.events.flatMap(row => row.kind === 'bid' ? [row.shop] : []));
   const rounds = Math.max(0, ...order.events.map(row => row.kind === 'round' ? row.round : 0));
+  const boxShops = new Set(Object.values(run.winners).map(row => row.shop)).size;
+  const released = run.held_minor - run.charged_minor;
+  const box = `One box from ${boxShops} ${boxShops === 1 ? 'shop' : 'shops'}, duties included.`;
   return {
     held: cash(run.held_minor),
     charged: cash(run.charged_minor),
-    released: cash(run.held_minor - run.charged_minor),
+    released: cash(released),
     payout: money(run.payout_usd_cents, 'USD'),
     payout_shop: payoutShop,
     rounds: String(rounds),
     shop_count: String(shops.size),
-    items: items.length <= 2 ? items.map(id => names[id]).join(' and ') : `${items.length} products`,
-    result_line: run.charged_minor < run.held_minor
-      ? `Lowest complete delivered total wins: ${cash(run.charged_minor)}, down from ${cash(run.held_minor)}.`
+    item_count: `${items.length} ${items.length === 1 ? 'product' : 'products'}`,
+    result_line: released
+      ? `Lowest complete delivered total wins: ${cash(run.charged_minor)}.`
       : `No bid beat the checkout total, so ${cash(run.held_minor)} stands.`,
+    capture_line: released ? `Rally captures ${cash(run.charged_minor)}, less than the hold.` : `Rally captures ${cash(run.charged_minor)}, exactly the hold.`,
+    receipt_line: released ? `${box} Your bank releases the rest.` : box,
     shop_result: won('haneul')
-      ? `${payoutShop} won ${won(run.payout_shop)} of ${count} items and hands off its parcel.`
-      : `Haneul Beauty was outbid this time. ${payoutShop} won ${won(run.payout_shop)} of ${count} items and hands off its parcel.`,
+      ? `${payoutShop} won ${won(run.payout_shop)} of ${count} items and presses Record hand-off.`
+      : `Haneul Beauty was outbid. ${payoutShop} won ${won(run.payout_shop)} of ${count} items and presses Record hand-off.`,
   };
 }

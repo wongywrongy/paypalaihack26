@@ -17,21 +17,21 @@ const cash = (value: number) => money(Math.round(value), manifest.run.currency);
 const prices = board.items.flatMap(item => item.lanes.flatMap(lane => lane.steps.map(step => step.value)));
 const high = Math.max(...prices), low = Math.min(...prices) * 0.85;
 
-function LaneRow({ lane, t, glide, sceneFrame }: { lane: Lane; t: number; glide: number; sceneFrame: (t: number) => number }) {
+function LaneRow({ lane, t, glide, sceneFrame, big }: { lane: Lane; t: number; glide: number; sceneFrame: (t: number) => number; big: boolean }) {
   const frame = useCurrentFrame(), { fps } = useVideoConfig();
   const price = valueAt(lane.steps, t, glide, EASE);
   const started = lane.steps.length > 1 && t >= lane.steps[1].t;
   const won = lane.wonAt !== null && t >= lane.wonAt, passed = lane.passedAt !== null && t >= lane.passedAt;
   const at = price === null ? 100 : (price - low) / (high - low) * 100;
-  return <div style={{ display: 'grid', gridTemplateColumns: '150px 170px 92px 1fr', alignItems: 'center', gap: 10, height: 34, padding: '0 8px', borderRadius: 8, background: won ? C.mint : 'transparent', fontSize: 18 }}>
+  return <div style={{ display: 'grid', gridTemplateColumns: big ? '168px 150px 100px 1fr' : '150px 170px 92px 1fr', alignItems: 'center', gap: 10, height: big ? 58 : 34, padding: '0 8px', borderRadius: 8, background: won ? C.mint : 'transparent', fontSize: big ? 22 : 18 }}>
     <span style={{ color: won ? C.saving : C.muted, fontWeight: won ? 700 : 400, whiteSpace: 'nowrap' }}>{shopName(lane.shop)}</span>
     <div style={{ position: 'relative', height: 2, background: C.line }}>
       {price !== null && <div style={{ position: 'absolute', left: `${at}%`, top: -7, width: 16, height: 16, marginLeft: -8, borderRadius: 8, background: won ? C.saving : started ? C.accent : C.surface, border: `2px solid ${won ? C.saving : C.accent}` }} />}
     </div>
-    <span style={{ fontFamily: MONO, fontSize: 19, letterSpacing: '-.025em', textAlign: 'right', color: passed ? C.muted : C.ink }}>{passed ? 'Pass' : price === null ? '' : cash(price)}</span>
+    <span style={{ fontFamily: MONO, fontSize: big ? 24 : 19, letterSpacing: '-.025em', textAlign: 'right', color: passed ? C.muted : C.ink }}>{passed ? 'Pass' : price === null ? '' : cash(price)}</span>
     <div style={{ display: 'flex', gap: 5, overflow: 'hidden' }}>{lane.perks.filter(row => t >= row.t).map(row => {
       const pop = enter(frame, fps, sceneFrame(row.t));
-      return <span key={row.perk} style={{ background: row.perk === 'older' || row.perk === 'bundle' ? C.butter : C.tint, borderRadius: 999, padding: '2px 9px', fontSize: 14, whiteSpace: 'nowrap', opacity: pop, transform: `scale(${0.8 + pop * 0.2})` }}>{PERKS[row.perk]}</span>;
+      return <span key={row.perk} style={{ background: row.perk === 'older' || row.perk === 'bundle' ? C.butter : C.tint, borderRadius: 999, padding: '2px 9px', fontSize: big ? 16 : 14, whiteSpace: 'nowrap', opacity: pop, transform: `scale(${0.8 + pop * 0.2})` }}>{PERKS[row.perk]}</span>;
     })}</div>
   </div>;
 }
@@ -67,7 +67,7 @@ export function Bidding({ scene }: { scene: Scene }) {
   const round = roundAt(board, t);
   const total = valueAt(board.totals, t, glide * 2, EASE) ?? manifest.run.held_minor;
   const awarded = t >= board.awardAt;
-  const rows = Math.max(1, board.items.length);
+  const rows = Math.max(1, board.items.length), big = rows <= 2;
   return <>
     <Ribbon scene={scene} compact />
     <ClipFrame name="06-bidding" seconds={scene.duration} fit left={86} top={32} width={950} />
@@ -87,8 +87,8 @@ export function Bidding({ scene }: { scene: Scene }) {
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', minHeight: 0 }}>
         {board.items.map(item => <div key={item.id}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2 }}><Photo id={item.id} size={rows > 3 ? 34 : 48} /><div style={{ fontSize: 20, fontWeight: 700 }}>{manifest.names[item.id]}</div></div>
-          {item.lanes.map(lane => <LaneRow key={lane.shop} lane={lane} t={t} glide={glide} sceneFrame={sceneFrame} />)}
+          <div style={{ display: 'flex', alignItems: 'center', gap: big ? 14 : 10, marginBottom: big ? 8 : 2 }}><Photo id={item.id} size={big ? 72 : rows > 3 ? 34 : 48} /><div style={{ fontSize: big ? 28 : 20, fontWeight: 700, letterSpacing: '-.015em' }}>{manifest.names[item.id]}</div></div>
+          {item.lanes.map(lane => <LaneRow key={lane.shop} lane={lane} t={t} glide={glide} sceneFrame={sceneFrame} big={big} />)}
         </div>)}
       </div>
       {awarded ? <div style={{ height: 64, display: 'grid', placeItems: 'center', fontSize: 28, fontWeight: 700, color: C.saving, background: C.mint, borderRadius: 12, ...rise(enter(frame, fps, sceneFrame(board.awardAt))) }}>Lowest complete delivered total wins</div> : <CodeCheck t={t} sceneFrame={sceneFrame} />}
