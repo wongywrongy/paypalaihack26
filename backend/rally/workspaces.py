@@ -66,7 +66,9 @@ def settings(shop_id: str, request: Request):
 @router.patch("/shops/{shop_id}/settings")
 def save_settings(shop_id: str, body: Policy, request: Request):
     with connect() as db:
-        shop_owner(db, request, shop_id, write=True)
+        session = shop_owner(db, request, shop_id, write=True)
+        if session.get("judge_writer"):
+            raise HTTPException(403, "Review and Apply your shop goal to change agent rules.")
         policy = store.catalog(db).policies[shop_id]
         db.execute("UPDATE shop_policies SET policy=%s WHERE shop_id=%s", (Jsonb({**policy, **body.model_dump()}), shop_id))
     return body.model_dump()

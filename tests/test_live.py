@@ -28,6 +28,7 @@ class LiveContracts(ShoppingContracts):
         self.assertEqual(self.edit(version=1).status_code, 409)
         self.assertEqual(self.client.patch('/api/shops/haneul/products/haneul/mul-gel-cleanser', json={'list_usd': 1500, 'floor_usd': 1100, 'stock': 2, 'version': 1}).status_code, 403)
         self.assertEqual(self.post('/shops/bada/reset', {}).status_code, 403)
+        self.assertEqual(self.client.patch('/api/shops/haneul/settings', json={'discount_bp':3000,'sample_kit':True}, headers={'X-CSRF-Token':self.csrf}).status_code,403)
         self.assertEqual(self.post('/bags', self.payload).status_code, 403)
         self.assertEqual(self.post('/hub/jobs/1/resume', {}).status_code, 403)
         self.assertEqual(self.post('/hub/orders/00000000-0000-0000-0000-000000000000/ship', {'carrier':'Rally','tracking':'BOX'}).status_code, 403)
@@ -147,6 +148,11 @@ class LiveContracts(ShoppingContracts):
             self.assertEqual(payment['amount_usd'],expected)
             self.assertEqual(db.execute("SELECT status FROM jobs WHERE dedupe_key=%s",(f'shop-payout:{oid}:haneul',)).fetchone()['status'],'ready')
             self.assertEqual(final['authority']['offers']['haneul/sae-cica-cream']['floor_usd'],1500)
+        product = next(r for r in self.client.get('/api/shops/haneul/products').json()['products'] if r['id']=='sae-cica-cream')
+        self.assertEqual(self.client.patch('/api/shops/haneul/products/'+product['offer_id'],json={'list_usd':product['listed'],'floor_usd':product['listed'],'stock':product['stock'],'version':product['version']},headers={'X-CSRF-Token':self.csrf}).status_code,200)
+        merchant=self.client.get('/api/shops/haneul/orders').json()['orders'][0]
+        self.assertEqual(merchant['lowest']['sae-cica-cream'],1500)
+
 
     def test_activity_memory_is_bounded_saved_and_public_summary_hides_margin(self):
         from dataclasses import replace
