@@ -1,4 +1,6 @@
-# Rally v2 architecture and data model
+# Rally architecture and data model
+
+For new quotes, [v3 shop bidding](plan/BIDDING.md) overrides the exchange descriptions below. The worker runs three bounded rounds, persists schema-v3 events through the same SSE path, and exactly awards atomic bundles with per-shop domestic overrides. Final terms add domestic_usd and auction rounds/winners; payout uses that promised fee. The award also identifies bundle members for faithful receipts. RALLY_DEAL_MODE defaults to auction after B2 verification; frozen v2 orders retain their mode and reducer. No schema/service or historical-record rewrite is needed.
 
 [PLAN.md v2](../PLAN.md) is authoritative. Implementation is complete for the connected shopping and operations surfaces; [EVIDENCE.md](../EVIDENCE.md) distinguishes local doubles, genuine G1 proof and the still-open hosted gates.
 

@@ -38,6 +38,8 @@ def validate(lines, extras, initial, shop, destination, rules, catalog):
 
 
 def negotiate(start, destination, catalog, rules, *, choose=None, emit=None, max_seconds=30):
+    if set(rules) == {"old_packaging_ok", "bundles_ok"}:
+        rules = {"old_packaging_ok": rules["old_packaging_ok"], "add_small_extras_if_cheaper": False}
     if set(rules) != {"old_packaging_ok", "add_small_extras_if_cheaper"} or any(type(v) is not bool for v in rules.values()):
         raise ValueError("Explicit shopper rules are required.")
     started = monotonic()
@@ -100,7 +102,7 @@ def negotiate(start, destination, catalog, rules, *, choose=None, emit=None, max
                     budget["calls"] += 1
                     remaining_tokens = budget["tokens"]
                     budget["tokens"] -= min(remaining_tokens, 12000)
-                selection, _ = llm.complete(Choice, f"You represent {'the shopper' if role == 'rally' else 'the fictional merchant'}. Select one executable candidate and write a short public note. You cannot accept terms or move money. Prefer {'a lower complete total within the shopper permissions' if role == 'rally' else 'a strong permitted commercial score'}. All decisions are revalidated by code.", payload, timeout=min(4, remaining), max_tokens=250, remaining_tokens=remaining_tokens)
+                selection, _ = llm.complete(Choice, f"You represent {'the shopper' if role == 'rally' else 'the fictional merchant'}. Select one executable candidate and write a short public note. You cannot accept terms or move money. Prefer {'a lower complete total within the shopper permissions' if role == 'rally' else 'a strong permitted commercial score'}. All decisions are revalidated by code.", payload, timeout=min(4, remaining), max_tokens=250, remaining_tokens=remaining_tokens, model_role="buyer" if role == "rally" else "shop")
             except Exception:
                 selection = Choice(index=0, note="Please consider these item and delivery terms." if role == "rally" else "These are our available item and delivery terms.")
                 by = "CODE"

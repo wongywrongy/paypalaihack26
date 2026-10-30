@@ -1,18 +1,18 @@
 # Rally
 
-**Korean skincare. One box. Your currency.** A shopper builds a bag across three fictional Korean shops. Rally finds the lowest complete checkout cost, obtains the shopper's PayPal approval, then bargains within the shopper's saved choices. Code validates every term; the final capture cannot exceed the approved checkout total.
+**Korean skincare. One box. Your currency.** A shopper builds a bag across three fictional Korean shops. Rally finds the lowest complete checkout cost, obtains the shopper's PayPal approval, then runs three open bidding rounds across every shop that stocks each item. Code validates every term; the final capture cannot exceed the approved checkout total.
 
-[Latest plan](PLAN.md) · [Architecture and data model](docs/ARCHITECTURE.md) · [Demo procedure](docs/DEMO.md) · [Owner action list](docs/ACTIONS.md) · [Executed evidence](EVIDENCE.md) · [Screenshots](docs/screenshots/README.md) · [MIT license](LICENSE)
+[Shop bidding plan](docs/plan/BIDDING.md) · [Build plan](PLAN.md) · [Architecture and data model](docs/ARCHITECTURE.md) · [Demo procedure](docs/DEMO.md) · [Owner action list](docs/ACTIONS.md) · [Executed evidence](EVIDENCE.md) · [Screenshots](docs/screenshots/README.md) · [MIT license](LICENSE)
 
 ## What works
 
-The implementation follows **PLAN.md v2, October 22**: solo shopping, three Korean shops, 30 products, five destinations (USD/CAD/GBP/EUR/AUD), one Seoul parcel. The old group-order shopping routes are retired. Historical purchases and unresolved payment operations are preserved.
+New orders follow **[BIDDING.md v3, October 29](docs/plan/BIDDING.md)**: solo shopping, three Korean shops, 30 products, five destinations (USD/CAD/GBP/EUR/AUD), one Seoul parcel. The old group-order shopping routes are retired. Historical purchases and unresolved payment operations are preserved.
 
-Shop → Ask for a routine → Bag → PayPal approval → live Deal → Paid → Track is connected to one FastAPI application and PostgreSQL. Exact sourcing includes shared shipping and import assumptions. Separate buyer/shop model contexts select bounded proposals; deterministic code controls prices, permissions, stock, consent and settlement. Negotiation events persist immediately and restore through SSE/polling. Separate shop workspaces, an AG Grid products view, hub handoffs, shop payouts, tracking, refunds and safe recovery controls are implemented.
+Shop → Ask for a routine → Bag → PayPal approval → live Deal → Paid → Track is connected to one FastAPI application and PostgreSQL. Exact sourcing includes shared shipping and import assumptions. Separate buyer/shop Bitdeer-compatible model contexts select candidate indexes and write public notes; deterministic code controls prices, permissions, stock, consent and settlement. Negotiation events persist immediately and restore through SSE/polling. Separate shop workspaces, an AG Grid products view, hub handoffs, shop payouts, tracking, refunds and safe recovery controls are implemented.
 
-**Verification is deliberately separate from implementation.** Local checks pass: 76 backend contracts against PostgreSQL, 94 desktop/mobile browser cases, production build/render/privacy checks, and USD/CAD browser journeys against the actual API/database with provider/model doubles. Genuine G1 sandbox USD/CAD authorization/capture, void, refund, shop payout and signed-webhook recovery passed earlier. The new shopper journey has **not yet passed with a hosted model and human PayPal approvals on Render**. G3/G4/G5 remain open; this is not yet ready to submit. See [the exact remaining actions](docs/ACTIONS.md).
+**Verification is separate from implementation.** The current local gate passes **111 Python contracts** against disposable PostgreSQL, **156 desktop/mobile browser cases**, Ruff, build and render checks. Bitdeer DeepSeek V4.1 Flash works with `json_schema` and explicit non-reasoning mode: the connected hero used 12 validated calls, zero fallbacks, and finished at $95.35 within its $118.82 hold. The Channel3 snapshot contains real aggregate ranges for 12 products. A separate [25-bag connected E sample](docs/benchmark-auction-connected.json) completed 24 supported bags across all five currencies with zero hold/authority/bundle violations; four CODE fallbacks keep its strict `hosted_benchmark_verified` flag false. The 500-case fixture report remains separate. Genuine G1 sandbox USD/CAD payment evidence is historical and does not establish a hosted v3 run. Human PayPal sandbox approvals on Render remain required; see [executed evidence](EVIDENCE.md).
 
-[Rootlane design review](https://neo.taile1abc7.ts.net:20001/shop?test=recorded) · [Recorded deal](https://neo.taile1abc7.ts.net:20001/deal?test=recorded). This existing static review serves explicitly recorded events, with checkout disabled. It is distinct from the connected application. The existing Render service still runs the older application until the reviewed cutover.
+[Rootlane design review](https://neo.taile1abc7.ts.net:20001/shop?test=recorded) · [Recorded deal](https://neo.taile1abc7.ts.net:20001/deal?test=recorded). These links are the previously approved v2 static review, not hosted v3 verification. Recorded checkout is disabled. It is distinct from the connected application. The existing Render service still runs the older application until the reviewed cutover.
 
 ## What is real and what is simulated
 
@@ -52,13 +52,40 @@ PYTHONPATH=backend .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/ruff check --isolated --select E4,E7,E9,F,I --ignore E402 backend tests scripts
 npm run build --prefix frontend
 npm run test:render --prefix frontend
-npm run test:browser --prefix frontend
+npm run test:browser --prefix frontend -- --workers=2
 PYTHONPATH=backend .venv/bin/python scripts/engine.py --fixture --country US
-PYTHONPATH=backend .venv/bin/python scripts/benchmark.py --fixture --count 500 --output docs/benchmark.json
+PYTHONPATH=backend .venv/bin/python scripts/benchmark.py --fixture --count 500 --output docs/benchmark-auction.json
 ```
 
-Published [fixture benchmark](docs/benchmark.json), seed **20261023**: 500 generated bags, 497 supported and three excluded; **zero charges above the hold, zero shops below authority**, and full term trading below checkout in 440 cases. Mean per-case reduction was 562 basis points. These are deterministic synthetic results, not measured customer savings or live-model evidence. Strategy B (two-model price haggling) was not run and is `null`; A is exact list-price sourcing, C removes shopper permissions, D enables them. The connected B/D benchmark is still required. It caches validated synthetic responses by prompt hash and performs no payment operations.
+Published [auction fixture benchmark](docs/benchmark-auction.json), seed **20261023**: 500 generated bags, 497 supported and 3 excluded. Strategy E finishes below checkout in 497 cases. **Zero charges above hold, zero awarded units below shop authority, zero split bundles.** Totals below are aggregate local-currency minor units over the same bags:
 
-The five golden schedules are checkout/final: USD 11882/10679, CAD 16087/14449, GBP 9361/8415, EUR 11105/10030, AUD 17260/15504 minor units. The $2 mask reduces the US complete total by $1.07 through shared-shipping effects. Actual model decisions can differ or retain checkout terms; no universal saving is promised.
+| Currency | A: listed exact sourcing | D: exchange | E: bidding |
+| --- | ---: | ---: | ---: |
+| AUD | 2094138 | 1969852 | 1824828 |
+| CAD | 2048482 | 1932390 | 1779554 |
+| EUR | 1368774 | 1300253 | 1203972 |
+| GBP | 1083665 | 1023761 | 946554 |
+| USD | 1529002 | 1430461 | 1318212 |
+
+The separate connected E sample requests 25 generated bags (24 supported, one excluded). Only E uses hosted models; C/D remain deterministic comparisons and B is not executed. The paced, cached verification made 98 HTTP requests: 97 validated and one timed out; two additional attempts hit the prompt-token budget before HTTP. Four auction selections fell back to CODE (including one response that validated after the auction's call deadline). The report preserves the initial unpaced run's 88 failures and keeps `hosted_benchmark_verified=false`. Financial invariants were zero in both runs. This sample is not a 500-case connected benchmark.
+
+These are synthetic fixture results, not customer savings or live-model evidence. B is not executed in fixture mode. The [v2 fixture report](docs/benchmark.json) and exchange tests remain available; use `RALLY_DEAL_MODE=exchange` for new exchange quotes. Quote modes and historical orders are preserved. The connected B/D/E benchmark caches validated public prompts by model role, model id and response format; it performs no payments.
+
+Auction checkout/final goldens are USD **11882/10192**, CAD **16087/13825**, GBP **9361/8055**, EUR **11105/9621**, AUD **17260/14835**. The reference's round-2 Bada toner is $20 (owner-approved correction); $19 would clear its shipping threshold and change that round's exact optimum. These exact goldens belong to the recorded-review fixture only. Normal index-0 bidding is generative and currently reaches **USD $95.35**, with Haneul’s bundle/free shipping and Dalbit’s kit; it never reads the recording. Actual model selections can differ. Failed, timed-out or invalid selections use code’s best-ranked valid candidate, marked CODE, with server-side failure counts.
+
+## Private model and market setup
+
+Fill the ignored local `.env` from `.env.example`. For the existing Render web/worker, the owner sets `LLM_BASE_URL=https://api-inference.bitdeer.ai`, `LLM_PROTOCOL=openai`, `LLM_API_KEY`, and `LLM_MODEL_SHOP` / `LLM_MODEL_BUYER` (or their `LLM_MODEL` fallback). Obtain exact model ids with authenticated `GET /v1/models`. Start with `LLM_RESPONSE_FORMAT=json_schema`; run the connected engine and verify actual LLM events before treating it as proof. If the provider rejects structured schema output, use `json_object` and rerun; Pydantic still validates. On October 30, 2026, DeepSeek V4.1 Flash validated the complete auction with json_schema; a small json_object probe also passed. Bitdeer DeepSeek requests explicitly disable reasoning. Both tested roles use deepseek-ai/DeepSeek-V4.1-Flash; the GLM non-reasoning configuration was rejected, so it was not selected.
+
+```bash
+PYTHONPATH=backend python scripts/engine.py --env-file .env
+PYTHONPATH=backend python scripts/benchmark.py --connected --auction-only --env-file .env --count 25 --output docs/benchmark-auction-connected.json
+# CHANNEL3_API_KEY is dev-only, read solely from this private file:
+PYTHONPATH=backend python scripts/market_snapshot.py --env-file .env
+npm run scenario:project --prefix frontend
+```
+
+The importer uses the current [Channel3 search contract](https://channel3.ai/docs/api-reference/v1/search), filters comparable category/size and in-stock USD offers, and requires at least three distinct comparable products. Only price aggregates, count, date and the generic query are committed. No retailer names, listing titles, images or URLs are stored. Missing/poor results hide the US market range. Runtime reads the committed snapshot and never calls Channel3. After a real import, commit the snapshot/projection and restart the application to load it. The committed snapshot has 12 qualifying product ranges dated October 30, 2026. The owner still configures the existing Render services and performs the hosted USD then CAD run with human PayPal sandbox approval.
+
 
 [Third-party notices](THIRD_PARTY_NOTICES.md) retain dependency attribution. Sandbox buyer logins must be supplied privately in the submission testing notes, never committed here.

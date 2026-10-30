@@ -83,7 +83,8 @@ test('catalog filters, adds, removes and preserves the real local bag',async({pa
   await expect(page.locator('.catalog > li')).toHaveCount(3);
   await page.getByRole('button',{name:'Add Rice Toner',exact:true}).click();
   await page.getByRole('link',{name:'Bag, 1 item'}).click();
-  await expect(page.getByRole('heading',{name:'Dalbit Official'})).toBeVisible();
+  await expect(page.locator('.bag-item')).toContainText('Rice Toner');
+  await expect(page.getByText('3 shops bid', { exact: true })).toBeVisible();
   const total=await page.locator('.checkout-total > .money').innerText();
   await page.reload();await expect(page.locator('.checkout-total > .money')).toHaveText(total);
   await page.getByRole('button',{name:'Remove Rice Toner'}).click();
@@ -124,49 +125,49 @@ test('routine and permissions persist while checkout remains the ceiling and can
   await page.getByRole('button', { name: 'Find my routine' }).click();
   await page.getByRole('link',{name:'Add routine to bag'}).click();
   await expect(page.locator('.checkout-total > .money')).toHaveText('$118.82');
-  await page.getByRole('switch',{name:/Older packaging is fine/}).uncheck();
-  await page.getByRole('switch',{name:/Add a small extra/}).uncheck();
-  await page.reload();await expect(page.getByRole('switch',{name:/Older packaging is fine/})).not.toBeChecked();
+  await page.getByRole('switch',{name:/Older packaging/}).uncheck();
+  await page.getByRole('switch',{name:/Bundles/}).uncheck();
+  await page.reload();await expect(page.getByRole('switch',{name:/Older packaging/})).not.toBeChecked();
   await expect(page.locator('.checkout-total > .money')).toHaveText('$118.82');
   await expect(page.getByRole('button',{name:'Pay with PayPal'})).toBeVisible();
   await page.goto('/paid');await expect(page.getByRole('heading',{name:'Your order is not available'})).toBeVisible();
   expect(financial.filter(url => /\/checkout|\/approve|\/capture/.test(new URL(url).pathname))).toEqual([]);
 });
-test('deal follows received prices, pauses and replays without financial requests',async({page},info)=>{
-  const financial:string[]=[];page.on('request',request=>{if(financialRequest(request.url()))financial.push(request.url());});
-  await page.clock.install();await page.goto(recorded('/deal'));
-  await expect(page.getByRole('heading',{name:'Rally is talking to 2 shops'})).toBeVisible();
-  const pause = page.getByRole('button', { name: 'Pause deal' });
-  await expect(pause).toHaveCount(1);
-  const pauseBox = (await pause.boundingBox())!;
-  expect(pauseBox.y + pauseBox.height).toBeLessThanOrEqual(page.viewportSize()!.height);
-  expect(pauseBox.y).toBeLessThan((await page.locator('.deal-card').first().boundingBox())!.y);
-  await page.clock.runFor(7000);
-  await expect(page.getByRole('status')).toHaveText('Your total, all in: $117.75');
-  await expect(page.getByText('You allowed small extras',{exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'Pause deal'}).click();
-  await page.clock.runFor(30000);await expect(page.getByRole('heading',{name:'Deal paused'})).toBeVisible();
-  await expect(page.getByRole('status')).toHaveText('Your total, all in: $117.75');
-  await screenshot(page,`deal-live-${info.project.name}`);
-  await page.getByRole('button',{name:'Resume deal'}).click();await page.clock.runFor(7000);
-  await expect(page.getByRole('heading',{name:'Deal done'})).toBeVisible();
-  expect(await page.locator('.hero-money').textContent()).toBe('$106.79');
-  await expect(page.getByRole('status')).toHaveText('Your total, all in: $106.79');
-  await expect(page.getByRole('img',{name:'$19.00 agreed'})).toBeVisible();
-  await expect(page.getByText('Price held',{exact:true})).toHaveCount(2);
-  await screenshot(page,`deal-done-${info.project.name}`);
-  await page.getByRole('button',{name:'Watch the deal again'}).click();await page.clock.runFor(14000);
-  await expect(page.getByRole('status')).toHaveText('Your total, all in: $106.79');
-  await page.getByRole('link',{name:'See your order'}).click();await expect(page.locator('.hero-money')).toHaveText('$106.79');
-  await page.getByText('See breakdown',{exact:true}).click();await expect(page.getByRole('definition').filter({hasText:'$106.79'})).toBeVisible();
-  await page.getByRole('link',{name:'Track order'}).click();await expect(page.getByRole('heading',{name:'Packing in Seoul'})).toBeVisible();
+test('auction follows bids, pauses and replays without financial requests', async ({ page }, info) => {
+  const financial: string[] = []; page.on('request', request => { if (financialRequest(request.url())) financial.push(request.url()); });
+  await page.clock.install(); await page.goto(recorded('/deal'));
+  await expect(page.getByRole('heading', { name: 'Shops are bidding' })).toBeVisible();
+  await page.clock.runFor(6000);
+  await expect(page.locator('.auction-item')).toHaveCount(4);
+  await expect(page.getByRole('status')).toHaveText('Your total, all in: $110.29');
+  const pause = page.getByRole('button', { name: 'Pause bidding' });
+  expect((await pause.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await pause.click(); await page.clock.runFor(30000);
+  await expect(page.getByRole('heading', { name: 'Bidding paused' })).toBeVisible();
+  await expect(page.getByRole('status')).toHaveText('Your total, all in: $110.29');
+  await screenshot(page, `deal-live-${info.project.name}`);
+  await page.getByRole('button', { name: 'Resume bidding' }).click(); await page.clock.runFor(14000);
+  await expect(page.getByRole('heading', { name: 'Bidding complete' })).toBeVisible();
+  await expect(page.locator('.hero-money')).toHaveText('$101.92');
+  await expect(page.locator('.auction-lane.won')).toHaveCount(4);
+  await expect(page.getByText('Won by Haneul Beauty', { exact: true })).toHaveCount(2);
+  await expect(page.getByText('Outbid', { exact: true })).toBeVisible();
+  await expect(page.locator('.bid-floor')).toHaveCount(0);
+  if (info.project.name === 'desktop') expect(await page.locator('.auction-board').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(2);
+  await screenshot(page, `deal-done-${info.project.name}`);
+  await page.getByRole('button', { name: 'Watch the bidding again' }).click(); await page.clock.runFor(20000);
+  await expect(page.getByRole('status')).toHaveText('Your total, all in: $101.92');
+  await page.getByRole('link', { name: 'See your order' }).click(); await expect(page.locator('.hero-money')).toHaveText('$101.92');
+  await expect(page.getByText('Haneul Beauty · Bundle', { exact: true })).toHaveCount(2);
+  await page.getByText('See breakdown', { exact: true }).click(); await expect(page.locator('.breakdown').getByRole('definition').filter({ hasText: '$101.92' })).toBeVisible();
+  await page.getByRole('link', { name: 'Track order' }).click(); await expect(page.getByRole('heading', { name: 'Packing in Seoul' })).toBeVisible();
   expect(financial).toEqual([]);
 });
-test('reduced motion applies event values without moving price markers or counting',async({page})=>{
-  await page.emulateMedia({reducedMotion:'reduce'});await page.clock.install();await page.goto(recorded('/deal'));
-  await expect(page.getByRole('heading',{name:'Rally is talking to 2 shops'})).toBeVisible();await page.clock.runFor(1000);
-  for(const marker of await page.locator('.price-marker').all())await expect(marker).toHaveCSS('transition-duration','0s');
-  await page.clock.runFor(13000);await expect(page.locator('.hero-money')).toHaveText('$106.79');
+test('reduced motion applies auction states without sliding or counting', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' }); await page.clock.install(); await page.goto(recorded('/deal'));
+  await page.clock.runFor(1200);
+  for (const marker of await page.locator('.bid-marker').all()) await expect(marker).toHaveCSS('transition-duration', '0s');
+  await page.clock.runFor(20000); await expect(page.locator('.hero-money')).toHaveText('$101.92');
 });
 test('ordinary private routes are locked without fetching shop economics',async({page})=>{
   const calls:string[]=[];page.on('request',request=>{if(request.url().includes('/api/'))calls.push(request.url());});
@@ -201,17 +202,18 @@ test('the SVG icon is served as a real resource',async({page})=>{
 
 test('recorded order keeps its checkout consent and currency separate from the editable bag', async ({ page }) => {
   await page.clock.install();
-  await page.addInitScript(() => localStorage.setItem('rally-shopping-v2',JSON.stringify({country:'CA',items:['dal-rice-toner'],rules:{old_packaging_ok:false,add_small_extras_if_cheaper:false}})));
+  await page.addInitScript(() => localStorage.setItem('rally-shopping-v2',JSON.stringify({country:'CA',items:['dal-rice-toner'],rules:{old_packaging_ok:false,bundles_ok:false}})));
   await page.goto(recorded('/deal'));
-  await expect(page.getByText('California · USD · order choices saved at checkout',{exact:true})).toBeVisible();
-  await page.clock.runFor(14000);
-  await expect(page.locator('.hero-money')).toHaveText('$106.79');
+  await expect(page.locator('.header-title')).toHaveText('Order RL-24817');
+  await expect(page.getByText(/order choices saved at checkout/)).toHaveCount(0);
+  await page.clock.runFor(20000);
+  await expect(page.locator('.hero-money')).toHaveText('$101.92');
   await page.getByRole('link',{name:'See your order'}).click();
-  await expect(page.locator('.hero-money')).toHaveText('$106.79');
+  await expect(page.locator('.hero-money')).toHaveText('$101.92');
   await page.goto('/bag');
   await expect(page.locator('.product-rows li')).toHaveCount(1);
-  await expect(page.getByRole('switch',{name:/Older packaging is fine/})).not.toBeChecked();
-  await expect(page.getByRole('switch',{name:/Add a small extra/})).not.toBeChecked();
+  await expect(page.getByRole('switch',{name:/Older packaging/})).not.toBeChecked();
+  await expect(page.getByRole('switch',{name:/Bundles/})).not.toBeChecked();
   await expect(page.locator('.checkout-total > .money')).toContainText('C$');
 });
 
@@ -220,7 +222,7 @@ test('prototype and malformed saved destinations recover to a valid empty US bag
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto('/shop');
   for (const country of ['__proto__', 'toString', 'constructor', null, { US: true }]) {
-    await page.evaluate(value => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: value, items: [], rules: { old_packaging_ok: true, add_small_extras_if_cheaper: true } })), country);
+    await page.evaluate(value => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: value, items: [], rules: { old_packaging_ok: true, bundles_ok: true } })), country);
     await page.reload();
     await expect(page.getByRole('button', { name: /Ship to United States · USD/ })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Bag, 0 items' })).toBeVisible();
@@ -286,30 +288,20 @@ test('category rail stays in one row and native keyboard focus reveals every cat
   }
 });
 
-test('merchant earnings run from lowest to agreed while buyer savings run from agreed to listed', async ({ page }) => {
-  await page.clock.install(); await shopContract(page);
-  await page.goto(recorded('/shops/orders'));
-  await expect(page.getByRole('heading', { name: 'Orders', exact: true })).toBeVisible();
-  for (const [label, ratio] of [['$19.00 agreed, $3.00 over your lowest', 3/5], ['$16.00 agreed, $4.00 over your lowest', 4/11]] as const) {
-    const track = page.getByRole('img', { name: label, exact: true });
-    const frame = (await track.boundingBox())!, rail = (await track.locator('.saved-rail').boundingBox())!;
-    expect(rail.x).toBeCloseTo(frame.x, 0);
-    expect(rail.width / frame.width).toBeCloseTo(ratio, 2);
-  }
+test('shop auction lanes expose only its own lowest prices', async ({ page }) => {
+  await shopContract(page); await page.goto(recorded('/shops/orders'));
+  await expect(page.locator('.auction-item')).toHaveCount(4);
+  await expect(page.locator('.bid-floor')).toHaveCount(2);
+  await expect(page.getByText('Your lowest:', { exact: false })).toHaveCount(2);
+  await expect(page.locator('.auction-box')).toContainText('Dalbit Official');
   await page.goto(recorded('/deal'));
-  await expect(page.getByRole('heading', { name: 'Rally is talking to 2 shops' })).toBeVisible();
-  await page.clock.runFor(14000);
-  const track = page.getByRole('img', { name: '$19.00 agreed', exact: true });
-  const frame = (await track.boundingBox())!, rail = (await track.locator('.saved-rail').boundingBox())!;
-  expect(rail.x - frame.x).toBeCloseTo(frame.width / 2, 0);
-  expect(rail.x + rail.width).toBeCloseTo(frame.x + frame.width, 0);
+  await expect(page.locator('.bid-floor')).toHaveCount(0);
 });
-
 
 test('adding a routine preserves unique existing selections and refuses overflow without dropping items', async ({ page }) => {
   await page.goto('/shop');
   const existing = ['byeol-vitc', 'dal-rice-toner'];
-  await page.evaluate(items => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items, rules: { old_packaging_ok: false, add_small_extras_if_cheaper: true } })), existing);
+  await page.evaluate(items => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items, rules: { old_packaging_ok: false, bundles_ok: true } })), existing);
   await page.goto('/ask');
   await page.getByLabel('What would you like your routine to do?').fill('A gentle routine for dry skin');
   await page.getByRole('button', { name: 'Find my routine' }).click();
@@ -317,9 +309,9 @@ test('adding a routine preserves unique existing selections and refuses overflow
   await expect(page.locator('.product-rows li')).toHaveCount(5);
   await expect(page.locator('.product-copy strong').filter({ hasText: 'Vitamin C Serum' })).toHaveCount(1);
   await expect(page.locator('.product-copy strong').filter({ hasText: 'Rice Toner' })).toHaveCount(1);
-  await expect(page.getByRole('switch', { name: /Older packaging is fine/ })).not.toBeChecked();
+  await expect(page.getByRole('switch', { name: /Older packaging/ })).not.toBeChecked();
   const full = catalog.filter(item => allowed(item, 'US') && !hero.cart.includes(item.id)).slice(0,8).map(item => item.id);
-  await page.evaluate(items => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items, rules: { old_packaging_ok: true, add_small_extras_if_cheaper: true } })), full);
+  await page.evaluate(items => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items, rules: { old_packaging_ok: true, bundles_ok: true } })), full);
   await page.goto('/ask');
   await page.getByLabel('What would you like your routine to do?').fill('A gentle routine for dry skin');
   await page.getByRole('button', { name: 'Find my routine' }).click();
@@ -328,4 +320,24 @@ test('adding a routine preserves unique existing selections and refuses overflow
   await page.getByRole('link', { name: 'Edit bag' }).click();
   await expect(page.locator('.product-rows li')).toHaveCount(8);
   expect((await page.locator('.product-copy strong').allTextContents()).sort()).toEqual(full.map(id => catalog.find(item => item.id === id)!.name).sort());
+});
+
+test('compact phone bidding header leaves the item lanes readable while scrolling', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.clock.install(); await page.goto(recorded('/deal')); await page.clock.runFor(6000);
+  await page.getByRole('button', { name: 'Pause bidding' }).click();
+  const reveal = async () => page.evaluate(() => {
+    const header = document.querySelector('.auction-sticky')!.getBoundingClientRect();
+    const content = document.querySelector('.auction-content')!.getBoundingClientRect();
+    window.scrollBy(0, content.top - header.height - 8);
+  });
+  await reveal();
+  const lastLane = page.locator('.auction-item').first().locator('.auction-lane').last();
+  expect((await lastLane.boundingBox())!.y + (await lastLane.boundingBox())!.height).toBeLessThanOrEqual(664);
+  const dir = resolve('../.runtime/frontend-screenshots'); await mkdir(dir, { recursive: true });
+  await page.screenshot({ path: `${dir}/auction-compact-live.png`, animations: 'disabled' });
+  await page.getByRole('button', { name: 'Resume bidding' }).click(); await page.clock.runFor(20000);
+  await reveal(); await page.screenshot({ path: `${dir}/auction-compact-done.png`, animations: 'disabled' });
+  await expect(page.locator('.auction-box')).toContainText('Your box');
+  expect((await page.locator('.auction-actions').boundingBox())!.y).toBeGreaterThan((await page.locator('.auction-box').boundingBox())!.y);
 });

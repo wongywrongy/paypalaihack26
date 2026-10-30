@@ -28,7 +28,7 @@ def catalog(db, order_id=None):
     result = Catalog()
     result.products = {row["id"]: row["public"] for row in db.execute("SELECT * FROM catalog_products").fetchall()}
     result.offers = {row["id"]: dict(row) for row in db.execute("SELECT * FROM catalog_offers").fetchall()}
-    result.policies = {row["shop_id"]: row["policy"] for row in db.execute("SELECT * FROM shop_policies").fetchall()}
+    result.policies = {row["shop_id"]: {**result.policies[row["shop_id"]], **row["policy"]} for row in db.execute("SELECT * FROM shop_policies").fetchall()}
     if order_id:
         for row in db.execute("SELECT offer_id,qty FROM order_reservations WHERE order_id=%s AND state='reserved'", (order_id,)).fetchall():
             result.offers[row["offer_id"]]["stock"] += row["qty"]

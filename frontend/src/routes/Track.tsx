@@ -1,11 +1,11 @@
-import { finalLines, landed, money, recordedMode, recordedOrder } from '../fixture';
+import { auctionBreakdown, money, recordedMode, recordedOrder } from '../fixture';
 import { Action, Screen, Unavailable } from '../components/MemberUI';
 import { useOrder } from '../order-state';
 import { orderHref, paymentComplete } from '../connected';
 export default function Track() { return recordedMode() ? <RecordedTrack /> : <ConnectedTrack />; }
-function RecordedTrack() { const country = recordedOrder.country; const total = landed(finalLines, country, 50); return <Screen title="Order RL-24817" back="/paid"><p className="fine order-context">{recordedOrder.destination} · {recordedOrder.currency} · order choices saved at checkout</p><h1>Packing in Seoul</h1><p className="intro">Arrives Oct 30 to Nov 2</p><ol className="timeline">{[
+function RecordedTrack() { const country = recordedOrder.country; const total = auctionBreakdown(country); return <Screen title="Order RL-24817" back="/paid"><p className="fine order-context">{recordedOrder.destination} · {recordedOrder.currency} · order choices saved at checkout</p><h1>Packing in Seoul</h1><p className="intro">Arrives Oct 30 to Nov 2</p><ol className="timeline">{[
   [`Paid ${money(total.total, total.currency)}`, 'Oct 22 · PayPal released the rest of your hold'],
-  ['Shops shipped to our Seoul hub', 'Oct 23 · Bada Market and Dalbit Official'],
+  ['Shops shipped to our Seoul hub', 'Oct 23 · Haneul Beauty and Dalbit Official'],
   ['Packed into one box', 'Checked against your order'],
   ['Leaves Seoul', 'Oct 26 · tracking appears in PayPal'],
   ['Customs cleared, duty paid', 'About Oct 29'],

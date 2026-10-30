@@ -1,3 +1,4 @@
+import MarketRange from './MarketRange';
 import { useState, type ReactNode } from 'react';
 import { currency, href, money, price, product, recordedMode, shops, type Breakdown as Costs, type CountryCode, type Line, type Product } from '../fixture';
 import { useBag } from '../state';
@@ -18,7 +19,7 @@ export function SiteFooter() {
     setBusy(true);
     try {
       if (!recordedMode()) await request('/reset', { method: 'POST', body: {} });
-      setBag({ country: 'US', items: [], rules: { old_packaging_ok: true, add_small_extras_if_cheaper: true } });
+      setBag({ country: 'US', items: [], rules: { old_packaging_ok: true, bundles_ok: true } });
       location.assign(href('/shop'));
     } catch (error) { setNotice((error as Error).message); setBusy(false); }
   }
@@ -31,7 +32,11 @@ export function ProductRows({ lines, country, remove }: { lines: Line[]; country
   const { store } = useBag();
   return <ul className="product-rows">{lines.map(line => {
     const item = store?.products.find(item => item.id === line.id) || product(line.id);
-    return <li key={line.id}><Photo item={item} older={line.variant === 'older'} /><div className="product-copy"><strong>{item.name}</strong><span>{item.brand} · {item.size}</span><small>{line.variant === 'older' ? 'Older packaging' : (store?.shops[line.shop] || shops[line.shop]).name}{line.added ? ' · added for free shipping' : ''}</small>{remove && <button className="text-link remove" aria-label={`Remove ${item.name}`} onClick={() => remove(line.id)}>Remove</button>}</div><span className="money item-price">{recordedMode() ? price(line.unit, country) : money(line.unit, currency(country))}</span></li>;
+    return <li key={line.id}><Photo item={item} older={line.variant === 'older'} /><div className="product-copy"><strong>{item.name}</strong><span>{item.brand} · {item.size}</span><small>{(store?.shops[line.shop] || shops[line.shop]).name}{line.variant === 'older' ? ' · Older packaging' : ''}{line.bundle ? ' · Bundle' : ''}{line.added ? ' · added for free shipping' : ''}</small><MarketRange reference={item.market} />{remove && <button className="text-link remove" aria-label={`Remove ${item.name}`} onClick={() => remove(line.id)}>Remove</button>}</div><span className="money item-price">{line.bestListed !== undefined && line.bestListed > line.unit && <del>{recordedMode() ? price(line.bestListed, country) : money(line.bestListed, currency(country))}</del>}{recordedMode() ? price(line.unit, country) : money(line.unit, currency(country))}</span></li>;
   })}</ul>;
 }
 export function Unavailable({ title = 'Your order is not available', shop = false }: { title?: string; shop?: boolean }) { return <Screen title={shop ? 'Rally for shops' : 'Your order'} back="/shop"><h1>{title}</h1><p>{shop ? 'Sign in to your shop account to see orders, products and agent settings.' : 'Complete checkout to see your order here.'}</p><Action to="/shop">Back to the shop</Action></Screen>; }
+
+export function PaymentStrip({ hold, charged, code }: { hold: number; charged: number; code: import('../fixture').Currency }) {
+  return <dl className="payment-strip">{[['Held', hold], ['Charged', charged], ['Not captured', hold - charged]].map(([label, amount]) => <div key={label}><dt>{label}</dt><dd className="money">{money(amount as number, code)}</dd></div>)}</dl>;
+}

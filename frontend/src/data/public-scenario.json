@@ -1,4 +1,210 @@
 {
+  "auction": {
+    "cart": [
+      "mul-gel-cleanser",
+      "dal-rice-toner",
+      "dal-snail-essence",
+      "sae-cica-cream"
+    ],
+    "rules": {
+      "old_packaging_ok": true,
+      "bundles_ok": true
+    },
+    "bids": [
+      {
+        "t": 1,
+        "round": 1,
+        "shop": "bada",
+        "items": {
+          "bada/mul-gel-cleanser": 1200,
+          "bada/sae-cica-cream": 1800
+        },
+        "note": "Cleanser $12, cream $18."
+      },
+      {
+        "t": 1.5,
+        "round": 1,
+        "shop": "dalbit",
+        "items": {
+          "dalbit/dal-rice-toner": 2000,
+          "dalbit/dal-snail-essence:older": 1800
+        },
+        "note": "Toner $20. Snail essence $18 in older packaging."
+      },
+      {
+        "t": 2,
+        "round": 1,
+        "shop": "haneul",
+        "items": {
+          "haneul/mul-gel-cleanser": 1300,
+          "haneul/dal-rice-toner": 2200,
+          "haneul/dal-snail-essence": 2300,
+          "haneul/sae-cica-cream": 2000
+        },
+        "note": "Cleanser $13, toner $22, essence $23, cream $20."
+      },
+      {
+        "t": 4.5,
+        "round": 2,
+        "shop": "bada",
+        "items": {
+          "bada/mul-gel-cleanser": 1100,
+          "bada/sae-cica-cream": 1700,
+          "bada/dal-rice-toner": 2000
+        },
+        "note": "Cleanser $11, cream $17, toner $20."
+      },
+      {
+        "t": 5,
+        "round": 2,
+        "shop": "dalbit",
+        "items": {
+          "dalbit/dal-rice-toner": 1900,
+          "dalbit/dal-snail-essence:older": 1700
+        },
+        "extras": [
+          "dalbit-sample-kit"
+        ],
+        "note": "Toner $19 with a sample kit. Essence $17."
+      },
+      {
+        "t": 5.5,
+        "round": 2,
+        "shop": "haneul",
+        "items": {
+          "haneul/mul-gel-cleanser": 1200,
+          "haneul/dal-snail-essence": 2100,
+          "haneul/sae-cica-cream": 1900
+        },
+        "pass": [
+          "haneul/dal-rice-toner"
+        ],
+        "note": "Cleanser $12, essence $21, cream $19. We pass on toner."
+      },
+      {
+        "t": 8,
+        "round": 3,
+        "shop": "bada",
+        "items": {
+          "bada/sae-cica-cream": 1600
+        },
+        "note": "Cream $16. That's our lowest."
+      },
+      {
+        "t": 8.5,
+        "round": 3,
+        "shop": "dalbit",
+        "items": {
+          "dalbit/dal-snail-essence:older": 1600
+        },
+        "note": "Essence $16. Toner stays $19 with the kit."
+      },
+      {
+        "t": 9,
+        "round": 3,
+        "shop": "haneul",
+        "items": {
+          "haneul/mul-gel-cleanser": 1100,
+          "haneul/sae-cica-cream": 1800
+        },
+        "bundle": {
+          "offer_ids": [
+            "haneul/mul-gel-cleanser",
+            "haneul/sae-cica-cream"
+          ],
+          "price_usd_cents": 2900
+        },
+        "free_domestic": true,
+        "note": "Cleanser and cream together for $29. Shipping in Korea free."
+      }
+    ],
+    "rounds": [
+      {
+        "round": 1,
+        "t": 3,
+        "total_usd_cents": 11029,
+        "leaders": {
+          "mul-gel-cleanser": "bada",
+          "dal-rice-toner": "dalbit",
+          "dal-snail-essence": "dalbit",
+          "sae-cica-cream": "bada"
+        }
+      },
+      {
+        "round": 2,
+        "t": 6.5,
+        "total_usd_cents": 10542,
+        "leaders": {
+          "mul-gel-cleanser": "bada",
+          "dal-rice-toner": "dalbit",
+          "dal-snail-essence": "dalbit",
+          "sae-cica-cream": "bada"
+        }
+      },
+      {
+        "round": 3,
+        "t": 10.5,
+        "total_usd_cents": 10192,
+        "leaders": {
+          "mul-gel-cleanser": "haneul",
+          "dal-rice-toner": "dalbit",
+          "dal-snail-essence": "dalbit",
+          "sae-cica-cream": "haneul"
+        }
+      }
+    ],
+    "award": {
+      "lines": [
+        {
+          "offer_id": "haneul/mul-gel-cleanser",
+          "unit_usd_cents": 1100
+        },
+        {
+          "offer_id": "haneul/sae-cica-cream",
+          "unit_usd_cents": 1800
+        },
+        {
+          "offer_id": "dalbit/dal-rice-toner",
+          "unit_usd_cents": 1900
+        },
+        {
+          "offer_id": "dalbit/dal-snail-essence:older",
+          "unit_usd_cents": 1600
+        }
+      ],
+      "extras": [
+        "dalbit-sample-kit"
+      ],
+      "domestic_usd": {
+        "haneul": 0,
+        "dalbit": 0
+      },
+      "runner_up_usd_cents": 10299,
+      "note": "Haneul's bundle ships free: $1.07 less all in than Bada's lower cream."
+    },
+    "golden": {
+      "US": [
+        11882,
+        10192
+      ],
+      "CA": [
+        16087,
+        13825
+      ],
+      "GB": [
+        9361,
+        8055
+      ],
+      "DE": [
+        11105,
+        9621
+      ],
+      "AU": [
+        17260,
+        14835
+      ]
+    }
+  },
   "fx_usd": {
     "USD": "1",
     "CAD": "1.38",
@@ -44,6 +250,13 @@
       "prices": {
         "haneul": "14",
         "bada": "12"
+      },
+      "market": {
+        "low_usd_cents": 2600,
+        "median_usd_cents": 5950,
+        "high_usd_cents": 8000,
+        "n": 4,
+        "as_of": "2026-10-30"
       }
     },
     {
@@ -81,6 +294,13 @@
         "haneul": "24",
         "bada": "22",
         "dalbit": "21"
+      },
+      "market": {
+        "low_usd_cents": 1773,
+        "median_usd_cents": 1870,
+        "high_usd_cents": 4919,
+        "n": 4,
+        "as_of": "2026-10-30"
       }
     },
     {
@@ -93,6 +313,13 @@
       "prices": {
         "haneul": "18",
         "bada": "16"
+      },
+      "market": {
+        "low_usd_cents": 1116,
+        "median_usd_cents": 3400,
+        "high_usd_cents": 5500,
+        "n": 4,
+        "as_of": "2026-10-30"
       }
     },
     {
@@ -142,6 +369,13 @@
       "prices": {
         "haneul": "26",
         "bada": "24"
+      },
+      "market": {
+        "low_usd_cents": 3996,
+        "median_usd_cents": 6850,
+        "high_usd_cents": 14200,
+        "n": 8,
+        "as_of": "2026-10-30"
       }
     },
     {
@@ -165,6 +399,13 @@
       "prices": {
         "haneul": "27",
         "bada": "25"
+      },
+      "market": {
+        "low_usd_cents": 3996,
+        "median_usd_cents": 6850,
+        "high_usd_cents": 14200,
+        "n": 8,
+        "as_of": "2026-10-30"
       }
     },
     {
@@ -177,6 +418,13 @@
       "prices": {
         "dalbit": "34",
         "haneul": "37"
+      },
+      "market": {
+        "low_usd_cents": 4900,
+        "median_usd_cents": 11899,
+        "high_usd_cents": 43000,
+        "n": 3,
+        "as_of": "2026-10-30"
       }
     },
     {
@@ -201,6 +449,13 @@
       "prices": {
         "haneul": "20",
         "bada": "18"
+      },
+      "market": {
+        "low_usd_cents": 900,
+        "median_usd_cents": 4099,
+        "high_usd_cents": 6700,
+        "n": 4,
+        "as_of": "2026-10-30"
       }
     },
     {
@@ -212,6 +467,13 @@
       "weight_kg": "0.13",
       "prices": {
         "haneul": "24"
+      },
+      "market": {
+        "low_usd_cents": 2097,
+        "median_usd_cents": 3080,
+        "high_usd_cents": 10400,
+        "n": 5,
+        "as_of": "2026-10-30"
       }
     },
     {
@@ -224,6 +486,13 @@
       "prices": {
         "dalbit": "26",
         "haneul": "28"
+      },
+      "market": {
+        "low_usd_cents": 2500,
+        "median_usd_cents": 6350,
+        "high_usd_cents": 22500,
+        "n": 4,
+        "as_of": "2026-10-30"
       }
     },
     {
@@ -236,6 +505,13 @@
       "prices": {
         "haneul": "23",
         "bada": "21"
+      },
+      "market": {
+        "low_usd_cents": 970,
+        "median_usd_cents": 1799,
+        "high_usd_cents": 2100,
+        "n": 3,
+        "as_of": "2026-10-30"
       }
     },
     {
@@ -309,6 +585,13 @@
       "prices": {
         "haneul": "12",
         "bada": "11"
+      },
+      "market": {
+        "low_usd_cents": 313,
+        "median_usd_cents": 1804,
+        "high_usd_cents": 2800,
+        "n": 4,
+        "as_of": "2026-10-30"
       }
     },
     {
@@ -324,7 +607,14 @@
       },
       "not_to": [
         "US"
-      ]
+      ],
+      "market": {
+        "low_usd_cents": 1600,
+        "median_usd_cents": 5989,
+        "high_usd_cents": 24800,
+        "n": 5,
+        "as_of": "2026-10-30"
+      }
     },
     {
       "id": "gur-sun-stick",

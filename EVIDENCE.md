@@ -145,3 +145,101 @@ PLAN.md on `rally` (October 22) is authoritative. The original workspace and dat
 - **Retired GD passed:** ten group-order captures were recovered and hash-verified; two independent Impeccable assessments inspected them. That 34/40 assessment applies only to the retired interface. [Historical screenshots and limits](frontend/design/GD.md). V2 GD2 requires its own rendered verification and critique. Screen-reader, native zoom and physical-device checks remain unexecuted.
 - **M2–M5 not started:** current PLAN.md requires G1 before the main engine work. V2 design uses an explicit recorded-event test harness; it does not establish connected payment success. [Current G1 procedure](docs/DEMO.md#g1-three-human-paypal-approvals) specifies the three human approvals and reconciliation steps.
 - The new migration targets only `rally`; existing public tables and Compose volume names are preserved. No database or volume deletion was performed.
+
+### B0 · October 29, 2026 · local adapter contracts
+
+- Full unittest discovery with disposable Postgres on localhost:55439: 91 tests, OK, 9 auction contracts still skipped pending B1. No payment providers called.
+- Adapter HTTP doubles verified shop/buyer model routing, json_schema and json_object request shapes, and strict output validation.
+- Owner will fill the ignored local .env. Bitdeer GET /v1/models and scripts/engine.py connected run skipped: no supplied credentials/model ids. Provider json_schema support remains unverified; json_object is supported if needed.
+
+### B1 · October 29, 2026 · auction engine
+
+- Full unittest discovery with disposable Postgres: 95 tests, all passed, no skips. Existing AuctionContracts assertions unchanged; added authority, bundle atomicity, malicious selector and zero-deadline coverage. Exchange goldens remain covered independently.
+- Reference correction: Bada round-2 toner is $20 (was $19). At $19 its three-item subtotal clears $33 shipping, producing $104.42 and Bada as toner leader. The correction preserves the specified $105.42 round and all final goldens under exact search.
+- Ruff E4/E7/E9/F/I passed; frontend build and render checks passed. Browser attempt could not find its default Chromium; the installed-executable retry passed 27 tests before the prior runner closed the shared server. A fresh complete run is pending. No hosted or model-provider evidence.
+
+### B2 worker boundary · October 29, 2026
+
+- Full unittest discovery on disposable Postgres: 96 tests, all passed. Added authorized auction → persistent v3 events → moved reservations → ledger capture test, and verified Haneul receives goods only ($29) for its free-domestic bid. Outbid shops receive public lanes with only their own private floors. Provider HTTP is doubled, not hosted evidence.
+- Ruff passed. Fresh B1 browser run with installed Chromium: 94 passed (desktop/mobile). Build and render results are recorded above. New frontend auction screens remain next.
+
+### B2 · October 29, 2026 · v3 frontend and complete local gate
+
+- `PYTHONPATH=backend python -m unittest discover -s tests -v` with disposable `RALLY_TEST_DATABASE_URL`: 97 tests passed, no skips. Added interruption recovery that appends a checkout award; no historical records rewritten.
+- `ruff check --isolated --select E4,E7,E9,F,I --ignore E402 backend tests scripts`: passed. `npm run build --prefix frontend`: passed (existing lazy AG Grid chunk size advisory remains). `npm run test:render --prefix frontend`: passed, including five auction goldens, duplicate events, hold ceiling, bundle override and copy/contrast checks.
+- `npm run test:browser --prefix frontend -- --workers=4` with installed `RALLY_CHROMIUM_EXECUTABLE`: 98 passed across desktop/mobile. Includes v2 compatibility, v3 server replay/receipt, no payment writes during replay, own-shop floors, reduced motion, 320/768 px, 200% text zoom and compact 390×664 sticky layout.
+- Earlier B2 browser attempts exposed stale Bag assertions, replay timer scheduling, mobile header space, zoom overflow and a breakdown locator made ambiguous by the charge strip; corrected and rerun. A new floor assertion was narrowed to bag products after exposing the full own-shop catalog.
+- Impeccable reviewer scored both listed findings resolved: mobile lanes remain readable, and Bundle receipts use the exact solver's awarded-bundle flag. Documenter confirmed incumbent tokens/type and requested only v3 precedence notes/pill shapes; detector returned no findings. Existing design sidecar predates DESIGN.md; optional document refresh remains unperformed. Captures in ignored .runtime/frontend-screenshots.
+- Local doubles only. No hosted, real-model, Channel3-search or PayPal mutation evidence added.
+
+### Auction default · October 29, 2026
+
+B2 gates passed before changing the default. New quotes default to auction; explicit RALLY_DEAL_MODE=exchange and frozen historical quote modes retain exchange. Full disposable-Postgres unittest discovery after the default change: 97 tests passed, no skips.
+
+### B3 and final PR gate · October 29, 2026
+
+- Final `PYTHONPATH=backend python -m unittest discover -s tests -v` on disposable Postgres: **102 tests passed, no skips** (61.419 s). Includes market filtering/privacy, role payloads/cache identity, all five auction/exchange goldens and persistent order/payment contracts with doubles.
+- Final Ruff E4/E7/E9/F/I check passed. `npm run build --prefix frontend` passed; `npm run test:render --prefix frontend` passed; `npm run test:browser --prefix frontend -- --workers=4` with installed Chromium passed **100 cases** across desktop/mobile. Optional US market range stays USD beside CAD prices; absent ranges stay hidden. Git diff whitespace check passed.
+- `PYTHONPATH=backend python scripts/engine.py --fixture`: USD final 10192, 3 rounds, zero provider calls. Not connected evidence.
+- `PYTHONPATH=backend python scripts/benchmark.py --fixture --count 500 --output docs/benchmark-auction.json`: 497 supported, 3 unsupported, E below checkout in 497; charge_above_hold=0, shop_below_authority=0, bundle_split_violations=0, zero model choices/calls, hosted_benchmark_verified=false. Report includes per-currency A/D/E totals; prior v2 report retained.
+- Read public Channel3 docs on this date: https://channel3.ai/docs/llms.txt and https://channel3.ai/docs/openapi/openapi.json (direct HTTP succeeded; web fetch could not access the docs). Verified POST https://api.trychannel3.com/v1/search, x-api-key, US/USD config, products/offers/price schema. Importer HTTP tests use doubles, not actual searches.
+- Owner will fill the ignored .env; no model or Channel3 credentials were supplied. Bitdeer GET /v1/models, connected scripts/engine.py, provider json_schema/json_object compatibility, Channel3 search/import and connected benchmark remain **not run**. Committed market.json is intentionally empty; no prices or retailer material fabricated.
+- Hosted USD/CAD human PayPal sandbox approval remains pending. No PayPal, Render or DNS settings changed; no external payment mutations performed.
+
+### Review 1 · generative all-in competition · October 29, 2026
+
+- Candidates now use the exact delivered allocation, policy bundle discounts, runner-up pairs and utility-checked free shipping/kit variants. Recording is opt-in for recorded review only; a guarded test rejects any auction.json read in the generative run. Generative hero: **USD $95.35**, Haneul cleanser/cream bundle with free domestic shipping beats Bada's lower cream unit price; Dalbit supplies the kit. Different from the authored $101.92 recording because policy concessions compete from earlier rounds.
+- Full disposable-Postgres discovery: **105 passed, no skips** (61.380 s after exact-search pruning; initial unpruned run also passed, 182.210 s). Exact-search pruning uses an optimistic zero-shipping bound and keeps equal-total allocations for tie-breaks.
+- Ruff E4/E7/E9/F/I passed. Frontend build and render checks passed. Browser suite with the installed Chromium and **2 workers, matching CI: 100 passed** (1.6 min), first normal local repetition. No connected-model, market or payment calls.
+- Inspected failing PR run 40969076644: 99 browser cases passed; the mobile reflow case exhausted its shared 30 s test budget over 27 navigations. Local baseline passed; reproduction and isolation are tracked in review 4 below.
+
+### Review 2 · code fallback · October 29, 2026
+
+- Provider exceptions, timeouts and invalid indexes now choose the best valid code candidate; buyer failures use the top asks and code note. Events identify CODE selections, model failures are counted by role and logged with exception class only, and shopper error events are reserved for shops without valid candidates.
+- Full disposable-Postgres discovery: **106 passed, no skips** (59.023 s). Includes malicious indexes, provider exceptions, timeout fallback, hold/floor invariants and prompts without floor/cost fields. Ruff passed after correcting one import-spacing finding. Frontend build and render checks passed; full browser suite **100 passed with 2 workers** (second normal local repetition).
+- Private configuration presence checks only: neither the owner root .env nor the worktree .env has Bitdeer configured or a Channel3 key. No keys printed and no connected calls made.
+
+### Review 3 · public round notes · October 29, 2026
+
+- Buyer-selected notes now accompany asks in every round. Round notes are generated by code after the award search from the new total. Round/beat notes use $, C$, £, €, A$; beat gaps use the quote's locked rate.
+- Full disposable-Postgres discovery: **109 passed, no skips** (59.904 s), including exact note/symbol checks for all five currencies and separation of buyer ask notes from code round notes. Ruff, frontend build and render checks passed. Full browser suite **100 passed with 2 workers** (1.3 min), third normal local repetition; none reproduced the PR's deadline failure at normal local speed.
+
+### Review 4 · CI browser deadline · October 29, 2026
+
+- Read the actual failed PR run 40969076644, job 123780941447: 99/100 passed with **2 workers**; the mobile reflow case hit the **whole-test 30 s deadline** at Password. Its 27 routes/width visits, font/image waits and screenshots shared one deadline. Three normal local complete repetitions (reviews 1–3) passed 100/100 each with the same worker count.
+- Reproduced under Chromium CDP **6× CPU slowdown** using a temporary copy of the original case. First stress attempt: desktop hit the same Password/deadline failure; mobile encountered execution-context destruction while source/build work overlapped. Repeated with sources held stable: **both original cases exceeded 30 s**. This is controlled stress evidence, not a claim that normal local speed failed.
+- Fixed the cause by parameterizing each route/width into a fresh-page test with its own existing deadline, preserving all layout/image/action assertions. Screenshot paths include the browser project to prevent concurrent overwrites. CI now specifies --workers=2. No retries or timeout increases. Temporary reproduction source removed.
+- All **54 isolated reflow cases passed under the same 6× slowdown** (58.9 s). Full normal browser suite: **152 passed with 2 workers**. Full disposable-Postgres discovery: **109 passed, no skips** (56.273 s). Ruff, frontend build and render checks passed. PR-triggered CI will be checked after the final push.
+
+### Review 5 · Deal copy · October 29, 2026
+
+- Connected v2/v3 Deal headers format the order number as RL- plus the first five uppercase id characters; full ids remain in API requests and links. Removed the checkout-choices line. The v3 feed/live message accepts only bid, ask, round and award notes, so error/pass/done/start notes cannot replace a bidding message.
+- Full disposable-Postgres discovery: **109 passed, no skips** (66.165 s). Ruff passed. Frontend build/render checks passed, including UUID formatting, excluded notes, immutable recorded currency and copy guards. Full browser suite: **156 passed with 2 workers** (1.7 min); includes connected v2/v3 UUID headers and an error appended after an award. Screenshots reviewed at desktop/tablet/phone widths, including the UUID case.
+- Used the repository's Impeccable/Taste guidance and React checklist. Impeccable detector: no findings. Taste source lint: zero FAIL/WARN. Taste browser inspector: zero FAIL, four WARN (the specified warm ground/large total, aligned unequal-lane cards, and initial header spacing); retained the established product design for this copy-only change. Initial inspector launch could not start container Chrome; reran successfully with the same no-sandbox setting used by local Playwright. Existing design sidecar drift remains outside scope.
+
+### Review 6 · connected checks and final gate · October 29, 2026
+
+- Checked ignored owner-root and worktree .env configuration without printing values. Bitdeer endpoint/key/role-model configuration is not filled; Channel3 key is absent. **Not run:** authenticated GET /v1/models, connected engine, json_schema/json_object provider compatibility, provider per-call latency, actual Channel3 searches/import and connected benchmark E. No docs/benchmark-auction-connected.json or market ranges fabricated; the committed market snapshot remains empty. The legacy unrelated model setting in the owner root file was not used against Bitdeer.
+- Ran `PYTHONPATH=backend python scripts/engine.py --fixture`: **USD $95.35**, three rounds, zero model calls/failures. Generated Haneul cleanser/cream bundle with free shipping and Dalbit toner/older essence/kit; no recording read. Not connected evidence.
+- Refreshed `docs/benchmark-auction.json` with `scripts/benchmark.py --fixture --count 500` (seed 20261023): **497 supported, 3 unsupported; E beats checkout in all 497**. charge_above_hold=0, shop_below_authority=0, bundle_split_violations=0, model_failures=0; zero provider calls/LLM choices; hosted_benchmark_verified=false. Runtime 117.672 s. README currency totals now match this generative report.
+- Final full disposable-Postgres discovery: **109 passed, no skips** (68.132 s). Ruff E4/E7/E9/F/I, frontend build and render checks passed. Final full browser suite: **156 passed with 2 workers** (1.7 min), the third complete passing run after the CI isolation fix (152, 156, 156 cases). Normal pre-fix repetitions were 100/100 three times; controlled slowdown failures and fixes are separately recorded above. Git whitespace check passed before commit.
+- No PayPal mutations, hosted model evidence or hosted v3 payment evidence added; Render/PayPal/DNS configuration and historical order/payment data unchanged. Owner still supplies Bitdeer/Channel3 credentials privately, verifies model ids/format/latency and connected benchmark/import, configures existing Render services, merges PR #2 into rally then PR #1, and performs human PayPal sandbox approval on the hosted app (USD then CAD). PR-triggered Actions status is checked after pushing this final commit and linked in PR #2.
+
+### Connected B0 · October 30, 2026
+
+- Owner supplied keys in ignored root .env. Authenticated Bitdeer GET /v1/models returned 200 (0.629 s): deepseek-ai/DeepSeek-V4.1-Flash and zai-org/GLM-5.3 are advertised. Configured the private local endpoint/protocol and both role IDs as DeepSeek V4.1 Flash; no secrets printed/committed and no Render/PayPal/DNS changes.
+- Public selection probes: DeepSeek returned validated output with json_schema (1.486 s) and json_object (1.485 s), with reasoning_effort=none and zero reasoning tokens. Omitting that option enabled reasoning (110 tokens in the small probe). GLM rejected reasoning_effort=none with HTTP 400; its default enabled reasoning. Used the plan-permitted same Flash model for buyer and shop. Provider-scoped adapter fix disables DeepSeek reasoning without adding that field to GLM or other OpenAI-compatible hosts.
+- Executed scripts/engine.py --env-file /home/kyle/code/paypalaihack26/.env through a temporary timing wrapper: **12/12 real selections validated, 0 model failures, all bid/ask choices LLM**. json_schema works; json_object is not required. Hold 11882; round totals 10436/9949/9535 USD cents; final **$95.35**, 3 rounds, **8.332 s**. No payment or database operations. This run preceded importing market ranges.
+- Per-call seconds (shop calls listed in completion order): round 1 buyer 2.333, shops 1.097/1.240/1.511; round 2 buyer 1.075, shops 0.690/1.112/1.579; round 3 buyer 0.636, shops 0.704/1.114/1.106. Temporary raw engine/latency files are local only.
+- Checked current public Channel3 OpenAPI via direct HTTP (web fetch could not access it): POST https://api.trychannel3.com/v1/search, x-api-key, US/USD search contract remains valid. Ran scripts/market_snapshot.py --env-file <root .env> --dry-run: **12 products qualified** for aggregate ranges. Snapshot/projection integration and connected benchmark follow in the next commit.
+- Full disposable-Postgres unittest discovery: **110 passed, no skips** (60.489 s). Includes the provider-scoped non-reasoning regression. Ruff E4/E7/E9/F/I passed; frontend build/render passed; full two-worker browser suite: **156 passed** (1.4 min). No hosted payment evidence added.
+
+### Connected B3 · October 30, 2026
+
+- Committed 12 actual Channel3 aggregate ranges (3–8 comparable products each, as_of 2026-10-30) and regenerated the public projection. Stored only product id, integer low/median/high USD prices, count, date and generic category/size query; no retailer names, listing titles, images or URLs. Verified the exact allowed fields and positive ordered ranges before integration. Runtime still reads the committed snapshot, never Channel3.
+- Ran the exact `PYTHONPATH=backend python scripts/engine.py --env-file <root .env>` command with the imported ranges: **12 real model calls, zero failures, 3 rounds, $95.35 final against $118.82 hold, 6.057 s**. json_schema and both DeepSeek role settings work with real market references. No payment operations.
+- Added --auction-only to the benchmark: only E sends real public index-selection prompts; C/D remain deterministic comparisons and B is skipped. A regression rejects private floor/cost fields and any price-baseline/model-exchange call in this mode. Reports now include connected strategies, model/format IDs, E attempt/failure counts; strict verification requires zero E failures as well as all financial invariants.
+- Executed a **25-requested-bag connected E sample** (seed 20261023): 24 supported, one excluded; all five currencies; E beat checkout in all 24. Both initial and verification runs had charge_above_hold=0, shop_below_authority=0, bundle_split_violations=0. This is a connected sample, not the separate 500-case fixture report.
+- Initial unpaced run: 279 logical selection attempts, 88 failures (84 HTTPStatusError, two preflight RuntimeError, two ReadTimeout), 122.837 s. HTTP status codes were not recorded in that run; a particular quota/status cause is not claimed. Preserved its counts/invariants in docs/benchmark-auction-connected.json.
+- One paced verification used the permitted prompt cache, with spacing only between synthetic auctions (0.8 s per uncached attempt); customer auction timeouts were unchanged. 279 logical attempts; **98 HTTP requests, 97 validated, one ReadTimeout**, plus two prompt-budget preflight failures. **Four auction selections used CODE**: two budget checks and two deadline timeouts (one HTTP response validated after its selection deadline). 87.999 s. HTTP response hooks recorded 97 status-200 responses. The report keeps **hosted_benchmark_verified=false**; clean all-model batch verification remains open. Initial failures are not hidden by the cached run. Guarded the actual connected payloads against floor/cost fields; no private authority was sent.
+- Full disposable-Postgres discovery after the importer/projection/benchmark changes: **111 passed, no skips** (60.781 s). Ruff E4/E7/E9/F/I passed. Frontend build and render checks passed; full browser suite with two workers: **156 passed** (1.4 min), including current market data. Private .env, response caches and temporary timing files remain uncommitted. No PayPal/Render/DNS settings or historical data changed. Final PR CI is checked after push.

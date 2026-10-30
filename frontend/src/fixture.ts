@@ -2,9 +2,10 @@ import data from './data/public-scenario.json' with { type: 'json' };
 export type CountryCode = keyof typeof data.countries;
 export type ShopId = keyof typeof data.shops;
 export type Currency = 'USD' | 'CAD' | 'GBP' | 'EUR' | 'AUD';
-export type Product = { id: string; brand: string; name: string; size: string; category: string; weight_kg: string; prices: Partial<Record<ShopId,string>>; not_to?: string[]; aerosol?: boolean; old_packaging?: string };
-export type Rules = { old_packaging_ok: boolean; add_small_extras_if_cheaper: boolean };
-export type Line = { id: string; shop: ShopId; unit: number; variant?: string; added?: boolean };
+export type MarketReference = { low_usd_cents: number; median_usd_cents: number; high_usd_cents: number; n: number; as_of: string };
+export type Product = { id: string; brand: string; name: string; size: string; category: string; weight_kg: string; prices: Partial<Record<ShopId,string>>; not_to?: string[]; aerosol?: boolean; old_packaging?: string; market?: MarketReference | null };
+export type Rules = { old_packaging_ok: boolean; bundles_ok: boolean };
+export type Line = { id: string; shop: ShopId; unit: number; variant?: string; added?: boolean; bundle?: boolean; bestListed?: number };
 export type Breakdown = { currency: Currency; goods: number; domestic: number; shipping: number; duty: number; tax: number; fee: number; total: number };
 export type DealEvent = { id: string; t: number; shop?: ShopId; actor?: 'rally' | 'shop'; kind: 'offer' | 'counter' | 'accept' | 'done'; lines?: Record<string,number>; extras?: string[]; domestic?: number; total?: number; note?: string; final?: boolean };
 export const cents = (value: string): number => {
@@ -18,9 +19,9 @@ export const catalog = data.catalog as Product[];
 export const shops = data.shops;
 export const countries = data.countries;
 export const countryCodes = Object.keys(countries) as CountryCode[];
-export const hero = data.hero;
+export const hero = { ...data.hero, rules: { old_packaging_ok: true, bundles_ok: true } };
 // Recorded order identity and consent are an immutable checkout snapshot, never the current bag.
-export const recordedOrder = Object.freeze({ id: 'RL-24817', country: data.hero.country as CountryCode, destination: countries[data.hero.country as CountryCode].region || countries[data.hero.country as CountryCode].name, currency: countries[data.hero.country as CountryCode].currency as Currency, items: Object.freeze([...data.hero.cart]), rules: Object.freeze({ ...data.hero.rules }) });
+export const recordedOrder = Object.freeze({ id: 'RL-24817', country: data.hero.country as CountryCode, destination: countries[data.hero.country as CountryCode].region || countries[data.hero.country as CountryCode].name, currency: countries[data.hero.country as CountryCode].currency as Currency, items: Object.freeze([...data.hero.cart]), rules: Object.freeze({ ...hero.rules }) });
 export const product = (id: string) => { const found = catalog.find(item => item.id === id); if (!found) throw new Error('Unknown product'); return found; };
 export const allowed = (item: Product, country: CountryCode) => !item.aerosol && !item.not_to?.includes(country);
 export const currency = (country: CountryCode): Currency => countries[country].currency as Currency;
@@ -39,12 +40,12 @@ export const rates = {
   AU: { tax: 1000, duty: 0, taxShipping: true, shipping: [1400,1700,2200,2600], summary: 'No duty · 10% GST (est.)' },
 };
 const rounded = (amount: number, basisPoints: number) => Math.floor((amount * basisPoints + 5000) / 10000);
-export function landed(lines: Line[], country: CountryCode, extraGrams = 0): Breakdown {
+export function landed(lines: Line[], country: CountryCode, extraGrams = 0, shippingOverride?: Partial<Record<ShopId, number>>): Breakdown {
   if (!lines.length) return { currency: currency(country), goods: 0, domestic: 0, shipping: 0, duty: 0, tax: 0, fee: 0, total: 0 };
   const goods = lines.reduce((sum, line) => sum + line.unit, 0);
   const subtotals = new Map<ShopId,number>();
   for (const line of lines) subtotals.set(line.shop, (subtotals.get(line.shop) || 0) + line.unit);
-  const domestic = [...subtotals].reduce((sum, [id, subtotal]) => sum + (subtotal < cents(shops[id].free_over) ? cents(shops[id].domestic) : 0), 0);
+  const domestic = [...subtotals].reduce((sum, [id, subtotal]) => sum + (shippingOverride?.[id] ?? (subtotal < cents(shops[id].free_over) ? cents(shops[id].domestic) : 0)), 0);
   const grams = 300 + extraGrams + lines.reduce((sum, line) => sum + Math.round(Number(product(line.id).weight_kg) * 1000), 0);
   const rate = rates[country];
   const shipping = grams <= 500 ? rate.shipping[0] : grams <= 1000 ? rate.shipping[1] : grams <= 1500 ? rate.shipping[2] : grams <= 2000 ? rate.shipping[3] : 3000;
@@ -74,3 +75,31 @@ export const events: DealEvent[] = hero.events.map((event, index) => {
 });
 export const recordedMode = () => import.meta.env?.VITE_RALLY_TEST_HARNESS === '1' && typeof location !== 'undefined' && new URLSearchParams(location.search).get('test') === 'recorded';
 export const href = (path: string) => path + (recordedMode() ? (path.includes('?') ? '&' : '?') + 'test=recorded' : '');
+
+export const auctionFinalLines: Line[] = data.auction.award.lines.map(line => {
+  const [shop, key] = line.offer_id.split('/'), [id, variant] = key.split(':');
+  return { id, shop: shop as ShopId, unit: line.unit_usd_cents, variant, bundle: shop === 'haneul', bestListed: Math.min(...Object.values(product(id).prices).map(value => cents(value!))) };
+});
+export const auctionBreakdown = (country: CountryCode) => landed(auctionFinalLines, country, 50, data.auction.award.domestic_usd);
+export const auctionEvents: import('./auction').AuctionEvent[] = (() => {
+  type Event = import('./auction').AuctionEvent;
+  const rows: Event[] = [];
+  let total = data.auction.golden.US[0];
+  function add(event: Omit<Event, 'id' | 'seq' | 'total'>) { rows.push({ ...event, id: `auction-${rows.length + 1}`, seq: rows.length + 1, total } as Event); }
+  add({ kind: 'start', v: 3, t: 0, note: 'Shops are bidding on your bag.', items: data.auction.cart, shops: Object.fromEntries(data.auction.cart.map(id => [id, Object.keys(product(id).prices)])), listed: Object.fromEntries(data.auction.cart.map(id => [id, Object.fromEntries(Object.entries(product(id).prices).map(([shop, value]) => [shop, cents(value!)]))])) } as Event);
+  for (const round of data.auction.rounds) {
+    for (const shop of (round.round === 1 ? ['bada', 'dalbit', 'haneul'] : [null])) add({ kind: 'ask', actor: 'rally', round: round.round, shop, items: data.auction.cart, t: Math.max(0, round.t - 3), note: 'Can you lower the complete delivered total?' } as Event);
+    for (const bid of data.auction.bids.filter(bid => bid.round === round.round)) {
+      const row = bid as typeof bid & { bundle?: { offer_ids: string[]; price_usd_cents: number }; free_domestic?: boolean; extras?: string[]; pass?: string[] };
+      const items = Object.fromEntries(Object.entries(bid.items).filter((entry): entry is [string, number] => entry[1] !== undefined).map(([offer, unit]) => [offer.split('/')[1], unit]));
+      const perks = Object.fromEntries(Object.keys(items).map(key => [key.split(':')[0], [...(key.endsWith(':older') ? ['older'] : []), ...(row.bundle?.offer_ids.some(offer => offer.split('/')[1] === key) ? ['bundle'] : []), ...(row.free_domestic ? ['freeship'] : []), ...(row.extras?.length ? ['kit'] : [])]]));
+      add({ kind: 'bid', actor: 'shop', shop: bid.shop, round: bid.round, t: bid.t, items, perks, bundle: row.bundle ? { items: row.bundle.offer_ids.map(id => id.split('/')[1]), price: row.bundle.price_usd_cents } : null, note: bid.note } as Event);
+      if (row.pass) add({ kind: 'pass', actor: 'shop', shop: bid.shop, round: bid.round, t: bid.t, items: row.pass.map(offer => offer.split('/')[1]), note: 'We pass on toner.' } as Event);
+    }
+    total = round.total_usd_cents;
+    add({ kind: 'round', actor: 'rally', round: round.round, t: round.t, leaders: round.leaders as Record<string, ShopId>, note: `Best delivered total: ${money(total)}.` } as Event);
+  }
+  add({ kind: 'award', actor: 'rally', t: 10.5, winners: Object.fromEntries(auctionFinalLines.map(line => [line.id, { shop: line.shop, unit: line.unit, bundle: !!line.bundle, variant: line.variant === 'older' ? 'older' : null }])), extras: data.auction.award.extras, domestic: data.auction.award.domestic_usd, note: data.auction.award.note } as Event);
+  add({ kind: 'done', t: 10.5, note: 'Bidding is complete.' });
+  return rows;
+})();

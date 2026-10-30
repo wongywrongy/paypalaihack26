@@ -266,3 +266,87 @@ thead th { font-weight: 500; color: var(--muted); font-size: .8rem }
 .recovery { margin-top: 36px; }
 .recovery h3 { margin-top: 24px; }
 .recovery dd, .order-history dd { overflow-wrap: anywhere; min-width: 0; }
+
+.auction-board { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start }
+.auction-summary { min-width: 0 }
+.auction-sticky { position: sticky; top: 0; z-index: 2; background: var(--ground); padding: 14px 0 }
+.auction-sticky h1 { font-size: 1.5rem; margin: 0 }
+.round-progress { display: flex; align-items: center; gap: 8px; margin: 14px 0; color: var(--muted); font-size: .866667rem }
+.round-dot { width: 10px; height: 10px; border: 1px solid var(--muted); border-radius: 50% }
+.round-dot.active { background: var(--accent); border-color: var(--accent) }
+.round-progress > span:last-child { margin-left: 6px }
+.saving-chip { display: inline-block; background: var(--mint); color: var(--saving); padding: 5px 10px; border-radius: 999px; font-weight: 600 }
+.auction-live-message { min-height: 3em; font-size: .933333rem; margin: 12px 0 }
+.auction-items { display: grid; gap: 18px }
+.auction-item { background: var(--surface); padding: 20px; border-radius: var(--radius); min-width: 0 }
+.auction-product { display: flex; gap: 12px; align-items: center; margin-bottom: 18px }
+.auction-product .product-photo { width: 56px; height: 66px; flex: 0 0 auto; object-fit: cover }
+.auction-product h2 { margin: 0; font-size: 1.066667rem }
+.auction-product p { margin: 4px 0 0 }
+.winner-label { font-size: .8rem; color: var(--saving); font-weight: 600 }
+.auction-lane { border-radius: 10px; padding: 10px; margin: 0 -6px 5px; color: var(--muted) }
+.auction-lane.leading { background: var(--accent-tint); color: var(--accent) }
+.auction-lane.won { background: var(--mint); color: var(--saving) }
+.auction-lane.lost { color: var(--muted) }
+.lane-heading { display: flex; justify-content: space-between; gap: 8px; font-size: .866667rem }
+.lane-heading span { overflow-wrap: anywhere }
+.bid-track { position: relative; height: 22px; margin: 4px 7px 0; }
+.bid-track::before { content: ''; display: block; position: absolute; top: 10px; left: 0; right: 0; height: 2px; background: var(--line) }
+.bid-marker { position: absolute; width: 11px; height: 11px; border-radius: 50%; background: currentColor; top: 6px; transform: translateX(-50%); transition: left 500ms ease }
+.bid-floor { position: absolute; height: 20px; top: 1px; border-left: 1px dashed var(--ink) }
+.perk-chips { display: flex; flex-wrap: wrap; gap: 5px; font-size: .8rem; margin-top: 4px }
+.rule-chip, .gift-chip { border-radius: 999px; padding: 3px 6px; color: var(--ink); background: var(--butter) }
+.gift-chip { color: var(--saving); background: var(--mint) }
+.new-bid { animation: bid-flash 600ms ease-out }
+@keyframes bid-flash { from { outline: 2px solid var(--accent) } to { outline: 2px solid transparent } }
+.item-saving { font-size: .8rem; color: var(--saving); margin: 12px 0 0 }
+.auction-feed summary { min-height: 44px; cursor: pointer; padding: 12px 0; font-weight: 600 }
+.auction-feed ol { list-style: none; padding: 0; font-size: .866667rem }
+.auction-feed li { padding: 10px 0; border-bottom: 1px solid var(--line) }
+.auction-feed p { margin: 5px 0 }
+.auction-box { margin-top: 24px }
+.auction-box h2 { margin: 0 0 16px }
+.box-shop { border-top: 1px solid var(--line); padding: 14px 0 }
+.box-shop h3 { font-size: 1rem; margin: 0 0 10px }
+.box-shop ul { padding: 0; list-style: none }
+.box-shop li { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 8px 0; font-size: .933333rem }
+.box-shop li small { flex-basis: 100%; color: var(--muted); font-size: .8rem }
+.box-subtotal { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px }
+.bag-item .product-rows { margin-bottom: 8px }
+.bag-item > .fine { margin: 4px 0 0 72px }
+.item-price del { display: block; color: var(--muted); font-size: .8rem; margin-bottom: 4px }
+@media (min-width: 1100px) {
+  .auction-board { grid-template-columns: 320px minmax(0, 1fr); gap: 32px }
+  .auction-summary { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow: auto }
+  .auction-items { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+  .auction-summary .hero-money { font-size: 3.6rem }
+}
+@media (max-width: 1099px) {
+  .shop-screen:has(.auction-board) { max-width: 520px }
+  .auction-summary { display: contents }
+  .auction-sticky { position: sticky; top: 0; grid-row: 1 }
+  .auction-feed { grid-row: 4 }
+  .auction-actions { grid-row: 3 }
+  .auction-content { grid-row: 2 }
+  .auction-sticky { padding: 6px 0 }
+  .auction-sticky h1 { font-size: 1.333333rem }
+  .auction-sticky .round-progress { margin: 8px 0 }
+  .auction-sticky .order-context { margin: 6px 0 }
+  .auction-sticky .muted { margin: 8px 0 0 }
+  .auction-sticky .hero-money { font-size: clamp(2rem, 12vw, 3.2rem); line-height: 1.15 }
+  .auction-sticky .total-display { margin: 0 }
+  .auction-sticky .saving-chip { margin: 6px 0 }
+  .auction-sticky .hold-line { margin: 6px 0; font-size: .866667rem }
+  .auction-sticky .auction-live-message { min-height: 1.5em; margin: 6px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+  .auction-actions .actions { margin-top: 0 }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bid-marker { transition: none }
+  .new-bid { animation: none }
+}
+
+.payment-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr)); gap: 12px; padding: 16px 0; border-block: 1px solid var(--line); margin: 20px 0 }
+.payment-strip dt { font-size: .8rem; color: var(--muted) }
+.payment-strip dd { font-size: .866667rem; margin: 6px 0 0 }
+
+.market-range { margin: 8px 0 12px; color: var(--muted); overflow-wrap: anywhere }

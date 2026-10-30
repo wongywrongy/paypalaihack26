@@ -18,7 +18,7 @@ class ModelCache:
         self.failures = 0
 
     def __call__(self, schema, role, payload, **kwargs):
-        prompt = json.dumps({"schema": schema.model_json_schema(), "role": role, "payload": payload, "model": settings.llm_model, "protocol": settings.llm_protocol, "endpoint": settings.llm_base_url}, sort_keys=True)
+        prompt = json.dumps({"schema": schema.model_json_schema(), "role": role, "payload": payload, "model": settings.model_for(kwargs.get("model_role")), "model_role": kwargs.get("model_role"), "response_format": settings.llm_response_format, "max_tokens": kwargs.get("max_tokens"), "protocol": settings.llm_protocol, "endpoint": settings.llm_base_url}, sort_keys=True)
         key = hashlib.sha256(prompt.encode()).hexdigest()
         with self.guard:
             lock = self.locks.setdefault(key, Lock())

@@ -1,5 +1,7 @@
 # Rally — rules for coding agents
 
+- Oct 29, 2026: v3 shop bidding is the current plan: read docs/plan/BIDDING.md before PLAN.md; it overrides
+  PLAN.md where they disagree (deal, shopper rules, terms traded, model).
 - Read PLAN.md first. Its "Decisions locked" table is settled; ask before changing any of it.
 - Oct 22, 2026: the product changed to version 2, solo international shopping across 3 Korean shops.
   Group orders (pools, members, organizer) are retired. README.md, docs/DEMO.md and frontend/design/*.md

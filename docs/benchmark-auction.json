@@ -1,0 +1,68 @@
+{
+  "seed": 20261023,
+  "requested_cases": 500,
+  "completed_cases": 497,
+  "unsupported_cases": 3,
+  "model_mode": "explicit deterministic fixture; no provider calls; B not executed",
+  "strategies": {
+    "A": "exact sourcing at listed prices",
+    "B": "two model price-only baseline (no money)",
+    "C": "code acceptance without shopper rules",
+    "D": "full permitted term trading",
+    "E": "three-round open shop bidding, exact delivered-cost award"
+  },
+  "currency_totals": {
+    "GBP": {
+      "A": 1083665,
+      "B": null,
+      "C": 1025670,
+      "D": 1023761,
+      "E": 946554,
+      "cases": 95
+    },
+    "AUD": {
+      "A": 2094138,
+      "B": null,
+      "C": 1977793,
+      "D": 1969852,
+      "E": 1824828,
+      "cases": 98
+    },
+    "USD": {
+      "A": 1529002,
+      "B": null,
+      "C": 1435475,
+      "D": 1430461,
+      "E": 1318212,
+      "cases": 99
+    },
+    "EUR": {
+      "A": 1368774,
+      "B": null,
+      "C": 1303835,
+      "D": 1300253,
+      "E": 1203972,
+      "cases": 97
+    },
+    "CAD": {
+      "A": 2048482,
+      "B": null,
+      "C": 1938631,
+      "D": 1932390,
+      "E": 1779554,
+      "cases": 108
+    }
+  },
+  "charge_above_hold": 0,
+  "shop_below_authority": 0,
+  "term_trading_beats_checkout": 440,
+  "baseline_b_failed": 0,
+  "d_model_choices": 0,
+  "e_model_choices": 0,
+  "auction_beats_checkout": 497,
+  "bundle_split_violations": 0,
+  "mean_savings_basis_points": 562,
+  "execution_seconds": 117.672,
+  "model_failures": 0,
+  "hosted_benchmark_verified": false
+}

@@ -88,7 +88,7 @@ test('SDK6 redirect return resumes approval without creating another PayPal orde
 
 test('destination amounts are rendered once and history reopens immutable receipts', async ({ page }) => {
   await mockPublicApi(page, { country: 'CA' });
-  await page.addInitScript(() => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'CA', items: ['dal-rice-toner'], rules: { old_packaging_ok: false, add_small_extras_if_cheaper: false } })));
+  await page.addInitScript(() => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'CA', items: ['dal-rice-toner'], rules: { old_packaging_ok: false, bundles_ok: false } })));
   await page.goto('/paid?order=order-public');
   await expect(page.locator('.hero-money')).toHaveText('C$144.49');
   await expect(page.locator('.product-rows .item-price').first()).toHaveText('C$16.56');
@@ -127,7 +127,7 @@ test('unavailable catalog and rejected quotes have useful retry paths', async ({
   await expect(page.getByRole('status')).toHaveText('Your shops are temporarily unavailable.');
   await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
   await expect(page.locator('.catalog > li')).toHaveCount(0);
-  await page.addInitScript(() => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items: ['dal-rice-toner'], rules: { old_packaging_ok: true, add_small_extras_if_cheaper: true } })));
+  await page.addInitScript(() => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items: ['dal-rice-toner'], rules: { old_packaging_ok: true, bundles_ok: true } })));
   await page.route('**/api/bags', route => route.fulfill({ status: 409, json: { detail: 'This item is out of stock. Remove it from your bag.' } }));
   await page.goto('/bag');
   await expect(page.getByRole('status')).toHaveText('This item is out of stock. Remove it from your bag.');
@@ -175,13 +175,15 @@ test('hub ship form sends tracking through the authenticated API', async ({ page
   expect(writes[0]).toEqual({ carrier: 'DHL', tracking: 'TEST-TRACK-1' });
 });
 
-test('connected surfaces reflow and keep their actions visible at phone, tablet and desktop widths', async ({ page }) => {
-  await mockPublicApi(page);
-  await page.addInitScript(() => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items: ['dal-rice-toner'], rules: { old_packaging_ok: true, add_small_extras_if_cheaper: true } })));
-  await mkdir('../.runtime/connected-screens', { recursive: true });
-  for (const width of [390, 768, 1440]) {
-    await page.setViewportSize({ width, height: 900 });
-    for (const path of ['/shop', '/ask', '/bag', '/deal?order=order-public', '/paid?order=order-public', '/track?order=order-public', '/orders', '/shops/orders', '/hub']) {
+// Each route/width gets its own page and deadline. The old 27-visit case shared
+// one 30 s budget, so runner load could time out an otherwise healthy screen.
+for (const width of [390, 768, 1440]) {
+  for (const path of ['/shop', '/ask', '/bag', '/deal?order=order-public', '/paid?order=order-public', '/track?order=order-public', '/orders', '/shops/orders', '/hub']) {
+    test(`connected reflow at ${width}px: ${path}`, async ({ page }, testInfo) => {
+      await mockPublicApi(page);
+      await page.addInitScript(() => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'US', items: ['dal-rice-toner'], rules: { old_packaging_ok: true, bundles_ok: true } })));
+      await mkdir('../.runtime/connected-screens', { recursive: true });
+      await page.setViewportSize({ width, height: 900 });
       await page.goto(path);
       await page.evaluate(() => document.fonts.ready);
       if (path === '/shop') await expect(page.locator('.catalog > li')).toHaveCount(30);
@@ -195,10 +197,10 @@ test('connected surfaces reflow and keep their actions visible at phone, tablet 
       await expect.poll(() => page.locator('img').evaluateAll(images => images.every(image => image.complete && image.naturalWidth > 0))).toBe(true);
       await page.locator('img').evaluateAll(images => Promise.all(images.map(image => image.decode())));
       const name = path.split('?')[0].replaceAll('/', '-') || 'shop';
-      await page.screenshot({ path: `../.runtime/connected-screens/${width}${name}.png`, fullPage: path !== '/shop', animations: 'disabled' });
-    }
+      await page.screenshot({ path: `../.runtime/connected-screens/${testInfo.project.name}-${width}${name}.png`, fullPage: path !== '/shop', animations: 'disabled' });
+    });
   }
-});
+}
 
 test('earlier purchases preserve owned original terms without reopening checkout', async ({ page }) => {
   await mockPublicApi(page);
@@ -255,3 +257,57 @@ test('terminal fallback restores authoritative checkout rows and clears rejected
   await expect(page.locator('.product-rows li')).toHaveCount(4);
   await expect(page.getByText('Sample kit, 5 minis', { exact: true })).toHaveCount(0);
 });
+
+test('v3 server events restore winners, replay, and paid receipt without payment writes', async ({ page }) => {
+  const { auctionEvents, auctionFinalLines, auctionBreakdown } = await import('../src/fixture');
+  const api = await mockPublicApi(page);
+  const base = publicOrder(), breakdown = auctionBreakdown('US');
+  const order = { ...base, lines: auctionFinalLines, breakdown, charged_minor: breakdown.total, uncaptured_minor: base.maximum_minor - breakdown.total, events: auctionEvents };
+  await page.route('**/api/orders/order-public', route => route.fulfill({ json: order }));
+  await page.clock.install(); await page.goto('/deal?order=order-public');
+  await expect(page.getByRole('heading', { name: 'Bidding complete' })).toBeVisible();
+  await expect(page.locator('.hero-money')).toHaveText('$101.92');
+  await expect(page.locator('.auction-lane.won')).toHaveCount(4);
+  await page.getByRole('button', { name: 'Watch the bidding again' }).click();
+  await page.clock.runFor(20000);
+  await expect(page.locator('.hero-money')).toHaveText('$101.92');
+  await page.getByRole('link', { name: 'See your order' }).click();
+  await expect(page.locator('.hero-money')).toHaveText('$101.92');
+  expect(api.calls.filter(call => call.method !== 'GET')).toEqual([]);
+});
+
+test('optional market ranges stay in US dollars beside local prices', async ({ page }) => {
+  const { catalog, shops, local, cents } = await import('../src/fixture');
+  await mockPublicApi(page, { country: 'CA' });
+  await page.addInitScript(() => localStorage.setItem('rally-shopping-v2', JSON.stringify({ country: 'CA', items: [], rules: { old_packaging_ok: true, bundles_ok: true } })));
+  const reference = { low_usd_cents: 1800, median_usd_cents: 2200, high_usd_cents: 2600, n: 3, as_of: '2026-10-29' };
+  await page.route('**/api/catalog?country=*', route => route.fulfill({ json: { shops, prices_currency: 'USD', products: catalog.map(item => ({ ...item, price: local(Math.min(...Object.values(item.prices).map(value => cents(value!))), 'CA'), currency: 'CAD', available: true, market: item.id === 'dal-rice-toner' ? reference : null })) } }));
+  await page.goto('/shop');
+  await expect(page.getByText('US market $18–26', { exact: true })).toBeVisible();
+  await expect(page.locator('.market-range')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: /Ship to Canada · CAD/ })).toBeVisible();
+});
+
+for (const version of [2, 3]) {
+  test(`v${version} deal uses a short order number and keeps live notes public`, async ({ page }, testInfo) => {
+    await mockPublicApi(page);
+    const id = 'a1b2c345-6789-4abc-9876-123456789abc';
+    const base = publicOrder();
+    const { auctionEvents, auctionFinalLines, auctionBreakdown } = await import('../src/fixture');
+    const detail = 'A private failure detail should never become a live message.';
+    const events = [...auctionEvents, { id: 'late-error', seq: auctionEvents.length + 1, t: 12, kind: 'error', actor: 'rally', note: detail }];
+    const order = version === 3 ? { ...base, id, lines: auctionFinalLines, breakdown: auctionBreakdown('US'), events } : { ...base, id };
+    await page.route(`**/api/orders/${id}`, route => route.fulfill({ json: order }));
+    await page.goto(`/deal?order=${id}`);
+    await expect(page.locator('.header-title')).toHaveText('Order RL-A1B2C');
+    await expect(page.getByText(/order choices saved at checkout/)).toHaveCount(0);
+    await expect(page.getByText(id, { exact: false })).toHaveCount(0);
+    if (version === 3) {
+      await expect(page.locator('.auction-live-message')).toHaveText(auctionEvents.find(event => event.kind === 'award')!.note!);
+      await expect(page.getByText(detail, { exact: true })).toHaveCount(0);
+    }
+    await page.evaluate(() => document.fonts.ready);
+    await mkdir('../.runtime/connected-screens', { recursive: true });
+    await page.screenshot({ path: `../.runtime/connected-screens/${testInfo.project.name}-short-order-v${version}.png`, fullPage: true, animations: 'disabled' });
+  });
+}

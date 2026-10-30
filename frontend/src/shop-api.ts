@@ -11,7 +11,7 @@ export async function loadShop(signal: AbortSignal): Promise<ShopSnapshot> {
 
 export type MerchantOrder = {
   id: string; country: import('./fixture').CountryCode; currency: import('./fixture').Currency;
-  payment_state: string; fulfillment_state: string; lines: import('./fixture').Line[];
+  maximum_minor?: number; payment_state: string; fulfillment_state: string; lines: import('./fixture').Line[];
   events: import('./connected').PublicDealEvent[]; ship_by: string;
   checkout_lines?: import('./fixture').Line[]; lowest?: Record<string, number>;
   gain_minor?: number; gain_currency?: import('./fixture').Currency; extras?: string[];
