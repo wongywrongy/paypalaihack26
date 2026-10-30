@@ -36,6 +36,10 @@ class Catalog:
         # Fictional shop policies are configured authority, never model knowledge.
         self.policies = {shop: {"discount_bp": 0 if shop == "bada" else 1000, "bundle_discount_bp": {"haneul": 500, "bada": 0, "dalbit": 300}[shop], "free_domestic": True, "utility_threshold": 0, "sample_kit": shop == "dalbit", "sample_cost": 150, "pickup_cost": 150 if shop == "bada" else 0} for shop in self.shops}
 
+        from .goals import launch
+        for shop, policy in self.policies.items():
+            policy.update(launch(shop, policy))
+
     def allowed(self, product_id, destination):
         from .countries import country
 

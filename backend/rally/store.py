@@ -29,6 +29,12 @@ def catalog(db, order_id=None):
     result.products = {row["id"]: row["public"] for row in db.execute("SELECT * FROM catalog_products").fetchall()}
     result.offers = {row["id"]: dict(row) for row in db.execute("SELECT * FROM catalog_offers").fetchall()}
     result.policies = {row["shop_id"]: {**result.policies[row["shop_id"]], **row["policy"]} for row in db.execute("SELECT * FROM shop_policies").fetchall()}
+    from .goals import launch
+    for shop, policy in result.policies.items():
+        saved = db.execute("SELECT policy FROM shop_policies WHERE shop_id=%s", (shop,)).fetchone()["policy"]
+        if "goal_text" not in saved:
+            policy.update(launch(shop, policy))
+            db.execute("UPDATE shop_policies SET policy=%s WHERE shop_id=%s AND NOT policy ? 'goal_text'", (Jsonb(policy), shop))
     if order_id:
         for row in db.execute("SELECT offer_id,qty FROM order_reservations WHERE order_id=%s AND state='reserved'", (order_id,)).fetchall():
             result.offers[row["offer_id"]]["stock"] += row["qty"]

@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Request
 from psycopg.types.json import Jsonb
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt
 
-from . import fulfillment, orders, sessions, store
+from . import fulfillment, goals, orders, sessions, store
 from .catalog import Catalog
 from .db import connect
 from .shopping import owner
@@ -201,3 +201,55 @@ def reset_shop(shop_id: str, request: Request):
         db.execute("UPDATE shop_policies SET policy=%s,goal_draft=NULL WHERE shop_id=%s", (Jsonb(launch.policies[shop_id]), shop_id))
         audit(db, session, shop_id, None, "reset goals", before, launch.policies[shop_id])
         return {"reset": True}
+
+
+class GoalText(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    text: str = Field(min_length=3, max_length=1000)
+
+
+class ApplyGoal(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    draft_id: str = Field(min_length=1, max_length=64)
+
+
+@router.get("/shops/{shop_id}/goals")
+def shop_goals(shop_id: str, request: Request):
+    with connect() as db:
+        shop_owner(db, request, shop_id)
+        policy = store.catalog(db).policies[shop_id]
+        draft = db.execute("SELECT goal_draft FROM shop_policies WHERE shop_id=%s", (shop_id,)).fetchone()["goal_draft"]
+        return {**{k: policy[k] for k in ("goal_text", "strategy", "summary", "applied_at")}, "draft": draft}
+
+
+@router.post("/shops/{shop_id}/goals/compile")
+def compile_goals(shop_id: str, body: GoalText, request: Request):
+    from uuid import uuid4
+    with connect() as db:
+        shop_owner(db, request, shop_id, write=True)
+        store.catalog(db)
+    try:
+        draft = {**goals.compile_goal(body.text), "draft_id": str(uuid4())}
+    except Exception:
+        raise HTTPException(503, "Your goal could not be compiled. Your applied rules have not changed. Try again.") from None
+    with connect() as db:
+        row = owner(db, request, write=True)
+        sessions.scoped(row, "shop", shop_id, write=True)
+        db.execute("UPDATE shop_policies SET goal_draft=%s WHERE shop_id=%s", (Jsonb(draft), shop_id))
+    return draft
+
+
+@router.post("/shops/{shop_id}/goals/apply")
+def apply_goals(shop_id: str, body: ApplyGoal, request: Request):
+    from datetime import datetime, timezone
+    with connect() as db:
+        session = shop_owner(db, request, shop_id, write=True)
+        row = db.execute("SELECT policy,goal_draft FROM shop_policies WHERE shop_id=%s FOR UPDATE", (shop_id,)).fetchone()
+        if not row or not row["goal_draft"] or row["goal_draft"]["draft_id"] != body.draft_id:
+            raise HTTPException(409, "This goal changed. Compile and review it again before applying.")
+        draft = row["goal_draft"]
+        strategy = goals.ShopStrategy.model_validate(draft["strategy"]).model_dump()
+        policy = {**row["policy"], "goal_text": draft["goal_text"], "strategy": strategy, "summary": goals.summary(strategy), "applied_at": datetime.now(timezone.utc).isoformat(), "applied_by": str(session["id"])}
+        db.execute("UPDATE shop_policies SET policy=%s,goal_draft=NULL WHERE shop_id=%s", (Jsonb(policy), shop_id))
+        audit(db, session, shop_id, None, "apply goals", row["policy"], policy)
+        return {k: policy[k] for k in ("goal_text", "strategy", "summary", "applied_at")}

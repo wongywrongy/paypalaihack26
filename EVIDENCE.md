@@ -250,3 +250,10 @@ B2 gates passed before changing the default. New quotes default to auction; expl
 - Full disposable-Postgres unittest discovery: **113 passed, no skips** (82.524 s). Ruff E4/E7/E9/F/I, frontend build and render checks passed. Full browser suite: **158 passed, 2 workers** (2.1 min), including keyboard edit/inline rejection/save/audit at desktop/mobile and reduced motion.
 - Initial checks caught migration-count assumptions and a non-stable product ordering in the new concurrency test; product responses now have stable offer order. First browser run: 152 passed/6 failed: two currency-format regressions corrected; four traces reported ERR_NETWORK_CHANGED on unrelated routes. The subsequent complete run passed without retries or timeout changes.
 - No hosted/configuration/payment changes. PR #2 and #1 are already merged; this new work remains on bidding and needs a replacement draft PR into rally.
+
+### L2 · October 30, 2026 · bounded goals
+
+- Stored launch goals replace PUBLIC_GOALS. A shop-role model call compiles a server-held draft; Apply validates its exact draft id and every ShopStrategy field before storing/auditing it. Failures leave applied rules unchanged. Applied strategies control discounts, packaging preference, bundles, shipping and available kits; private floors remain code authority. Launch pricing behavior is retained until a merchant applies new rules.
+- Auction prompts use code-generated public strategy summaries, never raw merchant instructions or private margin fields. Hostile goal text cannot change floors or add acceptance/payment authority.
+- Full disposable-Postgres discovery: **116 passed, no skips** (74.642 s); Ruff, frontend build/render passed; **160 browser cases passed with 2 workers** (1.7 min), including review-before-Apply and read-only controls.
+- End-to-end provider-double contract passed: cream floor/goal edit → changed fresh auction → capture ≤ hold → Haneul handoff → exact goods plus awarded domestic payout queued. Real provider execution remains separate and pending for this change.

@@ -28,3 +28,25 @@ test('merchant grid validates keyboard edits, saves versions and lists its audit
   await expect(page.locator('.shop-group')).toContainText('Lowest $17.00');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test('goal rules are reviewed before Apply and read-only accounts cannot change them', async ({ page }) => {
+  const strategy = { max_round_discount_bp: 2000, min_margin_over_floor_cents: 100, prefer_older: true, bundles: 'prefer', free_domestic: 'to_win', kit: false };
+  let applied = false;
+  await page.route('**/api/session', r => r.fulfill({ json: { csrf_token: 'csrf', role: 'shop', shop_id: 'haneul', read_only: false } }));
+  await page.route('**/api/shops/haneul/orders', r => r.fulfill({ json: { orders: [] } }));
+  await page.route('**/api/shops/haneul/products', r => r.fulfill({ json: { products: [], changes: [] } }));
+  await page.route('**/api/shops/haneul/settings', r => r.fulfill({ json: { discount_bp: 1000, sample_kit: false } }));
+  await page.route('**/api/shops/haneul/goals', r => r.fulfill({ json: { goal_text: 'Win two item orders', summary: 'Current rules', strategy } }));
+  await page.route('**/api/shops/haneul/goals/compile', r => r.fulfill({ json: { goal_text: r.request().postDataJSON().text, summary: 'Prefer bundles', strategy, draft_id: 'draft-1' } }));
+  await page.route('**/api/shops/haneul/goals/apply', r => { applied = true; expect(r.request().postDataJSON()).toEqual({ draft_id: 'draft-1' }); return r.fulfill({ json: { goal_text: 'Move older stock', summary: 'Prefer bundles', strategy } }); });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/shops/settings');
+  await page.getByLabel('Your shop goal').fill('Move older stock');
+  await page.getByRole('button', { name: 'Review rules' }).click();
+  await expect(page.getByRole('heading', { name: 'Rules to apply' })).toBeVisible();
+  expect(applied).toBe(false);
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('applied to new quotes');
+  expect(applied).toBe(true);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});

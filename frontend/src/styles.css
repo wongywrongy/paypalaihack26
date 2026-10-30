@@ -485,3 +485,8 @@ thead th { font-weight: 500; color: var(--muted); font-size: .8rem }
   .box-shop { border-top: 0; padding: 0; min-width: 0 }
   .box-shop + .box-shop { border-left: 1px solid var(--line); padding-left: 28px }
 }
+
+.goal-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; align-items: start; }
+.goal-columns textarea { font: inherit; min-height: 140px; width: 100%; padding: 12px; border: 1px solid var(--muted); border-radius: 8px; resize: vertical; }
+.low-stock { font-weight: 700; }
+@media (max-width: 767px) { .goal-columns { grid-template-columns: minmax(0, 1fr); gap: 16px; } }

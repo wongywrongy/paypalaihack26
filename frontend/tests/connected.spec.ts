@@ -152,13 +152,14 @@ test('shop private grid and controls respect read-only accounts', async ({ page 
   await page.route('**/api/shops/dalbit/products', route => route.fulfill({ json: { currency: 'USD', products: [{ id: 'dal-rice-toner', offer_id: 'dalbit/dal-rice-toner', listed: 2100, lowest: 1600, cost: 900, stock: 20, days: 4, goal: 'Maintain margin' }] } }));
   await page.route('**/api/shops/dalbit/orders', route => route.fulfill({ json: { orders: [] } }));
   await page.route('**/api/shops/dalbit/settings', route => route.fulfill({ json: { discount_bp: 1000, sample_kit: true } }));
+  await page.route('**/api/shops/dalbit/goals', r => r.fulfill({ json: { goal_text: 'Move older packaging', summary: 'Prefer older packaging', strategy: { max_round_discount_bp: 1000, min_margin_over_floor_cents: 0, prefer_older: true, bundles: 'allow', free_domestic: 'to_win', kit: true } } }));
   await page.goto('/shops/products');
   await expect(page.getByText('Your account is read-only.', { exact: true })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'Lowest price' })).toBeVisible();
   await expect(page.getByRole('gridcell', { name: '$16.00', exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Agent settings', exact: true }).click();
-  await expect(page.getByLabel('Maximum discount (%)')).toBeDisabled();
-  await expect(page.getByRole('button', { name: 'Save agent settings' })).toBeDisabled();
+  await expect(page.getByLabel('Your shop goal')).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Review rules' })).toBeDisabled();
 });
 
 test('hub ship form sends tracking through the authenticated API', async ({ page }) => {
