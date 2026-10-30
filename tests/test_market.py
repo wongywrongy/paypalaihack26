@@ -50,7 +50,7 @@ class MarketContracts(unittest.TestCase):
                 snapshot.private_key(path)
 
     def test_runtime_snapshot_rejects_invalid_json_rows_and_strips_metadata(self):
-        valid = {"low_usd_cents": 1800, "median_usd_cents": 2200, "high_usd_cents": 2600, "n": 3, "as_of": "2026-10-29", "query": "public query", "title": "must never escape"}
+        valid = {"low_usd_cents": 1800, "median_usd_cents": 2200, "high_usd_cents": 2600, "n": 5, "as_of": "2026-10-29", "query": "public query", "title": "must never escape"}
         for row in ({**valid, "n": True}, {**valid, "as_of": "bad"}, {**valid, "low_usd_cents": 9999}):
             with patch.object(market, "_load", return_value={"p": row}):
                 self.assertIsNone(market.reference("p"))
@@ -64,9 +64,17 @@ class MarketContracts(unittest.TestCase):
                 self.assertIsNone(market.reference("p"))
             market._load.cache_clear()
 
+    def test_only_reliable_medians_are_public_and_live_rows_fall_back(self):
+        row = {"low_usd_cents":1000,"median_usd_cents":2000,"high_usd_cents":2500,"n":5,"as_of":"2026-10-30"}
+        self.assertEqual(market.filtered(row), {"median_usd_cents":2000,"n":5,"as_of":"2026-10-30"})
+        for update in ({"n":4},{"high_usd_cents":2501},{"median_usd_cents":False},{"as_of":"bad"}):
+            self.assertIsNone(market.filtered({**row,**update}))
+        with patch.object(market,"_load",return_value={"p":row}):
+            self.assertEqual(market.reference("p",{"p":{**row,"n":2}}),market.filtered(row))
+
     def test_both_model_roles_receive_only_sanitized_market_ranges(self):
         catalog = Catalog()
-        row = {"low_usd_cents": 1800, "median_usd_cents": 2200, "high_usd_cents": 2600, "n": 3, "as_of": "2026-10-29"}
+        row = {"low_usd_cents": 1800, "median_usd_cents": 2200, "high_usd_cents": 2600, "n": 5, "as_of": "2026-10-29"}
         seen = []
         def choose(role, payload):
             seen.append((role, payload.get("market")))

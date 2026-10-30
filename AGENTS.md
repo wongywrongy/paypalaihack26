@@ -1,5 +1,6 @@
 # Rally — rules for coding agents
 
+- Oct 29, 2026 (later): v4 live marketplace, docs/plan/LIVE.md, builds on v3 and wins where they disagree.
 - Oct 29, 2026: v3 shop bidding is the current plan: read docs/plan/BIDDING.md before PLAN.md; it overrides
   PLAN.md where they disagree (deal, shopper rules, terms traded, model).
 - Read PLAN.md first. Its "Decisions locked" table is settled; ask before changing any of it.

@@ -290,6 +290,10 @@ class ShoppingContracts(unittest.TestCase):
         self.assertEqual(self.client.get("/api/orders/" + oid).json()["fulfillment_state"], "MERCHANT_CONFIRMED")
         with patch.dict(os.environ, {"RALLY_AUTO_FULFILLMENT": "1", "PAYPAL_SHOP_EMAIL_DALBIT": "dalbit@example.test", "PAYPAL_SHOP_EMAIL_BADA": "bada@example.test"}):
             fulfillment.scheduled_steps()
+            self.assertEqual(self.client.get("/api/orders/" + oid).json()["fulfillment_state"], "MERCHANT_CONFIRMED")
+            with database.connect() as db:
+                for shop in ("dalbit", "bada"):
+                    fulfillment.handoff(db, orders.identifier(oid), shop, "Rally", "MANUAL-" + shop)
             fulfillment.scheduled_steps()
             self.assertEqual(self.client.get("/api/orders/" + oid).json()["fulfillment_state"], "AT_HUB")
             worker.run_once("payments")

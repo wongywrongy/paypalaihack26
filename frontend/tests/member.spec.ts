@@ -84,7 +84,7 @@ test('catalog filters, adds, removes and preserves the real local bag',async({pa
   await page.getByRole('button',{name:'Add Rice Toner',exact:true}).click();
   await page.getByRole('link',{name:'Bag, 1 item'}).click();
   await expect(page.locator('.bag-item')).toContainText('Rice Toner');
-  await expect(page.getByText('3 shops bid', { exact: true })).toBeVisible();
+  await expect(page.getByText(/Best listed.*3 shops bid/)).toBeVisible();
   const total=await page.locator('.checkout-total > .money').innerText();
   await page.reload();await expect(page.locator('.checkout-total > .money')).toHaveText(total);
   await page.getByRole('button',{name:'Remove Rice Toner'}).click();

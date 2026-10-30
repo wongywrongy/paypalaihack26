@@ -7,6 +7,7 @@ if (previewHost?.startsWith(".") || previewHost?.includes("*")) {
   throw new Error("Rootlane preview origin must use one exact hostname.");
 }
 export default defineConfig({
+  define: { __RALLY_TEST_HARNESS__: JSON.stringify(process.env.VITE_RALLY_TEST_HARNESS === "1") },
   plugins: [react(), tailwindcss(), {
     name: "rally-public-boundary",
     generateBundle() {

@@ -8,12 +8,6 @@ from .rally_agent import shipping
 from .schema import Bid, BidItem, Bundle
 from .shop_agent import target
 
-PUBLIC_GOALS = {
-    "haneul": "Win two-item orders; bundles and free shipping in Korea are fine.",
-    "bada": "Keep prices simple and firm; compete on the lowest unit price.",
-    "dalbit": "Move older packaging and add a sample kit before cutting new stock.",
-}
-
 
 def eligible(product_ids, destination, catalog, rules):
     return {pid: catalog.choices(pid, destination, older=rules["old_packaging_ok"]) for pid in product_ids}
@@ -48,6 +42,8 @@ def assessment(bid, previous, current, start, destination, catalog, rules):
 
 def candidates(shop_id, round_no, eligible_offers, previous, leaders, asks, catalog, rules, *, current, start, destination):
     options = []
+    policy = catalog.policies[shop_id]
+    strategy = policy.get("strategy") if policy.get("applied_at") else None
     runner_up = set()
     for pid, offers in eligible_offers.items():
         own = [o for o in offers if o["shop_id"] == shop_id]
@@ -60,8 +56,13 @@ def candidates(shop_id, round_no, eligible_offers, previous, leaders, asks, cata
             public[offer["shop_id"]] = min(public.get(offer["shop_id"], price), price)
         if sorted(public, key=lambda s: (public[s], s))[1] == shop_id:
             runner_up.add(pid)
-        offer = min(own, key=lambda o: (o["variant"] != "older", o["list_usd"], o["id"]))
+        offer = min(own, key=lambda o: ((o["variant"] != "older" if not strategy or strategy["prefer_older"] else o["variant"] != "current"), o["list_usd"], o["id"]))
         unit = max(offer["floor_usd"], target(Line(offer["id"], 1, offer["list_usd"]), catalog) - (round_no - 1) * 100)
+        if strategy:
+            minimum = offer["floor_usd"] + strategy["min_margin_over_floor_cents"]
+            if minimum > offer["list_usd"]:
+                continue
+            unit = max(minimum, basis(offer["list_usd"], 10000 - strategy["max_round_discount_bp"] * round_no // 3))
         old = next((i.unit_usd_cents for i in previous.items if i.offer_id == offer["id"]), offer["list_usd"]) if previous else offer["list_usd"]
         options.append(BidItem(offer_id=offer["id"], unit_usd_cents=min(unit, old)))
     if not options:
@@ -77,16 +78,17 @@ def candidates(shop_id, round_no, eligible_offers, previous, leaders, asks, cata
         base = Bid(shop_id=shop_id, round=round_no, items=items, note="Our available item prices.")
         variants.append(base)
         pairs = [pair for pair in combinations(items, 2) if any(catalog.offers[i.offer_id]["product_id"] in runner_up for i in pair)]
-        if rules["bundles_ok"] and pairs:
+        if rules["bundles_ok"] and pairs and (not strategy or strategy["bundles"] != "off"):
             pair = min(pairs, key=lambda pair: (sum(i.unit_usd_cents for i in pair), tuple(i.offer_id for i in pair)))
             ids = {i.offer_id for i in pair}
-            discounted = [BidItem(offer_id=i.offer_id, unit_usd_cents=max(catalog.offers[i.offer_id]["floor_usd"], basis(i.unit_usd_cents, 10000 - policy["bundle_discount_bp"]))) if i.offer_id in ids else i for i in items]
+            discounted = [BidItem(offer_id=i.offer_id, unit_usd_cents=max(catalog.offers[i.offer_id]["floor_usd"] + (strategy["min_margin_over_floor_cents"] if strategy else 0), basis(i.unit_usd_cents, 10000 - policy["bundle_discount_bp"]))) if i.offer_id in ids else i for i in items]
             bundle = Bundle(offer_ids=[i.offer_id for i in pair], price_usd_cents=sum(i.unit_usd_cents for i in discounted if i.offer_id in ids))
             variants.append(base.model_copy(update={"items": discounted, "bundle": bundle, "note": "Our two-item bundle price."}))
     scored, seen = [], set()
     for base in variants:
-        for free in ((False, True) if policy["free_domestic"] else (False,)):
-            for kit in ((False, True) if policy["sample_kit"] and shop_id == "dalbit" else (False,)):
+        free_options = (True,) if strategy and strategy["free_domestic"] == "always" else (False, True) if policy["free_domestic"] and (not strategy or strategy["free_domestic"] != "never") else (False,)
+        for free in free_options:
+            for kit in ((False, True) if (strategy["kit"] if strategy else policy["sample_kit"]) and shop_id == "dalbit" else (False,)):
                 bid = base.model_copy(update={"free_domestic": free, "extras": ["dalbit-sample-kit"] if kit else []})
                 key = bid.model_dump_json(by_alias=True)
                 if key in seen:
@@ -97,7 +99,7 @@ def candidates(shop_id, round_no, eligible_offers, previous, leaders, asks, cata
                     allocation, wins, score = assessment(bid, previous, current, start, destination, catalog, rules)
                     if score is None or score < policy["utility_threshold"]:
                         continue
-                    rank = (-len(wins), allocation["breakdown"]["total"], len(set(allocation["leaders"].values())), -len(allocation["extras"]), -score)
+                    rank = (-len(wins), allocation["breakdown"]["total"], len(set(allocation["leaders"].values())), -len(allocation["extras"]), -(bool(bid.bundle) if strategy and strategy["bundles"] == "prefer" else 0), -score)
                     scored.append((rank, bid))
                 except ValueError:
                     continue
