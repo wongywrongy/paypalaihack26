@@ -1,0 +1,41 @@
+import assert from 'node:assert/strict';
+import { checkedEvent, checkedQuote, orderHref, request, type Quote } from '../src/connected';
+import { applyEvent, initialDeal, reconcileDeal } from '../src/deal';
+const quote: Quote = { id: 'quote-1', country: 'CA', currency: 'CAD', lines: [{ id: 'dal-rice-toner', shop: 'dalbit', unit: 2898 }], breakdown: { currency: 'CAD', goods: 2898, domestic: 400, shipping: 2000, duty: 0, tax: 600, fee: 300, total: 6198 }, expires_at: '2026-10-24T12:15:00Z' };
+assert.equal(checkedQuote(quote), quote);
+assert.throws(() => checkedQuote({ ...quote, breakdown: { ...quote.breakdown, total: 6199 } }));
+assert.throws(() => checkedQuote({ ...quote, lines: [{ ...quote.lines[0], unit: -1 }] }));
+assert.throws(() => checkedQuote({ ...quote, currency: 'USD' }));
+const event = { id: 'stable-event', seq: 1, kind: 'done' as const, t: 14, total: 5000 };
+assert.equal(checkedEvent(event, 6198), event);
+assert.throws(() => checkedEvent({ ...event, total: 6199 }, 6198));
+assert.throws(() => checkedEvent({ ...event, total: 5.1 }, 6198));
+assert.throws(() => checkedEvent({ ...event, seq: -1 }, 6198));
+assert.equal(orderHref('/paid', 'order/1'), '/paid?order=order%2F1');
+let presentation = initialDeal([{ id: 'dal-snail-essence', shop: 'dalbit', unit: 2300 }], 5000);
+presentation = applyEvent(presentation, { id: 'offer-1', t: 1, shop: 'dalbit', actor: 'rally', kind: 'offer', lines: { 'dal-snail-essence:older': 1500, 'dal-cica-mask': 200 } });
+assert.equal(presentation.shops.dalbit!.lines['dal-snail-essence'].older, true);
+presentation = applyEvent(presentation, { id: 'accept-1', t: 2, shop: 'dalbit', actor: 'shop', kind: 'accept', lines: { 'dal-snail-essence': 2000 }, extras: [] });
+assert.equal(presentation.shops.dalbit!.lines['dal-snail-essence'].older, false);
+assert.equal(presentation.shops.dalbit!.lines['dal-snail-essence'].asking, 2000);
+assert.equal(presentation.shops.dalbit!.lines['dal-cica-mask'], undefined, 'a proposed extra is removed when absent from accepted terms');
+const completed = applyEvent(presentation, { id: 'done-1', t: 3, kind: 'done', total: 2000 });
+const authoritative = [{ id: 'dal-snail-essence', shop: 'dalbit' as const, unit: 2300 }];
+const corrected = reconcileDeal(completed, { lines: authoritative, checkout: { lines: authoritative }, events: [], extras: [], breakdown: { total: 2300 } });
+assert.equal(corrected.shops.dalbit!.lines['dal-snail-essence'].asking, 2300, 'terminal rows match final terms even when a scoped merchant stream omits global errors');
+assert.equal(corrected.shops.dalbit!.lines['dal-snail-essence'].held, true);
+assert.equal(corrected.totalUsd, 2300);
+const calls: { url: string; options: RequestInit }[] = [];
+globalThis.fetch = async (input, options) => {
+  calls.push({ url: String(input), options: options! });
+  return new Response(JSON.stringify(String(input).endsWith('/session') ? { csrf_token: 'csrf', paypal_client_id: 'public-client' } : { saved: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+};
+await Promise.all([request('/bags', { method: 'POST', body: { items: [] } }), request('/reset', { method: 'POST', body: {} })]);
+assert.equal(calls.filter(call => call.url.endsWith('/session')).length, 1);
+for (const call of calls.filter(call => !call.url.endsWith('/session'))) {
+  assert.equal((call.options.headers as Record<string, string>)['X-CSRF-Token'], 'csrf');
+  assert.equal(call.options.credentials, 'include');
+}
+globalThis.fetch = async () => new Response(JSON.stringify({ detail: 'Quote expired. Refresh your bag.' }), { status: 409 });
+await assert.rejects(() => request('/bags'), /Quote expired/);
+console.log('Connected quote, event ceiling, session reuse, CSRF and recoverable API error checks passed.');

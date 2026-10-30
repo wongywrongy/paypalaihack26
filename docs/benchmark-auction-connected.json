@@ -1,0 +1,348 @@
+{
+  "seed": 20261023,
+  "requested_cases": 25,
+  "completed_cases": 24,
+  "unsupported_cases": 1,
+  "model_mode": "hosted E requested; B not executed; C/D use deterministic selectors",
+  "strategies": {
+    "A": "exact sourcing at listed prices",
+    "B": "two model price-only baseline (no money)",
+    "C": "code acceptance without shopper rules",
+    "D": "full permitted term trading",
+    "E": "three-round open shop bidding, exact delivered-cost award"
+  },
+  "currency_totals": {
+    "GBP": {
+      "A": 37665,
+      "B": null,
+      "C": 35591,
+      "D": 35396,
+      "E": 33177,
+      "cases": 3
+    },
+    "AUD": {
+      "A": 219914,
+      "B": null,
+      "C": 205880,
+      "D": 204041,
+      "E": 188545,
+      "cases": 10
+    },
+    "USD": {
+      "A": 29150,
+      "B": null,
+      "C": 27265,
+      "D": 27265,
+      "E": 25023,
+      "cases": 2
+    },
+    "EUR": {
+      "A": 74507,
+      "B": null,
+      "C": 71283,
+      "D": 71283,
+      "E": 66433,
+      "cases": 5
+    },
+    "CAD": {
+      "A": 84461,
+      "B": null,
+      "C": 79589,
+      "D": 79589,
+      "E": 72422,
+      "cases": 4
+    }
+  },
+  "charge_above_hold": 0,
+  "shop_below_authority": 0,
+  "term_trading_beats_checkout": 21,
+  "baseline_b_failed": 0,
+  "d_model_choices": 0,
+  "e_model_choices": 410,
+  "auction_beats_checkout": 24,
+  "bundle_split_violations": 0,
+  "mean_savings_basis_points": 616,
+  "connected_strategies": [
+    "E"
+  ],
+  "e_model_calls": 279,
+  "e_model_failures": 4,
+  "execution_seconds": 87.999,
+  "model_failures": 3,
+  "models": {
+    "shop": "deepseek-ai/DeepSeek-V4.1-Flash",
+    "buyer": "deepseek-ai/DeepSeek-V4.1-Flash"
+  },
+  "response_format": "json_schema",
+  "hosted_benchmark_verified": false,
+  "market_products": 12,
+  "model_attempts": 100,
+  "provider_requests": 98,
+  "provider_validated": 97,
+  "provider_failed": 1,
+  "preflight_failed": 2,
+  "failure_reasons": {
+    "token_budget": 2,
+    "ReadTimeout": 1
+  },
+  "http_status_counts": {
+    "200": 97
+  },
+  "benchmark_pacing": {
+    "seconds_per_uncached_attempt": 0.8,
+    "location": "between auctions; the engine timeout is unchanged"
+  },
+  "initial_unpaced_run": {
+    "requested_cases": 25,
+    "completed_cases": 24,
+    "unsupported_cases": 1,
+    "e_model_calls": 279,
+    "e_model_failures": 88,
+    "charge_above_hold": 0,
+    "shop_below_authority": 0,
+    "bundle_split_violations": 0,
+    "execution_seconds": 122.837,
+    "hosted_benchmark_verified": false,
+    "failure_classes": {
+      "HTTPStatusError": 84,
+      "RuntimeError": 2,
+      "ReadTimeout": 2
+    },
+    "http_status_note": "Only exception classes were recorded in the initial run; HTTP status codes are unavailable."
+  },
+  "provider_call_latency_seconds": {
+    "shop": {
+      "calls": 73,
+      "min": 0.587,
+      "median": 0.854,
+      "max": 3.152
+    },
+    "buyer": {
+      "calls": 25,
+      "min": 0.698,
+      "median": 0.956,
+      "max": 4.042
+    }
+  },
+  "cases": [
+    {
+      "case": 1,
+      "currency": "GBP",
+      "hold": 11655,
+      "final": 10052,
+      "model_calls": 12,
+      "model_failures": 0,
+      "seconds": 0.154
+    },
+    {
+      "case": 2,
+      "currency": "AUD",
+      "hold": 27793,
+      "final": 23161,
+      "model_calls": 12,
+      "model_failures": 0,
+      "seconds": 0.682
+    },
+    {
+      "case": 3,
+      "currency": "AUD",
+      "hold": 28880,
+      "final": 24092,
+      "model_calls": 12,
+      "model_failures": 0,
+      "seconds": 0.572
+    },
+    {
+      "case": 4,
+      "currency": "USD",
+      "hold": 11166,
+      "final": 9218,
+      "model_calls": 12,
+      "model_failures": 0,
+      "seconds": 0.079
+    },
+    {
+      "case": 5,
+      "currency": "AUD",
+      "hold": 23697,
+      "final": 21494,
+      "model_calls": 12,
+      "model_failures": 0,
+      "seconds": 0.213
+    },
+    {
+      "case": 6,
+      "currency": "GBP",
+      "hold": 15165,
+      "final": 13734,
+      "model_calls": 12,
+      "model_failures": 0,
+      "seconds": 0.853
+    },
+    {
+      "case": 7,
+      "currency": "AUD",
+      "hold": 30218,
+      "final": 26417,
+      "model_calls": 12,
+      "model_failures": 0,
+      "seconds": 0.268
+    },
+    {
+      "case": 8,
+      "currency": "EUR",
+      "hold": 19343,
+      "final": 17718,
+      "model_calls": 12,
+      "model_failures": 0,
+      "seconds": 0.8
+    },
+    {
+      "case": 9,
+      "currency": "CAD",
+      "hold": 16554,
+      "final": 13776,
+      "model_calls": 12,
+      "model_failures": 0,
+      "seconds": 6.371
+    },
+    {
+      "case": 10,
+      "currency": "CAD",
+      "hold": 17802,
+      "final": 16048,
+      "model_calls": 12,
+      "model_failures": 1,
+      "seconds": 10.571
+    },
+    {
+      "case": 11,
+      "currency": "EUR",
+      "hold": 19548,
+      "final": 17886,
+      "model_calls": 12,
+      "model_failures": 2,
+      "seconds": 5.546
+    },
+    {
+      "case": 12,
+      "currency": "AUD",
+      "hold": 28128,
+      "final": 23530,
+      "model_calls": 12,
+      "model_failures": 0,
+      "seconds": 8.446
+    },
+    {
+      "case": 13,
+      "currency": "AUD",
+      "hold": 16758,
+      "final": 14935,
+      "model_calls": 12,
+      "model_failures": 0,
+      "seconds": 8.102
+    },
+    {
+      "case": 14,
+      "currency": "EUR",
+      "hold": 11258,
+      "final": 9701,
+      "model_calls": 12,
+      "model_failures": 0,
+      "seconds": 5.162
+    },
+    {
+      "case": 15,
+      "currency": "USD",
+      "hold": 17984,
+      "final": 15805,
+      "model_calls": 12,
+      "model_failures": 1,
+      "seconds": 11.995
+    },
+    {
+      "case": 16,
+      "currency": "AUD",
+      "hold": 20687,
+      "final": 17118,
+      "model_calls": 9,
+      "model_failures": 0,
+      "seconds": 2.806
+    },
+    {
+      "case": 17,
+      "currency": "CAD",
+      "hold": 23181,
+      "final": 20696,
+      "model_calls": 12,
+      "model_failures": 0,
+      "seconds": 0.178
+    },
+    {
+      "case": 18,
+      "currency": "CAD",
+      "hold": 26924,
+      "final": 21902,
+      "model_calls": 12,
+      "model_failures": 0,
+      "seconds": 0.364
+    },
+    {
+      "case": 19,
+      "currency": "EUR",
+      "hold": 12486,
+      "final": 11170,
+      "model_calls": 9,
+      "model_failures": 0,
+      "seconds": 0.035
+    },
+    {
+      "case": 20,
+      "currency": "EUR",
+      "hold": 11872,
+      "final": 9958,
+      "model_calls": 12,
+      "model_failures": 0,
+      "seconds": 0.074
+    },
+    {
+      "case": 21,
+      "currency": "AUD",
+      "hold": 10990,
+      "final": 9083,
+      "model_calls": 12,
+      "model_failures": 0,
+      "seconds": 0.068
+    },
+    {
+      "case": 22,
+      "currency": "GBP",
+      "hold": 10845,
+      "final": 9391,
+      "model_calls": 12,
+      "model_failures": 0,
+      "seconds": 0.116
+    },
+    {
+      "case": 23,
+      "currency": "AUD",
+      "hold": 14835,
+      "final": 13832,
+      "model_calls": 9,
+      "model_failures": 0,
+      "seconds": 3.507
+    },
+    {
+      "case": 24,
+      "currency": "AUD",
+      "hold": 17928,
+      "final": 14883,
+      "model_calls": 12,
+      "model_failures": 0,
+      "seconds": 4.748
+    }
+  ],
+  "as_of": "2026-10-30",
+  "sample_note": "25 requested generated bags; E only uses connected models. The 500-case report is a separate fixture run.",
+  "selection_failure_note": "Four CODE fallbacks: two preflight prompt-budget checks and two call-deadline timeouts. One timeout was later a validated HTTP response; the other raised ReadTimeout. Cached validated decisions are allowed by the plan."
+}

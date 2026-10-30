@@ -1,0 +1,161 @@
+{
+  "source": "c35f9be367d3f30e4635d9adfa5424a3c876869c",
+  "ci_run": 39878422696,
+  "ci_conclusion": "failure",
+  "browser_cases_passed": 60,
+  "backend_postgresql_tests_passed": 37,
+  "taste": "8passed;2failed edge-text on fully clipped Mask at768; inspector clipping regression pending",
+  "review": "All48 source captures inspected by independent design reviewer;27before,30after, noP0/P1withinGD2",
+  "images": [
+    {
+      "path": "ask-desktop-fold.jpg",
+      "sha256": "2cad0b95edf7bb807eef131ea3cca91326846d8f5155fc9c987f88c205aaea74",
+      "bytes": 49781
+    },
+    {
+      "path": "ask-mobile-fold.jpg",
+      "sha256": "64a910adbc8fca4c50bd05c77761a1bbd2016e81275957b6c477f4f3fd6df09a",
+      "bytes": 30627
+    },
+    {
+      "path": "bag-desktop-fold.jpg",
+      "sha256": "2e36b3d4e53c2d2ae4f23749c1956e79077538f95fdee640233c43c304a57b02",
+      "bytes": 38028
+    },
+    {
+      "path": "bag-mobile-fold.jpg",
+      "sha256": "e18b63f03bba31ad2412c3f1c452a5b2d03e68c0d4574be72aaaac04a4579a9e",
+      "bytes": 21659
+    },
+    {
+      "path": "bag-mobile-page.jpg",
+      "sha256": "fcb5e9bd1328cbf0d68ab174ded02ad937974d155c0bd2e87243ae838b35d767",
+      "bytes": 54655
+    },
+    {
+      "path": "deal-desktop-fold.jpg",
+      "sha256": "37396b498bd527a19f6bb9e18038a742b44740a23886861e6ce86cde79293d91",
+      "bytes": 38178
+    },
+    {
+      "path": "deal-done-desktop-fold.jpg",
+      "sha256": "b91e97890ef46910491a816d1d4e53bc1d6caf2c1c88170ea62be9d6e2290650",
+      "bytes": 42831
+    },
+    {
+      "path": "deal-done-mobile-fold.jpg",
+      "sha256": "180e3a5022b4cb6f29e98994870b5d37d2a910442cfccc8a55eee95f0834e700",
+      "bytes": 25050
+    },
+    {
+      "path": "deal-done-mobile-page.jpg",
+      "sha256": "c19fd20c712fe99fc345a8f67a4717815b64863a7c3f6be14dffa2601380c817",
+      "bytes": 57812
+    },
+    {
+      "path": "deal-live-desktop-fold.jpg",
+      "sha256": "323adb425decd7dc1bc7b71b91f6a62e23824eab9ae1dfe7dcc1775990257d5b",
+      "bytes": 42359
+    },
+    {
+      "path": "deal-live-mobile-fold.jpg",
+      "sha256": "846b58073189fa4f42ce566121b1f46d5be95cbd74c77077e9689d8c943c7775",
+      "bytes": 24350
+    },
+    {
+      "path": "deal-live-mobile-page.jpg",
+      "sha256": "668fadcbfadb5d805c3f68a57321613d3ba9b16826adc62fe2bf7764be412d58",
+      "bytes": 57094
+    },
+    {
+      "path": "deal-mobile-fold.jpg",
+      "sha256": "c1237ae238c0949b49899a909e7c919694542bfe7dedc4bce7a565d110cdc551",
+      "bytes": 24255
+    },
+    {
+      "path": "paid-desktop-fold.jpg",
+      "sha256": "3c8d6e8c91d01850b16b2958881ce12f9504221732f00f25b1be75c621a4e2a6",
+      "bytes": 44654
+    },
+    {
+      "path": "paid-mobile-fold.jpg",
+      "sha256": "91f04b455993cf51b4b7e9555475c8b90e138f2bbb4d30784502cb0eb58174d7",
+      "bytes": 23668
+    },
+    {
+      "path": "ship-to-desktop-fold.jpg",
+      "sha256": "1d25499b6e642d8633bc5d6bb15057b1298d16d84e77f1b5a26705f72e488659",
+      "bytes": 69221
+    },
+    {
+      "path": "ship-to-mobile-fold.jpg",
+      "sha256": "1c9b37c93db1fcd30576f6fa41567645083d49c87825ab2529e6801d159d9bb5",
+      "bytes": 29642
+    },
+    {
+      "path": "shop-desktop-fold.jpg",
+      "sha256": "3e54b7a3eb7f1197b237e21aac03bc028afe1315cf48f72c6cd83487daacd955",
+      "bytes": 67595
+    },
+    {
+      "path": "shop-mobile-fold.jpg",
+      "sha256": "ed59a9d02d492ab72af0e85ebca6fefab1279c47001e18e88c3b9c3686cd4664",
+      "bytes": 29852
+    },
+    {
+      "path": "shops-orders-desktop-fold.jpg",
+      "sha256": "7fd77dc69d38976353dce91f7f65031ae2701179f4163fb1340842f0864d4133",
+      "bytes": 68752
+    },
+    {
+      "path": "shops-orders-mobile-fold.jpg",
+      "sha256": "1f8d182a8531d80a64a22a912c9a3a614f7284f382ba8f517b65b5326284c991",
+      "bytes": 23949
+    },
+    {
+      "path": "shops-products-desktop-fold.jpg",
+      "sha256": "a223629ba23aa4b818c97739558f1fc6e593a0b71aaa7761ab6069851df00c5e",
+      "bytes": 40917
+    },
+    {
+      "path": "shops-products-mobile-fold.jpg",
+      "sha256": "a4c77527597b62023a96ce500472bae92976cb49ebc69bdf740e6f47cebf5ec6",
+      "bytes": 23812
+    },
+    {
+      "path": "shops-settings-desktop-fold.jpg",
+      "sha256": "8fd1874f0015503b4c722394743506bbcea82fb8415941011fa49581066c614a",
+      "bytes": 50485
+    },
+    {
+      "path": "shops-settings-mobile-fold.jpg",
+      "sha256": "e54e284b35028b7966f057323b2906fa32b3d4b4029655cbfd4cd4133d74b9cf",
+      "bytes": 25720
+    },
+    {
+      "path": "track-desktop-fold.jpg",
+      "sha256": "6a04c140a8720f5138103dbb31d869e8410fcf4c45c2955007979f516a128b76",
+      "bytes": 45969
+    },
+    {
+      "path": "track-mobile-fold.jpg",
+      "sha256": "6f4eb31aabd49e6626bfe3f28510d32e323c1bdbc3b6499ec6932052289d2b11",
+      "bytes": 27905
+    },
+    {
+      "path": "track-mobile-page.jpg",
+      "sha256": "83f3e17abe459c2dfce3b2e546d8cbe044f5c64eedcb7ef4c668a8cba0cd4482",
+      "bytes": 38501
+    }
+  ],
+  "subsequent_verification": {
+    "source": "0c86a26d5518c23eeea3095fd8abbb57a1d7f584",
+    "run": 39879386126,
+    "conclusion": "success",
+    "app_assets_identical": true,
+    "backend_postgresql_passed": 37,
+    "playwright_passed": 60,
+    "taste_routes_zero_fail": 10,
+    "synthetic_native_visibility_regressions": "passed"
+  }
+}

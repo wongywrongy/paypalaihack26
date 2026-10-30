@@ -1,0 +1,98 @@
+{
+  "mul-gel-cleanser": {
+    "low_usd_cents": 2600,
+    "median_usd_cents": 5950,
+    "high_usd_cents": 8000,
+    "n": 4,
+    "as_of": "2026-10-30",
+    "query": "skincare cleanser 150 ml"
+  },
+  "dal-rice-toner": {
+    "low_usd_cents": 1773,
+    "median_usd_cents": 1870,
+    "high_usd_cents": 4919,
+    "n": 4,
+    "as_of": "2026-10-30",
+    "query": "skincare toner 150 ml rice"
+  },
+  "mul-hydro-toner": {
+    "low_usd_cents": 1116,
+    "median_usd_cents": 3400,
+    "high_usd_cents": 5500,
+    "n": 4,
+    "as_of": "2026-10-30",
+    "query": "skincare toner 200 ml hyaluronic"
+  },
+  "byeol-vitc": {
+    "low_usd_cents": 3996,
+    "median_usd_cents": 6850,
+    "high_usd_cents": 14200,
+    "n": 8,
+    "as_of": "2026-10-30",
+    "query": "skincare serum 30 ml"
+  },
+  "sae-propolis": {
+    "low_usd_cents": 3996,
+    "median_usd_cents": 6850,
+    "high_usd_cents": 14200,
+    "n": 8,
+    "as_of": "2026-10-30",
+    "query": "skincare serum 30 ml"
+  },
+  "dal-ginseng": {
+    "low_usd_cents": 4900,
+    "median_usd_cents": 11899,
+    "high_usd_cents": 43000,
+    "n": 3,
+    "as_of": "2026-10-30",
+    "query": "skincare serum 50 ml"
+  },
+  "gur-water-gel": {
+    "low_usd_cents": 900,
+    "median_usd_cents": 4099,
+    "high_usd_cents": 6700,
+    "n": 4,
+    "as_of": "2026-10-30",
+    "query": "skincare moisturizer 75 ml"
+  },
+  "hay-rice-cream": {
+    "low_usd_cents": 2097,
+    "median_usd_cents": 3080,
+    "high_usd_cents": 10400,
+    "n": 5,
+    "as_of": "2026-10-30",
+    "query": "skincare moisturizer 60 ml rice ceramide"
+  },
+  "dal-snail-cream": {
+    "low_usd_cents": 2500,
+    "median_usd_cents": 6350,
+    "high_usd_cents": 22500,
+    "n": 4,
+    "as_of": "2026-10-30",
+    "query": "skincare moisturizer 50 ml snail"
+  },
+  "hay-eye": {
+    "low_usd_cents": 970,
+    "median_usd_cents": 1799,
+    "high_usd_cents": 2100,
+    "n": 3,
+    "as_of": "2026-10-30",
+    "query": "skincare eye 20 ml"
+  },
+  "hay-tint": {
+    "low_usd_cents": 313,
+    "median_usd_cents": 1804,
+    "high_usd_cents": 2800,
+    "n": 4,
+    "as_of": "2026-10-30",
+    "query": "skincare lip 4 g"
+  },
+  "mul-sun-essence": {
+    "low_usd_cents": 1600,
+    "median_usd_cents": 5989,
+    "high_usd_cents": 24800,
+    "n": 5,
+    "as_of": "2026-10-30",
+    "query": "skincare sun 50 ml"
+  }
+}

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EEF4EC"/>
+      <stop offset="1" stop-color="#DCE8D8"/>
+    </linearGradient>
+    <linearGradient id="front" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#CFE3CC"/>
+      <stop offset="0.5" stop-color="#E3EFE0"/>
+      <stop offset="1" stop-color="#C2D9BE"/>
+    </linearGradient>
+    <linearGradient id="sachet" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#F7F7F2"/>
+      <stop offset="0.5" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#ECEDE6"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="600" fill="url(#bg)"/>
+  <ellipse cx="300" cy="500" rx="170" ry="18" fill="#3F6B48" opacity="0.18"/>
+  <rect x="368" y="150" width="120" height="176" rx="10" fill="url(#sachet)" transform="rotate(8 428 238)"/>
+  <rect x="384" y="196" width="88" height="6" rx="3" fill="#7FA886" transform="rotate(8 428 238)"/>
+  <path d="M150 228 L410 228 L440 204 L180 204 Z" fill="#B9D3B4"/>
+  <rect x="150" y="228" width="260" height="272" rx="8" fill="url(#front)"/>
+  <path d="M410 228 L440 204 L440 476 L410 500 Z" fill="#A9C7A3"/>
+  <path d="M280 330 c-34 -10 -54 26 -40 60 c36 6 60 -24 40 -60z" fill="#4F7F5A"/>
+  <path d="M244 386 c16 -18 26 -32 34 -52" fill="none" stroke="#E3EFE0" stroke-width="3" stroke-linecap="round"/>
+  <rect x="198" y="420" width="164" height="7" rx="3.5" fill="#4F7F5A"/>
+  <rect x="226" y="436" width="108" height="5" rx="2.5" fill="#8DB394"/>
+</svg>
