@@ -188,6 +188,12 @@ class LiveContracts(ShoppingContracts):
                 for seq,e in enumerate(events,1):
                     db.execute('INSERT INTO deal_events(id,order_id,seq,data) VALUES(%s,%s,%s,%s)',(uuid4(),order,seq,Jsonb(e['data'])))
             self.assertEqual(len(activity.history(db,'haneul')),20)
+            expected=round((source['checkout_terms']['breakdown']['total']-source['final_terms']['breakdown']['total'])*10000/source['checkout_terms']['breakdown']['total'])
+            db.execute("UPDATE orders SET payment_state='CHARGED' WHERE id IN (SELECT id FROM orders WHERE id!=%s ORDER BY id LIMIT 8)",(oid,))
+        self.assertNotIn('facts',self.client.get('/api/catalog').json())
+        with database.connect() as db:
+            db.execute("UPDATE orders SET payment_state='CHARGED' WHERE id=(SELECT id FROM orders WHERE payment_state!='CHARGED' ORDER BY id LIMIT 1)")
+        self.assertEqual(self.client.get('/api/catalog').json()['facts'],{'completed_orders':10,'median_saving_bp':expected})
 
     def test_daily_market_refresh_filters_and_retains_last_good_prices(self):
         from datetime import date
@@ -223,6 +229,48 @@ class LiveContracts(ShoppingContracts):
         with patch.dict(os.environ,{'CHANNEL3_API_KEY':''}),patch('httpx.Client') as client:
             self.assertIsNone(market.refresh_one())
             client.assert_not_called()
+
+    def test_live_stock_depletes_older_offers_and_production_never_reads_recording(self):
+        from dataclasses import replace
+        from pathlib import Path
+
+        from rally import orders, store, worker
+        from rally.negotiation.auction import run_auction
+        from rally.negotiation.bids import eligible
+        with database.connect() as db:
+            store.seed(db)
+            db.execute("UPDATE catalog_offers SET stock=1 WHERE id='dalbit/dal-snail-essence:older'")
+        read = Path.read_text
+        def guarded(path,*args,**kwargs):
+            if path.name=='auction.json':
+                raise AssertionError('Production read the recording')
+            return read(path,*args,**kwargs)
+        def auction(*args,**kwargs):
+            kwargs['pace']=False
+            return run_auction(*args,**kwargs,choose=lambda role,payload: {'indexes':[0],'note':'Ask.'} if role=='buyer' else {'index':0,'note':'Bid.'})
+        with patch.object(orders,'settings',replace(self.config,deal_mode='auction')), patch.object(orders,'run_auction',side_effect=auction), patch.object(Path,'read_text',guarded):
+            bag,checkout=self.checkout()
+            oid=checkout['order_id']
+            self.provider.orders[checkout['paypal_order_id']]['status']='APPROVED'
+            self.post(f"/bags/{bag['id']}/checkout/approve",{'order_id':checkout['paypal_order_id']})
+            worker.run_once('ai')
+            worker.run_once('payments')
+        with database.connect() as db:
+            catalog=store.catalog(db)
+            self.assertEqual(catalog.offers['dalbit/dal-snail-essence:older']['stock'],0)
+            self.assertFalse(any(o['variant']=='older' for o in eligible(self.payload['items'],'US',catalog,self.payload['rules'])['dal-snail-essence']))
+            self.assertEqual(db.execute("SELECT state FROM order_reservations WHERE order_id=%s AND offer_id='dalbit/dal-snail-essence:older'",(oid,)).fetchone()['state'],'consumed')
+            db.execute("UPDATE catalog_offers SET stock=3 WHERE id='dalbit/dal-rice-toner'")
+        toner=next(p for p in self.client.get('/api/catalog').json()['products'] if p['id']=='dal-rice-toner')
+        self.assertEqual(toner['low_stock'],[{'shop':'dalbit','stock':3}])
+        with database.connect() as db:
+            db.execute("UPDATE catalog_offers SET stock=0 WHERE product_id='dal-rice-toner'")
+        toner=next(p for p in self.client.get('/api/catalog').json()['products'] if p['id']=='dal-rice-toner')
+        self.assertFalse(toner['available'])
+        self.assertEqual(toner['prices'],{})
+        saved=self.client.get('/api/orders/'+oid).json()
+        self.assertTrue(saved['events'])
+        self.assertEqual(saved['events'],self.client.get('/api/orders/'+oid).json()['events'])
 
 
 # Inheritance reuses the integration harness, not its tests.

@@ -1,9 +1,9 @@
 import type { Breakdown, CountryCode, Currency, DealEvent, Line, Product, Rules, ShopId } from './fixture';
 
 export type Destination = { code: CountryCode; name: string; currency: Currency; region: string | null; summary: string };
-export type CatalogProduct = Product & { price: number | null; currency: Currency; available: boolean };
+export type CatalogProduct = Product & { price: number | null; currency: Currency; available: boolean; low_stock?: { shop: ShopId; stock: number }[] };
 export type PublicShop = { name: string; city: string; kind: string; ships_abroad: boolean };
-export type CatalogResponse = { products: CatalogProduct[]; shops: Record<ShopId, PublicShop>; prices_currency: 'USD' };
+export type CatalogResponse = { products: CatalogProduct[]; shops: Record<ShopId, PublicShop>; prices_currency: 'USD'; facts?: { completed_orders: number; median_saving_bp: number } };
 export type Quote = { id: string; country: CountryCode; currency: Currency; lines: Line[]; breakdown: Breakdown; expires_at: string };
 export type ServerBag = { id: string; quote: Quote };
 export type Checkout = { paypal_order_id: string; approval_url: string; client_id: string; currency: Currency; order_id: string };

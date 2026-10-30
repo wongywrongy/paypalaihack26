@@ -490,3 +490,7 @@ thead th { font-weight: 500; color: var(--muted); font-size: .8rem }
 .goal-columns textarea { font: inherit; min-height: 140px; width: 100%; padding: 12px; border: 1px solid var(--muted); border-radius: 8px; resize: vertical; }
 .low-stock { font-weight: 700; }
 @media (max-width: 767px) { .goal-columns { grid-template-columns: minmax(0, 1fr); gap: 16px; } }
+
+.activity-table th small { display: block; margin-top: 4px; font-weight: 400; color: var(--muted); }
+.activity-table th[scope="row"] { min-width: 180px; }
+.activity-table td { min-width: 140px; vertical-align: top; }

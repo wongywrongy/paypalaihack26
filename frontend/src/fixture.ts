@@ -1,4 +1,8 @@
 import data from './data/public-scenario.json' with { type: 'json' };
+import reviewData from './data/recorded-review.json' with { type: 'json' };
+// Node contract helpers and the explicit harness may read recordings; ordinary Vite builds erase them.
+declare const __RALLY_TEST_HARNESS__: boolean;
+const review = typeof __RALLY_TEST_HARNESS__ === 'undefined' || __RALLY_TEST_HARNESS__ ? reviewData : null;
 export type CountryCode = keyof typeof data.countries;
 export type ShopId = keyof typeof data.shops;
 export type Currency = 'USD' | 'CAD' | 'GBP' | 'EUR' | 'AUD';
@@ -19,9 +23,10 @@ export const catalog = data.catalog as Product[];
 export const shops = data.shops;
 export const countries = data.countries;
 export const countryCodes = Object.keys(countries) as CountryCode[];
-export const hero = { ...data.hero, rules: { old_packaging_ok: true, bundles_ok: true } };
+export const hero = { ...(review?.hero || {}), rules: { old_packaging_ok: true, bundles_ok: true } } as Omit<typeof reviewData.hero, 'rules'> & { rules: Rules };
 // Recorded order identity and consent are an immutable checkout snapshot, never the current bag.
-export const recordedOrder = Object.freeze({ id: 'RL-24817', country: data.hero.country as CountryCode, destination: countries[data.hero.country as CountryCode].region || countries[data.hero.country as CountryCode].name, currency: countries[data.hero.country as CountryCode].currency as Currency, items: Object.freeze([...data.hero.cart]), rules: Object.freeze({ ...hero.rules }) });
+const recordedCountry = (review?.hero.country || 'US') as CountryCode;
+export const recordedOrder = Object.freeze({ id: 'RL-24817', country: recordedCountry, destination: countries[recordedCountry].region || countries[recordedCountry].name, currency: countries[recordedCountry].currency as Currency, items: Object.freeze([...(review?.hero.cart || [])]), rules: Object.freeze({ ...hero.rules }) });
 export const product = (id: string) => { const found = catalog.find(item => item.id === id); if (!found) throw new Error('Unknown product'); return found; };
 export const allowed = (item: Product, country: CountryCode) => !item.aerosol && !item.not_to?.includes(country);
 export const currency = (country: CountryCode): Currency => countries[country].currency as Currency;
@@ -67,21 +72,23 @@ export function quote(ids: string[], country: CountryCode): { lines: Line[]; bre
   });
   return { lines, breakdown: landed(lines, country) };
 }
-export const listedLines = hero.listed.lines.map(line => ({ id: line.id, shop: line.shop as ShopId, unit: cents(line.unit) }));
-export const finalLines: Line[] = hero.deal.lines.map(line => ({ id: line.id, shop: line.shop as ShopId, unit: cents(line.unit), variant: 'variant' in line ? 'older' : undefined, added: 'added_by_agent' in line ? line.added_by_agent : undefined }));
-export const events: DealEvent[] = hero.events.map((event, index) => {
+export const listedLines = (review?.hero.listed.lines || []).map(line => ({ id: line.id, shop: line.shop as ShopId, unit: cents(line.unit) }));
+export const finalLines: Line[] = (review?.hero.deal.lines || []).map(line => ({ id: line.id, shop: line.shop as ShopId, unit: cents(line.unit), variant: 'variant' in line ? 'older' : undefined, added: 'added_by_agent' in line ? line.added_by_agent : undefined }));
+export const events: DealEvent[] = (review?.hero.events || []).map((event, index) => {
   const value = event as { t: number; shop?: string; actor?: string; kind: string; lines?: Record<string,string>; extras?: string[]; domestic?: string; total?: string; note?: string; final?: boolean };
   return { ...value, id: `hero-${index + 1}`, shop: value.shop as ShopId | undefined, actor: value.actor as DealEvent['actor'], kind: value.kind as DealEvent['kind'], lines: value.lines ? Object.fromEntries(Object.entries(value.lines).map(([id, unit]) => [id, cents(unit)])) : undefined, domestic: value.domestic === undefined ? undefined : cents(value.domestic), total: value.total === undefined ? undefined : cents(value.total) };
 });
 export const recordedMode = () => import.meta.env?.VITE_RALLY_TEST_HARNESS === '1' && typeof location !== 'undefined' && new URLSearchParams(location.search).get('test') === 'recorded';
 export const href = (path: string) => path + (recordedMode() ? (path.includes('?') ? '&' : '?') + 'test=recorded' : '');
 
-export const auctionFinalLines: Line[] = data.auction.award.lines.map(line => {
+export const auctionFinalLines: Line[] = (review?.auction.award.lines || []).map(line => {
   const [shop, key] = line.offer_id.split('/'), [id, variant] = key.split(':');
   return { id, shop: shop as ShopId, unit: line.unit_usd_cents, variant, bundle: shop === 'haneul', bestListed: Math.min(...Object.values(product(id).prices).map(value => cents(value!))) };
 });
-export const auctionBreakdown = (country: CountryCode) => landed(auctionFinalLines, country, 50, data.auction.award.domestic_usd);
+export const auctionBreakdown = (country: CountryCode) => landed(auctionFinalLines, country, 50, review?.auction.award.domestic_usd);
 export const auctionEvents: import('./auction').AuctionEvent[] = (() => {
+  if (!review) return [];
+  const data = review;
   type Event = import('./auction').AuctionEvent;
   const rows: Event[] = [];
   let total = data.auction.golden.US[0];

@@ -91,7 +91,11 @@ def countries():
 @router.get("/catalog")
 def catalog(country: str = "US"):
     with connect() as db:
-        return store.catalog(db).public(country)
+        value = store.catalog(db).public(country)
+        facts = db.execute("SELECT count(*) AS completed_orders,round(percentile_cont(0.5) WITHIN GROUP (ORDER BY ((q.terms->'breakdown'->>'total')::numeric-(o.final_terms->'breakdown'->>'total')::numeric)*10000/(q.terms->'breakdown'->>'total')::numeric))::integer AS median_saving_bp FROM orders o JOIN quotes q ON q.id=o.quote_id WHERE o.payment_state='CHARGED' AND o.final_terms ? 'auction' AND EXISTS (SELECT 1 FROM deal_events e WHERE e.order_id=o.id AND e.data->>'kind'='bid')").fetchone()
+        if facts["completed_orders"] >= 10:
+            value["facts"] = facts
+        return value
 
 
 @router.post("/quotes")

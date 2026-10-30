@@ -262,18 +262,20 @@ test('terminal fallback restores authoritative checkout rows and clears rejected
 test('v3 server events restore winners, replay, and paid receipt without payment writes', async ({ page }) => {
   const { auctionEvents, auctionFinalLines, auctionBreakdown } = await import('../src/fixture');
   const api = await mockPublicApi(page);
-  const base = publicOrder(), breakdown = auctionBreakdown('US');
-  const order = { ...base, lines: auctionFinalLines, breakdown, charged_minor: breakdown.total, uncaptured_minor: base.maximum_minor - breakdown.total, events: auctionEvents };
+  const base = publicOrder(), original = auctionBreakdown('US');
+  const breakdown = { ...original, goods: original.goods - 123, total: original.total - 123 };
+  const ownEvents = auctionEvents.map(event => event.kind === 'award' ? { ...event, id: 'owned-award', total: breakdown.total, note: 'This order’s saved award.', winners: { ...event.winners, 'sae-cica-cream': { ...event.winners['sae-cica-cream'], unit: event.winners['sae-cica-cream'].unit - 123 } } } : event.kind === 'done' ? { ...event, total: breakdown.total } : event);
+  const order = { ...base, lines: auctionFinalLines.map(line => line.id === 'sae-cica-cream' ? { ...line, unit: line.unit - 123 } : line), breakdown, charged_minor: breakdown.total, uncaptured_minor: base.maximum_minor - breakdown.total, events: ownEvents };
   await page.route('**/api/orders/order-public', route => route.fulfill({ json: order }));
   await page.clock.install(); await page.goto('/deal?order=order-public');
   await expect(page.getByRole('heading', { name: 'Bidding complete' })).toBeVisible();
-  await expect(page.locator('.hero-money')).toHaveText('$101.92');
+  await expect(page.locator('.hero-money')).toHaveText('$100.69');
   await expect(page.locator('.auction-lane.won')).toHaveCount(4);
   await page.getByRole('button', { name: 'Watch the bidding again' }).click();
   await page.clock.runFor(20000);
-  await expect(page.locator('.hero-money')).toHaveText('$101.92');
+  await expect(page.locator('.hero-money')).toHaveText('$100.69');
   await page.getByRole('link', { name: 'See your order' }).click();
-  await expect(page.locator('.hero-money')).toHaveText('$101.92');
+  await expect(page.locator('.hero-money')).toHaveText('$100.69');
   expect(api.calls.filter(call => call.method !== 'GET')).toEqual([]);
 });
 

@@ -1,3 +1,4 @@
+import { mockPublicApi } from './public-api';
 import { test, expect } from '@playwright/test';
 
 test('merchant grid validates keyboard edits, saves versions and lists its audit', async ({ page }) => {
@@ -26,6 +27,7 @@ test('merchant grid validates keyboard edits, saves versions and lists its audit
   await expect(cell).toHaveText('$17.00');
   await expect(page.getByRole('heading', { name: 'Recent changes' })).toBeVisible();
   await expect(page.locator('.shop-group')).toContainText('Lowest $17.00');
+  await page.screenshot({ path: `../.runtime/live-products-${test.info().project.name}.png`, fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
@@ -48,6 +50,7 @@ test('goal rules are reviewed before Apply and read-only accounts cannot change 
   await page.getByRole('button', { name: 'Apply', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('applied to new quotes');
   expect(applied).toBe(true);
+  await page.screenshot({ path: `../.runtime/live-goals-${test.info().project.name}.png`, fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
@@ -61,5 +64,20 @@ test('Activity shows saved bids, deciding total and payout without private autho
   await expect(page.getByRole('cell', { name: /Lowest complete delivered total/ })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'completed', exact: true })).toBeAttached();
   await expect(page.getByRole('rowheader', { name: /RL-ABCDE/ })).toBeVisible();
+  await page.screenshot({ path: `../.runtime/live-activity-${test.info().project.name}.png`, fullPage: true });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+
+test('live catalog shows stock and real facts while Bag leaves shops unassigned', async ({ page }) => {
+  await mockPublicApi(page);
+  const { catalog, shops, cents, local } = await import('../src/fixture');
+  await page.route('**/api/catalog?*', r => r.fulfill({ json: { shops, prices_currency: 'USD', facts: { completed_orders: 10, median_saving_bp: 1400 }, products: catalog.map(item => ({ ...item, available: true, currency: 'USD', price: local(Math.min(...Object.values(item.prices).map(value => cents(value!))), 'US'), low_stock: item.id === 'dal-rice-toner' ? [{ shop: 'dalbit', stock: 3 }] : [] })) } }));
+  await page.goto('/shop');
+  await expect(page.getByText('Only 3 left at Dalbit Official', { exact: true })).toBeVisible();
+  await expect(page.locator('.market-facts')).toHaveText(/10 completed orders.*14%/);
+  await page.getByRole('button', { name: 'Add Rice Toner', exact: true }).click();
+  await page.goto('/bag');
+  await expect(page.locator('.product-copy small').first()).toContainText(/Best listed.*shops bid/);
+  await expect(page.locator('.product-copy small').first()).not.toContainText('Dalbit Official');
 });

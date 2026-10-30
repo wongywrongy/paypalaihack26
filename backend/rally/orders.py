@@ -40,7 +40,7 @@ def rules_checked(rules):
 def terms(items, country, rules, catalog):
     result = source(items, country, catalog)
     currency = result["breakdown"]["currency"]
-    return {"country": country, "currency": currency, "items": items, "rules": rules_checked(rules), "lines": [asdict(line) for line in result["lines"]], "breakdown": result["breakdown"], "rate": RATES[currency], "fx_as_of": AS_OF, "merchant": "Rally sandbox business", "merchant_id": settings.paypal_merchant_id, "route": "Korean shops → Seoul hub → shopper", "cost_certainty": "complete simulated schedule; Rally absorbs any overrun", "quote_version": 3, "deal_mode": settings.deal_mode, "inventory_reservation": None, "authority": {"offers": {k: v for k, v in catalog.offers.items() if v["product_id"] in items}, "policies": catalog.policies}}
+    return {"country": country, "currency": currency, "items": items, "rules": rules_checked(rules), "lines": [asdict(line) for line in result["lines"]], "breakdown": result["breakdown"], "rate": RATES[currency], "fx_as_of": AS_OF, "merchant": "Rally sandbox business", "merchant_id": settings.paypal_merchant_id, "route": "Korean shops → Seoul hub → shopper", "cost_certainty": "complete simulated schedule; Rally absorbs any overrun", "quote_version": 3, "deal_mode": settings.deal_mode, "inventory_reservation": None, "authority": {"offers": catalog.offers, "policies": catalog.policies}}
 
 
 def quote_public(row, catalog):

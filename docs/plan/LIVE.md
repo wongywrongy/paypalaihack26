@@ -34,13 +34,13 @@ Rally is a two-sided marketplace. Shoppers buy; three Korean shops (still fictio
 - Rally for shops → Agent: a text box ("Clear my older snail essence this month, never below $15, happy to bundle"). Bitdeer (buyer-independent shop model) compiles it into a bounded `ShopStrategy`:
   `{max_round_discount_bp 0–2000, min_margin_over_floor_cents ≥ 0, prefer_older bool, bundles: off|allow|prefer, free_domestic: never|to_win|always, kit: bool}` plus a one-line summary.
 - The merchant sees the compiled rules next to their words and presses **Apply**. Nothing applies without it. Code validates every field; the text is never executed or forwarded as an instruction.
-- `bids.candidates` reads the strategy (discount steps, bundle preference, free-shipping willingness, older-stock priority). Floors from L1 always win. The shop model's payload carries the goal text and summary, never floors or costs.
+- `bids.candidates` reads the strategy (discount steps, bundle preference, free-shipping willingness, older-stock priority). Floors from L1 always win. Raw goal text goes only to the compiler, without server floors or costs. Auction payloads carry the validated code-generated public summary; raw merchant text and private margin fields stay out, since text may contain a lowest price. Nothing treats the text as instructions.
 - Store in `shop_policies.policy` (goal_text, strategy, applied_at, applied_by). Replace `PUBLIC_GOALS` with this; keep current values as the launch defaults.
 
 ### L3 · Agents with memory
 
 - `shop_agent_memory` view (or table refreshed after each award): per shop, the last 20 auctions it joined: items, its final bid, the winner, the winning complete total, margin over floor, and which perk decided it.
-- Each round's shop payload adds a short public summary: "Last 20: won 6 of 14 items; lost 3 to bundles; average margin over floor $2.10." The model may adapt within the strategy; code bounds are unchanged.
+- Each round's shop payload adds a short public summary: "Last 20: won 6 of 14 items; lost 3 to bundles; average margin over floor $2.10." The model may adapt within the strategy; code bounds are unchanged. Margin over floor is private to the merchant Activity data and is omitted from agent summaries: a public bid minus that margin would disclose the floor.
 - Rally for shops → Activity: one row per auction (time, items, its bids, result, payout status) with the deciding reason ("Lost Cica Barrier Cream to Haneul's bundle by $1.07 all in").
 
 ### L4 · Live market reference

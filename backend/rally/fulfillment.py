@@ -144,11 +144,7 @@ def scheduled_steps():
             row = orders.owned(db, item["id"])
             if row["ship_by"] <= datetime.now(timezone.utc) and row["fulfillment_state"] != "SHIPPED":
                 continue
-            if row["fulfillment_state"] == "MERCHANT_CONFIRMED":
-                catalog = store.catalog(db)
-                for shop in sorted({catalog.offers[line["offer_id"]]["shop_id"] for line in row["final_terms"]["lines"]}):
-                    handoff(db, row["id"], shop, "Rally test logistics", f"RALLY-{row['id']}-{shop}")
-            elif row["fulfillment_state"] == "AT_HUB" and item["age"] >= 120:
+            if row["fulfillment_state"] == "AT_HUB" and item["age"] >= 120:
                 payments = db.execute("SELECT shop_id FROM order_shop_payments WHERE order_id=%s", (row["id"],)).fetchall()
                 if payments and all((operation(db, f"order:{row['id']}:shop:{p['shop_id']}:payout") or {}).get("status") == "completed" for p in payments):
                     ship(db, row["id"], "Rally test logistics", f"RALLY-{row['id']}")

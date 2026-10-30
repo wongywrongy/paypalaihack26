@@ -43,6 +43,7 @@ for (const route of ['/shop','/ship-to','/ask','/bag','/deal','/paid','/track','
     console.log(`SSR ${route}: ${test ? 'recorded URL query' : 'ordinary URL'} render and copy guard passed`);
   }
 }
+if (import.meta.env?.VITE_RALLY_TEST_HARNESS === '1') {
 for (const Page of [Orders, Products, Settings]) {
   const html = renderToStaticMarkup(<BagProvider><Page data={shopData as ShopSnapshot} /></BagProvider>);
   assert.doesNotMatch(html.replace(/<[^>]*>/g,''), forbidden);
@@ -119,3 +120,5 @@ assert.ok(!dealHtml.includes(`Order ${orderId}`));
 console.log('Short order header and bid/ask/round/award-only live messages passed.');
 
 for (const [n, high] of [[4,2600],[5,5000]]) assert.equal(renderToStaticMarkup(<MarketRange reference={{low_usd_cents:1800,median_usd_cents:2200,high_usd_cents:high,n,as_of:'2026-10-30'}} />), '');
+
+} else { assert.deepEqual(auctionEvents, []); assert.deepEqual(events, []); console.log('Ordinary production mode has no authored auction or exchange events.'); }
