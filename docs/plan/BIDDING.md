@@ -141,6 +141,7 @@ Units in events are shopper-currency minor units (converted at the locked quote 
 - Base URL `https://api-inference.bitdeer.ai` (the adapter appends `/v1/chat/completions`); `Authorization: Bearer`. List model ids with `GET /v1/models`.
 - Shop agents: DeepSeek V4.1 Flash, non-reasoning (fast; reasoning variants take ~9 s to answer). The Bitdeer adapter explicitly sends `reasoning_effort=none` for DeepSeek; omitting it enables reasoning by default. Buyer agent: GLM-5.3 or the same Flash model. Different families for the two sides make "independent agents" literal.
 - Settings: `LLM_MODEL_SHOP`, `LLM_MODEL_BUYER` (both fall back to `LLM_MODEL`), `LLM_RESPONSE_FORMAT=json_schema|json_object` (Bitdeer's docs do not confirm `json_schema`; the adapter must support `json_object` with the schema in the system prompt, and keep validating with pydantic).
+- Verified October 30, 2026: DeepSeek V4.1 Flash supports json_schema and non-reasoning mode; both roles use that discovered model ID. The full connected hero validated 12 calls with zero fallbacks. GLM rejected the non-reasoning request, so the permitted same-Flash buyer fallback is used.
 - First task before any auction work: run `scripts/engine.py --env-file <private>` against Bitdeer and record whether structured output works. Credentials stay in the private env file and Render; never in the repo or chat.
 
 ## Market reference: Channel3 (phase 2, optional at runtime)
@@ -164,7 +165,7 @@ The shops and brands are fictional, so Channel3 never supplies a seller or a pro
 
 ## Benchmark
 
-Add strategy **E: shop bidding** to `sim/benchmark.py`. Report per currency A (listed exact sourcing), D (current exchange), E (auction), and invariants: `charge_above_hold == 0`, `shop_below_authority == 0`, `bundle_split_violations == 0`. Fixture run is committed; the connected run (Bitdeer, no payments, cached by prompt hash) is the evidence for the README and video.
+Add strategy **E: shop bidding** to `sim/benchmark.py`. The connected CLI can use `--auction-only` to call models only for E; C/D then use deterministic selectors and B is skipped, explicitly labeled in the report. Report per currency A (listed exact sourcing), D (current exchange), E (auction), and invariants: `charge_above_hold == 0`, `shop_below_authority == 0`, `bundle_split_violations == 0`. Fixture run is committed; the connected run (Bitdeer, no payments, cached by prompt hash) is the evidence for the README and video.
 
 ## Milestones (submission Nov 12, 12:00 PT)
 
