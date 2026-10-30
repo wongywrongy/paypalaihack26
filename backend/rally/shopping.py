@@ -4,7 +4,7 @@ import asyncio
 import json
 from time import monotonic
 
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 
@@ -51,6 +51,8 @@ def owner(db, request, *, write=False):
     session, raw = sessions.current(db, request)
     if write:
         sessions.check_write(request, raw)
+        if session.get("judge_writer") and not (request.url.path.startswith("/api/shops/haneul/") or request.url.path in ("/api/login", "/api/logout")):
+            raise HTTPException(403, "This account can only manage Haneul listings, goals and parcel handoffs.")
     return session
 
 
@@ -76,7 +78,7 @@ def logout(request: Request, response: Response):
         import secrets
 
         raw = secrets.token_urlsafe(32)
-        db.execute("UPDATE shopper_sessions SET token_hash=%s,role=NULL,shop_id=NULL,read_only=false WHERE id=%s", (sessions.digest(raw), row["id"]))
+        db.execute("UPDATE shopper_sessions SET token_hash=%s,role=NULL,shop_id=NULL,read_only=false,judge_writer=false WHERE id=%s", (sessions.digest(raw), row["id"]))
         sessions.set_cookie(response, raw)
         return {"csrf_token": sessions.csrf(raw), "paypal_client_id": settings.paypal_client_id}
 

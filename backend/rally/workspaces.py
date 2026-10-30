@@ -5,6 +5,7 @@ from psycopg.types.json import Jsonb
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt
 
 from . import fulfillment, orders, sessions, store
+from .catalog import Catalog
 from .db import connect
 from .shopping import owner
 
@@ -31,6 +32,11 @@ class Policy(BaseModel):
 def shop_owner(db, request, shop_id, *, write=False):
     row = owner(db, request, write=write)
     sessions.scoped(row, "shop", shop_id, write=write)
+    if write:
+        limit = db.execute("INSERT INTO shop_write_limits(session_id,attempts) VALUES(%s,1) ON CONFLICT(session_id) DO UPDATE SET attempts=CASE WHEN shop_write_limits.window_at<now()-interval '10 minutes' THEN 1 ELSE shop_write_limits.attempts+1 END,window_at=CASE WHEN shop_write_limits.window_at<now()-interval '10 minutes' THEN now() ELSE shop_write_limits.window_at END RETURNING attempts", (row["id"],)).fetchone()
+        db.commit()
+        if limit["attempts"] > 30:
+            raise HTTPException(429, "You have saved 30 changes. Please wait ten minutes before saving again.")
     return row
 
 
@@ -39,7 +45,7 @@ def products(shop_id: str, request: Request):
     with connect() as db:
         shop_owner(db, request, shop_id)
         catalog = store.catalog(db)
-        return {"currency": "USD", "products": [{"id": o["product_id"], "offer_id": o["id"], "variant": o["variant"], "listed": o["list_usd"], "lowest": o["floor_usd"], "cost": o["cost_usd"], "stock": o["stock"], "days": o["days_on_shelf"], "goal": "Clear older stock" if o["days_on_shelf"] >= 90 else "Sell within permitted prices"} for o in catalog.offers.values() if o["shop_id"] == shop_id]}
+        return {"currency": "USD", "products": [{"id": o["product_id"], "offer_id": o["id"], "variant": o["variant"], "listed": o["list_usd"], "lowest": o["floor_usd"], "cost": o["cost_usd"], "stock": o["stock"], "version": o["version"], "days": o["days_on_shelf"], "goal": "Clear older stock" if o["days_on_shelf"] >= 90 else "Sell within permitted prices"} for o in sorted(catalog.offers.values(), key=lambda o: o["id"]) if o["shop_id"] == shop_id], "changes": recent_changes(db, shop_id)}
 
 
 @router.get("/shops/{shop_id}/orders")
@@ -138,3 +144,60 @@ def resume_job(job_id: int, request: Request):
         if not changed:
             raise HTTPException(409, "This job is not awaiting recovery.")
     return {"queued": True}
+
+
+class ListingEdit(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    list_usd: StrictInt = Field(gt=0)
+    floor_usd: StrictInt = Field(ge=0)
+    stock: StrictInt = Field(ge=0, le=500)
+    version: StrictInt = Field(ge=1)
+
+
+def recent_changes(db, shop_id):
+    return db.execute("SELECT id,offer_id,action,before,after,created_at FROM listing_changes WHERE shop_id=%s ORDER BY id DESC LIMIT 20", (shop_id,)).fetchall()
+
+
+def audit(db, session, shop, offer, action, before, after):
+    db.execute("INSERT INTO listing_changes(shop_id,offer_id,session_id,action,before,after) VALUES(%s,%s,%s,%s,%s,%s)", (shop, offer, session["id"], action, Jsonb(before), Jsonb(after)))
+
+
+@router.patch("/shops/{shop_id}/products/{offer_id:path}")
+def edit_product(shop_id: str, offer_id: str, body: ListingEdit, request: Request):
+    with connect() as db:
+        session = shop_owner(db, request, shop_id, write=True)
+        store.catalog(db)
+        row = db.execute("SELECT * FROM catalog_offers WHERE id=%s AND shop_id=%s FOR UPDATE", (offer_id, shop_id)).fetchone()
+        if not row:
+            raise HTTPException(404, "Product is not in your shop.")
+        if row["version"] != body.version:
+            raise HTTPException(409, "This listing changed. Reload products before editing again.")
+        seeded = Catalog().offers[offer_id]["list_usd"]
+        if not seeded * 50 <= body.list_usd * 100 <= seeded * 150:
+            raise HTTPException(422, "Listed price must stay within 50–150% of its launch price.")
+        if not row["cost_usd"] <= body.floor_usd <= body.list_usd:
+            raise HTTPException(422, "Lowest price must be at least your cost and no higher than listed price.")
+        before = {k: row[k] for k in ("list_usd", "floor_usd", "stock", "version")}
+        after = {**body.model_dump(), "version": body.version + 1}
+        db.execute("UPDATE catalog_offers SET list_usd=%s,floor_usd=%s,stock=%s,version=version+1 WHERE id=%s", (body.list_usd, body.floor_usd, body.stock, offer_id))
+        audit(db, session, shop_id, offer_id, "listing", before, after)
+        return after
+
+
+@router.post("/shops/{shop_id}/reset")
+def reset_shop(shop_id: str, request: Request):
+    with connect() as db:
+        session = shop_owner(db, request, shop_id, write=True)
+        launch = Catalog()
+        store.catalog(db)
+        for row in db.execute("SELECT * FROM catalog_offers WHERE shop_id=%s ORDER BY id FOR UPDATE", (shop_id,)).fetchall():
+            value = launch.offers[row["id"]]
+            reserved = db.execute("SELECT count(*) AS n FROM order_reservations WHERE offer_id=%s AND state='reserved'", (row["id"],)).fetchone()["n"]
+            after = {k: value[k] for k in ("list_usd", "floor_usd", "stock")}
+            after["stock"] = max(0, after["stock"] - reserved)
+            db.execute("UPDATE catalog_offers SET list_usd=%s,floor_usd=%s,stock=%s,version=version+1 WHERE id=%s", (*after.values(), row["id"]))
+            audit(db, session, shop_id, row["id"], "reset", {k: row[k] for k in after}, after)
+        before = store.catalog(db).policies[shop_id]
+        db.execute("UPDATE shop_policies SET policy=%s,goal_draft=NULL WHERE shop_id=%s", (Jsonb(launch.policies[shop_id]), shop_id))
+        audit(db, session, shop_id, None, "reset goals", before, launch.policies[shop_id])
+        return {"reset": True}

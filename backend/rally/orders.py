@@ -40,7 +40,7 @@ def rules_checked(rules):
 def terms(items, country, rules, catalog):
     result = source(items, country, catalog)
     currency = result["breakdown"]["currency"]
-    return {"country": country, "currency": currency, "items": items, "rules": rules_checked(rules), "lines": [asdict(line) for line in result["lines"]], "breakdown": result["breakdown"], "rate": RATES[currency], "fx_as_of": AS_OF, "merchant": "Rally sandbox business", "merchant_id": settings.paypal_merchant_id, "route": "Korean shops → Seoul hub → shopper", "cost_certainty": "complete simulated schedule; Rally absorbs any overrun", "quote_version": 3, "deal_mode": settings.deal_mode, "inventory_reservation": None}
+    return {"country": country, "currency": currency, "items": items, "rules": rules_checked(rules), "lines": [asdict(line) for line in result["lines"]], "breakdown": result["breakdown"], "rate": RATES[currency], "fx_as_of": AS_OF, "merchant": "Rally sandbox business", "merchant_id": settings.paypal_merchant_id, "route": "Korean shops → Seoul hub → shopper", "cost_certainty": "complete simulated schedule; Rally absorbs any overrun", "quote_version": 3, "deal_mode": settings.deal_mode, "inventory_reservation": None, "authority": {"offers": {k: v for k, v in catalog.offers.items() if v["product_id"] in items}, "policies": catalog.policies}}
 
 
 def quote_public(row, catalog):
@@ -91,10 +91,10 @@ def _reserve(db, order_id, wanted):
     current = {r["offer_id"]: r["qty"] for r in db.execute("SELECT * FROM order_reservations WHERE order_id=%s AND state='reserved'", (order_id,)).fetchall()}
     for offer_id in sorted(set(desired) | set(current)):
         difference = desired.get(offer_id, 0) - current.get(offer_id, 0)
-        if difference > 0 and not db.execute("UPDATE catalog_offers SET stock=stock-%s WHERE id=%s AND stock>=%s RETURNING id", (difference, offer_id, difference)).fetchone():
+        if difference > 0 and not db.execute("UPDATE catalog_offers SET stock=stock-%s,version=version+1 WHERE id=%s AND stock>=%s RETURNING id", (difference, offer_id, difference)).fetchone():
             raise ValueError("An item sold out. Refresh the bag before checkout.")
         if difference < 0:
-            db.execute("UPDATE catalog_offers SET stock=stock-%s WHERE id=%s", (difference, offer_id))
+            db.execute("UPDATE catalog_offers SET stock=stock-%s,version=version+1 WHERE id=%s", (difference, offer_id))
         if offer_id in desired:
             db.execute("INSERT INTO order_reservations(order_id,offer_id,qty) VALUES(%s,%s,%s) ON CONFLICT(order_id,offer_id) DO UPDATE SET qty=EXCLUDED.qty,state='reserved'", (order_id, offer_id, desired[offer_id]))
         else:
@@ -104,7 +104,7 @@ def _reserve(db, order_id, wanted):
 def release(db, order_id, *, funded=False):
     states = ["reserved", "consumed"] if funded else ["reserved"]
     for row in db.execute("UPDATE order_reservations SET state='released' WHERE order_id=%s AND state=ANY(%s) RETURNING offer_id,qty", (order_id, states)).fetchall():
-        db.execute("UPDATE catalog_offers SET stock=stock+%s WHERE id=%s", (row["qty"], row["offer_id"]))
+        db.execute("UPDATE catalog_offers SET stock=stock+%s,version=version+1 WHERE id=%s", (row["qty"], row["offer_id"]))
 
 
 def checkout(db, session_id, bag_id, quote_id):
@@ -223,6 +223,10 @@ def run_negotiation(order_id):
             return
         t = row["checkout_terms"]
         catalog = store.catalog(db, order_id)
+        if "authority" in t:
+            for offer_id, frozen in t["authority"]["offers"].items():
+                catalog.offers[offer_id] = {**frozen, "stock": catalog.offers[offer_id]["stock"]}
+            catalog.policies = t["authority"]["policies"]
         interrupted = db.execute("SELECT data FROM deal_events WHERE order_id=%s ORDER BY seq LIMIT 1", (order_id,)).fetchone()
         db.execute("UPDATE orders SET state='NEGOTIATING',payment_state='NEGOTIATING',updated_at=now() WHERE id=%s", (order_id,))
     lines = tuple(Line(**line) for line in t["lines"])

@@ -92,7 +92,7 @@ class DatabaseContracts(unittest.TestCase):
                 db.execute("SELECT count(*) AS n FROM schema_migrations").fetchone()[
                     "n"
                 ],
-                3,
+                4,
             )
             with self.assertRaises(psycopg.errors.CheckViolation):
                 db.execute(
@@ -201,7 +201,7 @@ class DatabaseContracts(unittest.TestCase):
                     db.execute(
                         "SELECT count(*) AS n FROM schema_migrations"
                     ).fetchone()["n"],
-                    3,
+                    4,
                 )
                 self.assertEqual(
                     db.execute(
