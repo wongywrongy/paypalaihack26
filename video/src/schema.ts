@@ -27,13 +27,17 @@ export const RunSchema = z.object({
 
 const base = { seq: z.number().int(), t: z.number().nonnegative(), note: z.string().optional(), total: minor.optional(), chosen_by: z.enum(['CODE', 'LLM', 'FIXTURE']).optional() };
 const perk = z.enum(['older', 'kit', 'bundle', 'freeship']);
+const count = z.number().int().nonnegative();
+export const AGENT_COUNTS = z.object({ written: count, options: count, rejected: count, code: count, changed: count });
 const event = z.discriminatedUnion('kind', [
   z.object({ ...base, kind: z.literal('start'), v: z.literal(3), items: z.array(z.string()).min(1), shops: z.record(z.string(), z.array(shop)), listed: z.record(z.string(), z.record(z.string(), minor)) }),
   z.object({ ...base, kind: z.literal('ask'), round: z.number().int(), shop: shop.nullable(), items: z.array(z.string()) }),
-  z.object({ ...base, kind: z.literal('bid'), round: z.number().int(), shop, items: z.record(z.string(), minor), bundle: z.object({ items: z.array(z.string()), price: minor }).nullable(), perks: z.record(z.string(), z.array(perk)) }),
+  z.object({ ...base, kind: z.literal('bid'), round: z.number().int(), shop, items: z.record(z.string(), minor), bundle: z.object({ items: z.array(z.string()), price: minor }).nullable(), perks: z.record(z.string(), z.array(perk)), authored: z.enum(['agent', 'option', 'code']) }),
+  // The agent's own bid failed a check. Its terms are never saved; the shop's best valid bid follows.
+  z.object({ ...base, kind: z.literal('rejected'), round: z.number().int(), shop, reason: z.enum(['limit', 'raise', 'rules', 'invalid']) }),
   z.object({ ...base, kind: z.literal('pass'), round: z.number().int(), shop, items: z.array(z.string()) }),
   z.object({ ...base, kind: z.literal('round'), round: z.number().int(), leaders: z.unknown() }),
-  z.object({ ...base, kind: z.literal('award'), winners: z.record(z.string(), z.object({ shop, unit: minor })), extras: z.array(z.string()), domestic: z.unknown() }),
+  z.object({ ...base, kind: z.literal('award'), winners: z.record(z.string(), z.object({ shop, unit: minor })), extras: z.array(z.string()), domestic: z.unknown(), agents: AGENT_COUNTS }),
   z.object({ ...base, kind: z.literal('error'), shop: shop.optional() }),
   z.object({ ...base, kind: z.literal('done') }),
 ]);
@@ -85,6 +89,8 @@ export function finalCheck(run: Run, order: Order) {
   const bids = order.events.filter(row => row.kind === 'bid');
   if (order.events.some(row => row.chosen_by === 'FIXTURE')) throw new Error('order.json comes from a fixture run. Record a genuine hosted run.');
   if (!bids.some(row => row.chosen_by === 'LLM')) throw new Error('No bid in order.json was chosen by a model, so the narration would be false.');
+  const award = order.events.find(row => row.kind === 'award');
+  if (award?.kind === 'award' && award.agents.written === 0) throw new Error('No shop agent wrote its own bid in this order. The video tells that story, so record a run where one did.');
   if (order.payment_state !== 'CHARGED') throw new Error(`Order payment_state is ${order.payment_state}, not CHARGED.`);
   if (run.payout_status !== 'completed') throw new Error(`payout_status is ${run.payout_status}, not completed. Clip 08 must reach Paid.`);
 }
@@ -92,7 +98,9 @@ export function finalCheck(run: Run, order: Order) {
 export function buildFacts(run: Run, order: Order, names: Record<string, string>) {
   const cash = (value: number) => money(value, run.currency);
   const start = order.events.find(row => row.kind === 'start');
-  const items = start?.kind === 'start' ? start.items : [];
+  const award = order.events.find(row => row.kind === 'award');
+  if (!start || start.kind !== 'start' || !award || award.kind !== 'award') throw new Error('order.json needs a start and an award event.');
+  const items = start.items;
   const won = (id: string) => Object.values(run.winners).filter(row => row.shop === id).length;
   const payoutShop = SHOP_NAMES[run.payout_shop];
   const count = Object.keys(run.winners).length;
@@ -100,6 +108,10 @@ export function buildFacts(run: Run, order: Order, names: Record<string, string>
   const rounds = Math.max(0, ...order.events.map(row => row.kind === 'round' ? row.round : 0));
   const boxShops = new Set(Object.values(run.winners).map(row => row.shop)).size;
   const released = run.held_minor - run.charged_minor;
+  const { written, options, code, rejected } = award.agents;
+  const bids = written + options + code;
+  const rejections = order.events.filter(row => row.kind === 'rejected').length;
+  if (rejections !== rejected) throw new Error(`order.json has ${rejections} rejected events but the award counts ${rejected}.`);
   const box = `One box from ${boxShops} ${boxShops === 1 ? 'shop' : 'shops'}, duties included.`;
   return {
     held: cash(run.held_minor),
@@ -110,13 +122,20 @@ export function buildFacts(run: Run, order: Order, names: Record<string, string>
     rounds: String(rounds),
     shop_count: String(shops.size),
     item_count: `${items.length} ${items.length === 1 ? 'product' : 'products'}`,
+    box_shops: String(boxShops),
+    check_line: rejected
+      ? "When an agent goes too far, Rally's checks reject it and send the shop's best valid bid instead."
+      : "Every bid passes Rally's checks before it counts.",
+    agent_line: `Shop agents wrote ${written} of ${bids} ${bids === 1 ? 'bid' : 'bids'}${rejected ? ` · Rally's checks rejected ${rejected}` : ''}.`,
     result_line: released
-      ? `Lowest complete delivered total wins: ${cash(run.charged_minor)}.`
+      ? `The best total for the whole bag wins: ${cash(run.charged_minor)}.`
       : `No bid beat the checkout total, so ${cash(run.held_minor)} stands.`,
-    capture_line: released ? `Rally captures ${cash(run.charged_minor)}, less than the hold.` : `Rally captures ${cash(run.charged_minor)}, exactly the hold.`,
-    receipt_line: released ? `${box} Your bank releases the rest.` : box,
+    capture_line: released
+      ? `PayPal charges ${cash(run.charged_minor)}, less than the hold. The rest goes back.`
+      : `PayPal charges ${cash(run.charged_minor)}, exactly the hold.`,
+    receipt_line: `${box} Nothing is due at the door.`,
     shop_result: won('haneul')
-      ? `${payoutShop} won ${won(run.payout_shop)} of ${count} items and presses Record hand-off.`
-      : `Haneul Beauty was outbid. ${payoutShop} won ${won(run.payout_shop)} of ${count} items and presses Record hand-off.`,
+      ? `${payoutShop} won ${won(run.payout_shop)} of ${count} items and records the hand-off.`
+      : `Haneul Beauty was outbid. ${payoutShop} won ${won(run.payout_shop)} of ${count} items and records the hand-off.`,
   };
 }
