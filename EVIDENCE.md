@@ -306,3 +306,8 @@ B2 gates passed before changing the default. New quotes default to auction; expl
 - Shop models now write full bids (ShopMove schema) instead of choosing an index; code validates each against private floors, standing prices and applied goal rules, emits a public `rejected` event with a category, and falls back to its best valid bid. Bid events carry `authored` (agent/option/code); results and the award event carry agent counts.
 - Disposable-Postgres discovery: **127 passed** (new: valid written bid, below-limit rejection without numbers, raised price, applied goal rules, option pass-through, ambiguous move, prompt privacy). Ruff, frontend build and render checks passed. **168/168 browser cases, 2 workers.**
 - Not verified: hosted Bitdeer latency and schema acceptance for the larger ShopMove output (call timeout 5 s, 450 output tokens). Run `scripts/engine.py --env-file .env` and the connected auction benchmark before the hosted run. No provider, Render or PayPal calls were made.
+
+### Hosted video run · November 5, 2026 · Render + PayPal sandbox
+
+- After PR #6 deployed, recorded the submission video's run on https://paypalaihack26.onrender.com as Haneul Beauty. Order **RL-2555E** (`2555e0d5-4476-43ce-b3fd-f4c27f30255d`), US, cleanser + cream, bundles on: PayPal held **$61.25**, captured **$54.97**; Haneul won 2 of 2 items. Award agents: written 1, options 4, code 1, rejected 1 (Bada, `invalid`). Haneul hand-off recorded; USD payout **$28.72 completed**.
+- Earlier the same evening, RL-77FF9 (charged, written 0, Haneul outbid) was not used: the video's render gate needs an agent-written bid. Haneul's Cica Barrier Cream lowest price is now $13.20 and its applied goal allows up to 20% off a round.

@@ -58,10 +58,10 @@ export const SCENES: Scene[] = [
   {
     id: 'shopper', criterion: 'design, PayPal', start: 18, duration: 20, enter: 'slide',
     shots: [
-      { clip: '04-storefront-bag', at: 0, dur: 12, focus: { at: 5.6, dur: 6.4, rect: { x: 600, y: 470, width: 460, height: 110 } } },
-      { clip: '05-paypal-hold', at: 12, dur: 8, focus: { at: 0.8, dur: 7.2, rect: { x: 520, y: 220, width: 400, height: 120 } } },
+      { clip: '04-storefront-bag', at: 0, dur: 12, focus: { at: 7.6, dur: 4.4, rect: { x: 490, y: 478, width: 460, height: 138 } } },
+      { clip: '05-paypal-hold', at: 12, dur: 8, focus: { at: 0.8, dur: 7.2, rect: { x: 820, y: 4, width: 190, height: 60 } } },
     ],
-    callouts: [{ at: 6.4, dur: 5, text: 'All in: shipping, duties, tax', x: 0.575, y: 0.575, px: 0.2, py: 0.12 }],
+    callouts: [{ at: 6.4, dur: 5, text: 'All in: shipping, duties, tax', x: 0.5, y: 0.608, px: 0.24, py: 0.12 }],
     cues: [
       { at: 0.3, dur: 5.4, text: 'A shopper fills one bag with {item_count} from Korean shops.' },
       { at: 6, dur: 5.6, text: 'One price covers it all: shipping, duties and tax, in their own currency.' },
@@ -92,11 +92,12 @@ export const SCENES: Scene[] = [
     id: 'shop', criterion: 'innovation, design', chapter: 'The shop side', start: 90, duration: 28,
     shots: [
       { clip: '01-home-guide', at: 0, dur: 5 },
-      { clip: '02-products-edit', at: 5, dur: 12 },
-      { clip: '03-agent-goal', at: 17, dur: 11, focus: { at: 4.6, dur: 5.6, rect: { x: 900, y: 250, width: 440, height: 170 } } },
+      { clip: '02-products-edit', at: 5, dur: 9 },
+      { clip: '03-agent-goal', at: 14, dur: 14, focus: { at: 4, dur: 6, rect: { x: 830, y: 260, width: 580, height: 140 } } },
     ],
-    callouts: [{ at: 7.5, dur: 8.5, text: 'Private: no one else sees it', x: 0.592, y: 0.333, px: 0.7, py: 0.09 }],
-    ribbon: { done: [], ticks: [{ step: 1, at: 16 }, { step: 2, at: 27 }] },
+    // Points at the edited cell; its value is blurred, since lowest prices are private.
+    callouts: [{ at: 2.6, dur: 6, text: 'Private: no one else sees it', x: 0.59, y: 0.583, px: 0.62, py: 0.2 }],
+    ribbon: { done: [], ticks: [{ step: 1, at: 13 }, { step: 2, at: 26 }] },
     cues: [
       { at: 0.3, dur: 4.4, text: 'Behind each shop is a person who set two things.' },
       { at: 5, dur: 6, text: 'At Haneul Beauty, a Seoul shop, the owner first sets a private lowest price.' },
@@ -108,7 +109,7 @@ export const SCENES: Scene[] = [
   {
     id: 'payout', criterion: 'PayPal, impact', chapter: 'Hand off and get paid', start: 118, duration: 14, enter: 'slide',
     shots: [
-      { clip: '08-handoff-payout', at: 0, dur: 10, focus: { at: 5, dur: 5, rect: { x: 980, y: 280, width: 440, height: 110 } } },
+      { clip: '08-handoff-payout', at: 0, dur: 10, focus: { at: 5, dur: 5, rect: { x: 1055, y: 265, width: 320, height: 262 } } },
       { clip: '09-home-done', at: 10, dur: 4 },
     ],
     ribbon: { done: [1, 2], ticks: [{ step: 3, at: 0.6 }, { step: 4, at: 5.4 }, { step: 5, at: 10.4 }] },
