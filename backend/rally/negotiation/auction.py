@@ -25,8 +25,10 @@ SHOP_ROLE = ("You are the bidding agent for a fictional Korean skincare shop in 
              "and offers you pass on. A price may only stay level or go lower than your standing price. Lower prices win more of the bag but "
              "earn your shop less; follow your shop's goals and auction history. Code checks every bid against your shop's private limits and rules, "
              "which you cannot see, and replaces a rejected bid with its own best valid bid. To submit a reference option unchanged, set option to "
-             "its index and leave the other terms empty. You cannot accept a deal or move money.")
-BUYER_ROLE = "You represent the shopper. Pick only candidate indexes and write one short public line. You cannot accept or move money."
+             "its index and leave the other terms empty. You cannot accept a deal or move money. "
+             "The note is one short sentence a shopper reads on screen: name shops by their names from shop_names, write money as dollars like $12.40 (never raw cent figures), and avoid internal words such as goal, policy, option, leader or utility. ")
+BUYER_ROLE = ("You represent the shopper. Pick only candidate indexes and write one short public line. You cannot accept or move money. "
+              "The note is one short sentence a shopper reads on screen: name shops by their names from shop_names, write money as dollars like $12.40 (never raw cent figures), and avoid internal words such as goal, policy, option, leader or utility. ")
 REASONS = {"limit": "went below what {shop} can accept", "raise": "raised a price {shop} had already offered",
            "rules": "broke a rule {shop} set for its agent", "invalid": "named terms {shop} cannot offer"}
 
@@ -103,6 +105,8 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
         same = next((o for o in options if o.model_dump(exclude={"note"}) == bid.model_dump(exclude={"note"})), None)
         return bid, "option" if same else "agent"
 
+    names = {sid: catalog.shops[sid]["name"] for sid in catalog.shops}
+
     def public_leaders():
         return {catalog.offers[line.offer_id]["product_id"]: {"shop": catalog.offers[line.offer_id]["shop_id"], "unit": line.unit_usd_cents} for line in best["lines"]}
 
@@ -130,7 +134,7 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
             note = buyer.round_note(round_no, best["breakdown"]["total"], currency)
             if asks:
                 try:
-                    future, timeout = submit(AskChoice, "buyer", {"round": round_no, "market": {pid: value for pid in product_ids if (value := reference(pid))}, "leaders": public_leaders(), "options": [a.model_dump() for a in asks]})
+                    future, timeout = submit(AskChoice, "buyer", {"round": round_no, "shop_names": names, "market": {pid: value for pid in product_ids if (value := reference(pid))}, "leaders": public_leaders(), "options": [a.model_dump() for a in asks]})
                     choice = resolve(future, AskChoice, timeout)
                     if len(set(choice.indexes)) != len(choice.indexes) or any(i < 0 or i >= len(asks) for i in choice.indexes):
                         raise ValueError("Unknown ask.")
@@ -156,7 +160,7 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
                 if not options:
                     event("error", "This shop has no valid bid.", shop=shop, round=round_no)
                     continue
-                payload = {"shop": catalog.shops[shop]["name"], "your_offers": bids.prompt_offers(shop, offers, current.get(shop)),
+                payload = {"shop": catalog.shops[shop]["name"], "shop_names": names, "your_offers": bids.prompt_offers(shop, offers, current.get(shop)),
                            "can_offer": {"bundle": rules["bundles_ok"], "free_domestic_shipping": bool(catalog.policies[shop]["free_domestic"]),
                                          "sample_kit": shop == "dalbit" and bool(catalog.policies[shop]["sample_kit"])}, "goals": catalog.policies[shop].get("summary", "Bid within your permitted strategy."), "memory": getattr(catalog, "memories", {}).get(shop, "No auction history supplied."), "round": round_no,
                            "market": {pid: value for pid in product_ids if (value := reference(pid))}, "leaders": public_leaders(), "asks": [a.model_dump() for a in selected],

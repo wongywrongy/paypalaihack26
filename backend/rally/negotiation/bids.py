@@ -75,7 +75,7 @@ def candidates(shop_id, round_no, eligible_offers, previous, leaders, asks, cata
             offer = catalog.offers[item.offer_id]
             ceiling = next((i.unit_usd_cents for i in previous.items if i.offer_id == item.offer_id), offer["list_usd"]) if previous else offer["list_usd"]
             items.append(BidItem(offer_id=item.offer_id, unit_usd_cents=min(ceiling, item.unit_usd_cents + concession)))
-        base = Bid(shop_id=shop_id, round=round_no, items=items, note="Our available item prices.")
+        base = Bid(shop_id=shop_id, round=round_no, items=items, note="Holding our best prices this round.")
         variants.append(base)
         pairs = [pair for pair in combinations(items, 2) if any(catalog.offers[i.offer_id]["product_id"] in runner_up for i in pair)]
         if rules["bundles_ok"] and pairs and (not strategy or strategy["bundles"] != "off"):
