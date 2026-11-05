@@ -53,6 +53,9 @@ def run(seed=20261023, count=500, *, connected=False, auction_only=False):
         report["e_model_calls"] += e["model_calls"]
         report["e_model_failures"] += e["model_failures"]
         report["e_model_choices"] += sum(event["chosen_by"] == "LLM" for event in e["events"])
+        for key, value in e.get("agents", {}).items():
+            report.setdefault("e_agent_bids", {}).setdefault(key, 0)
+            report["e_agent_bids"][key] += value
         report["auction_beats_checkout"] += e["breakdown"]["total"] < a["total"]
         report["charge_above_hold"] += e["breakdown"]["total"] > a["total"]
         report["shop_below_authority"] += sum(line.unit_usd_cents < catalog.offers[line.offer_id]["floor_usd"] for line in e["lines"])

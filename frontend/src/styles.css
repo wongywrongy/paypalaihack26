@@ -733,3 +733,13 @@ thead th { font-weight: 500; color: var(--muted); font-size: .8rem }
 .narrow-only { display: none }
 @media (max-width: 860px) { .shop-sidebar .wordmark small { white-space: nowrap } .wide-only { display: none } .narrow-only { display: inline } }
 @media (prefers-reduced-motion: reduce) { .spinner, .timeline li.current::before { animation: none } }
+
+/* Who wrote a bid: the shop's agent, or code after rejecting the agent's bid. */
+.feed-tag { display: inline-block; margin-left: 8px; border-radius: 999px; padding: 1px 7px; font-size: .7rem; font-weight: 600; letter-spacing: 0; text-transform: none; vertical-align: 1px }
+.feed-tag.agent { color: var(--ink); background: var(--butter) }
+.feed-tag.rejected { color: var(--accent-hover); background: var(--surface); box-shadow: inset 0 0 0 1px var(--accent) }
+.agent-summary { margin: 6px 0 0 }
+.agent-summary strong { font-variant-numeric: tabular-nums }
+@media (prefers-reduced-motion: no-preference) {
+  .feed-tag.rejected { animation: rally-slide 360ms var(--ease-out) both }
+}

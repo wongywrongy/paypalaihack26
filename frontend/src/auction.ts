@@ -4,13 +4,16 @@
 
 export type AuctionShop = 'haneul' | 'bada' | 'dalbit';
 export type Perk = 'older' | 'kit' | 'bundle' | 'freeship';
+export type Authored = 'agent' | 'option' | 'code';
+export type RejectReason = 'limit' | 'raise' | 'rules' | 'invalid';
 
 export type AuctionEvent = {
   id: string; seq: number; t: number; actor?: 'rally' | 'shop'; note?: string; total?: number; chosen_by?: 'CODE' | 'LLM' | 'FIXTURE';
 } & (
   | { kind: 'start'; v: 3; items: string[]; shops: Record<string, AuctionShop[]>; listed: Record<string, Partial<Record<AuctionShop, number>>> }
   | { kind: 'ask'; actor: 'rally'; round: number; shop: AuctionShop | null; items: string[] }
-  | { kind: 'bid'; actor: 'shop'; round: number; shop: AuctionShop; items: Record<string, number>; bundle: { items: string[]; price: number } | null; perks: Record<string, Perk[]> }
+  | { kind: 'bid'; actor: 'shop'; round: number; shop: AuctionShop; items: Record<string, number>; bundle: { items: string[]; price: number } | null; perks: Record<string, Perk[]>; authored?: Authored }
+  | { kind: 'rejected'; round: number; shop: AuctionShop; reason: RejectReason }
   | { kind: 'pass'; actor: 'shop'; round: number; shop: AuctionShop; items: string[] }
   | { kind: 'round'; actor: 'rally'; round: number; leaders: Record<string, AuctionShop> }
   | { kind: 'award'; actor: 'rally'; winners: Record<string, { shop: AuctionShop; unit: number; variant: 'older' | null; bundle?: boolean }>; extras: string[]; domestic: Partial<Record<AuctionShop, number>> }
@@ -20,10 +23,11 @@ export type AuctionEvent = {
 
 export type Lane = { shop: AuctionShop; price: number | null; passed: boolean; perks: Perk[]; bidAt: number; leading: boolean; won: boolean; lost: boolean };
 export type ItemState = { id: string; bestListed: number; lanes: Lane[]; winner: AuctionShop | null };
-export type FeedLine = { t: number; who: 'rally' | AuctionShop; text: string };
+export type FeedLine = { t: number; who: 'rally' | AuctionShop; text: string; tag?: 'agent' | 'rejected' };
+export type AgentCounts = { written: number; options: number; rejected: number; code: number };
 export type AuctionState = {
   started: boolean; round: number; elapsed: number; maximum: number; total: number; done: boolean; awarded: boolean;
-  items: Record<string, ItemState>; feed: FeedLine[]; applied: string[];
+  items: Record<string, ItemState>; feed: FeedLine[]; applied: string[]; agents: AgentCounts;
 };
 
 export function isAuction(events: { kind: string; v?: number }[]): boolean {
@@ -31,7 +35,7 @@ export function isAuction(events: { kind: string; v?: number }[]): boolean {
 }
 
 export function initialAuction(maximum: number): AuctionState {
-  return { started: false, round: 0, elapsed: 0, maximum, total: maximum, done: false, awarded: false, items: {}, feed: [], applied: [] };
+  return { started: false, round: 0, elapsed: 0, maximum, total: maximum, done: false, awarded: false, items: {}, feed: [], applied: [], agents: { written: 0, options: 0, rejected: 0, code: 0 } };
 }
 
 // Contract: idempotent by event id; throws if an event total exceeds `maximum` (the PayPal hold);
@@ -43,7 +47,8 @@ export function applyAuctionEvent(previous: AuctionState, event: AuctionEvent): 
   next.applied.push(event.id); next.elapsed = event.t;
   if (event.total !== undefined) next.total = event.total;
   if ('round' in event) next.round = event.round;
-  if (event.note && ['bid', 'ask', 'round', 'award'].includes(event.kind)) next.feed.push({ t: event.t, who: 'shop' in event && event.shop ? event.shop : 'rally', text: event.note });
+  if (event.note && ['bid', 'ask', 'round', 'award', 'rejected'].includes(event.kind)) next.feed.push({ t: event.t, who: 'shop' in event && event.shop ? event.shop : 'rally', text: event.note, ...(event.kind === 'rejected' ? { tag: 'rejected' as const } : event.kind === 'bid' && event.authored === 'agent' ? { tag: 'agent' as const } : {}) });
+  next.agents ??= { written: 0, options: 0, rejected: 0, code: 0 };
   if (event.kind === 'start') {
     if (previous.started) throw new Error('Bidding already started');
     next.started = true;
@@ -60,6 +65,10 @@ export function applyAuctionEvent(previous: AuctionState, event: AuctionEvent): 
       lane.price = price; lane.passed = false; lane.bidAt = event.seq;
       lane.perks = [...new Set([...lane.perks, ...(event.perks[id] || [])])];
     }
+    if (event.authored) next.agents[event.authored === 'agent' ? 'written' : event.authored === 'option' ? 'options' : 'code'] += 1;
+  } else if (event.kind === 'rejected') {
+    if (!next.items || !Object.values(next.items).some(item => item.lanes.some(lane => lane.shop === event.shop))) throw new Error('Unknown shop');
+    next.agents.rejected += 1;
   } else if (event.kind === 'pass') {
     for (const id of event.items) {
       const lane = next.items[id]?.lanes.find(lane => lane.shop === event.shop);

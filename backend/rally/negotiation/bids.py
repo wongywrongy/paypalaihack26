@@ -154,3 +154,60 @@ def utility(bid, catalog, *, won_offer_ids):
     policy = catalog.policies[bid.shop_id]
     aged = sum(min(300, catalog.offers[o]["days_on_shelf"]) for o in won_offer_ids if catalog.offers[o]["variant"] == "older")
     return sum(line.unit_usd_cents - catalog.offers[line.offer_id]["floor_usd"] for line in lines) + (0 if bid.free_domestic else shipping(lines, catalog)) - policy["pickup_cost"] - len(bid.extras) * policy["sample_cost"] + aged
+
+
+class Rejected(ValueError):
+    """A model-written bid code refused. `reason` is a public category, never a number."""
+
+    def __init__(self, reason):
+        super().__init__(reason)
+        self.reason = reason
+
+
+REJECTION_REASONS = ("limit", "raise", "rules", "invalid")
+
+
+def prompt_offers(shop_id, eligible_offers, previous):
+    """Public terms a shop model may price: offer ids, listed and standing prices only."""
+    standing = {i.offer_id: i.unit_usd_cents for i in previous.items} if previous else {}
+    rows = []
+    for pid, offers in eligible_offers.items():
+        if len({o["shop_id"] for o in offers}) == 1:
+            continue
+        for o in offers:
+            if o["shop_id"] == shop_id and o["stock"] > 0:
+                rows.append({"offer_id": o["id"], "product_id": pid, "packaging": o["variant"],
+                             "listed_usd_cents": o["list_usd"], "your_standing_usd_cents": standing.get(o["id"], o["list_usd"])})
+    return rows
+
+
+def authorize(bid, previous, eligible_offers, catalog, rules, *, current, start, destination):
+    """Check a model-written bid against private limits and the shop's applied rules.
+
+    Raises Rejected with a public category. Private numbers never leave this function.
+    """
+    policy = catalog.policies.get(bid.shop_id, {})
+    strategy = policy.get("strategy") if policy.get("applied_at") else None
+    old = {i.offer_id: i.unit_usd_cents for i in previous.items} if previous else {}
+    for item in bid.items:
+        o = catalog.offers.get(item.offer_id)
+        if not o or o["shop_id"] != bid.shop_id:
+            raise Rejected("invalid")
+        if item.unit_usd_cents > min(o["list_usd"], old.get(item.offer_id, o["list_usd"])):
+            raise Rejected("raise")
+        if item.unit_usd_cents < o["floor_usd"]:
+            raise Rejected("limit")
+        if strategy and (item.unit_usd_cents < o["floor_usd"] + strategy["min_margin_over_floor_cents"]
+                         or item.unit_usd_cents < basis(o["list_usd"], 10000 - strategy["max_round_discount_bp"] * bid.round // 3)):
+            raise Rejected("rules")
+    if strategy and ((bid.bundle and strategy["bundles"] == "off") or (bid.free_domestic and strategy["free_domestic"] == "never")
+                     or (bid.items and not bid.free_domestic and strategy["free_domestic"] == "always") or (bid.extras and not strategy["kit"])):
+        raise Rejected("rules")
+    try:
+        validate(bid, previous, eligible_offers, catalog, rules)
+    except ValueError as exc:
+        raise Rejected("invalid") from exc
+    _, _, score = assessment(bid, previous, current, start, destination, catalog, rules)
+    if score is None or score < policy.get("utility_threshold", 0):
+        raise Rejected("limit")
+    return bid
