@@ -35,8 +35,8 @@ class Choice(BaseModel):
     note: str = Field(min_length=1, max_length=240)
 
 
-# --- v3 shop bidding (docs/plan/BIDDING.md). Code builds and validates these;
-# models only choose a candidate index and write the note.
+# --- v3 shop bidding (docs/plan/BIDDING.md). Shop models write a bid (ShopMove) or
+# pick one of code's reference bids; code validates every term and owns the award.
 
 
 class BidItem(BaseModel):
@@ -81,4 +81,21 @@ class AskChoice(BaseModel):
 
     model_config = ConfigDict(extra="forbid", strict=True)
     indexes: list[StrictInt] = Field(max_length=3)
+    note: str = Field(min_length=1, max_length=240)
+
+
+class ShopMove(BaseModel):
+    """Shop model output: write a bid, or submit one of code's reference bids unchanged.
+
+    Every field is required so strict structured-output providers accept the schema.
+    Code still validates the result against private limits the model never sees.
+    """
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+    option: StrictInt | None = Field(ge=0, le=2)
+    items: list[BidItem] = Field(max_length=9)
+    bundle: Bundle | None
+    free_domestic: bool
+    sample_kit: bool
+    pass_offers: list[str] = Field(max_length=9)
     note: str = Field(min_length=1, max_length=240)

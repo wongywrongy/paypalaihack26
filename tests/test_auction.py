@@ -321,3 +321,117 @@ class BuyerNotes(unittest.TestCase):
         for currency in ("USD", "CAD", "GBP", "EUR", "AUD"):
             asks = candidate_asks(2, leaders, {}, offers, FULL_RULES, currency=currency)
             self.assertEqual(asks[0].note, f"Can you beat the leader? The gap is {money(convert(200, currency), currency)}.")
+
+
+def writer(price):
+    """Selector whose shop agent writes its own bid: one current-packaging offer per product, priced by `price`."""
+
+    def select(role, payload):
+        if role == "buyer":
+            return {"indexes": [0], "note": "Shops, please bid on these items."}
+        items, seen = [], set()
+        for row in payload["your_offers"]:
+            if row["packaging"] == "current" and row["product_id"] not in seen:
+                seen.add(row["product_id"])
+                items.append({"offer_id": row["offer_id"], "unit_usd_cents": price(row)})
+        return {"option": None, "items": items, "bundle": None, "free_domestic": False, "sample_kit": False, "pass_offers": [], "note": "Our own prices this round."}
+
+    return select
+
+
+class AgentWrittenBids(unittest.TestCase):
+    """Shop models write bids; code validates them against limits the model never sees."""
+
+    def setUp(self):
+        from rally.negotiation.auction import run_auction
+
+        self.run_auction = run_auction
+        self.catalog = Catalog()
+        self.start = source(REFERENCE["cart"], "US", self.catalog)
+
+    def shop_bids(self, result):
+        return [e for e in result["events"] if e["kind"] == "bid"]
+
+    def test_valid_written_bid_is_accepted_and_marked_as_the_agents(self):
+        result = self.run_auction(self.start, "US", self.catalog, dict(FULL_RULES), choose=writer(lambda row: row["your_standing_usd_cents"]))
+        written = [e for e in self.shop_bids(result) if e["authored"] == "agent"]
+        self.assertTrue(written)
+        self.assertTrue(all(e["chosen_by"] == "FIXTURE" for e in written))
+        self.assertEqual(result["agents"]["written"], len(written))
+        self.assertEqual(result["agents"]["rejected"], 0)
+        self.assertFalse(any(e["kind"] == "rejected" for e in result["events"]))
+        self.assertLessEqual(result["breakdown"]["total"], self.start["breakdown"]["total"])
+        award = next(e for e in result["events"] if e["kind"] == "award")
+        self.assertEqual(award["agents"], result["agents"])
+
+    def test_bid_under_private_limit_is_rejected_and_replaced_by_code(self):
+        result = self.run_auction(self.start, "US", self.catalog, dict(FULL_RULES), choose=writer(lambda row: 1))
+        rejected = [e for e in result["events"] if e["kind"] == "rejected"]
+        bids = self.shop_bids(result)
+        self.assertEqual(len(rejected), len(bids))
+        self.assertTrue(all(e["reason"] == "limit" and e["chosen_by"] == "CODE" for e in rejected))
+        self.assertTrue(all(e["authored"] == "code" and e["chosen_by"] == "CODE" for e in bids))
+        self.assertEqual(result["agents"]["rejected"], len(rejected))
+        self.assertEqual(result["model_failures"], 0)
+        self.assertLess(result["breakdown"]["total"], self.start["breakdown"]["total"])
+        floors = {o["floor_usd"] for o in self.catalog.offers.values()}
+        for event in rejected:
+            self.assertEqual(set(event) - {"id", "seq", "t", "kind", "actor", "note", "total", "chosen_by", "round", "shop", "reason"}, set())
+            self.assertFalse(any(str(f) in event["note"] for f in floors))
+        for line in result["lines"]:
+            self.assertGreaterEqual(line.unit_usd_cents, self.catalog.offers[line.offer_id]["floor_usd"])
+
+    def test_raised_price_is_rejected(self):
+        result = self.run_auction(self.start, "US", self.catalog, dict(FULL_RULES), choose=writer(lambda row: row["listed_usd_cents"] + 100))
+        reasons = {e["reason"] for e in result["events"] if e["kind"] == "rejected"}
+        self.assertEqual(reasons, {"raise"})
+
+    def test_applied_merchant_rules_bind_the_agent(self):
+        policy = self.catalog.policies["haneul"]
+        policy["strategy"] = {"max_round_discount_bp": 0, "min_margin_over_floor_cents": 0, "prefer_older": False, "bundles": "allow", "free_domestic": "to_win", "kit": False}
+        policy["applied_at"] = "2026-11-05T00:00:00Z"
+        result = self.run_auction(self.start, "US", self.catalog, dict(FULL_RULES), choose=writer(lambda row: row["listed_usd_cents"] - 100))
+        haneul = [e for e in result["events"] if e["kind"] == "rejected" and e["shop"] == "haneul"]
+        self.assertTrue(haneul)
+        self.assertTrue(all(e["reason"] == "rules" for e in haneul))
+
+    def test_option_index_submits_the_reference_bid_unchanged(self):
+        def pick(role, payload):
+            if role == "buyer":
+                return {"indexes": [0], "note": "Shops, please bid."}
+            return {"option": 0, "items": [], "bundle": None, "free_domestic": False, "sample_kit": False, "pass_offers": [], "note": "We take our first option."}
+
+        result = self.run_auction(self.start, "US", self.catalog, dict(FULL_RULES), choose=pick)
+        self.assertTrue(all(e["authored"] == "option" for e in self.shop_bids(result)))
+        self.assertEqual(result["agents"]["changed"], 0)
+
+    def test_option_with_extra_terms_is_a_model_failure_not_a_bid(self):
+        def ambiguous(role, payload):
+            if role == "buyer":
+                return {"indexes": [0], "note": "Shops, please bid."}
+            row = payload["your_offers"][0]
+            return {"option": 0, "items": [{"offer_id": row["offer_id"], "unit_usd_cents": 1}], "bundle": None, "free_domestic": False, "sample_kit": False, "pass_offers": [], "note": "Both."}
+
+        result = self.run_auction(self.start, "US", self.catalog, dict(FULL_RULES), choose=ambiguous)
+        self.assertTrue(all(e["authored"] == "code" for e in self.shop_bids(result)))
+        self.assertEqual(result["model_failures_by_role"]["shop"], len(self.shop_bids(result)))
+
+    def test_shop_prompt_names_own_offers_without_private_terms(self):
+        seen = []
+
+        def spy(role, payload):
+            seen.append((role, payload))
+            return fixture(role, payload)
+
+        self.run_auction(self.start, "US", self.catalog, dict(FULL_RULES), choose=spy)
+        for role, payload in seen:
+            if role != "shop":
+                continue
+            shop = next(s for s, v in self.catalog.shops.items() if v["name"] == payload["shop"])
+            self.assertTrue(payload["your_offers"])
+            for row in payload["your_offers"]:
+                self.assertEqual(set(row), {"offer_id", "product_id", "packaging", "listed_usd_cents", "your_standing_usd_cents"})
+                self.assertEqual(self.catalog.offers[row["offer_id"]]["shop_id"], shop)
+            text = json.dumps(payload)
+            self.assertNotIn("floor", text)
+            self.assertNotIn("cost", text)

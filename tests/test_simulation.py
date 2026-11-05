@@ -74,16 +74,16 @@ class SimulationContracts(unittest.TestCase):
                 suggest("A routine under EUR 100", "US", catalog)
 
     def test_connected_auction_only_never_calls_price_baseline_or_exchange_models(self):
-        from rally.negotiation.schema import AskChoice
+        from rally.negotiation.schema import AskChoice, ShopMove
 
         def complete(schema, role, payload, **kwargs):
-            self.assertIn(schema, (Choice, AskChoice))
+            self.assertIn(schema, (ShopMove, AskChoice))
             public = json.dumps(payload)
             self.assertNotIn("floor", public)
             self.assertNotIn("cost", public)
             if schema is AskChoice:
                 return AskChoice(indexes=[0], note="Please bid."), 20
-            return Choice(index=0, note="Our public terms."), 20
+            return ShopMove(option=0, items=[], bundle=None, free_domestic=False, sample_kit=False, pass_offers=[], note="Our public terms."), 20
         with patch("rally.llm.complete", side_effect=complete) as provider, patch("rally.sim.chatbot.run", side_effect=AssertionError("Unrequested price baseline")):
             report = run(20261023, 3, connected=True, auction_only=True)
         self.assertEqual(report["connected_strategies"], ["E"])
