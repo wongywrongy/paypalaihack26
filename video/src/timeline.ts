@@ -19,118 +19,118 @@ export type ClipName = keyof typeof CLIPS;
 export type Cue = { at: number; dur: number; text: string };
 // x/y: the UI point the line lands on. px/py: the pill's centre. Fractions of the clip; set them against real footage.
 export type Callout = { at: number; dur: number; text: string; x: number; y: number; px: number; py: number };
+// A camera push toward `rect`, in clip pixels of a 1440×900 window. at/dur are relative to the shot.
+export type Focus = { at: number; dur: number; rect: { x: number; y: number; width: number; height: number } };
 // fit: stretch the clip to the shot's full length. Otherwise a short clip holds its last frame.
-export type Shot = { clip: ClipName; at: number; dur: number; layout?: 'tiles'; fit?: boolean };
+export type Shot = { clip: ClipName; at: number; dur: number; layout?: 'tiles'; fit?: boolean; focus?: Focus };
 export type Scene = {
   id: string;
   criterion: string;
   chapter?: string;
   start: number;
   duration: number;
+  // How this scene arrives. Omitted means a hard cut, used where the story jumps sides.
+  enter?: 'fade' | 'slide';
   cues: Cue[];
   shots?: Shot[];
   callouts?: Callout[];
   ribbon?: { done: number[]; ticks: { step: number; at: number }[] };
-  band?: { at: number; dur: number; text: string };
 };
 
 // Word for word from frontend/src/routes/shops/Home.tsx. test/video.test.ts fails if they drift.
 export const STEPS = ['Set your prices', 'Give your agent a goal', 'Win a Rally order', 'Hand off the parcel', 'Get paid by PayPal'];
 
+// Seconds into the bidding scene where the first rejection lands, so its narration and its picture meet.
+export const REJECT_AT = 13.6;
+
 export const SCENES: Scene[] = [
   {
     id: 'problem', criterion: 'impact', start: 0, duration: 12,
     cues: [
-      { at: 0.3, dur: 6.5, text: 'Three Korean shops means three checkouts, three parcels and three customs bills.' },
-      { at: 7, dur: 4.8, text: 'Many shops never ship abroad, and import fees can surprise you at the door.' },
+      { at: 0.3, dur: 6.2, text: 'Buying from three Korean shops means three checkouts, three parcels and three customs bills.' },
+      { at: 6.8, dur: 5, text: "Many don't ship abroad at all, and fees can surprise you at the door." },
     ],
   },
   {
-    id: 'title', criterion: 'presentation', start: 12, duration: 6,
-    cues: [{ at: 0.3, dur: 5.4, text: 'Rally turns them into one checkout. Korean shops compete for your order.' }],
+    id: 'promise', criterion: 'presentation', start: 12, duration: 6, enter: 'fade',
+    cues: [{ at: 0.3, dur: 5.4, text: 'Rally turns that into one checkout, and the shops compete for your order.' }],
   },
   {
-    id: 'shop', criterion: 'innovation, design', chapter: 'The shop side', start: 18, duration: 30,
+    id: 'shopper', criterion: 'design, PayPal', start: 18, duration: 20, enter: 'slide',
     shots: [
-      { clip: '01-home-guide', at: 0, dur: 7 },
-      { clip: '02-products-edit', at: 7, dur: 11 },
-      { clip: '03-agent-goal', at: 18, dur: 12 },
+      { clip: '04-storefront-bag', at: 0, dur: 12, focus: { at: 5.6, dur: 6.4, rect: { x: 600, y: 470, width: 460, height: 110 } } },
+      { clip: '05-paypal-hold', at: 12, dur: 8, focus: { at: 0.8, dur: 7.2, rect: { x: 520, y: 220, width: 400, height: 120 } } },
     ],
-    callouts: [
-      { at: 9, dur: 8.5, text: 'Private lowest price: hidden from models', x: 0.592, y: 0.333, px: 0.72, py: 0.09 },
-      { at: 19, dur: 5, text: 'Plain words → bounded rules', x: 0.722, y: 0.342, px: 0.72, py: 0.085 },
-      { at: 24.5, dur: 5, text: 'Nothing applies until Apply', x: 0.884, y: 0.814, px: 0.62, py: 0.925 },
-    ],
-    ribbon: { done: [], ticks: [{ step: 1, at: 17 }, { step: 2, at: 29 }] },
+    callouts: [{ at: 6.4, dur: 5, text: 'All in: shipping, duties, tax', x: 0.575, y: 0.575, px: 0.2, py: 0.12 }],
     cues: [
-      { at: 0.2, dur: 6.6, text: "I'm Haneul Beauty, a Seoul shop. Rally walks me through five steps to my first payout." },
-      { at: 7, dur: 5.8, text: 'In Products, an AG Grid sheet, I edit my lowest price and save.' },
-      { at: 13, dur: 4.8, text: 'My lowest price is private: no shopper, shop or model sees it.' },
-      { at: 18, dur: 5.8, text: 'On Agent, I say what I want in plain words and press Review rules.' },
-      { at: 24, dur: 5.8, text: 'A model writes bounded rules, marked From your goal. Nothing applies until I press Apply.' },
+      { at: 0.3, dur: 5.4, text: 'A shopper fills one bag with {item_count} from Korean shops.' },
+      { at: 6, dur: 5.6, text: 'One price covers it all: shipping, duties and tax, in their own currency.' },
+      { at: 12.2, dur: 7.4, text: "PayPal holds this total. It's the ceiling. The shops can only bid it down." },
     ],
   },
   {
-    id: 'shopper', criterion: 'design, PayPal', chapter: 'The shopper side', start: 48, duration: 18,
-    shots: [
-      { clip: '04-storefront-bag', at: 0, dur: 11 },
-      { clip: '05-paypal-hold', at: 11, dur: 7 },
-    ],
-    callouts: [{ at: 6, dur: 4.8, text: 'All-in: shipping, duty, tax', x: 0.575, y: 0.575, px: 0.17, py: 0.68 }],
-    ribbon: { done: [1, 2], ticks: [] },
-    band: { at: 11.4, dur: 6.4, text: 'PayPal authorizes {held} — a hard ceiling. Shops can only bid it down.' },
-    cues: [
-      { at: 0.2, dur: 5.6, text: 'I press Open your storefront. Now I am the shopper, with {item_count} in my bag.' },
-      { at: 6, dur: 4.8, text: 'One price for everything, delivered, duties included.' },
-      { at: 11, dur: 6.8, text: 'PayPal holds {held}. That total is the ceiling. The agents can only bid it down.' },
-    ],
-  },
-  {
-    id: 'bidding', criterion: 'innovation, tech', chapter: 'Agentic bidding', start: 66, duration: 40,
+    id: 'bidding', criterion: 'innovation, tech', start: 38, duration: 40, enter: 'fade',
     shots: [{ clip: '06-bidding', at: 0, dur: 40, fit: true }],
-    ribbon: { done: [1, 2], ticks: [] },
     cues: [
-      { at: 0.2, dur: 6.6, text: 'Every shop that stocks an item now bids for it, over {rounds} open rounds.' },
-      { at: 7, dur: 6.8, text: 'Each round, a buyer agent asks for better terms and {shop_count} shop agents answer.' },
-      { at: 14, dur: 6.8, text: 'Models choose among code-built options. Code awards the order.' },
-      { at: 21, dur: 6.8, text: 'A shop can win on price, a bundle, free shipping in Korea or older packaging.' },
-      { at: 28, dur: 5.8, text: "Code checks every bid against each shop's private limits, live stock and the hold." },
-      { at: 34, dur: 5.8, text: '{result_line}' },
+      { at: 0.3, dur: 5.6, text: 'Now the shops bid for this order, over {rounds} rounds.' },
+      { at: 6.3, dur: 7, text: "Each shop's agent writes its own bid: a lower price, a bundle, free shipping in Korea or a sample kit." },
+      { at: REJECT_AT, dur: 6.6, text: '{check_line}' },
+      { at: 20.6, dur: 6.4, text: 'The checks test each bid against the private limits, the stock and the hold.' },
+      { at: 27.6, dur: 5.4, text: 'Round by round, the total only goes down.' },
+      { at: 33.4, dur: 6.2, text: '{result_line}' },
     ],
   },
   {
-    id: 'money', criterion: 'PayPal, impact', chapter: 'Money and fulfillment', start: 106, duration: 22,
+    id: 'result', criterion: 'PayPal, impact', start: 78, duration: 12, enter: 'fade',
+    shots: [{ clip: '07-receipt', at: 0, dur: 12, layout: 'tiles' }],
+    cues: [
+      { at: 0.3, dur: 6.2, text: '{capture_line}' },
+      { at: 6.8, dur: 4.9, text: '{receipt_line}' },
+    ],
+  },
+  {
+    id: 'shop', criterion: 'innovation, design', chapter: 'The shop side', start: 90, duration: 28,
     shots: [
-      { clip: '07-receipt', at: 0, dur: 9, layout: 'tiles' },
-      { clip: '08-handoff-payout', at: 9, dur: 9 },
-      { clip: '09-home-done', at: 18, dur: 4 },
+      { clip: '01-home-guide', at: 0, dur: 5 },
+      { clip: '02-products-edit', at: 5, dur: 12 },
+      { clip: '03-agent-goal', at: 17, dur: 11, focus: { at: 4.6, dur: 5.6, rect: { x: 900, y: 250, width: 440, height: 170 } } },
     ],
-    callouts: [{ at: 14.2, dur: 3.6, text: 'PayPal payout to the shop', x: 0.84, y: 0.37, px: 0.62, py: 0.075 }],
-    ribbon: { done: [1, 2], ticks: [{ step: 3, at: 2 }, { step: 4, at: 12 }, { step: 5, at: 17 }] },
+    callouts: [{ at: 7.5, dur: 8.5, text: 'Private: no one else sees it', x: 0.592, y: 0.333, px: 0.7, py: 0.09 }],
+    ribbon: { done: [], ticks: [{ step: 1, at: 16 }, { step: 2, at: 27 }] },
     cues: [
-      { at: 0.2, dur: 4.2, text: '{capture_line}' },
-      { at: 4.6, dur: 4.3, text: '{receipt_line}' },
-      { at: 9, dur: 4.8, text: '{shop_result}' },
-      { at: 13.9, dur: 3.9, text: 'PayPal pays {payout_shop} {payout}.' },
-      { at: 18, dur: 3.9, text: "Price, goal, order, hand-off, payout. That's the whole loop." },
-    ],
-  },
-  {
-    id: 'hood', criterion: 'tech', start: 128, duration: 25,
-    cues: [
-      { at: 0.2, dur: 5.2, text: 'A PayPal approval becomes an Orders v2 authorization in FastAPI.' },
-      { at: 5.6, dur: 5.2, text: 'A worker runs the auction, with every PayPal step in an idempotent ledger.' },
-      { at: 11, dur: 5.2, text: 'Bitdeer models pick only candidate indexes. Code makes the award.' },
-      { at: 16.2, dur: 4.6, text: 'Capture stays within the hold, Payouts pay shops, webhooks reconcile.' },
-      { at: 21, dur: 3.9, text: 'Models propose. Code decides. PayPal moves the money.' },
+      { at: 0.3, dur: 4.4, text: 'Behind each shop is a person who set two things.' },
+      { at: 5, dur: 6, text: 'At Haneul Beauty, a Seoul shop, the owner first sets a private lowest price.' },
+      { at: 11.3, dur: 5.4, text: 'No shopper, other shop or agent ever sees it.' },
+      { at: 17.2, dur: 5, text: 'Then a goal in plain words, like winning two-item bundles.' },
+      { at: 22.5, dur: 5.3, text: 'Rally turns it into rules, and nothing changes until the owner presses Apply.' },
     ],
   },
   {
-    id: 'close', criterion: 'impact, presentation', start: 153, duration: 17,
+    id: 'payout', criterion: 'PayPal, impact', chapter: 'Hand off and get paid', start: 118, duration: 14, enter: 'slide',
+    shots: [
+      { clip: '08-handoff-payout', at: 0, dur: 10, focus: { at: 5, dur: 5, rect: { x: 980, y: 280, width: 440, height: 110 } } },
+      { clip: '09-home-done', at: 10, dur: 4 },
+    ],
+    ribbon: { done: [1, 2], ticks: [{ step: 3, at: 0.6 }, { step: 4, at: 5.4 }, { step: 5, at: 10.4 }] },
     cues: [
-      { at: 0.2, dur: 5.6, text: 'Korean cosmetics exports hit a record, and small shops are moving online.' },
-      { at: 6, dur: 4.8, text: 'Rally works for any multi-merchant, cross-border cart.' },
-      { at: 11, dur: 5.8, text: 'Rally. Korean skincare, one box, your currency. Open source, MIT licensed.' },
+      { at: 0.3, dur: 5.6, text: '{shop_result}' },
+      { at: 6, dur: 5.2, text: 'PayPal pays {payout_shop} {payout} as soon as it hands off.' },
+      { at: 11.3, dur: 2.6, text: 'Price, goal, order, hand-off, payout.' },
+    ],
+  },
+  {
+    id: 'how', criterion: 'tech', start: 132, duration: 15,
+    cues: [
+      { at: 0.3, dur: 6, text: "The shopper approves one total. Each shop's agent writes bids that follow its owner's goals." },
+      { at: 6.5, dur: 3.2, text: "Rally's checks guard the limits, the stock and the hold." },
+      { at: 9.8, dur: 4.8, text: "Agents propose. Rally's checks decide. PayPal moves the money." },
+    ],
+  },
+  {
+    id: 'close', criterion: 'impact, presentation', start: 147, duration: 12, enter: 'fade',
+    cues: [
+      { at: 0.3, dur: 5.6, text: 'Korean skincare exports hit a record last year, and small shops are moving online.' },
+      { at: 6.3, dur: 5.4, text: 'Rally. Korean skincare, one box, your currency. Open source, MIT licensed.' },
     ],
   },
 ];
@@ -151,8 +151,11 @@ const stamp = (seconds: number, sep: string) => {
   return `${pad(Math.floor(ms / 3600000))}:${pad(Math.floor(ms / 60000) % 60)}:${pad(Math.floor(ms / 1000) % 60)}${sep}${pad(ms % 1000, 3)}`;
 };
 
-export const toSrt = (vars: Record<string, string>) =>
-  allCues().map((cue, i) => `${i + 1}\n${stamp(cue.start, ',')} --> ${stamp(cue.start + cue.dur, ',')}\n${fill(cue.text, vars)}\n`).join('\n');
+// A caption stays up while its line is spoken, plus a short tail, never past its cue.
+export const shownFor = (cue: Cue, index: number, spoken?: number[]) => spoken?.[index] === undefined ? cue.dur : Math.min(cue.dur, spoken[index] + 0.4);
+
+export const toSrt = (vars: Record<string, string>, spoken?: number[]) =>
+  allCues().map((cue, i) => `${i + 1}\n${stamp(cue.start, ',')} --> ${stamp(cue.start + shownFor(cue, i, spoken), ',')}\n${fill(cue.text, vars)}\n`).join('\n');
 
 export const toScript = () =>
   ['# Rally video narration', '', 'Generated from src/timeline.ts: edit cues and timings there. {name} is filled from the run data.', ''].concat(

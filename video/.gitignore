@@ -5,3 +5,6 @@ src/generated/
 public/generated/
 # Owner inputs. order.json carries the shop's private lowest prices, and this repository is public.
 run/
+# Local voice tools: a Python venv with kokoro-onnx and the Kokoro model files.
+.venv
+models

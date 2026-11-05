@@ -9,10 +9,12 @@
     "stills": "node scripts/prepare.ts --allow-placeholders && node scripts/stills.ts",
     "test": "node --test test/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "voice": "node scripts/prepare.ts --allow-placeholders && node scripts/voice.ts"
+    "voice": "node scripts/prepare.ts --allow-placeholders && node scripts/voice.ts && node scripts/prepare.ts --allow-placeholders"
   },
   "dependencies": {
     "@remotion/cli": "4.0.539",
+    "@remotion/paths": "4.0.539",
+    "@remotion/transitions": "4.0.539",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "remotion": "4.0.539",

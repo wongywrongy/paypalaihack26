@@ -1,39 +1,28 @@
-// Stand-in AI narration for judging flow. Each caption is spoken at its own cue time, sped up only if it overruns.
+// Narration with Kokoro, run locally: one clip per cue, placed at the cue's start. Never sped up: a cue that runs
+// past its `dur` fails here, and the fix is a longer cue or fewer words in timeline.ts.
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { allCues, fill, totalSeconds } from '../src/timeline.ts';
 
-const VOICE = process.env.AI_VOICE || 'en-US-AndrewMultilingualNeural', TTS = process.env.EDGE_TTS || 'edge-tts', RATE = 24000, MAX_SPEEDUP = 15;
-const vars = JSON.parse(readFileSync('src/generated/manifest.json', 'utf8')).vars;
-const temp = mkdtempSync(join(tmpdir(), 'rally-voice-'));
-
-function speak(text: string, speedup: number) {
-  const file = join(temp, 'cue.mp3');
-  execFileSync(TTS, ['--voice', VOICE, `--rate=+${speedup}%`, '--text', text, '--write-media', file], { stdio: 'ignore' });
-  const wav = join(temp, 'cue.wav');
-  execFileSync('node_modules/.bin/remotion', ['ffmpeg', '-y', '-v', 'error', '-i', file, '-ar', String(RATE), '-ac', '1', '-c:a', 'pcm_s16le', wav], { stdio: 'ignore' });
-  const data = readFileSync(wav);
-  return data.subarray(data.indexOf('data') + 8);
+const VOICE = process.env.KOKORO_VOICE || 'af_heart', PYTHON = process.env.KOKORO_PYTHON || '.venv/bin/python';
+for (const path of [PYTHON, 'models/kokoro-v1.0.onnx', 'models/voices-v1.0.bin']) if (!existsSync(path)) {
+  console.error(`Missing ${path}. See README.md, "Audio".`);
+  process.exit(1);
 }
+const vars = JSON.parse(readFileSync('src/generated/manifest.json', 'utf8')).vars;
+const cues = allCues().map(cue => ({ ...cue, text: fill(cue.text, vars) }));
+const job = { voice: VOICE, seconds: totalSeconds(), out: 'run/voiceover.wav', cues: cues.map(({ start, text }) => ({ start, text })) };
+const spoken: number[] = JSON.parse(execFileSync(PYTHON, ['scripts/kokoro.py'], { input: JSON.stringify(job), encoding: 'utf8', stdio: ['pipe', 'pipe', 'inherit'] }).trim().split('\n').at(-1)!);
+writeFileSync('run/voiceover.json', JSON.stringify({ voice: VOICE, spoken }, null, 1));
 
-const seconds = (pcm: Buffer) => pcm.length / 2 / RATE;
-const track = Buffer.alloc(totalSeconds() * RATE * 2);
-const cues = allCues();
+let over = 0;
 cues.forEach((cue, i) => {
-  const text = fill(cue.text, vars);
-  const room = (cues[i + 1]?.start ?? totalSeconds()) - cue.start;
-  let pcm = speak(text, 0), speedup = 0;
-  if (seconds(pcm) > room) { speedup = Math.min(MAX_SPEEDUP, Math.ceil((seconds(pcm) / room - 1) * 100) + 2); pcm = speak(text, speedup); }
-  pcm.copy(track, Math.round(cue.start * RATE) * 2);
-  console.log(`${cue.start.toFixed(1).padStart(6)}s  ${seconds(pcm).toFixed(1)}s of ${room.toFixed(1)}s${speedup ? ` at +${speedup}%` : ''}${seconds(pcm) > room ? '  OVERRUN' : ''}`);
+  const long = spoken[i] > cue.dur;
+  if (long) over++;
+  console.log(`${cue.start.toFixed(1).padStart(6)}s  ${spoken[i].toFixed(2)}s of ${cue.dur.toFixed(1)}s${long ? '  OVERRUNS' : ''}  ${cue.text}`);
 });
-
-const header = Buffer.alloc(44);
-header.write('RIFF', 0); header.writeUInt32LE(36 + track.length, 4); header.write('WAVEfmt ', 8); header.writeUInt32LE(16, 16);
-header.writeUInt16LE(1, 20); header.writeUInt16LE(1, 22); header.writeUInt32LE(RATE, 24); header.writeUInt32LE(RATE * 2, 28);
-header.writeUInt16LE(2, 32); header.writeUInt16LE(16, 34); header.write('data', 36); header.writeUInt32LE(track.length, 40);
-writeFileSync('run/voiceover.wav', Buffer.concat([header, track]));
-rmSync(temp, { recursive: true });
-console.log('Wrote run/voiceover.wav');
+console.log(`Wrote run/voiceover.wav with ${VOICE}.`);
+if (over) {
+  console.error(`${over} cues run past their dur. Lengthen them or cut words in src/timeline.ts; the voice is never sped up.`);
+  process.exit(1);
+}

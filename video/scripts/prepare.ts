@@ -4,7 +4,7 @@ import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writ
 import { dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildFacts, crossCheck, finalCheck, OrderSchema, parse, RunSchema } from '../src/schema.ts';
-import { CLIPS, FPS, MAX_SECONDS, toScript, toSrt, totalSeconds, type ClipName } from '../src/timeline.ts';
+import { allCues, CLIPS, FPS, MAX_SECONDS, toScript, toSrt, totalSeconds, type ClipName } from '../src/timeline.ts';
 
 type Probe = (path: string) => { width: number; height: number; seconds: number };
 
@@ -49,7 +49,8 @@ export function prepare(root: string, { allowPlaceholders = false, probe = ffpro
     const path = join(run_dir, 'clips', `${name}.mp4`);
     if (!existsSync(path)) { clips[name] = null; missing.push(`${name}.mp4`); continue; }
     const { width, height, seconds } = probe(path);
-    if (width !== 1440 || height !== 900) throw new Error(`video/run/clips/${name}.mp4 is ${width}×${height}. It must be 1440×900.`);
+    // A 1440×900 window, recorded at 1× or 2× pixel ratio. Rects stay in 1440×900 window pixels either way.
+    if (!((width === 1440 && height === 900) || (width === 2880 && height === 1800))) throw new Error(`video/run/clips/${name}.mp4 is ${width}×${height}. It must be 1440×900 (or 2880×1800 at 2× pixel ratio).`);
     clips[name] = { frames: Math.round(seconds * FPS) };
     copyFileSync(path, join(generated, 'clips', `${name}.mp4`));
   }
@@ -62,6 +63,10 @@ export function prepare(root: string, { allowPlaceholders = false, probe = ffpro
   }
   const voiceover = existsSync(join(run_dir, 'voiceover.wav'));
   if (voiceover) copyFileSync(join(run_dir, 'voiceover.wav'), join(generated, 'voiceover.wav'));
+  // Written by npm run voice: how long each cue is spoken, so captions leave with the voice.
+  const timing = join(run_dir, 'voiceover.json');
+  const spoken: number[] | null = voiceover && existsSync(timing) ? readJson(timing, 'video/run/voiceover.json').spoken : null;
+  if (spoken && spoken.length !== allCues().length) throw new Error('video/run/voiceover.json was made for a different set of cues. Run npm run voice again.');
   let musicFile: string | null = null;
   if (music) {
     if (!existsSync(music)) throw new Error(`MUSIC_PATH ${music} does not exist.`);
@@ -70,11 +75,11 @@ export function prepare(root: string, { allowPlaceholders = false, probe = ffpro
   }
 
   const vars = buildFacts(run, order, names);
-  const manifest = { run, events: order.events, vars, names, clips, voiceover, music: musicFile };
+  const manifest = { run, events: order.events, vars, names, clips, voiceover, spoken, music: musicFile };
   mkdirSync(join(root, 'src/generated'), { recursive: true });
   writeFileSync(join(root, 'src/generated/manifest.json'), JSON.stringify(manifest, null, 1));
   mkdirSync(join(root, 'out'), { recursive: true });
-  writeFileSync(join(root, 'out/captions.srt'), toSrt(vars));
+  writeFileSync(join(root, 'out/captions.srt'), toSrt(vars, spoken ?? undefined));
   return { manifest, missing };
 }
 
