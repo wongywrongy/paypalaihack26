@@ -1,7 +1,7 @@
 import { orderNumber } from '../src/connected';
 import { AuctionPlayback } from '../src/components/AuctionDeal';
 import MarketRange from '../src/components/MarketRange';
-import { applyAuctionEvent, initialAuction } from '../src/auction';
+import { applyAuctionEvent, initialAuction, type AuctionEvent } from '../src/auction';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -117,7 +117,22 @@ const dealHtml = renderToStaticMarkup(<BagProvider><AuctionPlayback events={auct
 assert.ok(dealHtml.includes('Order RL-A1B2C'));
 assert.ok(!dealHtml.includes('order choices saved at checkout'));
 assert.ok(!dealHtml.includes(`Order ${orderId}`));
+const rejectedNote = "Agent bid went below what Haneul Beauty can accept. Code sent the shop's best valid bid.";
+const rejected = applyAuctionEvent(auction, { id: 'rejected-1', seq: 101, t: 13, kind: 'rejected', actor: 'rally', round: 2, shop: 'haneul', reason: 'limit', note: rejectedNote, chosen_by: 'CODE' });
+assert.equal(rejected.feed.at(-1)!.tag, 'rejected');
+assert.equal(rejected.agents.rejected, auction.agents.rejected + 1);
+assert.throws(() => applyAuctionEvent(auction, { id: 'rejected-2', seq: 102, t: 13, kind: 'rejected', round: 2, shop: 'nobody' as never, reason: 'limit', note: rejectedNote }));
+const firstBid = auctionEvents.find(event => event.kind === 'bid')!;
+const agentBid = applyAuctionEvent(initialAuction(11882), auctionEvents[0]);
+const withAgent = applyAuctionEvent(agentBid, { ...firstBid, authored: 'agent' } as AuctionEvent);
+assert.equal(withAgent.feed.at(-1)!.tag, 'agent');
+assert.equal(withAgent.agents.written, 1);
+const taggedHtml = renderToStaticMarkup(<BagProvider><AuctionPlayback events={[...auctionEvents.filter(event => event.kind !== 'done').map(event => event.kind === 'bid' ? { ...event, authored: 'agent' } as AuctionEvent : event), { id: 'rejected-3', seq: 900, t: 20, kind: 'rejected', actor: 'rally', round: 3, shop: 'haneul', reason: 'limit', note: rejectedNote } as AuctionEvent, { ...auctionEvents.at(-1)!, seq: 901 }]} maximum={11882} country="US" id={orderId} paid replayInitially={false} /></BagProvider>);
+assert.ok(taggedHtml.includes('Rejected by code'));
+assert.ok(taggedHtml.includes('code rejected'));
+assert.ok(taggedHtml.includes('Shop agents wrote'));
 console.log('Short order header and bid/ask/round/award-only live messages passed.');
+console.log('Agent-written tags, code rejections and agent summary passed.');
 
 for (const [n, high] of [[4,2600],[5,5000]]) assert.equal(renderToStaticMarkup(<MarketRange reference={{low_usd_cents:1800,median_usd_cents:2200,high_usd_cents:high,n,as_of:'2026-10-30'}} />), '');
 

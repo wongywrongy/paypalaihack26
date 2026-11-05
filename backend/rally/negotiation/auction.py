@@ -27,7 +27,7 @@ SHOP_ROLE = ("You are the bidding agent for a fictional Korean skincare shop in 
              "which you cannot see, and replaces a rejected bid with its own best valid bid. To submit a reference option unchanged, set option to "
              "its index and leave the other terms empty. You cannot accept a deal or move money.")
 BUYER_ROLE = "You represent the shopper. Pick only candidate indexes and write one short public line. You cannot accept or move money."
-REASONS = {"limit": "priced below what {shop} can accept", "raise": "tried to raise a price it had already offered",
+REASONS = {"limit": "went below what {shop} can accept", "raise": "raised a price {shop} had already offered",
            "rules": "broke a rule {shop} set for its agent", "invalid": "named terms {shop} cannot offer"}
 
 
@@ -182,7 +182,7 @@ def run_auction(start, destination, catalog, rules, *, choose=None, emit=None, m
                     except Rejected as exc:
                         agents["rejected"] += 1
                         name = catalog.shops[shop]["name"]
-                        event("rejected", f"Code rejected {name}'s agent bid: it {REASONS[exc.reason].format(shop=name)}. Code sent {name}'s best valid bid instead.",
+                        event("rejected", f"Agent bid {REASONS[exc.reason].format(shop=name)}. Code sent the shop's best valid bid.",
                               chosen_by="CODE", round=round_no, shop=shop, reason=exc.reason)
                     except Exception as exc:
                         failed("shop", exc, shop)
