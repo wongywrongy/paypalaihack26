@@ -7,7 +7,7 @@ import { prepare } from '../scripts/prepare.ts';
 import { anchored, buildBoard, roundAt, sceneAt, valueAt } from '../src/auction.ts';
 import { buildFacts, crossCheck, finalCheck, finalPrices, money, OrderSchema, parse, ReceiptSchema, receiptCheck, RunSchema, spokenMoney } from '../src/schema.ts';
 import { phrases } from '../src/captions.ts';
-import { CLIPS, cueAt, GAP, layout, MAX_SECONDS, MAX_SILENCE, railAt, SCENES, spokenText, STEPS, toScript, toSrt, type ClipName } from '../src/timeline.ts';
+import { CLIPS, cueAt, GAP, LEAD, layout, MAX_SECONDS, MAX_SILENCE, MAX_WORDS, MEAN_WORDS, railAt, SCENES, spokenText, STEPS, TAIL, TARGET_SECONDS, toScript, toSrt, type ClipName } from '../src/timeline.ts';
 
 // Test data only: nothing here reaches a build.
 const events = () => [
@@ -45,9 +45,9 @@ const built = (() => { try { return JSON.parse(readFileSync('src/generated/manif
 const facts = () => factsOf();
 const plans = () => [layout(facts(), null), ...(built ? [layout(built.vars, built.spoken)] : [])];
 
-test(`the video stays within ${MAX_SECONDS} s, and the built cut within 2:20 to 2:30`, () => {
-  for (const plan of plans()) assert.ok(plan.total <= MAX_SECONDS, `${plan.total} s`);
-  if (built?.spoken) { const total = layout(built.vars, built.spoken).total; assert.ok(total >= 140 && total <= 150, `${total} s`); }
+test(`the video stays within ${MAX_SECONDS} s, and the built cut within ${TARGET_SECONDS[0]} to ${TARGET_SECONDS[1]} s`, () => {
+  for (const plan of plans()) assert.ok(plan.total <= TARGET_SECONDS[1], `${plan.total} s`);
+  if (built?.spoken) { const total = layout(built.vars, built.spoken).total; assert.ok(total >= TARGET_SECONDS[0] && total <= TARGET_SECONDS[1], `${total} s`); }
 });
 
 test(`no silence over ${MAX_SILENCE} s except the planned pause before the close`, () => {
@@ -63,14 +63,14 @@ test(`no silence over ${MAX_SILENCE} s except the planned pause before the close
   assert.ok(GAP <= MAX_SILENCE);
 });
 
-test('scenes are contiguous and each lasts its lines plus half a second', () => {
+test('scenes are contiguous and each lasts its lines plus its lead and tail', () => {
   for (const plan of plans()) {
     let end = 0;
     for (const scene of plan.scenes) {
       assert.ok(Math.abs(scene.start - end) < 1e-9, scene.id);
       end += scene.duration;
       const spoken = scene.cues.reduce((sum, line) => sum + line.end - line.start, 0), gaps = (scene.cues.length - 1) * GAP + scene.cues.reduce((sum, line) => sum + (SCENES.find(row => row.id === scene.id)!.cues[line.index].pause ?? 0), 0);
-      assert.ok(Math.abs(scene.duration - spoken - gaps - 0.5) < 1e-6, scene.id);
+      assert.ok(Math.abs(scene.duration - spoken - gaps - LEAD - TAIL) < 1e-6, scene.id);
     }
   }
 });
@@ -93,14 +93,15 @@ test('every shot starts on a line and has time on screen', () => {
 // Panels are drawn from the run; these prove they are the running product. The build fails without them.
 test('proof cuts: the real approval, board and payout recordings each cut in full frame, never above their own pixels', () => {
   const proofs = SCENES.flatMap(scene => (scene.proofs ?? []).map(proof => ({ ...proof, scene: scene.id })));
-  for (const [scene, clip, seconds] of [['shopper', '05-paypal-hold', 2], ['bidding', '06-bidding', 2.5], ['payout', '08-handoff-payout', 2.5]] as const) {
+  for (const [scene, clip, seconds] of [['shopper', '05-paypal-hold', 2], ['bidding', '06-bidding', 2], ['payout', '08-handoff-payout', 2]] as const) {
     const proof = proofs.find(row => row.scene === scene && row.clip === clip);
     assert.ok(proof, `no proof cut of ${clip} in ${scene}`);
     assert.ok(Math.abs(proof.out - proof.in - seconds) < 1e-9, `${clip} runs ${proof.out - proof.in} s, not ${seconds}`);
     const { x, y, width, height } = proof.crop;
     assert.ok(x >= 0 && y >= 0 && x + width <= 1440 && y + height <= 900, `${clip} crop leaves the window`);
     const frames = built?.clips?.[clip]?.frames;
-    if (built) assert.ok(frames && proof.out <= frames / 60 + 0.05, `${clip} proof runs past its recording`);
+    // A placeholder build has no recordings yet; npm run render refuses that, so check only what is there.
+    if (built?.clips?.[clip]) assert.ok(frames && proof.out <= frames / 60 + 0.05, `${clip} proof runs past its recording`);
   }
   const glass = readFileSync('src/ui/glass.tsx', 'utf8');
   // Window pixels are 2 recorded pixels (2880×1800), so a window-to-frame scale above 2 would upscale.
@@ -150,7 +151,7 @@ test('captions: phrase chunks of up to seven words, never split inside an amount
 
 // An amount said in a caption is written exactly as the screen shows it, whole, and shown in the same scene.
 test('caption amounts are whole and appear on screen in their scene', { skip: !built }, () => {
-  const files: Record<string, string[]> = { korea: ['src/scenes/Story.tsx'], shopper: ['src/scenes/Bidding.tsx', 'src/ui/panels.tsx'], bidding: ['src/scenes/Bidding.tsx'], result: ['src/ui/panels.tsx'], payout: ['src/ui/panels.tsx'] };
+  const files: Record<string, string[]> = { cold: ['src/scenes/Cold.tsx'], shopper: ['src/scenes/Bidding.tsx', 'src/ui/panels.tsx'], bidding: ['src/scenes/Bidding.tsx'], result: ['src/ui/panels.tsx'], payout: ['src/ui/panels.tsx'] };
   // How each run amount is drawn, in the scene source.
   const drawn: Record<string, RegExp> = { held: /cash\(hold\)|cash\(held\)/, charged: /vars\.charged|cents=\{charged\}/, released: /held - charged/, payout: /payout_usd_cents/ };
   const amount = /\$[\d,]*\d(?:\.\d+)?(?: billion| million)?/g;
@@ -180,7 +181,7 @@ test('script.md matches the laid-out timeline', { skip: !built }, () => assert.e
 test('srt numbers cues and uses comma timestamps', () => {
   const [r, o] = parsed();
   const srt = toSrt(layout(factsOf(), null));
-  assert.match(srt, /^1\n00:00:00,200 --> 00:00:0\d,\d{3}\n/);
+  assert.match(srt, /^1\n00:00:00,100 --> 00:00:0\d,\d{3}\n/);
   assert.ok(srt.includes('$28.00'));
   assert.ok(!srt.includes('{'));
 });
@@ -260,7 +261,7 @@ test('captions adapt when Haneul is outbid', () => {
   const [run2, order2] = parsed(r, o);
   crossCheck(run2, order2);
   const facts = factsOf(r, o, { ...receipt(), lines: [{ id: 'a', shop: 'bada', unit: 1300 }, { id: 'b', shop: 'dalbit', unit: 1500 }] });
-  assert.match(facts.handoff_line, /^Haneul was outbid\. Dalbit Official hands its items/);
+  assert.match(facts.handoff_line, /^Haneul was outbid\. Dalbit Official drops its items/);
   assert.match(facts.box_line, /One box from two shops/);
   assert.equal(facts.payout_shop, 'Dalbit Official');
 });
@@ -270,7 +271,7 @@ test('captions stay true when no bid beats checkout', () => {
   const o = order();
   o.events[3].total = 3000; o.events[4].total = 3000;
   const facts = factsOf(r, o, { ...receipt(), breakdown: { ...receipt().breakdown, shipping: 200, total: 3000 } });
-  assert.match(facts.why_line, /^The cheapest whole box wins\. Final price: \$30\.00\.$/);
+  assert.match(facts.why_line, /^The cheapest whole box wins\. You pay \$30\.00\.$/);
   assert.match(facts.capture_line, /exactly the hold/);
   assert.ok(!facts.capture_line.includes('releases'));
 });
@@ -426,4 +427,37 @@ test('spoken amounts are generated from the numbers', () => {
   assert.equal(spokenMoney(1101, 'USD'), 'eleven dollars and one cent');
   assert.equal(spokenMoney(3900, 'USD'), 'thirty-nine dollars');
   if (built) for (const line of layout(built.vars, built.spoken).lines) assert.ok(!/\$\d/.test(line.say), `the voice would read digits: ${line.say}`);
+});
+
+// --- Pacing: a judge watches this once, after many others. ---
+test(`pacing: one breath per line, at most ${MAX_WORDS} words and ${MEAN_WORDS} on average`, () => {
+  for (const plan of plans()) {
+    const counts = plan.lines.map(line => line.text.split(/\s+/).length);
+    plan.lines.forEach((line, i) => assert.ok(counts[i] <= MAX_WORDS, `${counts[i]} words: ${line.text}`));
+    const mean = counts.reduce((a, b) => a + b, 0) / counts.length;
+    assert.ok(mean <= MEAN_WORDS, `${mean.toFixed(1)} words a line on average`);
+  }
+});
+
+test('pacing: it talks to the viewer, not a lecture', () => {
+  for (const plan of plans()) {
+    const you = plan.lines.filter(line => /\b(you|your)\b/i.test(line.text));
+    assert.ok(you.length >= 6, `only ${you.length} lines speak to the viewer`);
+    for (const line of plan.lines) assert.ok(!/^(One|Two|Three|Four|Five)[:,]|\bin (three|four|five) steps\b/i.test(line.text), `numbered like a lecture: ${line.text}`);
+  }
+});
+
+test('pacing: the first picture is the product, and the demo starts inside 20 s', () => {
+  assert.equal(SCENES[0].id, 'cold');
+  for (const plan of plans()) {
+    const demo = plan.scenes.find(scene => scene.scene.act === 3)!;
+    assert.ok(demo.start <= 20, `the demo starts at ${demo.start.toFixed(1)} s`);
+  }
+});
+
+test('pacing: no scene drags', () => {
+  for (const plan of plans()) for (const scene of plan.scenes) {
+    const limit = scene.id === 'bidding' ? 20 : 12;
+    assert.ok(scene.duration <= limit, `${scene.id} runs ${scene.duration.toFixed(1)} s (limit ${limit} s)`);
+  }
 });

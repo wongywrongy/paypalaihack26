@@ -88,7 +88,9 @@ If Haneul is outbid, captions change to say so and the payout scene uses `payout
   curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
   ```
 
-  The voice is `af_heart` at speed 1.0, never sped up; `KOKORO_VOICE=am_michael npm run voice` tries the other one. Run it again whenever the run data changes, because the numbers are spoken.
+  The voice is `af_heart` at speed 1.12 (`VOICE_SPEED` in `src/timeline.ts`; override with `KOKORO_SPEED`); `KOKORO_VOICE=am_michael npm run voice` tries the other one. Run it again whenever the run data changes, because the numbers are spoken.
+- **Your own voice (recommended).** A person talking beats any synthetic voice for a judge. `npm run voice` always writes `run/read-this.md`: every line, numbered, filled with this run's numbers. Record each as its own take, `run/recorded/01.wav`, `02.wav` and so on (any mic; a quiet room matters more than the mic). Talk, don't read. Then `RECORDED_DIR=run/recorded npm run voice` trims, levels and measures them, and the timeline lays out from your lengths exactly as it does from Kokoro's.
+- `npm run pace -- out/preview.mp4` checks the cut keeps moving (STYLE.md, Pacing). `npm run preview` runs it after rendering. It needs a full ffmpeg on PATH (macOS: `brew install ffmpeg`); Remotion's bundled one lacks the filters.
 - `MUSIC_PATH=/path/to/licensed-track.mp3 npm run render` adds music at −22 dB, another 4 dB down under the voice. None is included: use only a track whose licence allows a public competition submission, and put its licence in `music/LICENSE.txt`.
 - Sound effects (a click on each cursor click, a whoosh as each demo scene opens, a tick on the final price) are synthesised by `scripts/sfx.py` into `sfx/`, CC0, at −18 dB.
 - Captions are burned in, bottom centre, 38 px, white, no box, in phrase chunks of up to seven words (`src/captions.ts`: breaks only after a comma or clause end, or before "and" or "but", never inside an amount or a name) with the spoken word a little brighter, and also written to `out/captions.srt`.

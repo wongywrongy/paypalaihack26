@@ -29,7 +29,17 @@ Designed from one reference: `reference/cluelyreference.mp4` (Cluely's product v
 - **Text:** the app's display font (Schibsted Grotesk), headlines 96–140 px at −2% tracking. Words reveal one at a time from 8 px blur and 14 px below, three frames apart at 60 fps: the reference's motion-blur entrance (0:04), made calmer.
 - **Numbers:** the app's mono (IBM Plex Mono), tabular. Totals roll like an odometer and only roll down; the final price gets the one shimmer.
 - **Keycaps and cursor:** keycaps only while the goal is typed (real keystrokes); a drawn cursor on curved paths with a click ripple only on Add to bag, Approve, Apply and Record hand-off, as at 0:16.
-- **Transitions:** shared-element morphs inside an act; a 12-frame blur dissolve between acts. No hard cuts at all: the reference keeps them for its dashboard tour, and Rally has none.
+- **Transitions:** shared-element morphs inside an act; a 12-frame blur dissolve between acts; hard cuts allowed on a line's first word inside the demo (see Pacing).
+
+## Pacing (revision 7)
+
+The reference runs 2:25 because it walks through a product people already want. A judge meets Rally cold, after many other entries, so the cut is built to be short and to keep moving.
+
+- **Result first.** The film opens on the run's result (`cold`): the bag, the price rolling from what PayPal held to what was charged, and the shops whose agents bargained. The problem comes second; the demo starts inside 20 s.
+- **Told once.** No explainer before the demo. The step rail fills as the demo goes; it does not need its own act.
+- **Spoken to the viewer.** Second person ("you fill one bag"), one breath per line: at most 20 words, 13 on average (`MAX_WORDS`, `MEAN_WORDS`). Kokoro at 1.12 (`VOICE_SPEED`), lines 0.12 s apart. Better still: the owner's own voice (`RECORDED_DIR`, see README).
+- **Something new every 2.5 s.** `MAX_HOLD`. Inside a scene, a beat lands at least every 2.5 s: a panel enters, a value rolls, a chip moves, a highlight sweeps, or a hard cut to the next panel. A held frame with drifting colour fields does not count: `npm run pace` compares edges (text, panels, chips), not pixels, with the captions cropped out, and fails on any stretch that holds still past 2.5 s.
+- **Length.** 60–95 s (`TARGET_SECONDS`). Every scene but bidding under 12 s; bidding under 20 s.
 
 ## Where Rally deliberately differs
 

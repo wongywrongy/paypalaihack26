@@ -6,11 +6,12 @@ import { DISSOLVE_S, PLAN, PROOFS } from './plan.ts';
 import { captionEnd, FPS, railAt, type Laid, type Role } from './timeline.ts';
 import { Bidding } from './scenes/Bidding.tsx';
 import { ClipScene } from './scenes/ClipScene.tsx';
-import { Close, Korea, Split, Steps, Where, Why } from './scenes/Story.tsx';
+import { Close, Split, Where, Why } from './scenes/Story.tsx';
+import { Cold } from './scenes/Cold.tsx';
 import { Rail } from './scenes/Rail.tsx';
 import { Canvas, Grain, Proof, Sfx } from './ui/glass.tsx';
 
-const VIEWS: Record<string, (props: { laid: Laid }) => React.ReactNode> = { korea: Korea, split: Split, steps: Steps, haneul: ClipScene, shopper: ClipScene, bidding: Bidding, result: ClipScene, payout: ClipScene, why: Why, where: Where, close: Close };
+const VIEWS: Record<string, (props: { laid: Laid }) => React.ReactNode> = { cold: Cold, split: Split, haneul: ClipScene, shopper: ClipScene, bidding: Bidding, result: ClipScene, payout: ClipScene, why: Why, where: Where, close: Close };
 // Music at −22 dB, another 4 dB down under the voice.
 const OPEN = 10 ** (-22 / 20), DUCKED = 10 ** (-26 / 20);
 // Between acts the picture blurs up and the next blurs down: 12 frames each at 60 fps.

@@ -3,8 +3,14 @@
 // except clip in/out points. {name} in a text is filled from run.json and order.json (see buildFacts in schema.ts).
 export const FPS = 60;
 export const MAX_SECONDS = 175;
-// Silence between lines, at the start of a scene and at its end. LEAD + TAIL and GAP stay under MAX_SILENCE.
-export const GAP = 0.3, LEAD = 0.2, TAIL = 0.3, MAX_SILENCE = 0.6;
+// The cut a judge sits through: aim here, and the tests hold the built cut to it.
+export const TARGET_SECONDS = [60, 95] as const;
+// Silence between lines, at the start of a scene and at its end. Conversation, not a reading: lines nearly touch.
+export const GAP = 0.12, LEAD = 0.1, TAIL = 0.15, MAX_SILENCE = 0.6;
+// Kokoro's speaking rate (scripts/voice.ts reads KOKORO_SPEED, default this). 1.0 sounds like someone reading aloud.
+export const VOICE_SPEED = 1.12;
+// Pacing gates (test/pacing.test.ts and scripts/pace.ts). A line is one breath; the picture changes at least every MAX_HOLD s.
+export const MAX_WORDS = 20, MEAN_WORDS = 13, MAX_HOLD = 2.5;
 
 // The real screen recordings, shown only as short full-frame proof cuts (src/ui/glass.tsx, Proof).
 export const CLIPS = {
@@ -41,58 +47,49 @@ export const STEPS = ['One bag', 'PayPal holds', 'Agents bid', 'Seoul hub', "Eve
 // Measured on the recorded run, in 1440×900 window pixels.
 
 export const SCENES: Scene[] = [
-  // Act 1: the problem, in Korea, concrete and sourced.
+  // Act 1: open on the result, then the mess it replaces. The first picture is the product, not a map.
   {
-    id: 'korea', criterion: 'impact', act: 1,
-    cues: [{ text: 'Korean skincare sold a record $11.4 billion abroad in 2025, and small shops are a fast-growing share of it.', say: 'Korean skincare sold a record eleven point four billion dollars abroad in twenty twenty-five, and small shops are a fast-growing share of it.' }],
+    id: 'cold', criterion: 'presentation, impact', act: 1,
+    cues: [
+      { text: '{hook_line}', say: '{hook_say}' },
+      { text: "You didn't haggle. {shop_count_cap} shops' AI agents did." },
+    ],
   },
   {
     id: 'split', criterion: 'impact', act: 1,
     cues: [
-      { text: 'Say you want {item_count_words} products. The one shop that stocks all {item_count_words} only ships inside Korea.' },
-      { text: 'So you split what you can across other shops: more checkouts, more parcels, and since August 2025, US duties on each parcel.', say: 'So you split what you can across other shops: more checkouts, more parcels, and since August twenty twenty-five, US duties on each parcel.' },
-      { text: 'And when two shops sell the same {compare_item} at different prices, you compare.' },
+      { text: 'Normally? The shop with all {item_count_words} only ships in Korea.' },
+      { text: 'So you split it: more checkouts, more shipping, and US duties on every parcel.' },
+      // The compare chips flash on this line: two shops, two prices, and now they compete.
+      { text: 'Rally makes the shops compete for it instead.' },
     ],
   },
-  // Act 2: how Rally works, five steps, no UI.
-  {
-    id: 'steps', criterion: 'innovation, PayPal', act: 2,
-    cues: [
-      { text: 'Rally turns that into one order, in five steps.' },
-      { text: "One: you fill one bag and see one price, with shipping, duties, tax and Rally's small fee already in it.", step: 1 },
-      { text: "Two: you approve that price with PayPal. PayPal holds it, so it's the most you can be charged.", step: 2 },
-      { text: "Three: each shop's AI agent bids to win your bag, inside limits its owner set. Bids can only bring the price down.", step: 3 },
-      { text: "Four: the winning shops drop their items at Rally's hub in Seoul, a local delivery they already make.", step: 4 },
-      { text: 'Rally ships one box to you, duties paid.' },
-      { text: 'Five: PayPal charges the final price, releases the rest, and pays each shop once it hands off.', step: 5 },
-    ],
-  },
-  // Act 3: the demo, the same five steps.
+  // Act 3: the demo. One step on the rail per line; the shop's setup comes before the order.
   {
     id: 'haneul', criterion: 'innovation, design', act: 3,
     shots: [{ panel: 'price', cue: 0, role: 'shop' }, { panel: 'goal', cue: 1, role: 'shop' }],
     cues: [
-      { text: 'First, a shop owner. Haneul Beauty sets a private lowest price that no rival ever sees.', step: 'before' },
-      { text: 'Then a goal for her agent: win two-item bundles. Nothing changes until she applies it.', step: 'before' },
+      { text: "In Seoul, Haneul's shop sets a lowest price no one else can see.", step: 'before' },
+      { text: 'Her AI agent gets one goal: win two-item bundles.', step: 'before' },
     ],
   },
   {
     id: 'shopper', criterion: 'design, PayPal', act: 3,
-    // The hold card arrives on "everything included", ready to approve; the approval itself is the real one.
-    shots: [{ panel: 'product', cue: 0, role: 'shopper' }, { panel: 'bag', cue: 0, delay: 2.4, role: 'shopper' }, { panel: 'hold', cue: 1, delay: -1.6, role: 'shopper' }],
+    // The hold card arrives on the PayPal line, ready to approve; the approval itself is the real one.
+    shots: [{ panel: 'product', cue: 0, role: 'shopper' }, { panel: 'bag', cue: 0, delay: 1.6, role: 'shopper' }, { panel: 'hold', cue: 1, delay: -0.8, role: 'shopper' }],
     // The real approval, logos blurred: just before the approve click and just after.
     proofs: [{ clip: '05-paypal-hold', cue: 1, in: 2.4, out: 4.4, crop: { x: 436, y: 0, width: 568, height: 770 } }],
     cues: [
-      { text: 'A shopper in California fills a bag: {item_count_words} products, one price of {held}, everything included.', say: 'A shopper in California fills a bag: {item_count_words} products, one price of {held_say}, everything included.', step: 1 },
-      { text: "They approve it in PayPal. That's the ceiling.", step: 2 },
+      { text: 'Then you fill one bag and see one price: {held}, shipping and duties in.', say: 'Then you fill one bag and see one price: {held_say}, shipping and duties in.', step: 1 },
+      { text: "You approve it with PayPal. That's the most you can pay.", step: 2 },
     ],
   },
   {
     id: 'bidding', criterion: 'innovation, tech', act: 3,
     // The real board landing on the final total, right after the drawn board's arithmetic appears.
-    proofs: [{ clip: '06-bidding', cue: 3, delay: 3.4, in: 14.3, out: 16.8, crop: { x: 190, y: 90, width: 1060, height: 470 } }],
+    proofs: [{ clip: '06-bidding', cue: 3, delay: 2.4, in: 14.3, out: 16.3, crop: { x: 190, y: 90, width: 1060, height: 470 } }],
     cues: [
-      { text: 'The agents bid over {rounds_words} rounds. Each item goes to whichever shop makes the whole box cheapest.', step: 3 },
+      { text: 'Now the agents fight for your bag. {rounds_phrase}, and prices only go down.', step: 3 },
       { text: '{reject_line}', anchor: 'reject', step: 3 },
       { text: '{haneul_line}', anchor: 'haneul', step: 3 },
       { text: '{why_line}', say: '{why_say}', anchor: 'award', step: 3 },
@@ -109,30 +106,29 @@ export const SCENES: Scene[] = [
   {
     id: 'payout', criterion: 'PayPal, impact', act: 3,
     shots: [{ panel: 'order', cue: 0, role: 'shop' }],
-    // The real stepper turning from Payout sent to Paid, right after the payout lands; it runs to the act's dissolve.
-    proofs: [{ clip: '08-handoff-payout', cue: 1, delay: 1.65, in: 5, out: 7.5, crop: { x: 598, y: 122, width: 802, height: 410 } }],
+    // The real stepper turning from Payout sent to Paid, right after the payout lands.
+    proofs: [{ clip: '08-handoff-payout', cue: 1, delay: 1.2, in: 5, out: 7, crop: { x: 598, y: 122, width: 802, height: 410 } }],
     cues: [
       { text: '{handoff_line}', step: 4 },
-      { text: 'and PayPal pays her {payout} right after.', say: 'and PayPal pays her {payout_say} right after.', step: 5 },
+      { text: 'and PayPal pays {payout_who} {payout} on the spot.', say: 'and PayPal pays {payout_who} {payout_say} on the spot.', step: 5 },
     ],
   },
-  // Act 4: why it matters, and where it goes.
+  // Act 4: why it matters, one breath each, then where it goes.
   {
     id: 'why', criterion: 'impact, PayPal', act: 4,
     cues: [
-      { text: 'Shoppers get one box and a price that can only go down.' },
-      { text: 'Small shops sell abroad with no export logistics, and are paid once they hand off.' },
-      { text: "And PayPal's hold gives AI agents a hard spending limit they can't cross." },
+      { text: 'You pay less, and get one box.' },
+      { text: 'Small shops sell abroad without shipping abroad.' },
+      { text: "And AI agents get a spending limit they can't break." },
     ],
   },
   {
     id: 'where', criterion: 'impact', act: 4,
-    cues: [{ text: 'Seoul is the first hub. The same pattern can work wherever small shops cluster.' }],
+    cues: [{ text: 'Seoul is first. The same setup can work anywhere small shops cluster.' }],
   },
-  // Act 5: technical, last.
   {
     id: 'close', criterion: 'tech, presentation', act: 5,
-    cues: [{ text: 'Rally. Agents bargain. PayPal keeps it honest.', pause: 0.5 }],
+    cues: [{ text: 'Rally. Agents bargain. PayPal keeps it honest.', pause: 0.3 }],
   },
 ];
 
@@ -150,8 +146,8 @@ export type Plan = { scenes: Laid[]; lines: Line[]; total: number };
 
 export const spokenText = (vars: Record<string, string>) => SCENES.flatMap(scene => scene.cues.map(cue => fill(cue.say ?? cue.text, vars)).filter(Boolean));
 
-// Rough Kokoro speed at 1.0, for builds before npm run voice has measured the real lengths.
-export const estimate = (text: string) => 0.25 + text.split(/\s+/).length * 0.37;
+// Rough Kokoro length at VOICE_SPEED, for builds before npm run voice has measured the real lengths.
+export const estimate = (text: string) => (0.25 + text.split(/\s+/).length * 0.37) / VOICE_SPEED;
 
 export function layout(vars: Record<string, string>, spoken?: number[] | null): Plan {
   let t = 0, n = 0;

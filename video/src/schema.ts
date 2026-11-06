@@ -193,11 +193,20 @@ export function buildFacts(run: Run, order: Order, receipt: Receipt, names: Reco
   const compare = start.items.find(id => new Set(Object.values(listed[id] ?? {})).size > 1) ?? start.items[0];
   const sellers = new Set(Object.values(start.shops).flat()).size;
   const why = undercut
-    ? bundled ? `${SHORT_NAMES[undercut.cheaper]}'s ${kind(undercut.id)} was cheaper alone, but ${SHORT_NAMES[undercut.winner]}'s bundle made the whole box cheaper.` : 'Rally picks the cheapest whole box, not the cheapest single item.'
+    ? bundled ? `${SHORT_NAMES[undercut.cheaper]}'s ${kind(undercut.id)} was cheaper alone, but ${SHORT_NAMES[undercut.winner]}'s bundle makes the whole box cheaper.` : 'Rally picks the cheapest whole box, not the cheapest single item.'
     : 'The cheapest whole box wins.';
+  const cap = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
   const extras = receipt.breakdown.total - receipt.breakdown.goods;
   const haneulWon = won('haneul');
   return {
+    // The cold open: the result first. With nothing released, it leads on the one box instead of a saving.
+    hook_line: released ? `You just saved ${cash(released)} on Korean skincare.` : `You just bought Korean skincare from ${words(boxShops)} ${boxShops === 1 ? 'shop' : 'shops'}, in one box.`,
+    hook_say: released ? `You just saved ${say(released)} on Korean skincare.` : `You just bought Korean skincare from ${words(boxShops)} ${boxShops === 1 ? 'shop' : 'shops'}, in one box.`,
+    released_say: say(released),
+    // Who PayPal pays in the payout line: Haneul when she won, otherwise the shop that did.
+    payout_who: haneulWon ? 'her' : payoutShop,
+    shop_count_cap: cap(words(sellers)),
+    rounds_phrase: `${cap(words(rounds))} ${rounds === 1 ? 'round' : 'rounds'}`,
     held: cash(run.held_minor),
     held_say: say(run.held_minor),
     charged: cash(run.charged_minor),
@@ -216,16 +225,16 @@ export function buildFacts(run: Run, order: Order, receipt: Receipt, names: Reco
     haneul_line: asked ? `Haneul's ${asked.authored === 'code' ? 'bid' : 'agent'} does what she asked: ${terms.split(' with ')[0]}.` : '',
     // Shown only when agents wrote at least half the bids; a small share undercuts the scene without adding to it.
     agent_line: written * 2 >= bids ? `Shop agents wrote ${written} of ${bids} ${bids === 1 ? 'bid' : 'bids'}${rejected ? ` · Rally's checks rejected ${rejected}` : ''}.` : '',
-    why_line: `${why} Final price: ${cash(run.charged_minor)}.`,
-    why_say: `${why} Final price: ${say(run.charged_minor)}.`,
+    why_line: `${why} You pay ${cash(run.charged_minor)}.`,
+    why_say: `${why} You pay ${say(run.charged_minor)}.`,
     why_shown: undercut ? 'yes' : '',
     items_total: cash(receipt.breakdown.goods),
     extras_total: cash(extras),
-    capture_line: released ? `PayPal charges that and releases the other ${cash(released)}.` : `PayPal charges ${cash(run.charged_minor)}, exactly the hold.`,
-    capture_say: released ? `PayPal charges that and releases the other ${say(released)}.` : `PayPal charges ${say(run.charged_minor)}, exactly the hold.`,
+    capture_line: released ? `PayPal charges that and hands back the other ${cash(released)}.` : `PayPal charges ${cash(run.charged_minor)}, exactly the hold.`,
+    capture_say: released ? `PayPal charges that and hands back the other ${say(released)}.` : `PayPal charges ${say(run.charged_minor)}, exactly the hold.`,
     box_line: `One box from ${words(boxShops)} ${boxShops === 1 ? 'shop' : 'shops'}, duties already paid.`,
     handoff_line: haneulWon
-      ? `Haneul hands her ${words(haneulWon)} items to the Seoul hub,`
-      : `Haneul was outbid. ${payoutShop} hands its items to the Seoul hub,`,
+      ? `Haneul drops her ${words(haneulWon)} ${haneulWon === 1 ? 'item' : 'items'} at the Seoul hub,`
+      : `Haneul was outbid. ${payoutShop} drops its items at the Seoul hub,`,
   };
 }

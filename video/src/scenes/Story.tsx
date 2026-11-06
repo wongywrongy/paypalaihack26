@@ -215,9 +215,9 @@ export function Steps({ laid }: { laid: Laid }) {
 
 // --- Act 4 ---
 const CARDS = [
-  { who: 'Shoppers', line: 'One box, and a price that can only go down' },
-  { who: 'Small shops', line: 'Sell abroad with no export logistics, paid once they hand off' },
-  { who: 'PayPal', line: 'A hard spending limit AI agents cannot cross' },
+  { who: 'Shoppers', line: 'Pay less, get one box' },
+  { who: 'Small shops', line: 'Sell abroad without shipping abroad' },
+  { who: 'PayPal', line: "A spending limit AI agents can't break" },
 ];
 export function Why({ laid }: { laid: Laid }) {
   const frame = useFrame(), fps = MOTION_FPS;
