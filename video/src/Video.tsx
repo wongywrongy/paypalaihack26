@@ -1,8 +1,8 @@
 import { AbsoluteFill, Audio, interpolate, Sequence, staticFile } from 'remotion';
 import { C, manifest, SANS } from './theme.ts';
-import { clamp, DUR, ease, MOTION_FPS, smooth, useFrame } from './motion.ts';
+import { clamp, DUR, ease, MOTION_FPS, useFrame } from './motion.ts';
 import { Captions, RoleTag } from './ui.tsx';
-import { DISSOLVE_S, PLAN, PROOFS } from './plan.ts';
+import { PLAN, PROOFS } from './plan.ts';
 import { captionEnd, FPS, railAt, type Laid, type Role } from './timeline.ts';
 import { Bidding } from './scenes/Bidding.tsx';
 import { ClipScene } from './scenes/ClipScene.tsx';
@@ -25,10 +25,10 @@ function Shot({ laid, enters, leaves, children }: { laid: Laid; enters: boolean;
   return <AbsoluteFill style={{ filter: blur > 0.01 ? `blur(${blur}px)` : undefined, opacity: 1 - 0.6 * Math.max(inP, outP) }}>{children}</AbsoluteFill>;
 }
 
-// A proof cut covers the whole frame, the rail and role tag included; only the captions stay over it.
+// A proof cut covers the whole frame, the rail and role tag included; only the captions stay over it. Hard in and out.
 function ProofCut({ index }: { index: number }) {
-  const { proof, length } = PROOFS[index], s = useFrame() / MOTION_FPS;
-  return <Proof name={proof.clip} from={proof.in} to={proof.out} crop={proof.crop} p={smooth(Math.min(s / DISSOLVE_S, (length - s) / DISSOLVE_S))} />;
+  const { proof } = PROOFS[index];
+  return <Proof name={proof.clip} from={proof.in} to={proof.out} crop={proof.crop} p={1} />;
 }
 
 // Whose screen: the bidding board is what the shopper sees; map and diagram scenes have no side.

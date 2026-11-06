@@ -29,7 +29,7 @@ Designed from one reference: `reference/cluelyreference.mp4` (Cluely's product v
 - **Text:** the app's display font (Schibsted Grotesk), headlines 96–140 px at −2% tracking. Words reveal one at a time from 8 px blur and 14 px below, three frames apart at 60 fps: the reference's motion-blur entrance (0:04), made calmer.
 - **Numbers:** the app's mono (IBM Plex Mono), tabular. Totals roll like an odometer and only roll down; the final price gets the one shimmer.
 - **Keycaps and cursor:** keycaps only while the goal is typed (real keystrokes); a drawn cursor on curved paths with a click ripple only on Add to bag, Approve, Apply and Record hand-off, as at 0:16.
-- **Transitions:** shared-element morphs inside an act; a 12-frame blur dissolve between acts; hard cuts allowed on a line's first word inside the demo (see Pacing).
+- **Transitions:** a 12-frame blur dissolve only between acts (cold to split, split to demo, demo to why, where to close); inside the demo, hard cuts on a line's first word when the panel changes; proof cuts in and out hard on the light canvas (see Pacing).
 
 ## Pacing (revision 7)
 

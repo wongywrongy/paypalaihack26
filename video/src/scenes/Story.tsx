@@ -3,11 +3,12 @@ import { interpolate } from 'remotion';
 import { evolvePath } from '@remotion/paths';
 import { money, SHOP_NAMES, SHORT_NAMES } from '../schema.ts';
 import { C, manifest, MONO } from '../theme.ts';
-import { clamp, DUR, ease, enter, MOTION_FPS, pop, rise, smooth, useFrame } from '../motion.ts';
-import { glass, Words } from '../ui/glass.tsx';
+import { clamp, DUR, ease, enter, MOTION_FPS, pop, rise, shake, smooth, tiltIn, useFrame } from '../motion.ts';
+import { glass, Odometer, Words } from '../ui/glass.tsx';
 import { Land, lerpView, mapTransform, onScreen, project, WORLD, type MapView } from '../map.tsx';
 import { Lock, Photo } from '../ui.tsx';
 import { Rail } from './Rail.tsx';
+import { wordAt } from '../plan.ts';
 import type { Laid } from '../timeline.ts';
 
 type Shop = keyof typeof SHOP_NAMES;
@@ -27,6 +28,7 @@ const OPEN_MOVE = 2.2, CLOSE_MOVE = 2.6;
 // Dalbit's label hangs below its pin, clear of the arc it sends up toward California.
 const SHOP_SPOTS: Record<Shop, { dx: number; dy: number; left?: boolean; below?: boolean }> = { haneul: { dx: -230, dy: -60, left: true }, dalbit: { dx: 170, dy: -130, below: true }, bada: { dx: 90, dy: 150 } };
 const SHOPS = Object.keys(SHOP_SPOTS) as Shop[];
+const FEES = ['+ checkout', '+ shipping', '+ duties'];
 const start = manifest.events.find(row => row.kind === 'start')!;
 const items: string[] = start.items;
 const cash = (value: number) => money(value, manifest.run.currency);
@@ -106,6 +108,7 @@ export function Split({ laid }: { laid: Laid }) {
   const compare = items.find(id => new Set(Object.values(listed[id] ?? {})).size > 1) ?? items[0];
   const flash = frame >= c2 ? Math.floor((frame - c2) / 12) % 2 : -1;
   const meIn = enter(frame, fps, Math.round(1.2 * fps));
+  const fees = ['checkouts', 'shipping', 'duties'].map(word => Math.round(wordAt(laid, 1, word) * fps)), sourceAt = fees[2] + 24;
   return <>
     <Map v={v} />
     <ScreenArc id="bada" a={bada} b={shopper} from={c0 + 40} until={0.16} color={C.accent} />
@@ -116,12 +119,12 @@ export function Split({ laid }: { laid: Laid }) {
         <Tag tone="ok" style={rise(enter(frame, fps, c0 + 20), 8)}>Stocks all {items.length}</Tag>
         {frame >= c0 + 40 + DUR.camera && <Tag tone="stop" style={rise(enter(frame, fps, c0 + 40 + DUR.camera), 8)}>Ships only in Korea</Tag>}
       </div> : undefined} />)}
-    {/* What each extra parcel adds, beside the shopper, clear of the arcs; the source under everything. */}
-    {frame >= c1 + DUR.camera && <div style={{ position: 'absolute', left: shopper.x + 44, top: shopper.y - 170, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
-      <div style={{ fontSize: 24, fontWeight: 700, color: C.muted, textShadow: halo, ...rise(enter(frame, fps, c1 + DUR.camera), 8) }}>Each parcel</div>
-      {['+ shipping', '+ duties'].map((fee, i) => <Tag key={fee} style={rise(enter(frame, fps, c1 + DUR.camera + 4 + i * 6), 8)}>{fee}</Tag>)}
+    {/* What each extra parcel adds, each fee on its word, beside the shopper and clear of the arcs; the source under everything. */}
+    {frame >= fees[0] && <div style={{ position: 'absolute', left: shopper.x + 44, top: shopper.y - 210, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
+      <div style={{ fontSize: 24, fontWeight: 700, color: C.muted, textShadow: halo, ...rise(enter(frame, fps, fees[0]), 8) }}>Each parcel</div>
+      {FEES.map((fee, i) => frame >= fees[i] && <Tag key={fee} style={{ transform: `scale(${Math.min(1.1, pop(frame, fps, fees[i]))})`, transformOrigin: 'left center' }}>{fee}</Tag>)}
     </div>}
-    {frame >= c1 + DUR.camera + 20 && <Source style={{ position: 'absolute', left: shopper.x - 300, width: 600, textAlign: 'center', top: shopper.y + 300, ...rise(enter(frame, fps, c1 + DUR.camera + 20), 6) }}>US de minimis suspended Aug 29, 2025 · CBP</Source>}
+    {frame >= sourceAt && <Source style={{ position: 'absolute', left: shopper.x - 300, width: 600, textAlign: 'center', top: shopper.y + 300, ...rise(enter(frame, fps, sourceAt), 6) }}>US de minimis suspended Aug 29, 2025 · CBP</Source>}
     <div style={{ position: 'absolute', left: shopper.x, top: shopper.y, transform: 'translate(-50%, -50%)', width: 26, height: 26, borderRadius: 13, background: C.ink, border: `4px solid ${C.surface}`, opacity: meIn }} />
     <div style={{ position: 'absolute', left: shopper.x - 170, top: shopper.y + 30, width: 340, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, opacity: meIn }}>
       <div style={{ fontSize: 30, fontWeight: 800, textShadow: halo }}>You, in California</div>
@@ -214,23 +217,57 @@ export function Steps({ laid }: { laid: Laid }) {
 }
 
 // --- Act 4 ---
+// One card per line, cut in on the line's first word, each with its own small motion: the price ticks down, a parcel
+// lands in the hub's box, a lock closes on a spending bar.
 const CARDS = [
   { who: 'Shoppers', line: 'Pay less, get one box' },
   { who: 'Small shops', line: 'Sell abroad without shipping abroad' },
   { who: 'PayPal', line: "A spending limit AI agents can't break" },
 ];
+function PriceDown({ from }: { from: number }) {
+  const frame = useFrame(), { held_minor: held, charged_minor: charged } = manifest.run;
+  const p = ease(interpolate(frame, [from, from + 24], [0, 1], clamp));
+  return <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+    <div style={{ fontFamily: MONO, fontSize: 30, color: C.muted, textDecoration: p >= 1 ? 'line-through' : undefined }}>{cash(held)}</div>
+    <div style={{ fontSize: 96, color: p >= 1 ? C.saving : C.ink }}><Odometer cents={held - (held - charged) * p} digits={String(held).length} /></div>
+  </div>;
+}
+function ParcelIn({ from }: { from: number }) {
+  const frame = useFrame(), fps = MOTION_FPS;
+  const fall = interpolate(frame, [from, from + 14], [0, 1], { ...clamp, easing: x => x * x }), landed = frame >= from + 14;
+  return <div style={{ position: 'relative', width: 300, height: 260 }}>
+    <div style={{ position: 'absolute', left: 105, top: 150 * fall - 20, opacity: Math.min(1, (frame - from + 4) / 4) }}><Parcel size={90} /></div>
+    <div style={{ position: 'absolute', left: 40, top: 150, width: 220, height: 100, borderRadius: 14, border: `4px solid ${C.saving}`, borderTop: 'none', boxSizing: 'border-box', transform: `scaleX(${landed ? 1 + 0.06 * Math.sin(Math.PI * Math.min(1, (frame - from - 14) / 8)) : 1})` }} />
+    <div style={{ position: 'absolute', left: 0, right: 0, top: 262, textAlign: 'center', fontSize: 26, fontWeight: 700, color: C.saving, opacity: enter(frame, fps, from + 14) }}>Seoul hub</div>
+  </div>;
+}
+function LockedBar({ from }: { from: number }) {
+  const frame = useFrame();
+  const fill = ease(interpolate(frame, [from, from + 20], [0, 1], clamp)), shut = ease(interpolate(frame, [from + 18, from + 26], [0, 1], clamp));
+  const push = frame > from + 26 ? 6 * Math.sin((frame - from - 26) / 3) * Math.max(0, 1 - (frame - from - 26) / 24) : 0;
+  return <div style={{ position: 'relative', width: 340, height: 220 }}>
+    <div style={{ position: 'absolute', left: 0, top: 130, width: 300, height: 40, borderRadius: 20, background: C.surface, boxShadow: `inset 0 0 0 2px ${C.line}` }} />
+    <div style={{ position: 'absolute', left: 0, top: 130, width: 300 * fill + push, height: 40, borderRadius: 20, background: C.accent }} />
+    <div style={{ position: 'absolute', left: 300, top: 90, width: 4, height: 120, background: C.ink }} />
+    {/* The lock: its shackle drops shut as the bar reaches the limit. */}
+    <div style={{ position: 'absolute', left: 280, top: 6 + 14 * shut, width: 44, height: 40, borderRadius: '22px 22px 0 0', border: `6px solid ${C.ink}`, borderBottom: 'none', boxSizing: 'border-box' }} />
+    <div style={{ position: 'absolute', left: 270, top: 40, width: 64, height: 50, borderRadius: 10, background: C.ink }} />
+  </div>;
+}
+const VISUALS = [PriceDown, ParcelIn, LockedBar];
 export function Why({ laid }: { laid: Laid }) {
   const frame = useFrame(), fps = MOTION_FPS;
+  const starts = CARDS.map((_, i) => Math.round(cue(laid, i) * fps)), i = Math.max(0, starts.filter(f => frame >= f).length - 1);
+  const card = CARDS[i], Visual = VISUALS[i], from = starts[i], hit = Math.round(wordAt(laid, 2, 'break') * fps);
   return <>
     <Map v={WORLD} dim={0.28} />
-    <div style={{ position: 'absolute', left: 0, right: 0, top: 290, display: 'flex', justifyContent: 'center', gap: 40 }}>
-      {CARDS.map((card, i) => {
-        const p = enter(frame, fps, Math.round(cue(laid, i) * fps));
-        return <div key={card.who} style={{ width: 480, minHeight: 300, boxSizing: 'border-box', padding: '36px 40px', borderRadius: 24, ...glass, background: i === 2 ? C.tint : glass.background, display: 'flex', flexDirection: 'column', gap: 18, ...rise(p, 24) }}>
-          <div style={{ fontSize: 30, fontWeight: 800, color: i === 2 ? C.accentHover : C.accent }}>{card.who}</div>
-          <div style={{ fontSize: 44, fontWeight: 800, letterSpacing: '-.02em', lineHeight: 1.12 }}>{card.line}</div>
-        </div>;
-      })}
+    {/* "can't break": the limit holds, and the card takes the knock. */}
+    <div key={i} style={{ position: 'absolute', left: 260 + (i === 2 ? 2 * shake(frame, hit) : 0), top: 250, width: 1400, height: 440, boxSizing: 'border-box', padding: '50px 64px', borderRadius: 32, ...glass, background: i === 2 ? C.tint : glass.background, display: 'flex', alignItems: 'center', gap: 60, ...tiltIn(enter(frame, fps, from, DUR.standard)) }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 22 }}>
+        <div style={{ fontSize: 36, fontWeight: 800, color: i === 2 ? C.accentHover : C.accent }}>{card.who}</div>
+        <div style={{ fontSize: 72, fontWeight: 800, letterSpacing: '-.025em', lineHeight: 1.08 }}>{card.line}</div>
+      </div>
+      <Visual from={from + 6} />
     </div>
   </>;
 }
@@ -250,15 +287,16 @@ function Hub({ x, y, name, live, from }: { x: number; y: number; name: string; l
     <div style={{ fontSize: 22, fontWeight: 800, color: live ? C.saving : C.ink, textShadow: halo }}>{live ? 'Live' : 'Next'}</div>
   </div>;
 }
-export function Where() {
-  const frame = useFrame(), fps = MOTION_FPS;
+export function Where({ laid }: { laid: Laid }) {
+  const frame = useFrame(), fps = MOTION_FPS, anywhere = Math.round(wordAt(laid, 0, 'anywhere') * fps);
   // Camera move 2 of 2: the pull-back from Seoul to the world.
   const v = lerpView(KOREA, WORLD_SAFE, smooth(frame / (CLOSE_MOVE * fps)));
   const seoul = onScreen(v, SEOUL_AT);
   return <>
     <Map v={v} />
+    {NEXT_HUBS.map((hub, i) => { const p = onScreen(v, project(hub.lat, hub.lon)); return <ScreenArc key={hub.name} id={`next-${i}`} a={seoul} b={{ x: p.x + hub.dx, y: p.y + hub.dy }} from={anywhere + i * 4} color={C.saving} />; })}
     <Hub x={seoul.x} y={seoul.y} name="Seoul hub" live from={0} />
-    {NEXT_HUBS.map((hub, i) => { const p = onScreen(v, project(hub.lat, hub.lon)); return <Hub key={hub.name} x={p.x + hub.dx} y={p.y + hub.dy} name={hub.name} live={false} from={Math.round(CLOSE_MOVE * 0.75 * fps) + i * 8} />; })}
+    {NEXT_HUBS.map((hub, i) => { const p = onScreen(v, project(hub.lat, hub.lon)); return <Hub key={hub.name} x={p.x + hub.dx} y={p.y + hub.dy} name={hub.name} live={false} from={anywhere + i * 4} />; })}
   </>;
 }
 

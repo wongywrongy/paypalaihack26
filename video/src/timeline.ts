@@ -1,6 +1,8 @@
 // The one place to re-time the video. The voice drives it: every cue starts GAP seconds after the previous one ends,
 // and each scene is its cues plus LEAD and TAIL. Shot and camera times hang off cues, so nothing here is in seconds
 // except clip in/out points. {name} in a text is filled from run.json and order.json (see buildFacts in schema.ts).
+import { chunks } from './captions.ts';
+
 export const FPS = 60;
 export const MAX_SECONDS = 175;
 // The cut a judge sits through: aim here, and the tests hold the built cut to it.
@@ -29,16 +31,16 @@ export type Role = keyof typeof ROLES;
 // step: in the demo, the step this line shows, filled on the rail. 'before' is the shop's setup ahead of step 3.
 export type Step = 1 | 2 | 3 | 4 | 5 | 'before';
 export type Cue = { text: string; say?: string; anchor?: 'reject' | 'agent' | 'haneul' | 'award'; pause?: number; step?: Step };
-// A product moment, drawn natively from the run (src/ui/panels.tsx), starting at a scene cue (plus delay seconds)
-// and running to the next shot.
+// A product moment, drawn natively from the run (src/ui/panels.tsx), starting at a scene cue, or at a word of it
+// (word), plus delay seconds, and running to the next shot.
 export const PANELS = ['price', 'goal', 'product', 'bag', 'hold', 'receipt', 'order'] as const;
 export type Panel = typeof PANELS[number];
-export type Shot = { panel: Panel; cue: number; delay?: number; role: Role };
+export type Shot = { panel: Panel; cue: number; word?: string; delay?: number; role: Role };
 // A real screen recording as a full-frame cut, proof that the drawn panels are the running product: clip seconds in
-// to out, starting at a scene cue (plus delay, which may be negative). crop is the region shown, in 1440×900 window
+// to out, starting at a scene cue or a word of it (plus delay, which may be negative). crop is the region shown, in 1440×900 window
 // pixels; it is fitted to the frame but never shown above the recording's own pixel size.
 export type Rect = { x: number; y: number; width: number; height: number };
-export type Proof = { clip: ClipName; cue: number; delay?: number; in: number; out: number; crop: Rect };
+export type Proof = { clip: ClipName; cue: number; word?: string; delay?: number; in: number; out: number; crop: Rect };
 export type Scene = { id: string; criterion: string; act: 1 | 2 | 3 | 4 | 5; cues: Cue[]; shots?: Shot[]; proofs?: Proof[] };
 
 // The step rail, word for word.
@@ -47,7 +49,7 @@ export const STEPS = ['One bag', 'PayPal holds', 'Agents bid', 'Seoul hub', "Eve
 // Measured on the recorded run, in 1440×900 window pixels.
 
 export const SCENES: Scene[] = [
-  // Act 1: open on the result, then the mess it replaces. The first picture is the product, not a map.
+  // Act 1: open on the result. Act 2: the mess it replaces. The first picture is the product, not a map.
   {
     id: 'cold', criterion: 'presentation, impact', act: 1,
     cues: [
@@ -56,7 +58,7 @@ export const SCENES: Scene[] = [
     ],
   },
   {
-    id: 'split', criterion: 'impact', act: 1,
+    id: 'split', criterion: 'impact', act: 2,
     cues: [
       { text: 'Normally? The shop with all {item_count_words} only ships in Korea.' },
       { text: 'So you split it: more checkouts, more shipping, and US duties on every parcel.' },
@@ -75,10 +77,10 @@ export const SCENES: Scene[] = [
   },
   {
     id: 'shopper', criterion: 'design, PayPal', act: 3,
-    // The hold card arrives on the PayPal line, ready to approve; the approval itself is the real one.
-    shots: [{ panel: 'product', cue: 0, role: 'shopper' }, { panel: 'bag', cue: 0, delay: 1.6, role: 'shopper' }, { panel: 'hold', cue: 1, delay: -0.8, role: 'shopper' }],
-    // The real approval, logos blurred: just before the approve click and just after.
-    proofs: [{ clip: '05-paypal-hold', cue: 1, in: 2.4, out: 4.4, crop: { x: 436, y: 0, width: 568, height: 770 } }],
+    // A hard cut to the hold card on the PayPal line's first word; Approve is clicked on "approve".
+    shots: [{ panel: 'product', cue: 0, role: 'shopper' }, { panel: 'bag', cue: 0, word: 'bag', delay: 0.25, role: 'shopper' }, { panel: 'hold', cue: 1, role: 'shopper' }],
+    // The real approval, logos blurred, right after the drawn click: just before the approve click and just after.
+    proofs: [{ clip: '05-paypal-hold', cue: 1, word: 'approve', delay: 0.35, in: 2.4, out: 4.4, crop: { x: 436, y: 0, width: 568, height: 770 } }],
     cues: [
       { text: 'Then you fill one bag and see one price: {held}, shipping and duties in.', say: 'Then you fill one bag and see one price: {held_say}, shipping and duties in.', step: 1 },
       { text: "You approve it with PayPal. That's the most you can pay.", step: 2 },
@@ -106,8 +108,8 @@ export const SCENES: Scene[] = [
   {
     id: 'payout', criterion: 'PayPal, impact', act: 3,
     shots: [{ panel: 'order', cue: 0, role: 'shop' }],
-    // The real stepper turning from Payout sent to Paid, right after the payout lands.
-    proofs: [{ clip: '08-handoff-payout', cue: 1, delay: 1.2, in: 5, out: 7, crop: { x: 598, y: 122, width: 802, height: 410 } }],
+    // The real stepper turning from Payout sent to Paid, as the payout that just landed is said.
+    proofs: [{ clip: '08-handoff-payout', cue: 1, word: '$', in: 5, out: 7, crop: { x: 598, y: 122, width: 802, height: 410 } }],
     cues: [
       { text: '{handoff_line}', step: 4 },
       { text: 'and PayPal pays {payout_who} {payout} on the spot.', say: 'and PayPal pays {payout_who} {payout_say} on the spot.', step: 5 },
@@ -187,6 +189,16 @@ export function cueAt(laid: Laid, index: number) {
   const line = laid.cues.find(row => row.index >= index) ?? laid.cues[laid.cues.length - 1];
   return line.start - laid.start;
 }
+
+// Scene seconds when a word of a cue is spoken, timed like the captions, so the picture lands with the word.
+export function wordAt(laid: Laid, index: number, word: string) {
+  const line = laid.cues.find(row => row.index >= index) ?? laid.cues[laid.cues.length - 1];
+  const hit = chunks(line.text, line.start, line.end).flatMap(part => part.words).find(row => row.word.toLowerCase().replace(/[^a-z0-9$']/g, '').startsWith(word.toLowerCase()));
+  return (hit?.from ?? line.start) - laid.start;
+}
+
+// Scene seconds when a shot or proof starts: its cue, or a word of it, plus its delay.
+export const startAt = (laid: Laid, row: { cue: number; word?: string; delay?: number }) => (row.word ? wordAt(laid, row.cue, row.word) : cueAt(laid, row.cue)) + (row.delay ?? 0);
 
 const stamp = (seconds: number, sep: string) => {
   const ms = Math.round(seconds * 1000), pad = (n: number, width = 2) => String(n).padStart(width, '0');

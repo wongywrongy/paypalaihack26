@@ -7,7 +7,7 @@ import { prepare } from '../scripts/prepare.ts';
 import { anchored, buildBoard, roundAt, sceneAt, valueAt } from '../src/auction.ts';
 import { buildFacts, crossCheck, finalCheck, finalPrices, money, OrderSchema, parse, ReceiptSchema, receiptCheck, RunSchema, spokenMoney } from '../src/schema.ts';
 import { phrases } from '../src/captions.ts';
-import { CLIPS, cueAt, GAP, LEAD, layout, MAX_SECONDS, MAX_SILENCE, MAX_WORDS, MEAN_WORDS, railAt, SCENES, spokenText, STEPS, TAIL, TARGET_SECONDS, toScript, toSrt, type ClipName } from '../src/timeline.ts';
+import { CLIPS, cueAt, GAP, startAt, LEAD, layout, MAX_SECONDS, MAX_SILENCE, MAX_WORDS, MEAN_WORDS, railAt, SCENES, spokenText, STEPS, TAIL, TARGET_SECONDS, toScript, toSrt, type ClipName } from '../src/timeline.ts';
 
 // Test data only: nothing here reaches a build.
 const events = () => [
@@ -84,7 +84,7 @@ test('captions fit two lines and never overlap', () => {
 
 test('every shot starts on a line and has time on screen', () => {
   for (const plan of plans()) for (const scene of plan.scenes) (scene.scene.shots || []).forEach((shot, i, shots) => {
-    const at = (n: number) => cueAt(scene, shots[n].cue) + (shots[n].delay ?? 0);
+    const at = (n: number) => startAt(scene, shots[n]);
     const from = i === 0 ? 0 : at(i), to = i + 1 < shots.length ? at(i + 1) : scene.duration;
     assert.ok(to - from >= 1.5, `${scene.id} ${shot.panel} has ${(to - from).toFixed(2)} s`);
   });

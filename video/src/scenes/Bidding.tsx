@@ -1,11 +1,12 @@
 // The board item first, like the app's Deal screen: one row per bag item, one price chip per shop that sells it.
 import { interpolate } from 'remotion';
-import { anchored, buildBoard, onScene, valueAt, type AuctionEvent, type Board, type Knot } from '../auction.ts';
+import { anchored, buildBoard, onScene, sceneAt, valueAt, type AuctionEvent, type Board, type Knot } from '../auction.ts';
 import { money, SHOP_NAMES, SHORT_NAMES } from '../schema.ts';
 import { BANNED, C, manifest, MONO } from '../theme.ts';
 import { clamp, DUR, ease, enter, MOTION_FPS, pop, rise, shake, typed, useFrame } from '../motion.ts';
 import { glass, Odometer } from '../ui/glass.tsx';
-import { Photo, Rich } from '../ui.tsx';
+import { Flight, Photo, Rich } from '../ui.tsx';
+import { HOLD_PRICE } from '../ui/panels.tsx';
 import { proofSpan, scene } from '../plan.ts';
 import type { Laid } from '../timeline.ts';
 
@@ -18,7 +19,7 @@ const raw = buildBoard(manifest.events);
 const hold = manifest.run.held_minor;
 const cash = (value: number) => money(value, manifest.run.currency);
 const reject = raw.rejected[0];
-const replace = reject && raw.bids.find(row => row.shop === reject.shop && row.t > reject.t);
+const lastRound = raw.rounds[raw.rounds.length - 1];
 const agentBid = raw.bids.find(row => row.authored === 'agent');
 const haneulBid = [...raw.bids].reverse().find(row => row.shop === 'haneul' && Object.values(row.perks as Record<string, string[]>).some(perks => perks.includes('bundle')));
 const bundle: string[] = haneulBid?.bundle?.items ?? [];
@@ -34,8 +35,8 @@ const bagRow = (i: number) => ({ x: BAG_X, y: BAG_Y + i * BAG_H });
 // The header grid: role tag top left with the title on its own row under it, the rail top centre, the total top right
 // under its label. Every block keeps 32 px or more from the next.
 const HEADER = { x: 1589, y: 128, size: 110 }, BAG_TOTAL = { x: 1352, y: 752, size: 64 };
-export const BOARD_TOTAL = HEADER;
-const FLY = 26, FROM = 1.4;
+// The hold card's price flies into the board's total; the rows rise in under it, 4 frames apart, chips and all.
+const FLY = 16, FROM = 0.9;
 
 function pace(laid: Laid) {
   const knots: Knot[] = [];
@@ -46,49 +47,49 @@ function pace(laid: Laid) {
     // The cheaper single price comes back once each row has collapsed to its winner.
     if (line.anchor === 'award') { knots.push({ t: raw.awardAt, s: at + 0.25 }); if (manifest.vars.why_shown) whyAt = at + 1.6; }
     else if (line.anchor && events[line.anchor]) knots.push({ t: events[line.anchor]!.t, s: at + 0.25 });
-    // The replacement lands as the line says the checks sent it.
-    if (line.anchor === 'reject' && replace) knots.push({ t: replace.t, s: line.end - laid.start - 0.8 });
+    // The last round closes, and the total rolls, while Haneul's line is still being spoken.
+    if (line.anchor === 'haneul' && lastRound && haneulBid && lastRound.t > haneulBid.t) knots.push({ t: lastRound.t, s: line.end - laid.start - 0.9 });
   }
   return { knots: knots.sort((a, b) => a.t - b.t), whyAt };
 }
 const laid = scene('bidding');
 const { knots, whyAt } = pace(laid);
-const board: Board = onScene(raw, anchored(raw, FROM, knots));
+const paced = anchored(raw, FROM, knots);
+const board: Board = onScene(raw, paced);
 // On the scene's clock: onScene moves bids and rejections, not the raw event list.
 const at = (event: AuctionEvent | undefined) => event ? [...board.bids, ...board.rejected].find(row => row.seq === event.seq)?.t ?? Infinity : Infinity;
 const onBoard = { reject: board.rejected[0] ? board.rejected[0].t : Infinity, agent: at(agentBid), haneul: at(haneulBid) };
 const winners = manifest.run.winners as Record<string, { shop: Shop; unit: number }>;
 const wonCount = Object.keys(winners).length;
 
-// The shopper's bag, rebuilt from the run: the items, who sells each, and the one price PayPal holds.
-export function BagCard({ fly = 0 }: { fly?: number }) {
-  const chrome = 1 - Math.min(1, fly * 1.6);
+// The shopper's bag, rebuilt from the run: the items, who sells each, and the one price PayPal holds. row(i) and total
+// are each one's arrival, 0 to 1; note is the "all in" line's.
+export function BagCard({ row = () => 1, total = 1, note = 1 }: { row?: (i: number) => number; total?: number; note?: number }) {
   const start = manifest.events.find(row => row.kind === 'start') as AuctionEvent;
-  const lerp = (a: number, b: number) => a + (b - a) * fly;
   return <>
-    <div style={{ position: 'absolute', left: BAG_X - 50, top: 150, width: 1120, height: 680, ...glass, borderRadius: 28, opacity: chrome }}>
+    <div style={{ position: 'absolute', left: BAG_X - 50, top: 150, width: 1120, height: 680, ...glass, borderRadius: 28 }}>
       <div style={{ position: 'absolute', left: 50, top: 34, fontSize: 34, fontWeight: 800, letterSpacing: '-.02em' }}>Your bag · {ROWS.length} items</div>
       <div style={{ position: 'absolute', left: 50, right: 50, top: 568, height: 1, background: C.line }} />
       <div style={{ position: 'absolute', left: 50, top: 586, fontSize: 30, color: C.muted }}>Total, all in</div>
-      <div style={{ position: 'absolute', left: 50, top: 630, fontSize: 24, color: C.accentHover }}>Shipping, duties and tax included</div>
+      <div style={{ position: 'absolute', left: 50, top: 630, fontSize: 30, fontWeight: 700, color: C.accentHover, ...rise(note, 24) }}>Shipping, duties and tax included</div>
     </div>
     {ROWS.map((id, i) => {
-      const a = bagRow(i), b = boardRow(i);
-      return <div key={id} style={{ position: 'absolute', left: lerp(a.x, b.x), top: lerp(a.y, b.y), display: 'flex', alignItems: 'center', gap: 22 }}>
+      const a = bagRow(i);
+      return <div key={id} style={{ position: 'absolute', left: a.x, top: a.y, display: 'flex', alignItems: 'center', gap: 22, ...rise(row(i), 40) }}>
         <Photo id={id} size={PHOTO} />
         <div>
           <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.015em' }}>{manifest.names[id]}</div>
-          <div style={{ fontSize: 25, color: C.muted, opacity: chrome }}>{(start.shops[id] as Shop[]).map(shop => SHOP_NAMES[shop]).join(' · ')}</div>
+          <div style={{ fontSize: 25, color: C.muted }}>{(start.shops[id] as Shop[]).map(shop => SHOP_NAMES[shop]).join(' · ')}</div>
         </div>
       </div>;
     })}
-    <div style={{ position: 'absolute', left: lerp(BAG_TOTAL.x, HEADER.x), top: lerp(BAG_TOTAL.y, HEADER.y), transform: 'translate(-50%, -50%)', fontFamily: MONO, fontVariantNumeric: 'tabular-nums', fontSize: lerp(BAG_TOTAL.size, HEADER.size), letterSpacing: '-.03em', lineHeight: 1 }}>{cash(hold)}</div>
+    <div style={{ position: 'absolute', left: BAG_TOTAL.x, top: BAG_TOTAL.y, transform: `translate(-50%, -50%) scale(${0.6 + 0.4 * Math.min(1.08, total)})`, opacity: Math.min(1, total * 1.5), fontFamily: MONO, fontVariantNumeric: 'tabular-nums', fontSize: BAG_TOTAL.size, letterSpacing: '-.03em', lineHeight: 1 }}>{cash(hold)}</div>
   </>;
 }
 
-function Chip({ shop, price, filled, won, cheaper, x, opacity }: { shop: Shop; price: number; filled: boolean; won: boolean; cheaper: boolean; x: number; opacity: number }) {
+function Chip({ shop, price, filled, won, cheaper, x, opacity, bump = 0 }: { shop: Shop; price: number; filled: boolean; won: boolean; cheaper: boolean; x: number; opacity: number; bump?: number }) {
   const bg = won ? C.mint : filled ? 'rgba(255,255,255,.92)' : 'rgba(255,255,255,.06)', fg = won ? C.saving : filled ? C.onLight : C.ink;
-  return <div style={{ position: 'absolute', left: x, top: 12, width: CHIP_W - 16, height: 64, boxSizing: 'border-box', borderRadius: 32, background: bg, color: fg, border: `2px solid ${cheaper ? C.accent : won ? C.saving : filled ? 'transparent' : C.line}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '0 22px', opacity }}>
+  return <div style={{ position: 'absolute', left: x, top: 12, width: CHIP_W - 16, height: 64, boxSizing: 'border-box', borderRadius: 32, background: bg, color: fg, border: `2px solid ${cheaper ? C.accent : won ? C.saving : filled ? 'transparent' : C.line}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '0 22px', opacity, transform: bump ? `scale(${1 + 0.14 * bump})` : undefined }}>
     <span style={{ fontSize: 25, fontWeight: 600 }}>{SHORT_NAMES[shop]}</span>
     <span style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums', fontSize: 32, letterSpacing: '-.02em', fontWeight: won ? 600 : 400 }}>{cash(Math.round(price))}</span>
   </div>;
@@ -100,14 +101,19 @@ function Row({ id, i, s }: { id: string; i: number; s: number }) {
   const lanes = item.lanes.filter(lane => lane.steps.length);
   const prices = lanes.map(lane => valueAt(lane.steps, s, DUR.standard / fps, ease) ?? Infinity);
   const low = prices.indexOf(Math.min(...prices));
+  // A chip bounces when its shop's new price lands, and every chip pulses as a round closes.
+  const swell = (t: number | undefined) => t === undefined ? 0 : Math.sin(Math.PI * Math.min(1, Math.max(0, (s - t) / 0.35)));
+  const closed = swell([...board.rounds].reverse().find(step => step.t <= s)?.t);
+  const bumps = lanes.map(lane => Math.max(0.6 * closed, swell(lane.steps.slice(1).reverse().find(step => step.t <= s)?.t)));
   const awardF = Math.round(board.awardAt * fps) + i * 4;
   const collapse = ease(interpolate(frame, [awardF, awardF + DUR.standard], [0, 1], clamp));
   const winner = winners[id]?.shop, whyF = Math.round(whyAt * fps);
   const why = interpolate(frame, [whyF, whyF + DUR.standard], [0, 1], clamp);
   const { x, y } = boardRow(i), chips = CHIP_X - ROW_X;
-  const appear = enter(frame, fps, 6 + FLY);
+  // Thrown out: the rejected shop's chip shakes, drops and fades as the checks reject it.
+  const out = s - onBoard.reject;
   const undercut = lanes.some((lane, n) => lane.shop !== winner && prices[n] < (winners[id]?.unit ?? 0));
-  return <div style={{ position: 'absolute', left: x, top: y, width: 1500, height: ROW_H }}>
+  return <div style={{ position: 'absolute', left: x, top: y, width: 1500, height: ROW_H, ...rise(enter(frame, fps, i * 4), 80) }}>
     <div style={{ position: 'absolute', left: 0, top: 0, display: 'flex', alignItems: 'center', gap: 22 }}>
       <Photo id={id} size={PHOTO} />
       <span style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.015em' }}>{manifest.names[id]}</span>
@@ -119,7 +125,11 @@ function Row({ id, i, s }: { id: string; i: number; s: number }) {
       const slot = chips + n * CHIP_W;
       const left = isWinner ? slot + (chips - slot) * collapse : cheaper ? slot + (chips + CHIP_W - slot) * why : slot;
       const opacity = isWinner ? 1 : cheaper ? Math.max(1 - collapse, why) : 1 - collapse;
-      return <Chip key={shop} shop={shop} price={prices[n]} filled={n === low && collapse < 0.5} won={isWinner && collapse > 0.5} cheaper={cheaper && why > 0} x={left} opacity={opacity * appear} />;
+      const thrown = reject && shop === reject.shop && out >= 0 && out < 1.1;
+      return <div key={shop}>
+        <Chip shop={shop} price={prices[n]} filled={n === low && collapse < 0.5} won={isWinner && collapse > 0.5} cheaper={cheaper && why > 0} x={left} bump={collapse > 0 ? 0 : bumps[n]} opacity={opacity * (thrown ? enter(frame, fps, Math.round((onBoard.reject + 0.7) * fps)) : 1)} />
+        {thrown && <div style={{ position: 'absolute', left: left + shake(frame, Math.round(onBoard.reject * fps)), top: 12 + 90 * ease((out - 0.35) / 0.5), width: CHIP_W - 16, height: 64, boxSizing: 'border-box', borderRadius: 32, background: C.tint, border: `2px solid ${C.accent}`, color: C.accentHover, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 800, opacity: 1 - ease((out - 0.6) / 0.4), transform: `rotate(${8 * ease((out - 0.35) / 0.5)}deg)` }}>{SHORT_NAMES[shop]} · rejected</div>}
+      </div>;
     })}
     {winner && collapse > 0 && <span style={{ position: 'absolute', left: chips + CHIP_W * (1 + (undercut ? why : 0)) + 6, top: 30, fontSize: 26, fontWeight: 700, color: C.saving, opacity: collapse }}>{SHOP_NAMES[winner]} wins</span>}
   </div>;
@@ -157,13 +167,38 @@ function Bracket({ s }: { s: number }) {
   </div>;
 }
 
+// The auction's log as it happens, newest on top, under the total: every bid, rejection and round close from the run,
+// at least half a second apart so each can be read.
+type Entry = { t: number; text: string; tag?: 'agent' | 'rejected' | 'bundle' };
+const FEED: Entry[] = [];
+for (const event of raw.events) {
+  const n = event.kind === 'bid' ? Object.keys(event.items).length : 0;
+  const entry = event.kind === 'bid' ? { text: `${SHOP_NAMES[event.shop as Shop]} bids on ${n} ${n === 1 ? 'item' : 'items'}`, tag: event === haneulBid ? 'bundle' as const : event.authored === 'agent' ? 'agent' as const : undefined }
+    : event.kind === 'rejected' ? { text: `${SHOP_NAMES[event.shop as Shop]}'s bid thrown out`, tag: 'rejected' as const }
+    : event.kind === 'round' ? { text: `Round ${event.round} closes at ${cash(event.total!)}` }
+    : null;
+  if (entry) FEED.push({ ...entry, t: Math.max(sceneAt(paced, event.t), (FEED[FEED.length - 1]?.t ?? -Infinity) + 0.5) });
+}
+const TAGS = { agent: ['Written by agent', C.butter, C.onLight], rejected: ['Rejected', C.tint, C.accentHover], bundle: ['Bundle', C.accent, '#fff'] } as const;
+function Feed({ s }: { s: number }) {
+  const frame = useFrame(), fps = MOTION_FPS;
+  const shown = FEED.filter(row => row.t <= s).slice(-2).reverse();
+  if (!shown.length) return null;
+  const p = enter(frame, fps, Math.round(shown[0].t * fps));
+  return <div style={{ position: 'absolute', right: 100, top: 232, width: 620, height: 96, overflow: 'hidden' }}>
+    {shown.map((row, k) => <div key={row.t} style={{ position: 'absolute', right: 0, top: k === 0 ? (1 - p) * -44 : 48 * p, display: 'flex', alignItems: 'center', gap: 12, height: 44, fontSize: 26, fontWeight: k === 0 ? 700 : 500, color: k === 0 ? C.ink : C.muted, opacity: k === 0 ? p : 1 - 0.4 * p, whiteSpace: 'nowrap' }}>
+      {row.tag && <span style={{ fontSize: 22, fontWeight: 700, borderRadius: 999, padding: '4px 12px', background: TAGS[row.tag][1], color: TAGS[row.tag][2] }}>{TAGS[row.tag][0]}</span>}
+      {row.text}
+    </div>)}
+  </div>;
+}
+
 const Money = ({ v, strong }: { v: string; strong?: boolean }) => <span style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums', letterSpacing: '-.02em', fontSize: strong ? 44 : 34, fontWeight: strong ? 600 : 400, color: strong ? C.saving : C.ink }}>{v}</span>;
 
 export function Bidding() {
   const frame = useFrame(), fps = MOTION_FPS;
   const s = frame / fps;
-  const fly = ease(interpolate(frame, [6, 6 + FLY], [0, 1], clamp));
-  const shown = interpolate(frame, [6 + FLY * 0.5, 6 + FLY], [0, 1], clamp), landed = frame >= 6 + FLY;
+  const landed = frame >= FLY, shown = enter(frame, fps, 0);
   const total = valueAt(board.totals, s, DUR.scene / fps, ease) ?? hold;
   const awarded = s >= board.awardAt;
   const round = board.rounds.filter(step => step.t <= s).length;
@@ -193,7 +228,8 @@ export function Bidding() {
         </div>
       </div>
       <Notes s={s} />
-      {landed && ROWS.map((id, i) => <Row key={id} id={id} i={i} s={s} />)}
+      <Feed s={s} />
+      {ROWS.map((id, i) => <Row key={id} id={id} i={i} s={s} />)}
       <Bracket s={s} />
       {frame >= sumAt && <div style={{ position: 'absolute', left: 0, right: 0, top: boardRow(ROWS.length).y + 6, display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: 22, fontSize: 34, ...rise(sum, 16) }}>
         <span style={{ color: C.muted }}>{wonCount} items</span><Money v={manifest.vars.items_total} />
@@ -201,6 +237,6 @@ export function Bidding() {
         <span style={{ color: C.muted }}>=</span><Money v={manifest.vars.charged} strong />
       </div>}
     </div>
-    {!landed && <BagCard fly={fly} />}
+    {!landed && <Flight from={HOLD_PRICE} to={HEADER} frames={FLY}><span style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums', letterSpacing: '-.03em' }}>{cash(hold)}</span></Flight>}
   </div>;
 }
