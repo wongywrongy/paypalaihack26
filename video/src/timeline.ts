@@ -14,7 +14,6 @@ export const CLIPS = {
   '06-bidding': 'The live bidding board, start to award',
   '07-receipt': 'Receipt: You paid, One box from N shops, Duties included',
   '08-handoff-payout': 'Orders: Record hand-off, Won · Handed off · Payout sent · Paid',
-  '09-home-done': 'Home at 5 of 5',
 } as const;
 export type ClipName = keyof typeof CLIPS;
 
@@ -24,33 +23,37 @@ export type Role = keyof typeof ROLES;
 
 // say: what Kokoro reads, when the caption's spelling would trip it. anchor: the auction event this line lands on.
 // pause: extra silence before the line, only for the planned beat before the close (0.5 s here, plus TAIL and LEAD: 1 s).
-export type Cue = { text: string; say?: string; anchor?: 'reject' | 'replace' | 'agent' | 'haneul' | 'award'; pause?: number };
+export type Cue = { text: string; say?: string; anchor?: 'reject' | 'agent' | 'haneul' | 'award' | 'why'; pause?: number };
 // A camera keyframe in clip pixels of the 1440×900 window: the point to centre and a zoom over full-bleed (1 to 1.8).
 // It fires at a cue's start (scene cue index, plus delay seconds) or at a clip second.
 export type Key = { cue?: number; clip?: number; delay?: number; x: number; y: number; zoom: number };
+// A spotlight: everything outside `rect` (clip pixels) dims, so one row or one rule is all there is to read.
+export type Spot = { cue?: number; clip?: number; delay?: number; rect: { x: number; y: number; width: number; height: number } };
 // A clip from `in` to `out` seconds, starting at a scene cue and running to the next shot. If the shot is shorter
 // than the span, the clip ramps up to speed in the middle and back to 1×; if longer, it holds the last frame.
-export type Shot = { clip: ClipName; cue: number; in: number; out: number; role: Role; keys: Key[] };
+// `bag` is the shopper's bag rebuilt from the run, since the app's bag page does not name the shops.
+export type Shot = { clip: ClipName | 'bag'; cue: number; in: number; out: number; role: Role; keys: Key[]; spots?: Spot[] };
 export type Scene = { id: string; criterion: string; cues: Cue[]; shots?: Shot[] };
+
+// Measured on the recorded run, in 1440×900 window pixels.
+const CICA_ROW = { x: 300, y: 424, height: 52 }, GOAL_SENTENCE = { x: 322, y: 197, width: 376, height: 32 };
+const GOAL_RULES = { x: 830, y: 260, width: 560, height: 146 }, APPLY = { x: 1266, y: 660, width: 118, height: 56 };
 
 export const SCENES: Scene[] = [
   {
-    id: 'shift', criterion: 'presentation',
-    cues: [
-      { text: 'AI agents are starting to shop for us, and to sell for us.' },
-      { text: 'Who keeps them honest about money?' },
-    ],
-  },
-  {
     id: 'problem', criterion: 'impact',
     cues: [
-      { text: 'The things people want sit in small shops in other countries.' },
-      { text: "Each one is another checkout, another parcel, another customs bill. Many don't ship abroad at all." },
+      { text: 'The things you want are spread across small shops in other countries.' },
+      { text: 'Five shops means five checkouts, five parcels, five customs bills.' },
     ],
   },
   {
     id: 'promise', criterion: 'innovation',
-    cues: [{ text: "Rally lets shops' agents compete for your whole cart. You approve one price, and PayPal holds it." }],
+    cues: [{ text: "What if those shops' AI agents competed for your whole cart?" }],
+  },
+  {
+    id: 'title', criterion: 'innovation, PayPal',
+    cues: [{ text: 'You approve one price. PayPal holds it. The agents can only bid it down.' }],
   },
   {
     id: 'market', criterion: 'impact',
@@ -59,44 +62,49 @@ export const SCENES: Scene[] = [
   {
     id: 'haneul', criterion: 'innovation, design',
     shots: [
-      { clip: '02-products-edit', cue: 0, in: 0, out: 6.3, role: 'shop', keys: [{ cue: 0, x: 700, y: 450, zoom: 1.15 }, { cue: 0, delay: 1.4, x: 760, y: 450, zoom: 1.8 }] },
-      { clip: '03-agent-goal', cue: 1, in: 0.6, out: 9.8, role: 'shop', keys: [{ cue: 1, x: 545, y: 300, zoom: 1.7 }, { clip: 2.6, x: 545, y: 260, zoom: 1.8 }, { cue: 2, x: 1100, y: 330, zoom: 1.45 }, { clip: 8.2, x: 1150, y: 640, zoom: 1.7 }] },
+      // One row: the public price first, then the private lowest price beside it.
+      { clip: '02-products-edit', cue: 0, in: 0, out: 6.3, role: 'shop', keys: [{ cue: 0, x: 640, y: 450, zoom: 1.8 }],
+        spots: [{ cue: 0, rect: { ...CICA_ROW, width: 453 } }, { cue: 0, delay: 2.4, rect: { ...CICA_ROW, width: 653 } }] },
+      // One take, after the goal reads 20%: its first sentence, then the two rules from it, then Apply.
+      { clip: '03-agent-goal', cue: 1, in: 3.3, out: 9.8, role: 'shop', keys: [{ cue: 1, x: 520, y: 300, zoom: 1.8 }, { cue: 2, x: 1110, y: 420, zoom: 1.6 }],
+        spots: [{ cue: 1, rect: GOAL_SENTENCE }, { cue: 2, rect: GOAL_RULES }, { clip: 7.4, rect: APPLY }] },
     ],
     cues: [
-      { text: 'Meet Haneul Beauty in Seoul. The owner sets a private lowest price that no one else sees.' },
-      { text: 'Then a goal in plain words: win two-item bundles, with free shipping in Korea.' },
-      { text: 'Rally turns it into rules. Nothing changes until she presses Apply.' },
+      { text: "Meet Haneul Beauty, a small shop in Seoul. Next to each public price, the owner sets a private lowest price." },
+      { text: 'Then a goal in plain words: win two-item bundles with free shipping in Korea.' },
+      { text: 'Rally turns it into rules, and nothing changes until she presses Apply.' },
     ],
   },
   {
     id: 'shopper', criterion: 'design, PayPal',
     shots: [
-      { clip: '04-storefront-bag', cue: 0, in: 1, out: 8.4, role: 'shopper', keys: [{ cue: 0, x: 400, y: 300, zoom: 1.3 }, { clip: 1.6, x: 520, y: 420, zoom: 1.6 }, { clip: 5.4, x: 720, y: 500, zoom: 1.5 }] },
-      { clip: '04-storefront-bag', cue: 1, in: 8.4, out: 13.4, role: 'shopper', keys: [{ cue: 1, x: 720, y: 400, zoom: 1.6 }, { clip: 10.4, x: 720, y: 560, zoom: 1.8 }] },
-      { clip: '05-paypal-hold', cue: 2, in: 0, out: 3.6, role: 'shopper', keys: [{ cue: 2, x: 720, y: 300, zoom: 1.6 }, { cue: 2, delay: 1.2, x: 820, y: 160, zoom: 1.8 }] },
+      { clip: '04-storefront-bag', cue: 0, in: 5.2, out: 8.2, role: 'shopper', keys: [{ cue: 0, x: 760, y: 500, zoom: 1.5 }] },
+      { clip: 'bag', cue: 1, in: 0, out: 0, role: 'shopper', keys: [] },
+      // Just before the approve click and just after.
+      { clip: '05-paypal-hold', cue: 2, in: 2.4, out: 4.6, role: 'shopper', keys: [{ cue: 2, x: 720, y: 640, zoom: 1.6 }] },
     ],
     cues: [
-      { text: 'A shopper in California fills one bag from several shops.' },
-      { text: 'One price covers shipping, duties and tax.' },
-      { text: 'PayPal holds {held}. The shops can only bid it down.' },
+      { text: 'A shopper in California fills one bag from several Korean shops.' },
+      { text: 'Four items, the shops that sell each one, and one price with shipping, duties and tax.' },
+      { text: 'They approve {held} in PayPal, and PayPal holds it.' },
     ],
   },
   {
     id: 'bidding', criterion: 'innovation, tech',
     cues: [
-      { text: "Now each shop's agent bids for the whole bag, over {rounds} rounds." },
-      { text: 'Agents write offers: lower prices, bundles, free shipping in Korea, sample kits.' },
-      { text: '{check_line}', anchor: 'reject' },
-      { text: '{reject_line}', anchor: 'replace' },
+      { text: "Now each shop's agent bids on every item it sells, over {rounds} rounds." },
+      { text: 'Agents offer lower prices, bundles and free shipping in Korea. Every bid is checked.' },
+      { text: '{reject_line}', anchor: 'reject' },
       { text: '{agent_bid_line}', anchor: 'agent' },
       { text: '{haneul_line}', anchor: 'haneul' },
       { text: 'The total only goes down.' },
       { text: '{result_line}', anchor: 'award' },
+      { text: '{why_line}', anchor: 'why' },
     ],
   },
   {
     id: 'result', criterion: 'PayPal, impact',
-    shots: [{ clip: '07-receipt', cue: 0, in: 0, out: 11.3, role: 'shopper', keys: [{ cue: 0, x: 720, y: 250, zoom: 1.8 }, { cue: 1, x: 720, y: 640, zoom: 1.8 }] }],
+    shots: [{ clip: '07-receipt', cue: 0, in: 0, out: 11.3, role: 'shopper', keys: [{ cue: 0, x: 720, y: 330, zoom: 1.8 }, { cue: 1, x: 720, y: 640, zoom: 1.8 }] }],
     cues: [
       { text: '{capture_line}' },
       { text: '{receipt_line}' },
@@ -106,12 +114,10 @@ export const SCENES: Scene[] = [
     id: 'payout', criterion: 'PayPal, impact',
     shots: [
       { clip: '08-handoff-payout', cue: 0, in: 0, out: 10.5, role: 'shop', keys: [{ cue: 0, x: 900, y: 300, zoom: 1.5 }, { clip: 1.6, x: 1010, y: 330, zoom: 1.8 }, { clip: 6.2, x: 1080, y: 330, zoom: 1.8 }] },
-      { clip: '09-home-done', cue: 2, in: 0, out: 4.2, role: 'shop', keys: [{ cue: 2, x: 660, y: 300, zoom: 1.6 }] },
     ],
     cues: [
       { text: '{shop_result}' },
       { text: 'PayPal pays {payout_shop} {payout} as soon as it hands off.' },
-      { text: 'Five of five: price, goal, order, hand-off, payout.' },
     ],
   },
   {

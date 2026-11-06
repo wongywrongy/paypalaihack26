@@ -1,175 +1,204 @@
+// The board item first, like the app's Deal screen: one row per bag item, one price chip per shop that sells it.
 import { interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 import { anchored, buildBoard, onScene, valueAt, type AuctionEvent, type Board, type Knot } from '../auction.ts';
-import { money, SHOP_NAMES } from '../schema.ts';
+import { money, SHOP_NAMES, SHORT_NAMES } from '../schema.ts';
 import { BANNED, C, manifest, MONO } from '../theme.ts';
-import { clamp, DUR, ease, enter, pop, rise, shake, toFrame, typed, view } from '../motion.ts';
-import { Clip, Flight, Photo, Rich, Tick } from '../ui.tsx';
-import { scene, spotAt } from '../plan.ts';
+import { clamp, DUR, ease, enter, pop, rise, shake, typed } from '../motion.ts';
+import { Photo, Rich } from '../ui.tsx';
+import { scene } from '../plan.ts';
 import type { Laid } from '../timeline.ts';
 
-// The first seconds are the real board from the app; then the rebuilt board, full frame, takes over.
-const LIVE = 2.2, SWAP = 0.4, FROM = LIVE + SWAP;
-const CHECKS = ["within the shop's limits", 'in stock', 'total under the hold'];
-const REASONS: Record<string, string> = { limit: 'Went below what the shop can accept', raise: 'Raised a price the shop had already offered', rules: 'Broke a rule the shop set for its agent', invalid: 'Offered terms the shop cannot give' };
-// Where the real board's total sits in clip 06, and the camera on it.
-const LIVE_TOTAL = { x: 330, y: 259, h: 54 }, LIVE_KEYS = [{ s: 0, x: 420, y: 300, zoom: 1.6 }];
-const HEADER = { x: 1629, y: 201, size: 110 };
-
-const raw = buildBoard(manifest.events);
-const hold = manifest.run.held_minor;
-const shopName = (id: string) => SHOP_NAMES[id as keyof typeof SHOP_NAMES];
-const cash = (value: number) => money(value, manifest.run.currency);
-const ticker = (value: number) => cash(Math.min(hold, Math.round(value)));
+type Shop = keyof typeof SHOP_NAMES;
+const REASONS: Record<string, string> = { limit: 'went below what its shop can accept', raise: 'raised a price its shop had already offered', rules: 'broke a rule its owner set', invalid: "asked for something its shop doesn't allow" };
 // Shown word for word; a long note keeps only its first sentence.
 const clip110 = (note: string) => note.length > 110 ? note.match(/^.*?[.!?](?=\s|$)/)?.[0] ?? note : note;
 
-// The events each narrated line lands on.
-function anchorsFor(laid: Laid, board: Board) {
-  const reject = board.rejected[0];
-  const replace = reject && board.bids.find(row => row.shop === reject.shop && row.t > reject.t);
-  const agent = board.bids.find(row => row.authored === 'agent');
-  const haneul = [...board.bids].reverse().find(row => row.shop === 'haneul' && Object.values(row.perks as Record<string, string[]>).some(perks => perks.includes('bundle')));
-  const events: Record<string, AuctionEvent | undefined> = { reject, replace, agent, haneul };
+const raw = buildBoard(manifest.events);
+const hold = manifest.run.held_minor;
+const cash = (value: number) => money(value, manifest.run.currency);
+const reject = raw.rejected[0];
+const replace = reject && raw.bids.find(row => row.shop === reject.shop && row.t > reject.t);
+const agentBid = raw.bids.find(row => row.authored === 'agent');
+const haneulBid = [...raw.bids].reverse().find(row => row.shop === 'haneul' && Object.values(row.perks as Record<string, string[]>).some(perks => perks.includes('bundle')));
+const bundle: string[] = haneulBid?.bundle?.items ?? [];
+// Bundled items sit next to each other so one bracket can hold them.
+export const ROWS = [...raw.items].sort((a, b) => Number(!bundle.includes(a.id)) - Number(!bundle.includes(b.id))).map(item => item.id);
+
+// Layout, in frame pixels. The bag card and the board share item sizes, so items only move between them.
+export const PHOTO = 84;
+const ROW_X = 140, ROW_Y = 362, ROW_H = 108, CHIP_X = 700, CHIP_W = 264, BRACKET_X = 1504;
+const BAG_X = 450, BAG_Y = 250, BAG_H = 116;
+const boardRow = (i: number) => ({ x: ROW_X, y: ROW_Y + i * ROW_H });
+const bagRow = (i: number) => ({ x: BAG_X, y: BAG_Y + i * BAG_H });
+const HEADER = { x: 1589, y: 201, size: 110 }, BAG_TOTAL = { x: 1352, y: 752, size: 64 };
+export const BOARD_TOTAL = HEADER;
+const FLY = 26, FROM = 1.4;
+
+function pace(laid: Laid) {
   const knots: Knot[] = [];
+  const events: Record<string, AuctionEvent | undefined> = { reject, agent: agentBid, haneul: haneulBid };
+  let whyAt = Infinity;
   for (const line of laid.cues) {
-    if (!line.anchor) continue;
-    const t = line.anchor === 'award' ? board.awardAt : events[line.anchor]?.t;
-    if (t !== undefined) knots.push({ t, s: line.start - laid.start + 0.25 });
+    const at = line.start - laid.start;
+    if (line.anchor === 'why') whyAt = at;
+    else if (line.anchor === 'award') knots.push({ t: raw.awardAt, s: at + 0.25 });
+    else if (line.anchor && events[line.anchor]) knots.push({ t: events[line.anchor]!.t, s: at + 0.25 });
+    // The replacement lands as the line says the checks sent it.
+    if (line.anchor === 'reject' && replace) knots.push({ t: replace.t, s: line.end - laid.start - 0.8 });
   }
-  return { knots, cards: { agent, haneul } };
+  return { knots: knots.sort((a, b) => a.t - b.t), whyAt };
 }
-
 const laid = scene('bidding');
-const { knots, cards: narrated } = anchorsFor(laid, raw);
+const { knots, whyAt } = pace(laid);
 const board: Board = onScene(raw, anchored(raw, FROM, knots));
-const cards = [...board.bids, ...board.rejected].sort((a, b) => a.t - b.t || a.seq - b.seq);
-const winners = board.shops.filter(shop => board.items.some(item => item.lanes.some(lane => lane.shop === shop && lane.wonAt !== null)));
-const isNarrated = (card: AuctionEvent | undefined, key: 'agent' | 'haneul') => !!card && narrated[key]?.seq === card.seq;
+// On the scene's clock: onScene moves bids and rejections, not the raw event list.
+const at = (event: AuctionEvent | undefined) => event ? [...board.bids, ...board.rejected].find(row => row.seq === event.seq)?.t ?? Infinity : Infinity;
+const onBoard = { reject: board.rejected[0] ? board.rejected[0].t : Infinity, agent: at(agentBid), haneul: at(haneulBid) };
+const winners = manifest.run.winners as Record<string, { shop: Shop; unit: number }>;
+const wonCount = Object.keys(winners).length;
 
-function Chip({ kind }: { kind: 'agent' | 'checks' }) {
-  return <span style={{ fontSize: 20, fontWeight: 600, borderRadius: 999, padding: '4px 13px', whiteSpace: 'nowrap', ...(kind === 'agent' ? { background: C.butter, color: C.ink } : { background: C.mint, color: C.saving }) }}>{kind === 'agent' ? 'Written by agent' : 'Sent by the checks'}</span>;
-}
-
-function CheckRow({ from }: { from: number }) {
-  const frame = useCurrentFrame();
-  return <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px', fontSize: 19, color: C.saving }}>{CHECKS.map((label, i) => {
-    const on = interpolate(frame, [from + i * 4, from + i * 4 + DUR.micro], [0, 1], clamp);
-    return <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, opacity: 0.25 + 0.75 * on }}><Tick size={20} progress={on} />{label}</span>;
-  })}</div>;
-}
-
-function Stamp({ at }: { at: number }) {
-  const frame = useCurrentFrame(), { fps } = useVideoConfig();
-  const p = pop(frame, fps, at);
-  if (frame < at) return null;
-  return <div style={{ position: 'absolute', right: 20, top: 18, border: `2px solid ${C.accent}`, color: C.accentHover, background: C.surface, borderRadius: 10, padding: '6px 14px', fontSize: 22, fontWeight: 700, transform: `rotate(-3deg) scale(${1.25 - 0.25 * p})`, opacity: Math.min(1, p * 1.5) }}>Rejected by Rally's checks</div>;
-}
-
-// A price glides to its new value; the lane never swaps content in one frame.
-function Price({ steps, s, winner }: { steps: { t: number; value: number }[]; s: number; winner: boolean }) {
-  const price = valueAt(steps, s, DUR.standard / 30, ease);
-  return <span style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums', fontSize: 30, letterSpacing: '-.02em', color: winner ? C.saving : C.ink, fontWeight: winner ? 600 : 400 }}>{price === null ? '' : cash(Math.round(price))}</span>;
-}
-
-function Lane({ shop, s, awarded, index }: { shop: string; s: number; awarded: boolean; index: number }) {
-  const frame = useCurrentFrame(), { fps } = useVideoConfig();
-  const card = [...cards].reverse().find(row => row.shop === shop && row.t <= s);
-  const at = card ? Math.round(card.t * fps) : 0;
-  const rejected = card?.kind === 'rejected';
-  const agent = card?.kind === 'bid' && card.authored === 'agent';
-  const fromChecks = card?.kind === 'bid' && card.authored === 'code' && board.rejected.some(row => row.shop === shop && row.t <= card.t);
-  // Notes only on the lane being narrated: the agent's own bid, word for word, or the reason for a rejection.
-  const note = isNarrated(card, 'agent') && card?.note && !BANNED.test(card.note) ? clip110(card.note) : '';
-  const quote = isNarrated(card, 'haneul');
-  const items = board.items.filter(item => item.lanes.some(lane => lane.shop === shop));
-  // The winning highlight sweeps left to right across the lanes.
-  const winAt = Math.round(board.awardAt * fps) + index * 5;
-  const won = awarded && winners.includes(shop), dim = awarded && !winners.includes(shop);
-  const sweep = won ? ease(interpolate(frame, [winAt, winAt + DUR.standard], [0, 1], clamp)) : 0;
-  const latest = card && cards.filter(row => row.t <= s).at(-1) === card && !awarded;
-  const bodyIn = enter(frame, fps, at + 4);
-  return <div style={{ position: 'relative', flex: 1, minWidth: 0, borderRadius: 20, padding: '22px 24px', overflow: 'hidden', background: C.surface, border: `2px solid ${sweep > 0.5 ? C.saving : rejected ? C.accent : latest ? C.ink : C.line}`, opacity: dim ? interpolate(frame, [winAt, winAt + DUR.standard], [1, 0.45], clamp) : 1, transform: `translateX(${rejected ? shake(frame, at + 16) : 0}px)`, display: 'flex', flexDirection: 'column', gap: 14 }}>
-    <div style={{ position: 'absolute', inset: 0, background: C.mint, clipPath: `inset(0 ${100 - sweep * 100}% 0 0)` }} />
-    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-      <span style={{ fontSize: 32, fontWeight: 800, letterSpacing: '-.02em', color: sweep > 0.5 ? C.saving : C.ink }}>{shopName(shop)}</span>
-      {(agent || rejected) && <Chip kind="agent" />}
-      {fromChecks && <Chip kind="checks" />}
+// The shopper's bag, rebuilt from the run: the items, who sells each, and the one price PayPal holds.
+export function BagCard({ fly = 0 }: { fly?: number }) {
+  const chrome = 1 - Math.min(1, fly * 1.6);
+  const start = manifest.events.find(row => row.kind === 'start') as AuctionEvent;
+  const lerp = (a: number, b: number) => a + (b - a) * fly;
+  return <>
+    <div style={{ position: 'absolute', left: BAG_X - 50, top: 150, width: 1120, height: 680, borderRadius: 28, background: C.surface, border: `1px solid ${C.line}`, boxShadow: '0 20px 60px rgba(23,22,26,.08)', opacity: chrome }}>
+      <div style={{ position: 'absolute', left: 50, top: 34, fontSize: 34, fontWeight: 800, letterSpacing: '-.02em' }}>Your bag · {ROWS.length} items</div>
+      <div style={{ position: 'absolute', left: 50, right: 50, top: 568, height: 1, background: C.line }} />
+      <div style={{ position: 'absolute', left: 50, top: 586, fontSize: 30, color: C.muted }}>Total, all in</div>
+      <div style={{ position: 'absolute', left: 50, top: 630, fontSize: 24, color: C.accentHover }}>Shipping, duties and tax included</div>
     </div>
-    <div style={{ position: 'relative', minHeight: 100 }}>
-      {rejected && <div style={{ fontSize: 26, lineHeight: 1.3, color: C.accentHover, ...rise(bodyIn, 10) }}>{REASONS[card.reason]}</div>}
-      {note && <div style={{ fontSize: 26, lineHeight: 1.3, ...rise(bodyIn, 10) }}><Rich text={typed(`“${note}”`, frame, at + 6, fps)} /></div>}
-      {quote && <div style={{ display: 'inline-flex', flexDirection: 'column', gap: 4, background: C.tint, borderRadius: 14, padding: '10px 16px', ...rise(bodyIn, 10) }}>
-        <span style={{ fontSize: 18, fontWeight: 700, color: C.accentHover }}>Her goal, from Agent</span>
-        <span style={{ fontSize: 25, lineHeight: 1.25 }}>“{manifest.vars.goal_quote}”</span>
-      </div>}
-    </div>
-    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {items.map(item => {
-        const lane = item.lanes.find(row => row.shop === shop)!;
-        const perks = lane.perks.filter(perk => perk.t <= s).map(perk => perk.perk);
-        const passed = lane.passedAt !== null && s >= lane.passedAt;
-        return <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 14, opacity: passed ? 0.5 : 1 }}>
-          <Photo id={item.id} size={48} />
-          <span style={{ flex: 1, minWidth: 0, fontSize: 22, color: C.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{manifest.names[item.id]}{perks.includes('bundle') ? ' · bundle' : ''}</span>
-          {passed ? <span style={{ fontSize: 24, color: C.muted }}>Pass</span> : <Price steps={lane.steps} s={s} winner={awarded && lane.wonAt !== null} />}
-        </div>;
-      })}
-    </div>
-    <div style={{ position: 'relative', marginTop: 'auto', minHeight: 26 }}>{card?.kind === 'bid' && <CheckRow from={at + 8} />}</div>
-    {rejected && <Stamp at={at + 10} />}
+    {ROWS.map((id, i) => {
+      const a = bagRow(i), b = boardRow(i);
+      return <div key={id} style={{ position: 'absolute', left: lerp(a.x, b.x), top: lerp(a.y, b.y), display: 'flex', alignItems: 'center', gap: 22 }}>
+        <Photo id={id} size={PHOTO} />
+        <div>
+          <div style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.015em' }}>{manifest.names[id]}</div>
+          <div style={{ fontSize: 25, color: C.muted, opacity: chrome }}>{(start.shops[id] as Shop[]).map(shop => SHOP_NAMES[shop]).join(' · ')}</div>
+        </div>
+      </div>;
+    })}
+    <div style={{ position: 'absolute', left: lerp(BAG_TOTAL.x, HEADER.x), top: lerp(BAG_TOTAL.y, HEADER.y), transform: 'translate(-50%, -50%)', fontFamily: MONO, fontVariantNumeric: 'tabular-nums', fontSize: lerp(BAG_TOTAL.size, HEADER.size), letterSpacing: '-.03em', lineHeight: 1 }}>{cash(hold)}</div>
+  </>;
+}
+
+function Chip({ shop, price, filled, won, cheaper, x, opacity }: { shop: Shop; price: number; filled: boolean; won: boolean; cheaper: boolean; x: number; opacity: number }) {
+  const bg = won ? C.mint : filled ? C.ink : C.surface, fg = won ? C.saving : filled ? C.surface : C.ink;
+  return <div style={{ position: 'absolute', left: x, top: 12, width: CHIP_W - 16, height: 64, boxSizing: 'border-box', borderRadius: 32, background: bg, color: fg, border: `2px solid ${cheaper ? C.accent : won ? C.saving : filled ? C.ink : C.line}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '0 22px', opacity }}>
+    <span style={{ fontSize: 25, fontWeight: 600 }}>{SHORT_NAMES[shop]}</span>
+    <span style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums', fontSize: 32, letterSpacing: '-.02em', fontWeight: won ? 600 : 400 }}>{cash(Math.round(price))}</span>
   </div>;
 }
 
-export function Bidding({ laid: here }: { laid: Laid }) {
+function Row({ id, i, s }: { id: string; i: number; s: number }) {
+  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const item = board.items.find(row => row.id === id)!;
+  const lanes = item.lanes.filter(lane => lane.steps.length);
+  const prices = lanes.map(lane => valueAt(lane.steps, s, DUR.standard / fps, ease) ?? Infinity);
+  const low = prices.indexOf(Math.min(...prices));
+  const awardF = Math.round(board.awardAt * fps) + i * 4;
+  const collapse = ease(interpolate(frame, [awardF, awardF + DUR.standard], [0, 1], clamp));
+  const winner = winners[id]?.shop, whyF = Math.round(whyAt * fps);
+  const why = interpolate(frame, [whyF, whyF + DUR.standard], [0, 1], clamp);
+  const { x, y } = boardRow(i), chips = CHIP_X - ROW_X;
+  const appear = enter(frame, fps, 6 + FLY);
+  const undercut = lanes.some((lane, n) => lane.shop !== winner && prices[n] < (winners[id]?.unit ?? 0));
+  return <div style={{ position: 'absolute', left: x, top: y, width: 1500, height: ROW_H }}>
+    <div style={{ position: 'absolute', left: 0, top: 0, display: 'flex', alignItems: 'center', gap: 22 }}>
+      <Photo id={id} size={PHOTO} />
+      <span style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.015em' }}>{manifest.names[id]}</span>
+    </div>
+    {lanes.map((lane, n) => {
+      const shop = lane.shop as Shop, isWinner = shop === winner;
+      // The cheaper single price comes back next to the winner when the line explains why it lost.
+      const cheaper = !isWinner && prices[n] < (winners[id]?.unit ?? 0);
+      const slot = chips + n * CHIP_W;
+      const left = isWinner ? slot + (chips - slot) * collapse : cheaper ? slot + (chips + CHIP_W - slot) * why : slot;
+      const opacity = isWinner ? 1 : cheaper ? Math.max(1 - collapse, why) : 1 - collapse;
+      return <Chip key={shop} shop={shop} price={prices[n]} filled={n === low && collapse < 0.5} won={isWinner && collapse > 0.5} cheaper={cheaper && why > 0} x={left} opacity={opacity * appear} />;
+    })}
+    {winner && collapse > 0 && <span style={{ position: 'absolute', left: chips + CHIP_W * (1 + (undercut ? why : 0)) + 6, top: 30, fontSize: 26, fontWeight: 700, color: C.saving, opacity: collapse }}>{SHOP_NAMES[winner]} wins</span>}
+  </div>;
+}
+
+// One shop note at a time, attributed, with what happened to it.
+function Notes({ s }: { s: number }) {
+  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const note = s >= onBoard.haneul ? null
+    : s >= onBoard.agent && agentBid?.note && !BANNED.test(agentBid.note) ? { shop: agentBid.shop as Shop, text: `“${clip110(agentBid.note)}”`, tag: 'agent' as const, from: onBoard.agent }
+    : s >= onBoard.reject && reject ? { shop: reject.shop as Shop, text: `Its agent ${REASONS[reject.reason]}.`, tag: 'rejected' as const, from: onBoard.reject }
+    : null;
+  if (!note) return null;
+  const f = Math.round(note.from * fps), p = enter(frame, fps, f);
+  return <div key={note.from} style={{ position: 'absolute', left: ROW_X, right: 600, top: 254, minHeight: 64, display: 'flex', alignItems: 'center', gap: 18, padding: '10px 24px', borderRadius: 18, background: note.tag === 'rejected' ? C.tint : C.surface, border: `1px solid ${note.tag === 'rejected' ? C.accent : C.line}`, transform: `translateX(${note.tag === 'rejected' ? shake(frame, f + 14) : 0}px)`, ...rise(p, 12) }}>
+    <span style={{ fontSize: 26, fontWeight: 800, whiteSpace: 'nowrap' }}>{SHOP_NAMES[note.shop]}:</span>
+    <span style={{ flex: 1, fontSize: 26, lineHeight: 1.25 }}><Rich text={note.tag === 'agent' ? typed(note.text, frame, f + 6, fps) : note.text} /></span>
+    <span style={{ fontSize: 22, fontWeight: 700, borderRadius: 999, padding: '6px 14px', whiteSpace: 'nowrap', transform: `scale(${note.tag === 'rejected' ? 1.2 - 0.2 * Math.min(1, pop(frame, fps, f + 8)) : 1})`, ...(note.tag === 'agent' ? { background: C.butter, color: C.ink } : { background: C.surface, color: C.accentHover, border: `2px solid ${C.accent}` }) }}>{note.tag === 'agent' ? 'Written by agent' : "Rejected by Rally's checks"}</span>
+  </div>;
+}
+
+// Haneul's bundle: a bracket over its two rows, carrying the goal it came from.
+function Bracket({ s }: { s: number }) {
+  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const rows = bundle.map(id => ROWS.indexOf(id)).filter(i => i >= 0);
+  if (rows.length < 2 || s < onBoard.haneul) return null;
+  const p = enter(frame, fps, Math.round(onBoard.haneul * fps));
+  const top = boardRow(Math.min(...rows)).y + 44, bottom = boardRow(Math.max(...rows)).y + 44;
+  return <div style={{ opacity: p }}>
+    <div style={{ position: 'absolute', left: BRACKET_X, top, width: 18, height: (bottom - top) * p, borderTop: `3px solid ${C.accent}`, borderBottom: `3px solid ${C.accent}`, borderRight: `3px solid ${C.accent}`, borderRadius: '0 10px 10px 0' }} />
+    <div style={{ position: 'absolute', left: BRACKET_X + 34, top: (top + bottom) / 2 - 76, width: 270, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <span style={{ alignSelf: 'flex-start', fontSize: 23, fontWeight: 700, color: C.surface, background: C.accent, borderRadius: 999, padding: '5px 14px' }}>Haneul bundle</span>
+      <span style={{ fontSize: 24, lineHeight: 1.25, color: C.accentHover, background: C.tint, borderRadius: 12, padding: '8px 14px' }}>Her goal: “{manifest.vars.goal_quote}”</span>
+    </div>
+  </div>;
+}
+
+const Money = ({ v, strong }: { v: string; strong?: boolean }) => <span style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums', letterSpacing: '-.02em', fontSize: strong ? 44 : 34, fontWeight: strong ? 600 : 400, color: strong ? C.saving : C.ink }}>{v}</span>;
+
+export function Bidding() {
   const frame = useCurrentFrame(), { fps } = useVideoConfig();
   const s = frame / fps;
+  const fly = ease(interpolate(frame, [6, 6 + FLY], [0, 1], clamp));
+  const shown = interpolate(frame, [6 + FLY * 0.5, 6 + FLY], [0, 1], clamp), landed = frame >= 6 + FLY;
   const total = valueAt(board.totals, s, DUR.scene / fps, ease) ?? hold;
   const awarded = s >= board.awardAt;
   const round = board.rounds.filter(step => step.t <= s).length;
-  const summaryAt = Math.round(board.awardAt * fps) + winners.length * 5 + DUR.standard;
-  // The bag's total arrives from PayPal's window, then from the real board into this one.
-  const shopper = scene('shopper'), paypal = spotAt('shopper', 2, shopper.duration, 960, 25, 13.5);
-  const live = toFrame(view(LIVE_KEYS, 0.7), LIVE_TOTAL.x, LIVE_TOTAL.y), liveTotal = { x: live.x, y: live.y, size: LIVE_TOTAL.h * live.k };
-  const boardIn = interpolate(frame, [LIVE * fps, FROM * fps], [0, 1], clamp);
-  const landed = frame >= LIVE * fps + DUR.camera;
+  const sumAt = Math.round(board.awardAt * fps) + ROWS.length * 4 + DUR.standard;
+  const sum = enter(frame, fps, sumAt);
   // The whole board drifts very slightly closer, so a held moment is never a still frame.
-  const drift = 1 + 0.0008 * s + 0.006 * Math.max(0, s - board.awardAt);
-  return <>
-    {frame < FROM * fps + 2 && <Clip name="06-bidding" from={0} to={FROM} length={FROM} keys={LIVE_KEYS} />}
-    {frame < LIVE * fps && <div style={{ position: 'absolute', right: 40, top: 40, background: C.ink, color: C.surface, borderRadius: 999, padding: '10px 22px', fontSize: 26, fontWeight: 600 }}>Live in the app</div>}
-    <div style={{ position: 'absolute', inset: 0, background: C.ground, opacity: boardIn, transform: `scale(${drift})` }}>
-      <div style={{ position: 'absolute', left: 60, top: 128, display: 'flex', flexDirection: 'column', gap: 14 }}>
+  const drift = 1 + 0.0006 * s + 0.003 * Math.max(0, s - board.awardAt);
+  return <div style={{ position: 'absolute', inset: 0, transform: `scale(${drift})` }}>
+    <div style={{ opacity: shown }}>
+      <div style={{ position: 'absolute', left: ROW_X, top: 124, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ fontSize: 50, fontWeight: 800, letterSpacing: '-.03em' }}>{awarded ? 'Bidding complete' : 'Shops are bidding'}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {[1, 2, 3].map(n => {
-            const done = round >= n, active = !awarded && round + 1 === n;
-            const t = board.rounds.find(step => step.value === n)?.t;
+            const done = round >= n, active = !awarded && round + 1 === n, t = board.rounds.find(step => step.value === n)?.t;
             const p = t === undefined ? 0 : pop(frame, fps, Math.round(t * fps));
             return <div key={n} style={{ width: 20, height: 20, borderRadius: 10, background: done ? C.accent : C.surface, border: `2px solid ${done || active ? C.accent : C.line}`, transform: `scale(${done ? 0.85 + 0.15 * p : 1})` }} />;
           })}
           <span style={{ fontSize: 26, color: C.muted, marginLeft: 8 }}>Round {Math.min(3, round + (awarded ? 0 : 1))} of 3</span>
+          {manifest.vars.agent_line && awarded && <span style={{ fontSize: 24, color: C.saving, marginLeft: 20 }}>{manifest.vars.agent_line}</span>}
         </div>
       </div>
-      <div style={{ position: 'absolute', right: 60, top: 112, width: 620, textAlign: 'right' }}>
+      <div style={{ position: 'absolute', right: 100, top: 112, width: 620, textAlign: 'right' }}>
         <div style={{ fontSize: 26, color: C.muted }}>Total, all in</div>
-        <div style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums', fontSize: HEADER.size, lineHeight: 1.05, letterSpacing: '-.03em', color: awarded ? C.saving : C.ink, opacity: landed ? 1 : 0 }}>{ticker(total)}</div>
+        <div style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums', fontSize: HEADER.size, lineHeight: 1.05, letterSpacing: '-.03em', color: awarded ? C.saving : C.ink, opacity: landed ? 1 : 0 }}>{cash(Math.min(hold, Math.round(total)))}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 22, color: C.accentHover, marginTop: 6 }}>
           <div style={{ flex: 1, height: 2, background: C.accent }} />
           <span>PayPal holds <span style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums' }}>{cash(hold)}</span> · can only go down</span>
         </div>
       </div>
-      <div style={{ position: 'absolute', left: 60, right: 60, top: 330, bottom: 190, display: 'flex', gap: 28 }}>
-        {board.shops.map((shop, i) => <Lane key={shop} shop={shop} s={s} awarded={awarded} index={i} />)}
-      </div>
-      <div style={{ position: 'absolute', left: 60, top: 262, display: 'flex', ...rise(enter(frame, fps, summaryAt), 16), visibility: frame >= summaryAt ? 'visible' : 'hidden' }}>
-        <div style={{ borderRadius: 999, background: C.mint, color: C.saving, fontSize: 26, fontWeight: 700, padding: '8px 26px' }}>{manifest.vars.agent_line}</div>
-      </div>
+      <Notes s={s} />
+      {landed && ROWS.map((id, i) => <Row key={id} id={id} i={i} s={s} />)}
+      <Bracket s={s} />
+      {frame >= sumAt && <div style={{ position: 'absolute', left: 0, right: 0, top: boardRow(ROWS.length).y + 6, display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: 22, fontSize: 34, ...rise(sum, 16) }}>
+        <span style={{ color: C.muted }}>{wonCount} items</span><Money v={manifest.vars.items_total} />
+        <span style={{ color: C.muted }}>+ shipping, duties, tax and fee</span><Money v={manifest.vars.extras_total} />
+        <span style={{ color: C.muted }}>=</span><Money v={manifest.vars.charged} strong />
+      </div>}
     </div>
-    {frame < LIVE * fps + DUR.camera + 2 && <>
-      <Flight from={paypal} to={liveTotal} frames={20} out={20}><span style={{ fontFamily: MONO, color: C.ink, letterSpacing: '-.02em' }}>{cash(hold)}</span></Flight>
-      {frame >= LIVE * fps && <Flight from={liveTotal} to={HEADER} at={Math.round(LIVE * fps)}><span style={{ fontFamily: MONO, color: C.ink, letterSpacing: '-.03em' }}>{cash(hold)}</span></Flight>}
-    </>}
-  </>;
+    {!landed && <BagCard fly={fly} />}
+  </div>;
 }
-
-export const BOARD_TOTAL = HEADER;

@@ -4,6 +4,8 @@ import { CLIPS, type ClipName } from './timeline.ts';
 const minor = z.number().int().nonnegative();
 const shop = z.enum(['haneul', 'bada', 'dalbit']);
 export const SHOP_NAMES = { haneul: 'Haneul Beauty', bada: 'Bada Market', dalbit: 'Dalbit Official' } as const;
+// How narration and the board's price chips name a shop.
+export const SHORT_NAMES = { haneul: 'Haneul', bada: 'Bada', dalbit: 'Dalbit' } as const;
 const currency = z.enum(['USD', 'CAD', 'GBP', 'EUR', 'AUD']);
 
 const redact = z.object({
@@ -56,8 +58,15 @@ export const OrderSchema = z.object({
   payout: z.object({ status: z.string().min(1), amount_minor: minor, currency: z.literal('USD') }),
 });
 
+// The shopper's side of the same order (/api/orders/{id}): what was charged, line by line and term by term.
+export const ReceiptSchema = z.object({
+  breakdown: z.object({ currency, goods: minor, domestic: minor, shipping: minor, duty: minor, tax: minor, fee: minor, total: minor }),
+  lines: z.array(z.object({ id: z.string().min(1), shop, unit: minor })).min(1),
+});
+
 export type Run = z.infer<typeof RunSchema>;
 export type Order = z.infer<typeof OrderSchema>;
+export type Receipt = z.infer<typeof ReceiptSchema>;
 
 export function parse<T>(schema: z.ZodType<T>, value: unknown, file: string): T {
   const result = schema.safeParse(value);
@@ -88,6 +97,32 @@ export function crossCheck(run: Run, order: Order) {
   for (const row of order.events) if (row.total !== undefined && row.total > run.held_minor) wrong(`event ${row.seq} total is above the hold.`);
 }
 
+// The board adds the winning prices and the rest of the bill up to the charged total, so they must add up exactly.
+export function receiptCheck(run: Run, receipt: Receipt) {
+  const wrong = (message: string) => { throw new Error(`receipt.json does not add up: ${message}`); };
+  const b = receipt.breakdown;
+  if (b.currency !== run.currency) wrong(`currency ${b.currency} is not ${run.currency}.`);
+  if (b.total !== run.charged_minor) wrong(`total ${b.total} is not the charged ${run.charged_minor}.`);
+  if (b.goods + b.domestic + b.shipping + b.duty + b.tax + b.fee !== b.total) wrong('its terms do not sum to its total.');
+  if (receipt.lines.reduce((sum, line) => sum + line.unit, 0) !== b.goods) wrong('its lines do not sum to goods.');
+  const left = JSON.stringify(receipt.lines.map(line => [line.id, line.shop, line.unit]).sort());
+  const right = JSON.stringify(Object.entries(run.winners).map(([id, row]) => [id, row.shop, row.unit]).sort());
+  if (left !== right) wrong(`its lines ${left} are not the winners ${right}.`);
+}
+
+// Each shop's last public price for each item: its listing, lowered by every bid after.
+export function finalPrices(order: Order) {
+  const start = order.events.find(row => row.kind === 'start');
+  const prices: Record<string, Record<string, number>> = {};
+  if (start?.kind !== 'start') return prices;
+  for (const id of start.items) prices[id] = { ...start.listed[id] };
+  for (const row of order.events) if (row.kind === 'bid') for (const [key, unit] of Object.entries(row.items)) {
+    const id = key.split(':')[0];
+    if (prices[id]?.[row.shop] !== undefined) prices[id][row.shop] = Math.min(prices[id][row.shop], unit);
+  }
+  return prices;
+}
+
 // Refused only by `npm run render`. These prove the footage's story is the one the numbers tell.
 export function finalCheck(run: Run, order: Order) {
   const bids = order.events.filter(row => row.kind === 'bid');
@@ -99,12 +134,12 @@ export function finalCheck(run: Run, order: Order) {
   if (run.payout_status !== 'completed') throw new Error(`payout_status is ${run.payout_status}, not completed. Clip 08 must reach Paid.`);
 }
 
-// Plain words for a rejection, from backend REASONS, with the shop named once.
-const REASONS = { limit: 'went below what the shop can accept', raise: 'raised a price the shop had already offered', rules: 'broke a rule the shop set for its agent', invalid: 'offered terms the shop cannot give' };
+// Plain words for a rejection, from backend REASONS.
+const REASONS = { limit: 'went below what its shop can accept', raise: 'raised a price its shop had already offered', rules: 'broke a rule its owner set', invalid: "asked for something its shop doesn't allow" };
 type Bid = Extract<Order['events'][number], { kind: 'bid' }>;
 const firstSentence = (text: string) => text.match(/^.*?[.!?](?=\s|$)/)?.[0] ?? text;
 
-export function buildFacts(run: Run, order: Order, names: Record<string, string>) {
+export function buildFacts(run: Run, order: Order, receipt: Receipt) {
   const cash = (value: number) => money(value, run.currency);
   const start = order.events.find(row => row.kind === 'start');
   const award = order.events.find(row => row.kind === 'award');
@@ -126,6 +161,10 @@ export function buildFacts(run: Run, order: Order, names: Record<string, string>
   const asked = [...allBids].reverse().find(row => row.shop === 'haneul' && Object.values(row.perks).some(perks => perks.includes('bundle')));
   const has = (perk: string) => !!asked && Object.values(asked.perks).some(perks => perks.includes(perk as never));
   const terms = ['a two-item bundle', has('freeship') && 'free shipping in Korea'].filter(Boolean).join(' with ');
+  // A winner that is not the lowest single price in its row: the whole box, not the item, decides.
+  const prices = finalPrices(order);
+  const undercut = Object.entries(run.winners).some(([id, row]) => Math.min(...Object.values(prices[id] ?? {})) < row.unit);
+  const extras = receipt.breakdown.total - receipt.breakdown.goods;
   const box = `One box from ${boxShops} ${boxShops === 1 ? 'shop' : 'shops'}, duties included.`;
   return {
     held: cash(run.held_minor),
@@ -136,13 +175,14 @@ export function buildFacts(run: Run, order: Order, names: Record<string, string>
     rounds: String(rounds),
     box_shops: String(boxShops),
     goal_quote: firstSentence(run.goal),
-    check_line: reject
-      ? "When an agent goes too far, Rally's checks reject the bid and send the shop's best valid one."
-      : "Every bid passes Rally's checks before it counts.",
-    reject_line: reject ? `Here, ${SHOP_NAMES[reject.shop]}'s agent ${REASONS[reject.reason]}.` : '',
-    agent_bid_line: agentBid ? `In round ${agentBid.round}, ${SHOP_NAMES[agentBid.shop]}'s agent writes its own bid, and it passes.` : '',
-    haneul_line: asked ? `Haneul Beauty's ${asked.authored === 'code' ? 'bid follows her goal' : 'agent does what she asked'}: ${terms}.` : '',
-    agent_line: `Shop agents wrote ${written} of ${bids} ${bids === 1 ? 'bid' : 'bids'}${rejected ? ` · Rally's checks rejected ${rejected}` : ''}.`,
+    reject_line: reject ? `${SHORT_NAMES[reject.shop]}'s agent ${REASONS[reject.reason]}, so Rally's checks threw it out and sent the shop's best valid bid.` : '',
+    agent_bid_line: agentBid ? `In round ${agentBid.round}, ${SHORT_NAMES[agentBid.shop]}'s agent writes its own bid, and it passes.` : '',
+    haneul_line: asked ? `Haneul's ${asked.authored === 'code' ? 'bid follows her goal' : 'agent does what she asked'}: ${terms}.` : '',
+    // Shown only when agents wrote at least half the bids; a small share undercuts the scene without adding to it.
+    agent_line: written * 2 >= bids ? `Shop agents wrote ${written} of ${bids} ${bids === 1 ? 'bid' : 'bids'}${rejected ? ` · Rally's checks rejected ${rejected}` : ''}.` : '',
+    why_line: undercut ? 'Rally picks the cheapest whole box, counting bundles and shipping, not the cheapest single item.' : '',
+    items_total: cash(receipt.breakdown.goods),
+    extras_total: cash(extras),
     result_line: released
       ? `The best total for the whole bag wins: ${cash(run.charged_minor)}.`
       : `No bid beat the checkout total, so ${cash(run.held_minor)} stands.`,

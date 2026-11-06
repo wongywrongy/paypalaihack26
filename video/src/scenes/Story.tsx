@@ -20,29 +20,12 @@ function Words({ text, from, size, color = C.ink, weight = 800 }: { text: string
   return <div style={{ fontSize: size, fontWeight: weight, letterSpacing: '-.035em', lineHeight: 1.05, color }}>{words(text, frame, fps, from).map(({ word, p }, i) => <span key={i} style={{ display: 'inline-block', marginRight: '.25em', ...rise(p, size * 0.25) }}>{word}</span>)}</div>;
 }
 
-// Beat 1. The map sits faintly behind, drifting, so the next beat grows out of it.
-export function Shift({ laid }: { laid: Laid }) {
-  const frame = useCurrentFrame(), { fps } = useVideoConfig();
-  const c0 = cue(laid, 0) * fps, c0end = (laid.cues[0].end - laid.start) * fps, c1 = cue(laid, 1) * fps;
-  const quiet = interpolate(frame, [c1, c1 + DUR.standard], [1, 0.32], clamp);
-  const v = { ...WORLD, zoom: 0.94 + 0.06 * (frame / (laid.duration * fps)) };
-  return <>
-    <Map v={v} dim={0.6} />
-    <div style={{ position: 'absolute', left: 170, top: 250, display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <div style={{ opacity: quiet }}><Words text="Agents will shop for us." from={c0} size={104} /></div>
-      <div style={{ opacity: quiet }}><Words text="Agents will sell for us." from={c0 + Math.round((c0end - c0) * 0.55)} size={104} /></div>
-      <div style={{ marginTop: 40 }}><Words text="Who keeps the money honest?" from={c1} size={104} color={C.accent} /></div>
-    </div>
-  </>;
-}
-
-// Beat 2. Five shops, five separate trips to one shopper, each with its own cost.
+// Five shops, five separate trips to one shopper, each with its own cost.
 export function Problem({ laid }: { laid: Laid }) {
   const frame = useCurrentFrame(), { fps } = useVideoConfig();
   const c0 = cue(laid, 0) * fps, c1 = cue(laid, 1) * fps;
-  const grow = enter(frame, fps, 0, DUR.scene * 2);
-  const v = { ...WORLD, zoom: 0.94 + 0.06 * grow + 0.02 * (frame / (laid.duration * fps)) };
-  return <Map v={v} dim={0.6 + 0.4 * grow}>
+  const v = { ...WORLD, zoom: 0.97 + 0.03 * (frame / (laid.duration * fps)) };
+  return <Map v={v}>
     <Pin city="california" from={c0} color={C.ink} label="Shopper" />
     {SHOPS.map((city, i) => <Pin key={city} city={city} from={c0 + 10 + i * 5} label={CITIES[city].name} />)}
     {SHOPS.map((city, i) => <Arc key={city} from={city} at={c1 + i * 6} />)}
@@ -68,23 +51,40 @@ const arcMid = (city: City) => {
   return { x: q * q * a.x + 2 * q * u * c.x + u * u * b.x, y: q * q * a.y + 2 * q * u * c.y + u * u * b.y };
 };
 
-// Beat 3. The five dashed trips fade and one solid arc carries one box, under Rally's line.
+// The five dashed trips fade and one solid arc carries one box, as the question is asked.
 export function PromiseCard({ laid }: { laid: Laid }) {
   const frame = useCurrentFrame(), { fps } = useVideoConfig();
   const fade = 1 - ease(interpolate(frame, [0, DUR.scene], [0, 1], clamp));
   const v = { ...WORLD, zoom: 1 + 0.03 * (frame / (laid.duration * fps)) };
   return <>
-    <Map v={v}>
-      {SHOPS.map(city => <Arc key={city} from={city} at={-60} fade={fade} />)}
-      <Arc from="seoul" at={6} dashed={false} color={C.accent} width={4} />
-      <Pin city="california" from={-30} color={C.ink} label="Shopper" />
-      {SHOPS.map(city => <Pin key={city} city={city} from={-30} label={CITIES[city].name} />)}
-      <Parcel from="seoul" at={DUR.scene} frames={Math.max(40, Math.round(laid.duration * fps) - DUR.scene - 10)} />
-    </Map>
-    <Card top={92}>
-      <div style={{ fontSize: 30, fontWeight: 700, color: C.accent, letterSpacing: '-.01em' }}>Rally</div>
-      <Words text="Shops' agents compete for your whole cart." from={4} size={58} />
-      <Words text="You approve one price. PayPal holds it." from={4 + 9 * 4} size={58} color={C.accentHover} />
+    <OneTrip v={v} fade={fade} parcel={DUR.scene} frames={Math.max(40, Math.round(laid.duration * fps) - DUR.scene - 10)} />
+    <div style={{ position: 'absolute', left: 0, right: 0, top: 110, display: 'flex', justifyContent: 'center', textAlign: 'center' }}>
+      <div style={{ maxWidth: 1500 }}><Words text="What if those shops' AI agents competed for your whole cart?" from={4} size={72} /></div>
+    </div>
+  </>;
+}
+
+function OneTrip({ v, fade, parcel, frames }: { v: MapView; fade: number; parcel: number; frames: number }) {
+  return <Map v={v}>
+    {SHOPS.map(city => <Arc key={city} from={city} at={-60} fade={fade} />)}
+    <Arc from="seoul" at={fade < 1 ? 6 : -60} dashed={false} color={C.accent} width={4} />
+    <Pin city="california" from={-30} color={C.ink} label="Shopper" />
+    {SHOPS.map(city => <Pin key={city} city={city} from={-30} label={CITIES[city].name} />)}
+    <Parcel from="seoul" at={parcel} frames={frames} />
+  </Map>;
+}
+
+// The safety that makes the idea work, over the same single trip.
+export function Title({ laid }: { laid: Laid }) {
+  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const v = { ...WORLD, zoom: 1.03 + 0.03 * (frame / (laid.duration * fps)) };
+  const len = laid.cues[0].end - laid.cues[0].start, c0 = (laid.cues[0].start - laid.start) * fps;
+  return <>
+    <OneTrip v={v} fade={0} parcel={-200} frames={60} />
+    <Card top={150}>
+      <Words text="You approve one price." from={c0} size={64} />
+      <Words text="PayPal holds it." from={c0 + Math.round(len * 0.3 * fps)} size={64} color={C.accent} />
+      <Words text="The agents can only bid it down." from={c0 + Math.round(len * 0.55 * fps)} size={64} />
     </Card>
   </>;
 }

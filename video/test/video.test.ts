@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import { prepare } from '../scripts/prepare.ts';
 import { clipTime, MAX_ZOOM, peakSpeed, view } from '../src/motion.ts';
 import { anchored, buildBoard, roundAt, sceneAt, valueAt } from '../src/auction.ts';
-import { buildFacts, crossCheck, finalCheck, money, OrderSchema, parse, RunSchema } from '../src/schema.ts';
+import { buildFacts, crossCheck, finalCheck, finalPrices, money, OrderSchema, parse, ReceiptSchema, receiptCheck, RunSchema } from '../src/schema.ts';
 import { CLIPS, cueAt, GAP, layout, MAX_SECONDS, MAX_SILENCE, SCENES, spokenText, toScript, toSrt, type ClipName } from '../src/timeline.ts';
 
 // Test data only: nothing here reaches a build.
@@ -20,7 +20,9 @@ const events = () => [
 ];
 const order = () => ({ id: 'o1', currency: 'USD', payment_state: 'CHARGED', maximum_minor: 3000, lowest: { a: 900 }, events: events(), payout: { status: 'completed', amount_minor: 1300, currency: 'USD' } });
 const run = () => ({ order_id: 'o1', currency: 'USD', held_minor: 3000, charged_minor: 2800, payout_usd_cents: 1300, payout_status: 'completed', payout_shop: 'haneul', winners: { a: { shop: 'haneul', unit: 1300 }, b: { shop: 'dalbit', unit: 1500 } }, goal: 'Win two-item bundles. Keep a margin.', redact: [] });
+const receipt = () => ({ breakdown: { currency: 'USD', goods: 2800, domestic: 0, shipping: 0, duty: 0, tax: 0, fee: 0, total: 2800 }, lines: [{ id: 'a', shop: 'haneul', unit: 1300 }, { id: 'b', shop: 'dalbit', unit: 1500 }] });
 const parsed = (r: unknown = run(), o: unknown = order()) => [parse(RunSchema, r, 'run.json'), parse(OrderSchema, o, 'order.json')] as const;
+const factsOf = (r: unknown = run(), o: unknown = order(), rc: unknown = receipt()) => buildFacts(...parsed(r, o), parse(ReceiptSchema, rc, 'receipt.json'));
 
 function project(files: Record<string, unknown>, clips: string[] = []) {
   const repo = mkdtempSync(join(tmpdir(), 'rally-video-'));
@@ -30,6 +32,7 @@ function project(files: Record<string, unknown>, clips: string[] = []) {
   mkdirSync(join(repo, 'frontend/public/assets/products'), { recursive: true });
   writeFileSync(join(repo, 'design/scenario/scenario.json'), JSON.stringify({ catalog: [{ id: 'a', brand: 'X', name: 'Cleanser' }, { id: 'b', brand: 'X', name: 'Cream' }] }));
   for (const id of ['a', 'b']) writeFileSync(join(repo, 'frontend/public/assets/products', `${id}.png`), '');
+  if (!('receipt.json' in files) && 'run.json' in files) files = { ...files, 'receipt.json': receipt() };
   for (const [name, value] of Object.entries(files)) writeFileSync(join(root, 'run', name), JSON.stringify(value));
   for (const clip of clips) writeFileSync(join(root, 'run/clips', `${clip}.mp4`), '');
   return { root, done: () => rmSync(repo, { recursive: true }) };
@@ -39,7 +42,7 @@ const allClips = Object.keys(CLIPS);
 
 // The run this build was prepared from, when there is one; tests on it check the cut actually being rendered.
 const built = (() => { try { return JSON.parse(readFileSync('src/generated/manifest.json', 'utf8')); } catch { return null; } })();
-const facts = () => buildFacts(...parsed(), { a: 'Cleanser', b: 'Cream' });
+const facts = () => factsOf();
 const plans = () => [layout(facts(), null), ...(built ? [layout(built.vars, built.spoken)] : [])];
 
 test(`the video stays within ${MAX_SECONDS} s, and the built cut within 2:05 to 2:20`, () => {
@@ -120,7 +123,7 @@ test('script.md matches the laid-out timeline', { skip: !built }, () => assert.e
 
 test('srt numbers cues and uses comma timestamps', () => {
   const [r, o] = parsed();
-  const srt = toSrt(layout(buildFacts(r, o, { a: 'Cleanser', b: 'Cream' }), null));
+  const srt = toSrt(layout(factsOf(), null));
   assert.match(srt, /^1\n00:00:00,200 --> 00:00:0\d,\d{3}\n/);
   assert.ok(srt.includes('$28.00'));
   assert.ok(!srt.includes('{'));
@@ -129,7 +132,6 @@ test('srt numbers cues and uses comma timestamps', () => {
 test('names match the app word for word', () => {
   const source = (file: string) => readFileSync(join('../frontend/src/routes', file), 'utf8');
   for (const [file, strings] of Object.entries({
-    'shops/Home.tsx': [' of 5'],
     'shops/GoalsForm.tsx': ['Review rules', 'From your goal', 'Apply'],
     'Paid.tsx': ['Your shop bid on this order', 'Hand off in Rally for shops', 'One box from', 'Duties included'],
     'shops/OrdersView.tsx': ['Rally pickup', 'Record hand-off', "'Won', 'Handed off', 'Payout sent', 'Paid'"],
@@ -155,11 +157,9 @@ test('no value from `lowest` reaches rendered text', () => {
   for (const file of ['src/scenes/Bidding.tsx', 'src/auction.ts', 'src/ui.tsx', 'src/scenes/ClipScene.tsx']) assert.ok(!/\.lowest|\bfloors\b/.test(readFileSync(file, 'utf8')), `${file} reads floors`);
 });
 
-test('the code check row is only labels and ticks', () => {
-  const source = readFileSync('src/scenes/Bidding.tsx', 'utf8');
-  assert.equal(source.match(/const CHECKS = \[.*\];/)![0], `const CHECKS = ["within the shop's limits", 'in stock', 'total under the hold'];`);
-  // The rejection beat says why in words only: no amount can appear there.
-  assert.ok(!/\d/.test(source.match(/const REASONS[^\n]*/)![0]), 'a rejection reason carries a number');
+test('the rejection beat says why in words only, so no amount can appear there', () => {
+  const source = readFileSync('src/scenes/Bidding.tsx', 'utf8') + readFileSync('src/schema.ts', 'utf8');
+  for (const line of source.match(/const REASONS[^\n]*/g)!) assert.ok(!/\d/.test(line), line);
 });
 
 test('private lowest prices are dropped on parse', () => assert.ok(!JSON.stringify(parsed()[1]).includes('lowest')));
@@ -203,7 +203,7 @@ test('captions adapt when Haneul is outbid', () => {
   (o.events[4] as any).winners = r.winners;
   const [run2, order2] = parsed(r, o);
   crossCheck(run2, order2);
-  const facts = buildFacts(run2, order2, { a: 'Cleanser', b: 'Cream' });
+  const facts = factsOf(r, o, { ...receipt(), lines: [{ id: 'a', shop: 'bada', unit: 1300 }, { id: 'b', shop: 'dalbit', unit: 1500 }] });
   assert.match(facts.shop_result, /Haneul Beauty was outbid/);
   assert.match(facts.shop_result, /Dalbit Official won 1 of 2/);
   assert.match(facts.receipt_line, /One box from 2 shops/);
@@ -214,7 +214,7 @@ test('captions stay true when no bid beats checkout', () => {
   const r = { ...run(), charged_minor: 3000 };
   const o = order();
   o.events[3].total = 3000; o.events[4].total = 3000;
-  const facts = buildFacts(...parsed(r, o), { a: 'A', b: 'B' });
+  const facts = factsOf(r, o, { ...receipt(), breakdown: { ...receipt().breakdown, shipping: 200, total: 3000 } });
   assert.match(facts.result_line, /stands/);
   assert.match(facts.capture_line, /exactly the hold/);
   assert.ok(!facts.receipt_line.includes('released'));
@@ -227,9 +227,9 @@ test('prepare: missing inputs fail with a clear message and no fallback', () => 
 });
 
 test('prepare: placeholders pass for review and fail for the final render', () => {
-  const { root, done } = project({ 'run.json': run(), 'order.json': order() }, allClips.slice(0, 7));
-  assert.deepEqual(prepare(root, { allowPlaceholders: true, probe }).missing, ['09-home-done.mp4']);
-  assert.throws(() => prepare(root, { allowPlaceholders: false, probe }), /Placeholders cannot go in the final render[\s\S]*09-home-done/);
+  const { root, done } = project({ 'run.json': run(), 'order.json': order() }, allClips.slice(0, 6));
+  assert.deepEqual(prepare(root, { allowPlaceholders: true, probe }).missing, ['08-handoff-payout.mp4']);
+  assert.throws(() => prepare(root, { allowPlaceholders: false, probe }), /Placeholders cannot go in the final render[\s\S]*08-handoff-payout/);
   done();
 });
 
@@ -265,12 +265,12 @@ test('schema: rejected events and agent counts parse, and the counts must match'
   const o = order();
   o.events.splice(1, 0, { seq: 1.5, t: 0.5, kind: 'rejected', round: 1, shop: 'haneul', total: 3000, chosen_by: 'CODE', reason: 'limit' } as any);
   o.events.forEach((row, i) => { row.seq = i + 1; });
-  assert.throws(() => buildFacts(...parsed(run(), o), {}), /1 rejected events but the award counts 0/);
+  assert.throws(() => factsOf(run(), o), /1 rejected events but the award counts 0/);
   (o.events.find(row => row.kind === 'award') as any).agents.rejected = 1;
-  const facts = buildFacts(...parsed(run(), o), {});
-  assert.match(facts.check_line, /reject the bid and send the shop's best valid one/);
+  const facts = factsOf(run(), o);
+  assert.match(facts.reject_line, /^Haneul's agent went below what its shop can accept, so Rally's checks threw it out and sent the shop's best valid bid\.$/);
   assert.equal(facts.agent_line, "Shop agents wrote 1 of 1 bid · Rally's checks rejected 1.");
-  assert.equal(buildFacts(...parsed(), {}).check_line, "Every bid passes Rally's checks before it counts.");
+  assert.equal(factsOf().reject_line, '', 'no rejection, no line');
   const bad = order();
   (bad.events[1] as any).authored = 'model';
   assert.throws(() => parse(OrderSchema, bad, 'order.json'), /authored/);
@@ -294,7 +294,7 @@ test('narration: plain words for a judge outside tech', () => {
   }
   for (const file of ['src/timeline.ts', 'script.md', 'src/scenes/Architecture.tsx']) assert.ok(!/candidate indexes|code-built options/i.test(readFileSync(file, 'utf8')), file);
   const [r, o] = parsed();
-  for (const text of Object.values(buildFacts(r, o, {}))) assert.ok(!jargon.test(text), `jargon in a fact: ${text}`);
+  for (const text of Object.values(factsOf())) assert.ok(!jargon.test(text), `jargon in a fact: ${text}`);
 });
 
 test('the rejection, agent and Haneul lines come from the run, in plain words', () => {
@@ -304,18 +304,51 @@ test('the rejection, agent and Haneul lines come from the run, in plain words', 
   (o.events.find(row => row.kind === 'award') as any).agents.rejected = 1;
   (o.events.find(row => row.kind === 'bid') as any).perks = { a: ['bundle', 'freeship'] };
   (o.events.find(row => row.kind === 'bid') as any).bundle = { items: ['a', 'b'], price: 2800 };
-  const f = buildFacts(...parsed(run(), o), {});
-  assert.equal(f.reject_line, "Here, Bada Market's agent went below what the shop can accept.");
-  assert.equal(f.agent_bid_line, "In round 1, Haneul Beauty's agent writes its own bid, and it passes.");
-  assert.equal(f.haneul_line, "Haneul Beauty's agent does what she asked: a two-item bundle with free shipping in Korea.");
+  const f = factsOf(run(), o);
+  assert.equal(f.reject_line, "Bada's agent went below what its shop can accept, so Rally's checks threw it out and sent the shop's best valid bid.");
+  assert.equal(f.agent_bid_line, "In round 1, Haneul's agent writes its own bid, and it passes.");
+  assert.equal(f.haneul_line, "Haneul's agent does what she asked: a two-item bundle with free shipping in Korea.");
   assert.equal(f.goal_quote, 'Win two-item bundles.');
   // A beat the run did not produce drops its line rather than saying something false.
   const plain = layout(facts(), null);
-  assert.ok(!plain.lines.some(line => /^Here,/.test(line.text)));
+  assert.ok(!plain.lines.some(line => /threw it out/.test(line.text)));
   assert.equal(spokenText(facts()).length, plain.lines.length);
 });
 
 test('private covers parse, and blur stays the default for logos', () => {
   const r = parse(RunSchema, { ...run(), redact: [{ clip: '02-products-edit', from: 0, to: 1, rect: { x: 0, y: 0, width: 1, height: 1 }, style: 'private' }, { clip: '05-paypal-hold', from: 0, to: 1, rect: { x: 0, y: 0, width: 1, height: 1 } }] }, 'run.json');
   assert.deepEqual(r.redact.map(row => row.style), ['private', 'blur']);
+});
+
+test('arithmetic: the winning prices plus the rest of the bill equal the charged total, or the build stops', () => {
+  const [r] = parsed();
+  receiptCheck(r, parse(ReceiptSchema, receipt(), 'receipt.json'));
+  for (const [change, message] of [
+    [{ breakdown: { ...receipt().breakdown, total: 2900 } }, /charged/],
+    [{ breakdown: { ...receipt().breakdown, shipping: 100 } }, /sum to its total/],
+    [{ lines: [{ id: 'a', shop: 'haneul', unit: 1200 }, { id: 'b', shop: 'dalbit', unit: 1600 }] }, /winners/],
+  ] as const) assert.throws(() => receiptCheck(r, parse(ReceiptSchema, { ...receipt(), ...change }, 'receipt.json')), message);
+  if (!built) return;
+  // The board shows the winners' prices and one "shipping, duties, tax and fee" term; they must add up on screen.
+  const cents = (text: string) => Math.round(Number(text.replace(/[^\d.]/g, '')) * 100);
+  const units = Object.values(built.run.winners as Record<string, { unit: number }>).reduce((sum, row) => sum + row.unit, 0);
+  assert.equal(cents(built.vars.items_total), units);
+  assert.equal(units + cents(built.vars.extras_total), built.run.charged_minor);
+  assert.equal(cents(built.vars.charged), built.run.charged_minor);
+});
+
+test('the cheaper-item line appears only when a winner is not the lowest single price in its row', () => {
+  assert.equal(factsOf().why_line, '', "every fixture winner is its row's lowest");
+  const o = order();
+  (o.events[1] as any).items = { a: 1300, 'b:older': 1400 };
+  assert.match(factsOf(run(), o).why_line, /cheapest whole box/);
+  assert.equal(finalPrices(parse(OrderSchema, o, 'order.json')).b.haneul, 1400);
+});
+
+test('the agent share shows only when agents wrote at least half the bids', () => {
+  const o = order();
+  (o.events.find(row => row.kind === 'award') as any).agents = { written: 1, options: 1, rejected: 0, code: 2, changed: 1 };
+  assert.equal(factsOf(run(), o).agent_line, '');
+  (o.events.find(row => row.kind === 'award') as any).agents = { written: 2, options: 1, rejected: 0, code: 1, changed: 1 };
+  assert.equal(factsOf(run(), o).agent_line, 'Shop agents wrote 2 of 4 bids.');
 });

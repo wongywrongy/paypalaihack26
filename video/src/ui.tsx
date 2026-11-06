@@ -46,7 +46,8 @@ function Placeholder({ name }: { name: ClipName }) {
 }
 
 // Full-bleed footage under a moving camera. `from`/`to` are clip seconds, `length` the shot's seconds.
-export function Clip({ name, from, to, length, keys }: { name: ClipName; from: number; to: number; length: number; keys: TimedKey[] }) {
+export type TimedSpot = { s: number; rect: { x: number; y: number; width: number; height: number } };
+export function Clip({ name, from, to, length, keys, spots = [] }: { name: ClipName; from: number; to: number; length: number; keys: TimedKey[]; spots?: TimedSpot[] }) {
   const frame = useCurrentFrame(), { fps } = useVideoConfig();
   const meta = manifest.clips[name];
   const s = frame / fps, v = view(keys, s);
@@ -58,8 +59,23 @@ export function Clip({ name, from, to, length, keys }: { name: ClipName; from: n
         ? <Freeze frame={0}><OffthreadVideo src={staticFile(`generated/clips/${name}.mp4`)} muted trimBefore={Math.round(at * fps)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} /></Freeze>
         : <Placeholder name={name} />}
       <Redactions name={name} seconds={at} />
+      <Spotlight spots={spots} s={s} />
     </div>
   </div>;
+}
+
+// Dims everything but one rectangle of the clip, gliding from one spot to the next.
+function Spotlight({ spots, s }: { spots: TimedSpot[]; s: number }) {
+  if (!spots.length || s < spots[0].s) return null;
+  let i = 0;
+  while (i + 1 < spots.length && spots[i + 1].s <= s) i++;
+  const p = i === 0 ? 1 : ease((s - spots[i].s) / 0.5), a = spots[Math.max(0, i - 1)].rect, b = spots[i].rect;
+  const r = { x: a.x + (b.x - a.x) * p, y: a.y + (b.y - a.y) * p, w: a.width + (b.width - a.width) * p, h: a.height + (b.height - a.height) * p };
+  const fade = Math.min(1, (s - spots[0].s) / 0.4), pad = 6;
+  return <svg width={CLIP_W} height={CLIP_H} style={{ position: 'absolute', inset: 0, opacity: fade }}>
+    <path fillRule="evenodd" fill="rgba(247,244,240,.93)" d={`M0 0H${CLIP_W}V${CLIP_H}H0Z M${r.x - pad} ${r.y - pad}h${r.w + 2 * pad}v${r.h + 2 * pad}h${-(r.w + 2 * pad)}Z`} />
+    <rect x={r.x - pad} y={r.y - pad} width={r.w + 2 * pad} height={r.h + 2 * pad} rx={8} fill="none" stroke={C.accent} strokeWidth={2} />
+  </svg>;
 }
 
 export const cameraTransform = (v: View) => `translate(${960 - v.x * BASE * v.zoom}px, ${540 - v.y * BASE * v.zoom}px) scale(${BASE * v.zoom})`;

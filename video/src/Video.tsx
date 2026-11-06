@@ -7,9 +7,9 @@ import { captionEnd, FPS, type Laid, type Role } from './timeline.ts';
 import { Architecture } from './scenes/Architecture.tsx';
 import { Bidding } from './scenes/Bidding.tsx';
 import { ClipScene } from './scenes/ClipScene.tsx';
-import { Market, Problem, PromiseCard, Shift, Where } from './scenes/Story.tsx';
+import { Market, Problem, PromiseCard, Title, Where } from './scenes/Story.tsx';
 
-const VIEWS: Record<string, (props: { laid: Laid }) => React.ReactNode> = { shift: Shift, problem: Problem, promise: PromiseCard, market: Market, haneul: ClipScene, shopper: ClipScene, bidding: Bidding, result: ClipScene, payout: ClipScene, how: Architecture, where: Where };
+const VIEWS: Record<string, (props: { laid: Laid }) => React.ReactNode> = { problem: Problem, promise: PromiseCard, title: Title, market: Market, haneul: ClipScene, shopper: ClipScene, bidding: Bidding, result: ClipScene, payout: ClipScene, how: Architecture, where: Where };
 // -24 dB under the voice, a little louder between lines.
 const DUCKED = 10 ** (-24 / 20), OPEN = 10 ** (-14 / 20);
 

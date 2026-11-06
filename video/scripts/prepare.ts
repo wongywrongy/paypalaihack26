@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildFacts, crossCheck, finalCheck, OrderSchema, parse, RunSchema } from '../src/schema.ts';
+import { buildFacts, crossCheck, finalCheck, OrderSchema, parse, ReceiptSchema, receiptCheck, RunSchema } from '../src/schema.ts';
 import { CLIPS, FPS, layout, MAX_SECONDS, spokenText, toScript, toSrt, type ClipName } from '../src/timeline.ts';
 
 type Probe = (path: string) => { width: number; height: number; seconds: number };
@@ -25,7 +25,9 @@ export function prepare(root: string, { allowPlaceholders = false, probe = ffpro
   const repo = join(root, '..'), run_dir = join(root, 'run'), generated = join(root, 'public/generated');
   const run = parse(RunSchema, readJson(join(run_dir, 'run.json'), 'video/run/run.json'), 'video/run/run.json');
   const order = parse(OrderSchema, readJson(join(run_dir, 'order.json'), 'video/run/order.json'), 'video/run/order.json');
+  const receipt = parse(ReceiptSchema, readJson(join(run_dir, 'receipt.json'), 'video/run/receipt.json'), 'video/run/receipt.json');
   crossCheck(run, order);
+  receiptCheck(run, receipt);
   if (!allowPlaceholders) finalCheck(run, order);
 
   const catalog = JSON.parse(readFileSync(join(repo, 'design/scenario/scenario.json'), 'utf8')).catalog as { id: string; brand: string; name: string }[];
@@ -59,7 +61,7 @@ export function prepare(root: string, { allowPlaceholders = false, probe = ffpro
     copyFileSync(photo, join(generated, 'products', `${id}.png`));
   }
   // Written by npm run voice: one WAV per line and its spoken length. Used only if it was made for these lines.
-  const vars = buildFacts(run, order, names);
+  const vars = buildFacts(run, order, receipt);
   const timing = join(run_dir, 'voiceover.json');
   const saved: { lines: { text: string; file: string; spoken: number }[] } | null = existsSync(timing) ? readJson(timing, 'video/run/voiceover.json') : null;
   const fresh = !!saved?.lines && JSON.stringify(saved.lines.map(line => line.text)) === JSON.stringify(spokenText(vars)) && saved.lines.every(line => existsSync(join(run_dir, 'voice', line.file)));
