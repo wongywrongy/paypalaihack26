@@ -4,7 +4,7 @@ import type { AuctionEvent } from './auction.ts';
 
 export const manifest = manifestJson as unknown as {
   run: Run; events: AuctionEvent[]; vars: Record<string, string>; names: Record<string, string>;
-  clips: Record<string, { frames: number } | null>; voiceover: boolean; spoken: number[] | null; music: string | null;
+  clips: Record<string, { frames: number } | null>; voice: string[] | null; spoken: number[] | null; music: string | null;
 };
 
 // The app's tokens, from frontend/src/styles.css.

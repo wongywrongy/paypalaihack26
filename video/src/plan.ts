@@ -1,0 +1,32 @@
+// The timeline laid out with this run's facts and measured voice, plus where each shot and camera key lands.
+import { manifest } from './theme.ts';
+import { clipTime, toFrame, view, type TimedKey } from './motion.ts';
+import { cueAt, layout, type Laid, type Shot } from './timeline.ts';
+
+export const PLAN = layout(manifest.vars, manifest.spoken);
+export const scene = (id: string) => PLAN.scenes.find(row => row.id === id)!;
+
+// A shot's start and length in scene seconds. The last shot runs to the end of its scene.
+export function shotSpan(laid: Laid, i: number) {
+  const shots = laid.scene.shots!, from = i === 0 ? 0 : cueAt(laid, shots[i].cue);
+  const to = i + 1 < shots.length ? cueAt(laid, shots[i + 1].cue) : laid.duration;
+  return { from, length: to - from };
+}
+
+// Camera keys in shot seconds. A clip-second key is found by searching the shot's (monotone) clip clock.
+export function shotKeys(laid: Laid, shot: Shot, from: number, length: number): TimedKey[] {
+  const at = (clip: number) => {
+    let lo = 0, hi = length;
+    for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2; if (clipTime(mid, length, shot.in, shot.out) < clip) lo = mid; else hi = mid; }
+    return hi;
+  };
+  return shot.keys.map(key => ({ x: key.x, y: key.y, zoom: key.zoom, s: Math.max(0, key.clip !== undefined ? at(key.clip) : cueAt(laid, key.cue ?? shot.cue) - from + (key.delay ?? 0)) }))
+    .sort((a, b) => a.s - b.s);
+}
+
+// Where a point of a shot's clip sits on screen at scene second s, for numbers that fly across a cut.
+export function spotAt(id: string, shotIndex: number, s: number, x: number, y: number, height: number) {
+  const laid = scene(id), shot = laid.scene.shots![shotIndex], { from, length } = shotSpan(laid, shotIndex);
+  const p = toFrame(view(shotKeys(laid, shot, from, length), s - from), x, y);
+  return { x: p.x, y: p.y, size: height * p.k };
+}

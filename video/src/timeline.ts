@@ -1,142 +1,135 @@
-// The one place to re-time the video. Seconds. Cue, shot and callout `at` values are relative to their scene.
-// {name} in a text is filled from run.json and order.json (see buildFacts in schema.ts).
+// The one place to re-time the video. The voice drives it: every cue starts GAP seconds after the previous one ends,
+// and each scene is its cues plus LEAD and TAIL. Shot and camera times hang off cues, so nothing here is in seconds
+// except clip in/out points. {name} in a text is filled from run.json and order.json (see buildFacts in schema.ts).
 export const FPS = 30;
 export const MAX_SECONDS = 175;
+// Silence between lines, at the start of a scene and at its end. LEAD + TAIL and GAP stay under MAX_SILENCE.
+export const GAP = 0.3, LEAD = 0.2, TAIL = 0.3, MAX_SILENCE = 0.6;
 
 export const CLIPS = {
-  '01-home-guide': 'Home: "Get your first Rally payout", 0 of 5',
   '02-products-edit': "Products: Cica Barrier Cream's lowest price edited, saved",
   '03-agent-goal': 'Agent: suggestion, Review rules, From your goal, Apply',
-  '04-storefront-bag': 'Open your storefront, cleanser + cream, Total, all in',
+  '04-storefront-bag': 'Storefront, four products, bag, Total, all in',
   '05-paypal-hold': 'PayPal sandbox approval',
-  '06-bidding': 'The full live bidding board, start to award',
-  '07-receipt': 'Receipt: One box from N shops, Duties included, Your shop bid on this order',
-  '08-handoff-payout': 'Hand off in Rally for shops, Record hand-off, Won · Handed off · Payout sent · Paid',
+  '06-bidding': 'The live bidding board, start to award',
+  '07-receipt': 'Receipt: You paid, One box from N shops, Duties included',
+  '08-handoff-payout': 'Orders: Record hand-off, Won · Handed off · Payout sent · Paid',
   '09-home-done': 'Home at 5 of 5',
 } as const;
 export type ClipName = keyof typeof CLIPS;
 
-export type Cue = { at: number; dur: number; text: string };
-// x/y: the UI point the line lands on. px/py: the pill's centre. Fractions of the clip; set them against real footage.
-export type Callout = { at: number; dur: number; text: string; x: number; y: number; px: number; py: number };
-// A camera push toward `rect`, in clip pixels of a 1440×900 window. at/dur are relative to the shot.
-export type Focus = { at: number; dur: number; rect: { x: number; y: number; width: number; height: number } };
-// fit: stretch the clip to the shot's full length. Otherwise a short clip holds its last frame.
-export type Shot = { clip: ClipName; at: number; dur: number; layout?: 'tiles'; fit?: boolean; focus?: Focus };
-export type Scene = {
-  id: string;
-  criterion: string;
-  chapter?: string;
-  start: number;
-  duration: number;
-  // How this scene arrives. Omitted means a hard cut, used where the story jumps sides.
-  enter?: 'fade' | 'slide';
-  cues: Cue[];
-  shots?: Shot[];
-  callouts?: Callout[];
-  ribbon?: { done: number[]; ticks: { step: number; at: number }[] };
-};
+// Whose screen this is. Shown top left whenever footage of that side is on screen.
+export const ROLES = { shop: 'Haneul Beauty · shop owner in Seoul', shopper: 'Shopper · California' } as const;
+export type Role = keyof typeof ROLES;
 
-// Word for word from frontend/src/routes/shops/Home.tsx. test/video.test.ts fails if they drift.
-export const STEPS = ['Set your prices', 'Give your agent a goal', 'Win a Rally order', 'Hand off the parcel', 'Get paid by PayPal'];
-
-// Seconds into the bidding scene where the first rejection lands, so its narration and its picture meet.
-export const REJECT_AT = 13.6;
+// say: what Kokoro reads, when the caption's spelling would trip it. anchor: the auction event this line lands on.
+// pause: extra silence before the line, only for the planned beat before the close (0.5 s here, plus TAIL and LEAD: 1 s).
+export type Cue = { text: string; say?: string; anchor?: 'reject' | 'replace' | 'agent' | 'haneul' | 'award'; pause?: number };
+// A camera keyframe in clip pixels of the 1440×900 window: the point to centre and a zoom over full-bleed (1 to 1.8).
+// It fires at a cue's start (scene cue index, plus delay seconds) or at a clip second.
+export type Key = { cue?: number; clip?: number; delay?: number; x: number; y: number; zoom: number };
+// A clip from `in` to `out` seconds, starting at a scene cue and running to the next shot. If the shot is shorter
+// than the span, the clip ramps up to speed in the middle and back to 1×; if longer, it holds the last frame.
+export type Shot = { clip: ClipName; cue: number; in: number; out: number; role: Role; keys: Key[] };
+export type Scene = { id: string; criterion: string; cues: Cue[]; shots?: Shot[] };
 
 export const SCENES: Scene[] = [
   {
-    id: 'problem', criterion: 'impact', start: 0, duration: 12,
+    id: 'shift', criterion: 'presentation',
     cues: [
-      { at: 0.3, dur: 6.2, text: 'Buying from three Korean shops means three checkouts, three parcels and three customs bills.' },
-      { at: 6.8, dur: 5, text: "Many don't ship abroad at all, and fees can surprise you at the door." },
+      { text: 'AI agents are starting to shop for us, and to sell for us.' },
+      { text: 'Who keeps them honest about money?' },
     ],
   },
   {
-    id: 'promise', criterion: 'presentation', start: 12, duration: 6, enter: 'fade',
-    cues: [{ at: 0.3, dur: 5.4, text: 'Rally turns that into one checkout, and the shops compete for your order.' }],
+    id: 'problem', criterion: 'impact',
+    cues: [
+      { text: 'The things people want sit in small shops in other countries.' },
+      { text: "Each one is another checkout, another parcel, another customs bill. Many don't ship abroad at all." },
+    ],
   },
   {
-    id: 'shopper', criterion: 'design, PayPal', start: 18, duration: 20, enter: 'slide',
+    id: 'promise', criterion: 'innovation',
+    cues: [{ text: "Rally lets shops' agents compete for your whole cart. You approve one price, and PayPal holds it." }],
+  },
+  {
+    id: 'market', criterion: 'impact',
+    cues: [{ text: 'It starts with Korean skincare: exports hit a record $11.4 billion in 2025.', say: 'It starts with Korean skincare: exports hit a record eleven point four billion dollars in twenty twenty-five.' }],
+  },
+  {
+    id: 'haneul', criterion: 'innovation, design',
     shots: [
-      { clip: '04-storefront-bag', at: 0, dur: 12, focus: { at: 7.6, dur: 4.4, rect: { x: 490, y: 478, width: 460, height: 138 } } },
-      { clip: '05-paypal-hold', at: 12, dur: 8, focus: { at: 0.8, dur: 7.2, rect: { x: 820, y: 4, width: 190, height: 60 } } },
+      { clip: '02-products-edit', cue: 0, in: 0, out: 6.3, role: 'shop', keys: [{ cue: 0, x: 700, y: 450, zoom: 1.15 }, { cue: 0, delay: 1.4, x: 760, y: 450, zoom: 1.8 }] },
+      { clip: '03-agent-goal', cue: 1, in: 0.6, out: 9.8, role: 'shop', keys: [{ cue: 1, x: 545, y: 300, zoom: 1.7 }, { clip: 2.6, x: 545, y: 260, zoom: 1.8 }, { cue: 2, x: 1100, y: 330, zoom: 1.45 }, { clip: 8.2, x: 1150, y: 640, zoom: 1.7 }] },
     ],
-    callouts: [{ at: 6.4, dur: 5, text: 'All in: shipping, duties, tax', x: 0.5, y: 0.608, px: 0.24, py: 0.12 }],
     cues: [
-      { at: 0.3, dur: 5.4, text: 'A shopper fills one bag with {item_count} from Korean shops.' },
-      { at: 6, dur: 5.6, text: 'One price covers it all: shipping, duties and tax, in their own currency.' },
-      { at: 12.2, dur: 7.4, text: "PayPal holds this total. It's the ceiling. The shops can only bid it down." },
+      { text: 'Meet Haneul Beauty in Seoul. The owner sets a private lowest price that no one else sees.' },
+      { text: 'Then a goal in plain words: win two-item bundles, with free shipping in Korea.' },
+      { text: 'Rally turns it into rules. Nothing changes until she presses Apply.' },
     ],
   },
   {
-    id: 'bidding', criterion: 'innovation, tech', start: 38, duration: 40, enter: 'fade',
-    shots: [{ clip: '06-bidding', at: 0, dur: 40, fit: true }],
-    cues: [
-      { at: 0.3, dur: 5.6, text: 'Now the shops bid for this order, over {rounds} rounds.' },
-      { at: 6.3, dur: 7, text: "Each shop's agent writes its own bid: a lower price, a bundle, free shipping in Korea or a sample kit." },
-      { at: REJECT_AT, dur: 6.6, text: '{check_line}' },
-      { at: 20.6, dur: 6.4, text: 'The checks test each bid against the private limits, the stock and the hold.' },
-      { at: 27.6, dur: 5.4, text: 'Round by round, the total only goes down.' },
-      { at: 33.4, dur: 6.2, text: '{result_line}' },
-    ],
-  },
-  {
-    id: 'result', criterion: 'PayPal, impact', start: 78, duration: 12, enter: 'fade',
-    shots: [{ clip: '07-receipt', at: 0, dur: 12, layout: 'tiles' }],
-    cues: [
-      { at: 0.3, dur: 6.2, text: '{capture_line}' },
-      { at: 6.8, dur: 4.9, text: '{receipt_line}' },
-    ],
-  },
-  {
-    id: 'shop', criterion: 'innovation, design', chapter: 'The shop side', start: 90, duration: 28,
+    id: 'shopper', criterion: 'design, PayPal',
     shots: [
-      { clip: '01-home-guide', at: 0, dur: 5 },
-      { clip: '02-products-edit', at: 5, dur: 9 },
-      { clip: '03-agent-goal', at: 14, dur: 14, focus: { at: 4, dur: 6, rect: { x: 830, y: 260, width: 580, height: 140 } } },
+      { clip: '04-storefront-bag', cue: 0, in: 1, out: 8.4, role: 'shopper', keys: [{ cue: 0, x: 400, y: 300, zoom: 1.3 }, { clip: 1.6, x: 520, y: 420, zoom: 1.6 }, { clip: 5.4, x: 720, y: 500, zoom: 1.5 }] },
+      { clip: '04-storefront-bag', cue: 1, in: 8.4, out: 13.4, role: 'shopper', keys: [{ cue: 1, x: 720, y: 400, zoom: 1.6 }, { clip: 10.4, x: 720, y: 560, zoom: 1.8 }] },
+      { clip: '05-paypal-hold', cue: 2, in: 0, out: 3.6, role: 'shopper', keys: [{ cue: 2, x: 720, y: 300, zoom: 1.6 }, { cue: 2, delay: 1.2, x: 820, y: 160, zoom: 1.8 }] },
     ],
-    // Points at the edited cell; its value is blurred, since lowest prices are private.
-    callouts: [{ at: 2.6, dur: 6, text: 'Private: no one else sees it', x: 0.59, y: 0.583, px: 0.62, py: 0.2 }],
-    ribbon: { done: [], ticks: [{ step: 1, at: 13 }, { step: 2, at: 26 }] },
     cues: [
-      { at: 0.3, dur: 4.4, text: 'Behind each shop is a person who set two things.' },
-      { at: 5, dur: 6, text: 'At Haneul Beauty, a Seoul shop, the owner first sets a private lowest price.' },
-      { at: 11.3, dur: 5.4, text: 'No shopper, other shop or agent ever sees it.' },
-      { at: 17.2, dur: 5, text: 'Then a goal in plain words, like winning two-item bundles.' },
-      { at: 22.5, dur: 5.3, text: 'Rally turns it into rules, and nothing changes until the owner presses Apply.' },
+      { text: 'A shopper in California fills one bag from several shops.' },
+      { text: 'One price covers shipping, duties and tax.' },
+      { text: 'PayPal holds {held}. The shops can only bid it down.' },
     ],
   },
   {
-    id: 'payout', criterion: 'PayPal, impact', chapter: 'Hand off and get paid', start: 118, duration: 14, enter: 'slide',
+    id: 'bidding', criterion: 'innovation, tech',
+    cues: [
+      { text: "Now each shop's agent bids for the whole bag, over {rounds} rounds." },
+      { text: 'Agents write offers: lower prices, bundles, free shipping in Korea, sample kits.' },
+      { text: '{check_line}', anchor: 'reject' },
+      { text: '{reject_line}', anchor: 'replace' },
+      { text: '{agent_bid_line}', anchor: 'agent' },
+      { text: '{haneul_line}', anchor: 'haneul' },
+      { text: 'The total only goes down.' },
+      { text: '{result_line}', anchor: 'award' },
+    ],
+  },
+  {
+    id: 'result', criterion: 'PayPal, impact',
+    shots: [{ clip: '07-receipt', cue: 0, in: 0, out: 11.3, role: 'shopper', keys: [{ cue: 0, x: 720, y: 250, zoom: 1.8 }, { cue: 1, x: 720, y: 640, zoom: 1.8 }] }],
+    cues: [
+      { text: '{capture_line}' },
+      { text: '{receipt_line}' },
+    ],
+  },
+  {
+    id: 'payout', criterion: 'PayPal, impact',
     shots: [
-      { clip: '08-handoff-payout', at: 0, dur: 10, focus: { at: 5, dur: 5, rect: { x: 1055, y: 265, width: 320, height: 262 } } },
-      { clip: '09-home-done', at: 10, dur: 4 },
+      { clip: '08-handoff-payout', cue: 0, in: 0, out: 10.5, role: 'shop', keys: [{ cue: 0, x: 900, y: 300, zoom: 1.5 }, { clip: 1.6, x: 1010, y: 330, zoom: 1.8 }, { clip: 6.2, x: 1080, y: 330, zoom: 1.8 }] },
+      { clip: '09-home-done', cue: 2, in: 0, out: 4.2, role: 'shop', keys: [{ cue: 2, x: 660, y: 300, zoom: 1.6 }] },
     ],
-    ribbon: { done: [1, 2], ticks: [{ step: 3, at: 0.6 }, { step: 4, at: 5.4 }, { step: 5, at: 10.4 }] },
     cues: [
-      { at: 0.3, dur: 5.6, text: '{shop_result}' },
-      { at: 6, dur: 5.2, text: 'PayPal pays {payout_shop} {payout} as soon as it hands off.' },
-      { at: 11.3, dur: 2.6, text: 'Price, goal, order, hand-off, payout.' },
-    ],
-  },
-  {
-    id: 'how', criterion: 'tech', start: 132, duration: 15,
-    cues: [
-      { at: 0.3, dur: 6, text: "The shopper approves one total. Each shop's agent writes bids that follow its owner's goals." },
-      { at: 6.5, dur: 3.2, text: "Rally's checks guard the limits, the stock and the hold." },
-      { at: 9.8, dur: 4.8, text: "Agents propose. Rally's checks decide. PayPal moves the money." },
+      { text: '{shop_result}' },
+      { text: 'PayPal pays {payout_shop} {payout} as soon as it hands off.' },
+      { text: 'Five of five: price, goal, order, hand-off, payout.' },
     ],
   },
   {
-    id: 'close', criterion: 'impact, presentation', start: 147, duration: 12, enter: 'fade',
+    id: 'how', criterion: 'tech',
     cues: [
-      { at: 0.3, dur: 5.6, text: 'Korean skincare exports hit a record last year, and small shops are moving online.' },
-      { at: 6.3, dur: 5.4, text: 'Rally. Korean skincare, one box, your currency. Open source, MIT licensed.' },
+      { text: "The shopper approves one total. Agents bid inside their owners' rules." },
+      { text: "Agents propose. Rally's checks decide. PayPal moves the money." },
+    ],
+  },
+  {
+    id: 'where', criterion: 'impact, presentation',
+    cues: [
+      { text: 'Rally runs on Korean skincare today.', pause: 0.5 },
+      { text: 'Shops, products, prices and rules are data, so the same engine works for other shops and other countries.' },
+      { text: 'Rally. Agents bargain, PayPal keeps it honest.' },
     ],
   },
 ];
-
-export const totalSeconds = () => Math.max(...SCENES.map(scene => scene.start + scene.duration));
 
 export function fill(text: string, vars: Record<string, string>) {
   return text.replace(/\{(\w+)\}/g, (_, name) => {
@@ -145,22 +138,60 @@ export function fill(text: string, vars: Record<string, string>) {
   });
 }
 
-export const allCues = () => SCENES.flatMap(scene => scene.cues.map(cue => ({ ...cue, start: scene.start + cue.at, scene: scene.id })));
+// A cue whose filled text is empty (a beat the run did not produce) is left out, and its shots and keys move with it.
+export type Line = { scene: string; index: number; text: string; say: string; anchor?: Cue['anchor']; start: number; end: number };
+export type Laid = { id: string; start: number; duration: number; cues: Line[]; scene: Scene };
+export type Plan = { scenes: Laid[]; lines: Line[]; total: number };
+
+export const spokenText = (vars: Record<string, string>) => SCENES.flatMap(scene => scene.cues.map(cue => fill(cue.say ?? cue.text, vars)).filter(Boolean));
+
+// Rough Kokoro speed at 1.0, for builds before npm run voice has measured the real lengths.
+export const estimate = (text: string) => 0.25 + text.split(/\s+/).length * 0.37;
+
+export function layout(vars: Record<string, string>, spoken?: number[] | null): Plan {
+  let t = 0, n = 0;
+  const lines: Line[] = [];
+  const scenes = SCENES.map(scene => {
+    const start = t;
+    t += LEAD;
+    const cues: Line[] = [];
+    scene.cues.forEach((cue, index) => {
+      const text = fill(cue.text, vars), say = fill(cue.say ?? cue.text, vars);
+      if (!text) return;
+      if (cues.length) t += GAP;
+      t += cue.pause ?? 0;
+      const length = spoken?.[n] ?? estimate(say);
+      n++;
+      const line = { scene: scene.id, index, text, say, anchor: cue.anchor, start: t, end: t + length };
+      cues.push(line);
+      lines.push(line);
+      t = line.end;
+    });
+    t += TAIL;
+    return { id: scene.id, start, duration: t - start, cues, scene };
+  });
+  return { scenes, lines, total: t };
+}
+
+// Scene seconds when a scene cue starts. A dropped cue falls back to the next one that was kept.
+export function cueAt(laid: Laid, index: number) {
+  const line = laid.cues.find(row => row.index >= index) ?? laid.cues[laid.cues.length - 1];
+  return line.start - laid.start;
+}
 
 const stamp = (seconds: number, sep: string) => {
   const ms = Math.round(seconds * 1000), pad = (n: number, width = 2) => String(n).padStart(width, '0');
   return `${pad(Math.floor(ms / 3600000))}:${pad(Math.floor(ms / 60000) % 60)}:${pad(Math.floor(ms / 1000) % 60)}${sep}${pad(ms % 1000, 3)}`;
 };
 
-// A caption stays up while its line is spoken, plus a short tail, never past its cue.
-export const shownFor = (cue: Cue, index: number, spoken?: number[]) => spoken?.[index] === undefined ? cue.dur : Math.min(cue.dur, spoken[index] + 0.4);
+// A caption stays up while its line is spoken, plus a short tail that never reaches the next line.
+export const captionEnd = (plan: Plan, i: number) => Math.min(plan.lines[i].end + 0.25, plan.lines[i + 1]?.start ?? Infinity);
 
-export const toSrt = (vars: Record<string, string>, spoken?: number[]) =>
-  allCues().map((cue, i) => `${i + 1}\n${stamp(cue.start, ',')} --> ${stamp(cue.start + shownFor(cue, i, spoken), ',')}\n${fill(cue.text, vars)}\n`).join('\n');
+export const toSrt = (plan: Plan) => plan.lines.map((line, i) => `${i + 1}\n${stamp(line.start, ',')} --> ${stamp(captionEnd(plan, i), ',')}\n${line.text}\n`).join('\n');
 
-export const toScript = () =>
-  ['# Rally video narration', '', 'Generated from src/timeline.ts: edit cues and timings there. {name} is filled from the run data.', ''].concat(
-    SCENES.flatMap(scene => [
-      `## ${scene.id} (${scene.start}s to ${scene.start + scene.duration}s, ${scene.criterion})`, '',
-      ...scene.cues.map(cue => `- ${stamp(scene.start + cue.at, '.').slice(3, 8)} ${cue.text}`), '',
+export const toScript = (plan: Plan) =>
+  ['# Rally video narration', '', 'Generated from src/timeline.ts and the measured voice: edit cues there. Times are from this run.', ''].concat(
+    plan.scenes.flatMap(scene => [
+      `## ${scene.id} (${scene.start.toFixed(1)}s to ${(scene.start + scene.duration).toFixed(1)}s, ${scene.scene.criterion})`, '',
+      ...scene.cues.map(line => `- ${stamp(line.start, '.').slice(3, 8)} ${line.text}`), '',
     ])).join('\n');

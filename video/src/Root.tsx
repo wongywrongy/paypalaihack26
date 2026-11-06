@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Composition, continueRender, delayRender, staticFile } from 'remotion';
 import { Video } from './Video.tsx';
-import { FPS, totalSeconds } from './timeline.ts';
+import { FPS } from './timeline.ts';
+import { PLAN } from './plan.ts';
 
 export function Root() {
   const [handle] = useState(() => delayRender('fonts'));
@@ -15,5 +16,5 @@ export function Root() {
       continueRender(handle);
     });
   }, [handle]);
-  return <Composition id="Rally" component={Video} durationInFrames={totalSeconds() * FPS} fps={FPS} width={1920} height={1080} />;
+  return <Composition id="Rally" component={Video} durationInFrames={Math.ceil(PLAN.total * FPS)} fps={FPS} width={1920} height={1080} />;
 }

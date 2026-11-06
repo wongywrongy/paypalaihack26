@@ -11,6 +11,8 @@ const redact = z.object({
   from: z.number().nonnegative(),
   to: z.number().positive(),
   rect: z.object({ x: z.number().nonnegative(), y: z.number().nonnegative(), width: z.number().positive(), height: z.number().positive() }),
+  // blur for logos; private covers a price with a "Private" pill, so the viewer sees that it is set, never what it is.
+  style: z.enum(['blur', 'private']).default('blur'),
 }).refine(value => value.to > value.from, 'to must be after from');
 
 export const RunSchema = z.object({
@@ -22,6 +24,8 @@ export const RunSchema = z.object({
   payout_status: z.string().min(1),
   payout_shop: shop,
   winners: z.record(z.string(), z.object({ shop, unit: minor })),
+  // Haneul's goal exactly as typed in clip 03. Its first sentence is quoted beside her lane.
+  goal: z.string().min(1),
   redact: z.array(redact),
 });
 
@@ -95,23 +99,33 @@ export function finalCheck(run: Run, order: Order) {
   if (run.payout_status !== 'completed') throw new Error(`payout_status is ${run.payout_status}, not completed. Clip 08 must reach Paid.`);
 }
 
+// Plain words for a rejection, from backend REASONS, with the shop named once.
+const REASONS = { limit: 'went below what the shop can accept', raise: 'raised a price the shop had already offered', rules: 'broke a rule the shop set for its agent', invalid: 'offered terms the shop cannot give' };
+type Bid = Extract<Order['events'][number], { kind: 'bid' }>;
+const firstSentence = (text: string) => text.match(/^.*?[.!?](?=\s|$)/)?.[0] ?? text;
+
 export function buildFacts(run: Run, order: Order, names: Record<string, string>) {
   const cash = (value: number) => money(value, run.currency);
   const start = order.events.find(row => row.kind === 'start');
   const award = order.events.find(row => row.kind === 'award');
   if (!start || start.kind !== 'start' || !award || award.kind !== 'award') throw new Error('order.json needs a start and an award event.');
-  const items = start.items;
   const won = (id: string) => Object.values(run.winners).filter(row => row.shop === id).length;
   const payoutShop = SHOP_NAMES[run.payout_shop];
   const count = Object.keys(run.winners).length;
-  const shops = new Set(order.events.flatMap(row => row.kind === 'bid' ? [row.shop] : []));
   const rounds = Math.max(0, ...order.events.map(row => row.kind === 'round' ? row.round : 0));
   const boxShops = new Set(Object.values(run.winners).map(row => row.shop)).size;
   const released = run.held_minor - run.charged_minor;
   const { written, options, code, rejected } = award.agents;
   const bids = written + options + code;
-  const rejections = order.events.filter(row => row.kind === 'rejected').length;
-  if (rejections !== rejected) throw new Error(`order.json has ${rejections} rejected events but the award counts ${rejected}.`);
+  const rejections = order.events.filter(row => row.kind === 'rejected');
+  if (rejections.length !== rejected) throw new Error(`order.json has ${rejections.length} rejected events but the award counts ${rejected}.`);
+  const reject = rejections[0]?.kind === 'rejected' ? rejections[0] : null;
+  const allBids = order.events.filter((row): row is Bid => row.kind === 'bid');
+  const agentBid = allBids.find(row => row.authored === 'agent');
+  // Haneul's last bid that carries what her goal asked for: a bundle or free shipping in Korea.
+  const asked = [...allBids].reverse().find(row => row.shop === 'haneul' && Object.values(row.perks).some(perks => perks.includes('bundle')));
+  const has = (perk: string) => !!asked && Object.values(asked.perks).some(perks => perks.includes(perk as never));
+  const terms = ['a two-item bundle', has('freeship') && 'free shipping in Korea'].filter(Boolean).join(' with ');
   const box = `One box from ${boxShops} ${boxShops === 1 ? 'shop' : 'shops'}, duties included.`;
   return {
     held: cash(run.held_minor),
@@ -120,22 +134,24 @@ export function buildFacts(run: Run, order: Order, names: Record<string, string>
     payout: money(run.payout_usd_cents, 'USD'),
     payout_shop: payoutShop,
     rounds: String(rounds),
-    shop_count: String(shops.size),
-    item_count: `${items.length} ${items.length === 1 ? 'product' : 'products'}`,
     box_shops: String(boxShops),
-    check_line: rejected
-      ? "When an agent goes too far, Rally's checks reject it and send the shop's best valid bid instead."
+    goal_quote: firstSentence(run.goal),
+    check_line: reject
+      ? "When an agent goes too far, Rally's checks reject the bid and send the shop's best valid one."
       : "Every bid passes Rally's checks before it counts.",
+    reject_line: reject ? `Here, ${SHOP_NAMES[reject.shop]}'s agent ${REASONS[reject.reason]}.` : '',
+    agent_bid_line: agentBid ? `In round ${agentBid.round}, ${SHOP_NAMES[agentBid.shop]}'s agent writes its own bid, and it passes.` : '',
+    haneul_line: asked ? `Haneul Beauty's ${asked.authored === 'code' ? 'bid follows her goal' : 'agent does what she asked'}: ${terms}.` : '',
     agent_line: `Shop agents wrote ${written} of ${bids} ${bids === 1 ? 'bid' : 'bids'}${rejected ? ` · Rally's checks rejected ${rejected}` : ''}.`,
     result_line: released
       ? `The best total for the whole bag wins: ${cash(run.charged_minor)}.`
       : `No bid beat the checkout total, so ${cash(run.held_minor)} stands.`,
     capture_line: released
-      ? `PayPal charges ${cash(run.charged_minor)}, less than the hold. The rest goes back.`
+      ? `PayPal charges ${cash(run.charged_minor)}, ${cash(released)} less than it held.`
       : `PayPal charges ${cash(run.charged_minor)}, exactly the hold.`,
     receipt_line: `${box} Nothing is due at the door.`,
     shop_result: won('haneul')
-      ? `${payoutShop} won ${won(run.payout_shop)} of ${count} items and records the hand-off.`
-      : `Haneul Beauty was outbid. ${payoutShop} won ${won(run.payout_shop)} of ${count} items and records the hand-off.`,
+      ? `${payoutShop} won ${won(run.payout_shop)} of ${count} items and hands off the parcel.`
+      : `Haneul Beauty was outbid. ${payoutShop} won ${won(run.payout_shop)} of ${count} items and hands off the parcel.`,
   };
 }

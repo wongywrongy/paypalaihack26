@@ -4,7 +4,7 @@ import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, writ
 import { dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildFacts, crossCheck, finalCheck, OrderSchema, parse, RunSchema } from '../src/schema.ts';
-import { allCues, CLIPS, FPS, MAX_SECONDS, toScript, toSrt, totalSeconds, type ClipName } from '../src/timeline.ts';
+import { CLIPS, FPS, layout, MAX_SECONDS, spokenText, toScript, toSrt, type ClipName } from '../src/timeline.ts';
 
 type Probe = (path: string) => { width: number; height: number; seconds: number };
 
@@ -23,9 +23,6 @@ function readJson(path: string, label: string) {
 
 export function prepare(root: string, { allowPlaceholders = false, probe = ffprobe as Probe, music = process.env.MUSIC_PATH } = {}) {
   const repo = join(root, '..'), run_dir = join(root, 'run'), generated = join(root, 'public/generated');
-  writeFileSync(join(root, 'script.md'), toScript());
-  if (totalSeconds() > MAX_SECONDS) throw new Error(`timeline.ts runs ${totalSeconds()} s. The limit is ${MAX_SECONDS} s.`);
-
   const run = parse(RunSchema, readJson(join(run_dir, 'run.json'), 'video/run/run.json'), 'video/run/run.json');
   const order = parse(OrderSchema, readJson(join(run_dir, 'order.json'), 'video/run/order.json'), 'video/run/order.json');
   crossCheck(run, order);
@@ -61,12 +58,16 @@ export function prepare(root: string, { allowPlaceholders = false, probe = ffpro
     if (!existsSync(photo)) throw new Error(`No product photo at frontend/public/assets/products/${id}.png.`);
     copyFileSync(photo, join(generated, 'products', `${id}.png`));
   }
-  const voiceover = existsSync(join(run_dir, 'voiceover.wav'));
-  if (voiceover) copyFileSync(join(run_dir, 'voiceover.wav'), join(generated, 'voiceover.wav'));
-  // Written by npm run voice: how long each cue is spoken, so captions leave with the voice.
+  // Written by npm run voice: one WAV per line and its spoken length. Used only if it was made for these lines.
+  const vars = buildFacts(run, order, names);
   const timing = join(run_dir, 'voiceover.json');
-  const spoken: number[] | null = voiceover && existsSync(timing) ? readJson(timing, 'video/run/voiceover.json').spoken : null;
-  if (spoken && spoken.length !== allCues().length) throw new Error('video/run/voiceover.json was made for a different set of cues. Run npm run voice again.');
+  const saved: { lines: { text: string; file: string; spoken: number }[] } | null = existsSync(timing) ? readJson(timing, 'video/run/voiceover.json') : null;
+  const fresh = !!saved?.lines && JSON.stringify(saved.lines.map(line => line.text)) === JSON.stringify(spokenText(vars)) && saved.lines.every(line => existsSync(join(run_dir, 'voice', line.file)));
+  const voice = fresh ? saved!.lines.map(line => line.file) : null, spoken = fresh ? saved!.lines.map(line => line.spoken) : null;
+  if (voice) {
+    mkdirSync(join(generated, 'voice'), { recursive: true });
+    for (const file of voice) copyFileSync(join(run_dir, 'voice', file), join(generated, 'voice', file));
+  }
   let musicFile: string | null = null;
   if (music) {
     if (!existsSync(music)) throw new Error(`MUSIC_PATH ${music} does not exist.`);
@@ -74,12 +75,14 @@ export function prepare(root: string, { allowPlaceholders = false, probe = ffpro
     cpSync(music, join(generated, musicFile));
   }
 
-  const vars = buildFacts(run, order, names);
-  const manifest = { run, events: order.events, vars, names, clips, voiceover, spoken, music: musicFile };
+  const plan = layout(vars, spoken);
+  if (plan.total > MAX_SECONDS) throw new Error(`The video runs ${plan.total.toFixed(1)} s. The limit is ${MAX_SECONDS} s.`);
+  writeFileSync(join(root, 'script.md'), toScript(plan));
+  const manifest = { run, events: order.events, vars, names, clips, voice, spoken, music: musicFile };
   mkdirSync(join(root, 'src/generated'), { recursive: true });
   writeFileSync(join(root, 'src/generated/manifest.json'), JSON.stringify(manifest, null, 1));
   mkdirSync(join(root, 'out'), { recursive: true });
-  writeFileSync(join(root, 'out/captions.srt'), toSrt(vars, spoken ?? undefined));
+  writeFileSync(join(root, 'out/captions.srt'), toSrt(plan));
   return { manifest, missing };
 }
 
@@ -88,7 +91,7 @@ if (import.meta.main) {
   try {
     const { missing, manifest } = prepare(fileURLToPath(new URL('..', import.meta.url)).replace(/\/$/, ''), { allowPlaceholders });
     if (missing.length) console.log(`${missing.length} clips are placeholders. npm run render will refuse them.`);
-    if (!manifest.voiceover) console.log('No video/run/voiceover.wav: this build has captions and no voice.');
+    if (!manifest.voice) console.log('No voice for these lines yet (npm run voice): timing uses estimates and the build has no narration.');
   } catch (error) {
     console.error(`\nCannot build the video.\n${(error as Error).message}\n`);
     process.exit(1);

@@ -8,43 +8,36 @@ Remotion project for the Devpost video. Nothing in `frontend/` or `backend/` imp
 | `npm run preview` | 720p `out/preview.mp4`. Allows placeholders. |
 | `npm run render` | Final 1080p `out/rally.mp4` and `out/captions.srt`. Refuses placeholders. |
 | `npm run stills` | One PNG per scene at its midpoint, in `out/stills/`. |
-| `npm run voice` | Kokoro narration into `run/voiceover.wav`, spoken locally, one clip per cue. |
+| `npm run voice` | Kokoro narration, spoken locally, one WAV per line in `run/voice/`. The timeline is laid out from their lengths. |
 | `npm test` | Timeline, schema and render-gate tests. |
 
 Every command needs `run/run.json` and `run/order.json` first. There are no stand-in values: without them the build stops and says which file or field is missing. `video/run/` is git-ignored because `order.json` holds a shop's private lowest prices and this repository is public. Keep it out of commits.
 
-## Record the 9 clips
-
-The ribbon follows Home's five steps: Set your prices, Give your agent a goal, Win a Rally order, Hand off the parcel, Get paid by PayPal.
+## Record the 8 clips (owner checklist)
 
 Record one genuine hosted run, in order, in **one browser window** signed in as Haneul Beauty with the judge writer, so the receipt shows "Your shop bid on this order". Save to `run/clips/` with the exact names below.
 
-- Window 1440×900 at 100% zoom, with browser chrome hidden. Record at 2× device pixel ratio (a 2880×1800 file) if you can: the camera pushes in up to 1.6×, and 2× keeps text sharp. Any other size stops the build.
+- Window 1440×900, browser zoom 100%, 2× device pixel ratio (a 2880×1800 file), browser chrome hidden. Any other size stops the build. The camera zooms up to 1.8× over full-bleed footage, and 2× keeps that text sharp.
+- **Cursor hidden.** Headless Chrome draws none; in a normal browser, hide it in the recorder.
 - Use the deployed app, not the Rootlane review.
 - Keep passwords, the PayPal login, tokens, cookies and account emails out of every frame. Cut the login screen from clip 05.
-- Trim each clip to its action, starting on the first frame that matters.
+- Cut waits and page loads with the recorder's pause, or with each shot's `in`/`out` in `timeline.ts`. Nothing is labelled sped up: a span longer than its shot ramps 1× → up to 3× → 1×, and the test fails past 3×.
+- **The bag.** Low-pH Gel Cleanser (Bada, Haneul), Cica Barrier Cream (Bada, Haneul), Rice Toner (all three shops), Volcanic Clay Mask (only Bada, so the box always comes from at least two shops).
 
-| File | Scene time | Do this | Keep out of frame |
-| --- | --- | --- | --- |
-| `01-home-guide.mp4` | 5 s | Home: "Get your first Rally payout" at 0 of 5, on step 1 "Set your prices" | The sign-in screen |
-| `02-products-edit.mp4` | 12 s | Products: edit Cica Barrier Cream's Lowest price (USD) within bounds, press Enter, show it saved | Other shops' data |
-| `03-agent-goal.mp4` | 11 s | Agent: tap the "Win two-item bundles" chip, press Review rules, show the "From your goal" tags, press Apply | |
-| `04-storefront-bag.mp4` | 12 s | Home step 3 "Win a Rally order": press Open your storefront, add cleanser and cream, tick Bundles, scroll until "Total, all in" sits above the PayPal button | |
-| `05-paypal-hold.mp4` | 8 s | Approve in PayPal sandbox | The login screen and buyer email |
-| `06-bidding.mp4` | 40 s | The whole live board from start to award. Don't refresh | |
-| `07-receipt.mp4` | 12 s | Receipt: held, charged and released, "One box from N shops", "Duties included", "Your shop bid on this order" | |
-| `08-handoff-payout.mp4` | 10 s | Hand off in Rally for shops, keep carrier Rally pickup, press Record hand-off, wait for the stepper Won · Handed off · Payout sent · Paid. Cut the wait. Stay scrolled to the top | "Your lowest" prices under "How your agent bid" |
-| `09-home-done.mp4` | 4 s | Home at 5 of 5 ("You’re set up on Rally") | |
+| File | Do this | Keep out of frame |
+| --- | --- | --- |
+| `02-products-edit.mp4` | Products, Cica Barrier Cream's row centred: edit Lowest price (USD), press Enter, show it saved | Every lowest and cost value: covered by `private` redactions |
+| `03-agent-goal.mp4` | Agent: tap the "Win two-item bundles" chip, press Review rules, show the "From your goal" tags, press Apply | |
+| `04-storefront-bag.mp4` | Starts on the storefront: add the four products, open the bag, tick Bundles, scroll until "Total, all in" sits above the PayPal button | The PayPal button's mark |
+| `05-paypal-hold.mp4` | Approve in PayPal sandbox | The login screen, buyer email, PayPal marks |
+| `06-bidding.mp4` | The live board from start to award. Don't refresh. Only its first seconds are shown | |
+| `07-receipt.mp4` | Receipt: You paid, held, charged and released, "One box from N shops", "Duties included", "Your shop bid on this order" | |
+| `08-handoff-payout.mp4` | Hand off in Rally for shops, keep carrier Rally pickup, press Record hand-off, wait for Won · Handed off · Payout sent · Paid. Cut the wait. Stay scrolled to the top | "Your lowest" under "How your agent bid" |
+| `09-home-done.mp4` | Home at 5 of 5 ("You’re set up on Rally") | The lowest price in "Set your prices" |
 
-A clip longer than its shot plays faster and shows a "Sped up" tag, so nothing is accelerated silently. A shorter clip holds its last frame. Clip 06 follows the board's own pacing (see "Re-time") and shows "Slowed" when it plays slower than life.
+**No logos, including PayPal's.** PayPal is named in text only; its marks are blurred with `redact` entries.
 
-**No logos, including PayPal's.** PayPal is named in text only. Blur its mark in clips 04 and 05 with `redact` entries. The PayPal button in the bag measures about `x 490, y 645, width 460, height 44` once scrolled, but check it against your footage.
-
-**No private floors in the Orders view.** With real data the Orders page prints "Your lowest" under each of the shop's lanes in "How your agent bid", which starts near `y 600`. Clip 08 must not show it. Stay scrolled to the top, and add this entry to be safe, with `to` set to the clip's length in seconds:
-
-```json
-{ "clip": "08-handoff-payout", "from": 0, "to": 30, "rect": { "x": 600, "y": 600, "width": 800, "height": 300 } }
-```
+**No private prices, ever.** A `private` redaction covers a value with a lock and "Private" from the first frame it could show, so the viewer sees that a price is set and locked, never the number.
 
 ## Save the run data
 
@@ -64,6 +57,7 @@ Use the same order as the clips.
   "payout_status": "completed",
   "payout_shop": "haneul",
   "winners": { "product-id": { "shop": "haneul", "unit": 0 } },
+  "goal": "Haneul's goal exactly as typed in clip 03",
   "redact": []
 }
 ```
@@ -72,20 +66,21 @@ Use the same order as the clips.
 - `winners` is copied from the order's `award` event: item id, `shop` and `unit`.
 - `payout_shop` is the shop whose hand-off is in clip 08. This one field is an addition to the agreed list, because a split order has more than one winner and `order.json` only shows Haneul's payout.
 - `payout_status` is the payment operation's status. The final render requires `completed`.
-- `redact` is required, so use `[]` if there is nothing to hide. Each entry blurs a rectangle in clip pixels (1440×900), between two times in seconds of the source clip:
+- `goal` is quoted (first sentence only) beside Haneul's lane when her bid does what it asked.
+- `redact` is required, so use `[]` if there is nothing to hide. Each entry covers a rectangle in clip pixels (1440×900), between two times in seconds of the source clip. `style` is `blur` (the default, for logos) or `private` (for prices):
 
 ```json
 { "clip": "05-paypal-hold", "from": 0, "to": 7, "rect": { "x": 60, "y": 40, "width": 180, "height": 60 } }
+{ "clip": "02-products-edit", "from": 0, "to": 7, "rect": { "x": 753, "y": 422, "width": 200, "height": 55 }, "style": "private" }
 ```
 
 `npm run render` also refuses an order that isn't `CHARGED`, a payout that isn't `completed`, any `FIXTURE` event, an order where no bid was chosen by a model, and an order whose award says `agents.written` is 0: the video tells the story of shop agents writing their own bids, so a run where they only picked options can't be used.
 
-If Haneul is outbid, keep going. Captions change to say so and the payout scene uses `payout_shop`. Record clip 08 as that shop.
+If Haneul is outbid, captions change to say so and the payout scene uses `payout_shop`, but the story is built around Haneul winning: record another order. Her rules cap each round's cut at the goal's percentage off her listed price, so with this bag her listed prices have to be competitive with Bada's for her to win anything.
 
 ## Audio
 
-- `run/voiceover.wav` is optional and starts at 0:00. Without it the video has captions only, and the build says so.
-- `npm run voice` speaks every cue with [Kokoro](https://github.com/thewh1teagle/kokoro-onnx) on this machine, nothing sent anywhere, and places each clip at its cue's start. It also writes `run/voiceover.json` with how long each line is spoken, so captions leave with the voice. Set it up once:
+- `npm run voice` speaks every line with [Kokoro](https://github.com/thewh1teagle/kokoro-onnx) on this machine, nothing sent anywhere, into one trimmed WAV per line in `run/voice/`, and writes `run/voiceover.json` with each line's spoken length. Lines already spoken are reused. Without it the build uses estimated lengths and has no narration, and says so. Set it up once:
 
   ```sh
   python3 -m venv .venv && .venv/bin/pip install kokoro-onnx soundfile
@@ -94,23 +89,20 @@ If Haneul is outbid, keep going. Captions change to say so and the payout scene 
   curl -LO https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin
   ```
 
-  The voice is `af_heart` at speed 1.0; `KOKORO_VOICE=am_michael npm run voice` tries the other one. The voice is never sped up: if a line runs past its cue's `dur`, the command fails and lists it, and the fix is a longer cue or fewer words in `timeline.ts`. Run it again whenever the run data changes, because the numbers are spoken.
+  The voice is `af_heart` at speed 1.0, never sped up; `KOKORO_VOICE=am_michael npm run voice` tries the other one. Run it again whenever the run data changes, because the numbers are spoken.
 - `MUSIC_PATH=/path/to/licensed-track.mp3 npm run render` adds music, at −24 dB under the voice. There is none by default.
-- Captions are burned in and also written to `out/captions.srt`.
+- Captions are burned in (one style: bottom centre, 40 px, two lines at most, over a steady scrim) and also written to `out/captions.srt`.
 
 ## Re-time
 
-`src/timeline.ts` is the only place timings live: scene `start` and `duration`, then `at` and `dur` for caption cues, shots and callouts, all relative to the scene. Keep scenes back to back. `npm test` fails above 175 s.
+**The voice drives the timeline.** `src/timeline.ts` holds the lines, shots and camera keys, but no scene or cue times: every line starts `GAP` (0.3 s) after the previous one ends, and each scene is its lines plus half a second. `npm test` fails on any silence over 0.6 s, except the planned 1 s pause before the close, and on a video over 175 s.
 
-1. Record the voiceover from `script.md`.
-2. Change the numbers in `timeline.ts` to match it.
-3. Run any npm script to regenerate `script.md` and `captions.srt`. Edit caption words in `timeline.ts` too, never in `script.md`.
+- A shot starts on a line (`cue`, the scene's line index) and plays its clip from `in` to `out`. A camera key fires at a line's start (plus `delay`) or at a clip second, and centres a point of the 1440×900 window at a zoom from 1 to 1.8. Every key drifts 4% closer while it holds, so nothing sits still.
+- The bidding board pins each event to the line about it: the first rejection, its replacement, the first agent-written bid, Haneul's bundle, and the award. Time runs evenly between pins.
+- A line whose run fact is empty (no rejection, say) is dropped, and the scene closes up around it.
+- `script.md` and `out/captions.srt` are regenerated by every npm script. Edit words in `timeline.ts`, never in `script.md`.
 
-**Callouts need one pass against real footage.** `x`/`y` is where the line lands and `px`/`py` is the pill, as fractions of the clip. They were measured from the app's real layout at 1440×900 with test data, so confirm them on real footage. The same goes for each shot's `focus` rect, in 1440×900 window pixels.
-
-**The bidding scene paces itself from the events.** `FROM` and `UNTIL` in `src/scenes/Bidding.tsx` are the stretch of scene the auction is spread across. Each agent-written bid holds at least 1.2 s (2 s when there is room), and the first rejection lands near `REJECT_AT` in `timeline.ts`, where its narration line starts. Clip 06 is played through the same time map, so the footage and the rebuilt board stay in step; it starts on the first frame of bidding. If the holds can't fit, rounds 2 and 3 play at 2× and say so on screen.
-
-`STEPS` in `timeline.ts` holds the ribbon's five labels, word for word from Home. `npm test` fails if the app's strings, the ribbon or this checklist drift apart.
+**Shared elements carry the eye across cuts:** the bag's total flies from PayPal's window to the real board, then into the rebuilt board's header; the final total flies into the receipt's "You paid"; Haneul's winning lane shrinks into her order's row; the Seoul pin becomes the shop's role tag. Their clip positions are measured on the recorded run (`ClipScene.tsx`, `Bidding.tsx`); re-check them after a re-record.
 
 ## Fonts
 

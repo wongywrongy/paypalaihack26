@@ -2,6 +2,7 @@ import { interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 import { evolvePath } from '@remotion/paths';
 import { C } from '../theme.ts';
 import { clamp, DUR, ease, enter, rise, typed } from '../motion.ts';
+import type { Laid } from '../timeline.ts';
 
 // High level only: no logos and no tech names on the boxes.
 const BOXES = [
@@ -15,17 +16,18 @@ const centre = (i: number) => LEFT + i * (W + GAP) + W / 2;
 const MOTTO = "Agents propose. Rally's checks decide. PayPal moves the money.";
 const STACK = 'FastAPI · PostgreSQL · PayPal Orders v2, Payouts, webhooks · open-weight models on Bitdeer';
 
-// The dot's path in scene seconds: it lingers on Rally's checks, where the decision is made.
-const DOT: [number, number][] = [[1.4, centre(0)], [3.4, centre(1)], [4.6, centre(2) - 30], [7.6, centre(2) + 30], [9.2, centre(3)]];
+// The dot's path as fractions of the first line: it lingers on Rally's checks, where the decision is made.
+const DOT: [number, number][] = [[0.1, centre(0)], [0.35, centre(1)], [0.5, centre(2) - 30], [0.85, centre(2) + 30], [1.05, centre(3)]];
 
-export function Architecture() {
+export function Architecture({ laid }: { laid: Laid }) {
   const frame = useCurrentFrame(), { fps } = useVideoConfig();
-  const s = frame / fps;
-  const x = interpolate(s, DOT.map(row => row[0]), DOT.map(row => row[1]), { ...clamp, easing: ease });
-  const dot = enter(frame, fps, DOT[0][0] * fps - DUR.micro, DUR.micro) * (1 - enter(frame, fps, DOT[DOT.length - 1][0] * fps, DUR.micro));
+  const s = frame / fps, motto = laid.cues[1].start - laid.start;
+  const path = DOT.map(([at, x]): [number, number] => [0.4 + at * (motto - 0.4), x]);
+  const x = interpolate(s, path.map(row => row[0]), path.map(row => row[1]), { ...clamp, easing: ease });
+  const dot = enter(frame, fps, path[0][0] * fps - DUR.micro, DUR.micro) * (1 - enter(frame, fps, path[path.length - 1][0] * fps, DUR.micro));
   const d = `M ${centre(0)} ${TRACK} H ${centre(3)}`;
   const line = evolvePath(interpolate(frame, [4, 4 + 3 * DUR.micro + DUR.standard], [0, 1], { ...clamp, easing: ease }), d);
-  const mottoAt = 9.8 * fps, stackAt = 12 * fps;
+  const mottoAt = motto * fps, stackAt = (motto + 1.6) * fps;
   return <div style={{ position: 'absolute', inset: 0 }}>
     <svg width={1920} height={1080} style={{ position: 'absolute', inset: 0 }}>
       <path d={d} stroke={C.line} strokeWidth={3} fill="none" strokeDasharray={line.strokeDasharray} strokeDashoffset={line.strokeDashoffset} />

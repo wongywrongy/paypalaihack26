@@ -62,61 +62,17 @@ export const roundAt = (board: Board, t: number) => board.rounds.filter(step => 
 
 // --- Pacing: maps auction seconds onto scene seconds. ---
 export type Knot = { t: number; s: number };
-const OTHER_BID = 0.6;
-export type Pace = { knots: Knot[]; doubleFrom: number | null };
-// gaps: the hold for an agent-written bid, preferred first; the last one is the floor before falling back to 2×.
-export type PaceOptions = { from: number; until: number; gaps: number[]; rejectAt: number; rejectBeat: number };
+export type Pace = { knots: Knot[] };
 
-// Each event's gap to the next is its share of real time, but an agent-written bid holds at least `minGap` and the
-// first rejection holds `rejectBeat`, landing at `rejectAt` or as close before it as the later holds allow. If the holds alone overflow the scene, round 1
-// keeps them and later rounds take half, shown as "2× speed".
-export function pace(board: Board, options: PaceOptions): Pace {
-  const { from, until, gaps, rejectAt, rejectBeat } = options;
-  const events = board.events;
-  let minGap = gaps[0];
-  const first = board.rejected[0];
-  const times = [...new Set([events[0].t, ...events.filter(row => row.t <= board.awardAt && row.kind !== 'done').map(row => row.t), board.awardAt])].sort((a, b) => a - b);
-  const need = (t: number, half: boolean) => {
-    if (first && t === first.t) return rejectBeat;
-    const bid = events.find(row => row.kind === 'bid' && row.t === t);
-    // Bids the agent did not write still get a moment, so two cards never land in the same frame.
-    const hold = !bid ? 0 : bid.authored === 'agent' ? minGap : OTHER_BID;
-    return half && bid?.round >= 2 ? hold / 2 : hold;
-  };
-  const lay = (points: number[], s0: number, s1: number, half: boolean): Knot[] => {
-    const gaps = points.slice(1).map((t, i) => ({ dt: t - points[i], need: need(points[i], half) }));
-    const fit = (scale: number) => gaps.reduce((sum, gap) => sum + Math.max(gap.dt * scale, gap.need), 0);
-    const room = s1 - s0;
-    let scale = 0;
-    if (fit(0) <= room) {
-      let lo = 0, hi = 1;
-      while (fit(hi) < room && hi < 1e6) hi *= 2;
-      for (let i = 0; i < 60; i++) { const mid = (lo + hi) / 2; if (fit(mid) < room) lo = mid; else hi = mid; }
-      scale = hi;
-    }
-    // Still over (only possible in the 2× fallback): squeeze evenly rather than overrun the scene.
-    const squeeze = Math.min(1, room / Math.max(fit(scale), 1e-9));
-    const knots = [{ t: points[0], s: s0 }];
-    gaps.forEach((gap, i) => knots.push({ t: points[i + 1], s: knots[i].s + Math.max(gap.dt * scale, gap.need) * squeeze }));
-    return knots;
-  };
-  const holds = (points: number[], half: boolean) => points.slice(0, -1).reduce((sum, t) => sum + need(t, half), 0);
-  const build = (half: boolean) => {
-    if (!first || first.t >= board.awardAt) return lay(times, from, until, half);
-    const before = times.filter(t => t <= first.t), after = times.filter(t => t >= first.t);
-    // The rejection moves earlier only as far as the holds after it need.
-    const anchor = Math.max(from + holds(before, half), Math.min(rejectAt, until - holds(after, half)));
-    return [...lay(before, from, anchor, half), ...lay(after, anchor, until, half).slice(1)];
-  };
-  const fits = (knots: Knot[]) => knots.slice(1).every((knot, i) => knot.s - knots[i].s + 1e-6 >= need(knots[i].t, false));
-  for (const gap of gaps) {
-    minGap = gap;
-    const normal = build(false);
-    if (fits(normal)) return { knots: normal, doubleFrom: null };
+// The board starts at `from`; each anchor pins an event to the moment its line is spoken, and time runs evenly
+// between pins. Anchors that would run time backwards are dropped. After the last pin the board keeps real time.
+export function anchored(board: Board, from: number, anchors: Knot[]): Pace {
+  const knots: Knot[] = [{ t: board.events[0].t, s: from }];
+  for (const anchor of anchors) {
+    const last = knots[knots.length - 1];
+    if (anchor.t > last.t && anchor.s > last.s) knots.push(anchor);
   }
-  const round2 = board.rounds.find(step => step.value === 1)?.t ?? null;
-  const knots = build(true);
-  return { knots, doubleFrom: round2 === null ? null : sceneAt({ knots, doubleFrom: null }, round2) };
+  return { knots };
 }
 
 export function sceneAt({ knots }: Pace, t: number) {

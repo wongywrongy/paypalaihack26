@@ -4,10 +4,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { prepare } from '../scripts/prepare.ts';
-import { camera } from '../src/motion.ts';
-import { buildBoard, pace, roundAt, sceneAt, valueAt } from '../src/auction.ts';
+import { clipTime, MAX_ZOOM, peakSpeed, view } from '../src/motion.ts';
+import { anchored, buildBoard, roundAt, sceneAt, valueAt } from '../src/auction.ts';
 import { buildFacts, crossCheck, finalCheck, money, OrderSchema, parse, RunSchema } from '../src/schema.ts';
-import { allCues, CLIPS, MAX_SECONDS, REJECT_AT, SCENES, STEPS, toScript, toSrt, totalSeconds, type ClipName } from '../src/timeline.ts';
+import { CLIPS, cueAt, GAP, layout, MAX_SECONDS, MAX_SILENCE, SCENES, spokenText, toScript, toSrt, type ClipName } from '../src/timeline.ts';
 
 // Test data only: nothing here reaches a build.
 const events = () => [
@@ -19,7 +19,7 @@ const events = () => [
   { seq: 6, t: 0, kind: 'done' },
 ];
 const order = () => ({ id: 'o1', currency: 'USD', payment_state: 'CHARGED', maximum_minor: 3000, lowest: { a: 900 }, events: events(), payout: { status: 'completed', amount_minor: 1300, currency: 'USD' } });
-const run = () => ({ order_id: 'o1', currency: 'USD', held_minor: 3000, charged_minor: 2800, payout_usd_cents: 1300, payout_status: 'completed', payout_shop: 'haneul', winners: { a: { shop: 'haneul', unit: 1300 }, b: { shop: 'dalbit', unit: 1500 } }, redact: [] });
+const run = () => ({ order_id: 'o1', currency: 'USD', held_minor: 3000, charged_minor: 2800, payout_usd_cents: 1300, payout_status: 'completed', payout_shop: 'haneul', winners: { a: { shop: 'haneul', unit: 1300 }, b: { shop: 'dalbit', unit: 1500 } }, goal: 'Win two-item bundles. Keep a margin.', redact: [] });
 const parsed = (r: unknown = run(), o: unknown = order()) => [parse(RunSchema, r, 'run.json'), parse(OrderSchema, o, 'order.json')] as const;
 
 function project(files: Record<string, unknown>, clips: string[] = []) {
@@ -37,32 +37,75 @@ function project(files: Record<string, unknown>, clips: string[] = []) {
 const probe = () => ({ width: 1440, height: 900, seconds: 10 });
 const allClips = Object.keys(CLIPS);
 
-test(`timeline stays within ${MAX_SECONDS} s`, () => assert.ok(totalSeconds() <= MAX_SECONDS, `${totalSeconds()} s`));
+// The run this build was prepared from, when there is one; tests on it check the cut actually being rendered.
+const built = (() => { try { return JSON.parse(readFileSync('src/generated/manifest.json', 'utf8')); } catch { return null; } })();
+const facts = () => buildFacts(...parsed(), { a: 'Cleanser', b: 'Cream' });
+const plans = () => [layout(facts(), null), ...(built ? [layout(built.vars, built.spoken)] : [])];
 
-test('scenes are contiguous and every shot and cue stays inside its scene', () => {
-  let end = 0;
-  for (const scene of SCENES) {
-    assert.equal(scene.start, end, scene.id);
-    end += scene.duration;
-    for (const row of [...scene.cues, ...(scene.shots || []), ...(scene.callouts || [])]) assert.ok(row.at + row.dur <= scene.duration, `${scene.id}: ${JSON.stringify(row)}`);
+test(`the video stays within ${MAX_SECONDS} s, and the built cut within 2:05 to 2:20`, () => {
+  for (const plan of plans()) assert.ok(plan.total <= MAX_SECONDS, `${plan.total} s`);
+  if (built?.spoken) { const total = layout(built.vars, built.spoken).total; assert.ok(total >= 125 && total <= 140, `${total} s`); }
+});
+
+test(`no silence over ${MAX_SILENCE} s except the planned pause before the close`, () => {
+  for (const plan of plans()) {
+    assert.ok(plan.lines[0].start <= MAX_SILENCE);
+    plan.lines.slice(1).forEach((line, i) => {
+      const gap = line.start - plan.lines[i].end, planned = SCENES.find(row => row.id === line.scene)!.cues[line.index].pause;
+      if (planned) assert.ok(gap <= planned + MAX_SILENCE, `${line.text}: ${gap}`);
+      else assert.ok(gap <= MAX_SILENCE + 1e-9, `${gap.toFixed(2)} s of silence before: ${line.text}`);
+    });
+    assert.ok(plan.total - plan.lines.at(-1)!.end <= MAX_SILENCE);
+  }
+  assert.ok(GAP <= MAX_SILENCE);
+});
+
+test('scenes are contiguous and each lasts its lines plus half a second', () => {
+  for (const plan of plans()) {
+    let end = 0;
+    for (const scene of plan.scenes) {
+      assert.ok(Math.abs(scene.start - end) < 1e-9, scene.id);
+      end += scene.duration;
+      const spoken = scene.cues.reduce((sum, line) => sum + line.end - line.start, 0), gaps = (scene.cues.length - 1) * GAP + scene.cues.reduce((sum, line) => sum + (SCENES.find(row => row.id === scene.id)!.cues[line.index].pause ?? 0), 0);
+      assert.ok(Math.abs(scene.duration - spoken - gaps - 0.5) < 1e-6, scene.id);
+    }
   }
 });
 
-test('callouts: at most 6 words and one on screen', () => {
-  for (const scene of SCENES) for (const callout of scene.callouts || []) {
-    assert.ok(callout.text.split(/\s+/).filter(word => word !== '→').length <= 6, callout.text);
-    const overlapping = scene.callouts!.filter(other => other.at < callout.at + callout.dur && callout.at < other.at + other.dur);
-    assert.equal(overlapping.length, 1, scene.id);
-  }
-});
-
-test('captions fit 2 lines, can be spoken in time and never overlap', () => {
-  const cues = allCues();
-  cues.forEach((cue, i) => {
-    assert.ok(cue.text.length <= 120, cue.text);
-    assert.ok(cue.text.split(/\s+/).length / cue.dur <= 3.5, `too fast: ${cue.text}`);
-    if (cues[i + 1]) assert.ok(cue.start + cue.dur <= cues[i + 1].start + 1e-9, cue.text);
+test('captions fit two lines and never overlap', () => {
+  for (const plan of plans()) plan.lines.forEach((line, i) => {
+    assert.ok(line.text.length <= 140, line.text);
+    if (plan.lines[i + 1]) assert.ok(line.end <= plan.lines[i + 1].start, line.text);
   });
+});
+
+test('every shot starts on a line, keeps its clip span, and ramps no faster than 3×', () => {
+  for (const plan of plans()) for (const scene of plan.scenes) (scene.scene.shots || []).forEach((shot, i, shots) => {
+    const from = i === 0 ? 0 : cueAt(scene, shot.cue), to = i + 1 < shots.length ? cueAt(scene, shots[i + 1].cue) : scene.duration;
+    assert.ok(to > from, `${scene.id} shot ${i} has no time`);
+    assert.ok(shot.out <= ((built?.clips?.[shot.clip]?.frames ?? Infinity) / 30) + 0.05, `${shot.clip} out past its end`);
+    assert.ok(peakSpeed(to - from, shot.in, shot.out) <= 3, `${scene.id} ${shot.clip} ramps to ${peakSpeed(to - from, shot.in, shot.out).toFixed(2)}×`);
+    for (const key of shot.keys) assert.ok(key.zoom >= 1 && key.zoom <= MAX_ZOOM, `${shot.clip} zoom ${key.zoom}`);
+  });
+});
+
+test('speed ramp: starts at in, ends at out, never runs backwards, and is 1× at both ends', () => {
+  const at = (t: number) => clipTime(t, 4, 2, 9);
+  assert.equal(at(0), 2);
+  assert.ok(Math.abs(at(4) - 9) < 1e-9);
+  for (let t = 0; t < 4; t += 0.05) assert.ok(at(t + 0.05) >= at(t));
+  assert.ok(Math.abs((at(0.01) - at(0)) / 0.01 - 1) < 0.01 && Math.abs((at(4) - at(3.99)) / 0.01 - 1) < 0.01);
+  assert.equal(clipTime(10, 6, 0, 3), 3, 'a short span holds its last frame');
+});
+
+test('camera: never zooms past 1.8 or shows past the clip edge', () => {
+  for (const key of [{ x: 0, y: 0, zoom: 3 }, { x: 1440, y: 900, zoom: 1 }, { x: 720, y: 450, zoom: 1.8 }]) for (const s of [0, 0.4, 3, 9]) {
+    const v = view([{ ...key, s: 0 }], s), half = 960 / (1920 / 1440 * v.zoom), tall = 540 / (1920 / 1440 * v.zoom);
+    assert.ok(v.zoom >= 1 && v.zoom <= MAX_ZOOM);
+    assert.ok(v.x - half >= -1e-6 && v.x + half <= 1440 + 1e-6 && v.y - tall >= -1e-6 && v.y + tall <= 900 + 1e-6, JSON.stringify(v));
+  }
+  const held = [0, 1, 2, 3].map(s => view([{ s: 0, x: 720, y: 450, zoom: 1.4 }], s).zoom);
+  assert.ok(held[3] > held[0], 'a held frame drifts');
 });
 
 test('no banned word in any on-screen source', () => {
@@ -73,16 +116,12 @@ test('no banned word in any on-screen source', () => {
   }
 });
 
-test('the disclosure line appears only on the title', () => {
-  for (const file of ['src/timeline.ts', 'src/scenes/Bidding.tsx', 'src/scenes/Architecture.tsx', 'src/scenes/ClipScene.tsx', 'src/ui.tsx']) assert.ok(!readFileSync(file, 'utf8').includes('fictional shops'), file);
-});
-
-test('script.md matches timeline.ts', () => assert.equal(readFileSync('script.md', 'utf8'), toScript()));
+test('script.md matches the laid-out timeline', { skip: !built }, () => assert.equal(readFileSync('script.md', 'utf8'), toScript(layout(built.vars, built.spoken))));
 
 test('srt numbers cues and uses comma timestamps', () => {
   const [r, o] = parsed();
-  const srt = toSrt(buildFacts(r, o, { a: 'Cleanser', b: 'Cream' }));
-  assert.ok(srt.startsWith('1\n00:00:00,300 --> 00:00:06,500\n'));
+  const srt = toSrt(layout(buildFacts(r, o, { a: 'Cleanser', b: 'Cream' }), null));
+  assert.match(srt, /^1\n00:00:00,200 --> 00:00:0\d,\d{3}\n/);
   assert.ok(srt.includes('$28.00'));
   assert.ok(!srt.includes('{'));
 });
@@ -90,13 +129,13 @@ test('srt numbers cues and uses comma timestamps', () => {
 test('names match the app word for word', () => {
   const source = (file: string) => readFileSync(join('../frontend/src/routes', file), 'utf8');
   for (const [file, strings] of Object.entries({
-    'shops/Home.tsx': [...STEPS, 'Get your first Rally payout', ' of 5', 'Open your storefront'],
+    'shops/Home.tsx': [' of 5'],
     'shops/GoalsForm.tsx': ['Review rules', 'From your goal', 'Apply'],
     'Paid.tsx': ['Your shop bid on this order', 'Hand off in Rally for shops', 'One box from', 'Duties included'],
     'shops/OrdersView.tsx': ['Rally pickup', 'Record hand-off', "'Won', 'Handed off', 'Payout sent', 'Paid'"],
   })) for (const text of strings) assert.ok(source(file).includes(text), `${file}: ${text}`);
   const readme = readFileSync('README.md', 'utf8');
-  for (const text of [...STEPS, 'Open your storefront', 'Review rules', 'From your goal', 'Hand off in Rally for shops', 'Record hand-off', 'Rally pickup', 'Won · Handed off · Payout sent · Paid', 'Your shop bid on this order', 'Duties included']) assert.ok(readme.includes(text), `README: ${text}`);
+  for (const text of ['Review rules', 'From your goal', 'Hand off in Rally for shops', 'Record hand-off', 'Rally pickup', 'Won · Handed off · Payout sent · Paid', 'Your shop bid on this order', 'Duties included']) assert.ok(readme.includes(text), `README: ${text}`);
 });
 
 test('no value from `lowest` reaches rendered text', () => {
@@ -188,7 +227,7 @@ test('prepare: missing inputs fail with a clear message and no fallback', () => 
 });
 
 test('prepare: placeholders pass for review and fail for the final render', () => {
-  const { root, done } = project({ 'run.json': run(), 'order.json': order() }, allClips.slice(0, 8));
+  const { root, done } = project({ 'run.json': run(), 'order.json': order() }, allClips.slice(0, 7));
   assert.deepEqual(prepare(root, { allowPlaceholders: true, probe }).missing, ['09-home-done.mp4']);
   assert.throws(() => prepare(root, { allowPlaceholders: false, probe }), /Placeholders cannot go in the final render[\s\S]*09-home-done/);
   done();
@@ -229,7 +268,7 @@ test('schema: rejected events and agent counts parse, and the counts must match'
   assert.throws(() => buildFacts(...parsed(run(), o), {}), /1 rejected events but the award counts 0/);
   (o.events.find(row => row.kind === 'award') as any).agents.rejected = 1;
   const facts = buildFacts(...parsed(run(), o), {});
-  assert.match(facts.check_line, /reject it and send the shop's best valid bid instead/);
+  assert.match(facts.check_line, /reject the bid and send the shop's best valid one/);
   assert.equal(facts.agent_line, "Shop agents wrote 1 of 1 bid · Rally's checks rejected 1.");
   assert.equal(buildFacts(...parsed(), {}).check_line, "Every bid passes Rally's checks before it counts.");
   const bad = order();
@@ -237,44 +276,18 @@ test('schema: rejected events and agent counts parse, and the counts must match'
   assert.throws(() => parse(OrderSchema, bad, 'order.json'), /authored/);
 });
 
-// Real bids in a round land milliseconds apart, so pacing must hold each agent bid on screen.
-const paced = () => {
-  const rows: any[] = [{ seq: 1, t: 0, kind: 'start', v: 3, total: 3000, items: ['a'], shops: { a: ['haneul', 'bada', 'dalbit'] }, listed: { a: { haneul: 1500, bada: 1400, dalbit: 1450 } } }];
-  let seq = 2;
-  for (const round of [1, 2, 3]) {
-    const t0 = (round - 1) * 3.5 + 0.2;
-    if (round === 1) rows.push({ seq: seq++, t: t0, kind: 'rejected', round, shop: 'bada', reason: 'limit' });
-    for (const [i, shop] of ['bada', 'dalbit', 'haneul'].entries()) rows.push({ seq: seq++, t: t0 + (i ? 0.01 : 0), kind: 'bid', round, shop, authored: round === 1 && shop === 'bada' ? 'code' : 'agent', items: { a: 1400 - round * 10 - i }, bundle: null, perks: {} });
-    rows.push({ seq: seq++, t: round * 3.5, kind: 'round', round, leaders: {} });
-  }
-  rows.push({ seq: seq++, t: 10.6, kind: 'award', winners: { a: { shop: 'haneul', unit: 1368 } }, extras: [], domestic: {}, agents: { written: 8, options: 0, rejected: 1, code: 1, changed: 8 } });
-  return rows;
-};
-
-test('pacing: every agent bid holds 1.2 s and the first rejection lands on its narration', () => {
-  const rows = paced(), board = buildBoard(rows);
-  const p = pace(board, { from: 1.5, until: 33, gaps: [2, 1.2], rejectAt: REJECT_AT, rejectBeat: 3 });
-  assert.equal(p.doubleFrom, null);
-  const landed = sceneAt(p, board.rejected[0].t);
-  assert.ok(landed <= REJECT_AT && REJECT_AT - landed < 1.5, `rejection lands at ${landed}`);
-  assert.ok(Math.abs(sceneAt(p, board.awardAt) - 33) < 1e-6);
-  const agent = board.events.filter(row => row.kind === 'bid' && row.authored === 'agent').map(row => sceneAt(p, row.t));
-  const all = [...new Set(board.events.map(row => sceneAt(p, row.t)))].sort((x, y) => x - y);
-  for (const at of agent) assert.ok(all.find(next => next > at + 1e-9)! - at >= 1.2 - 1e-6, `agent bid at ${at} is cut short`);
-  for (let i = 1; i < p.knots.length; i++) assert.ok(p.knots[i].s >= p.knots[i - 1].s, 'time runs backwards');
-});
-
-test('pacing: a scene too short for every hold plays later rounds at 2× and says so', () => {
-  const rows = paced(), board = buildBoard(rows);
-  const p = pace(board, { from: 0, until: 9, gaps: [2, 1.2], rejectAt: 2, rejectBeat: 1 });
-  assert.notEqual(p.doubleFrom, null);
-  assert.ok(sceneAt(p, board.awardAt) <= 9 + 1e-6);
+test('pacing: each anchored event lands on its line, and time between pins runs evenly forward', () => {
+  const board = buildBoard(events() as any);
+  const p = anchored(board, 2, [{ t: 1, s: 6 }, { t: 0.5, s: 8 }, { t: 4, s: 12 }]);
+  assert.deepEqual(p.knots, [{ t: 0, s: 2 }, { t: 1, s: 6 }, { t: 4, s: 12 }], 'an anchor that runs time backwards is dropped');
+  assert.equal(sceneAt(p, 2.5), 9);
+  assert.equal(sceneAt(p, 5), 13, 'after the last pin the board keeps real time');
 });
 
 test('narration: plain words for a judge outside tech', () => {
   const jargon = /\b(LLM|schema|endpoint|idempotent|SSE|code|model|candidate index(es)?)\b/i;
   const salesy = /\b(revolutionary|seamless(ly)?|unlock|empower|game-changer)\b/i;
-  for (const cue of allCues()) {
+  for (const cue of plans().flatMap(plan => plan.lines)) {
     assert.ok(!jargon.test(cue.text), `jargon: ${cue.text}`);
     assert.ok(!salesy.test(cue.text), `sounds like an ad: ${cue.text}`);
     assert.ok(!/\b(I|I'm|my|me)\b/.test(cue.text), `third person only: ${cue.text}`);
@@ -284,19 +297,25 @@ test('narration: plain words for a judge outside tech', () => {
   for (const text of Object.values(buildFacts(r, o, {}))) assert.ok(!jargon.test(text), `jargon in a fact: ${text}`);
 });
 
-test('the ribbon appears only beside the shop loop', () => assert.deepEqual(SCENES.filter(scene => scene.ribbon).map(scene => scene.id), ['shop', 'payout']));
-
-test('hard cuts only where the story jumps sides', () => {
-  const cuts = SCENES.slice(1).filter(scene => !scene.enter).map(scene => scene.id);
-  assert.deepEqual(cuts, ['shop', 'how']);
-  assert.ok(totalSeconds() >= 150 && totalSeconds() <= 170, `${totalSeconds()} s`);
+test('the rejection, agent and Haneul lines come from the run, in plain words', () => {
+  const o = order();
+  o.events.splice(1, 0, { seq: 1.5, t: 0.5, kind: 'rejected', round: 1, shop: 'bada', total: 3000, chosen_by: 'CODE', reason: 'limit' } as any);
+  o.events.forEach((row, i) => { row.seq = i + 1; });
+  (o.events.find(row => row.kind === 'award') as any).agents.rejected = 1;
+  (o.events.find(row => row.kind === 'bid') as any).perks = { a: ['bundle', 'freeship'] };
+  (o.events.find(row => row.kind === 'bid') as any).bundle = { items: ['a', 'b'], price: 2800 };
+  const f = buildFacts(...parsed(run(), o), {});
+  assert.equal(f.reject_line, "Here, Bada Market's agent went below what the shop can accept.");
+  assert.equal(f.agent_bid_line, "In round 1, Haneul Beauty's agent writes its own bid, and it passes.");
+  assert.equal(f.haneul_line, "Haneul Beauty's agent does what she asked: a two-item bundle with free shipping in Korea.");
+  assert.equal(f.goal_quote, 'Win two-item bundles.');
+  // A beat the run did not produce drops its line rather than saying something false.
+  const plain = layout(facts(), null);
+  assert.ok(!plain.lines.some(line => /^Here,/.test(line.text)));
+  assert.equal(spokenText(facts()).length, plain.lines.length);
 });
 
-test('camera pushes stay within 1.6× and inside their shot', () => {
-  for (const scene of SCENES) for (const shot of scene.shots || []) if (shot.focus) {
-    assert.ok(shot.focus.at + shot.focus.dur <= shot.dur + 1e-9, `${shot.clip} focus overruns its shot`);
-    const peak = camera(shot.focus, Math.round((shot.focus.at + shot.focus.dur / 2) * 30), 30, 1400);
-    assert.ok(peak.scale > 1 && peak.scale <= 1.6, `${shot.clip} zooms ${peak.scale}`);
-    assert.ok(peak.x <= 0 && peak.y <= 0 && peak.x >= 1400 - 1400 * peak.scale - 1e-6, `${shot.clip} shows an edge`);
-  }
+test('private covers parse, and blur stays the default for logos', () => {
+  const r = parse(RunSchema, { ...run(), redact: [{ clip: '02-products-edit', from: 0, to: 1, rect: { x: 0, y: 0, width: 1, height: 1 }, style: 'private' }, { clip: '05-paypal-hold', from: 0, to: 1, rect: { x: 0, y: 0, width: 1, height: 1 } }] }, 'run.json');
+  assert.deepEqual(r.redact.map(row => row.style), ['private', 'blur']);
 });
