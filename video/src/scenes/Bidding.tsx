@@ -1,9 +1,10 @@
 // The board item first, like the app's Deal screen: one row per bag item, one price chip per shop that sells it.
-import { interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
+import { interpolate } from 'remotion';
 import { anchored, buildBoard, onScene, valueAt, type AuctionEvent, type Board, type Knot } from '../auction.ts';
 import { money, SHOP_NAMES, SHORT_NAMES } from '../schema.ts';
 import { BANNED, C, manifest, MONO } from '../theme.ts';
-import { clamp, DUR, ease, enter, pop, rise, shake, typed } from '../motion.ts';
+import { clamp, DUR, ease, enter, MOTION_FPS, pop, rise, shake, typed, useFrame } from '../motion.ts';
+import { glass, Odometer } from '../ui/glass.tsx';
 import { Photo, Rich } from '../ui.tsx';
 import { scene } from '../plan.ts';
 import type { Laid } from '../timeline.ts';
@@ -26,9 +27,9 @@ export const ROWS = [...raw.items].sort((a, b) => Number(!bundle.includes(a.id))
 
 // Layout, in frame pixels. The bag card and the board share item sizes, so items only move between them.
 export const PHOTO = 84;
-const ROW_X = 140, ROW_Y = 362, ROW_H = 108, CHIP_X = 700, CHIP_W = 264, BRACKET_X = 1504;
+export const ROW_X = 140, ROW_Y = 362, ROW_H = 108, CHIP_X = 700, CHIP_W = 264, BRACKET_X = 1504;
 const BAG_X = 450, BAG_Y = 250, BAG_H = 116;
-const boardRow = (i: number) => ({ x: ROW_X, y: ROW_Y + i * ROW_H });
+export const boardRow = (i: number) => ({ x: ROW_X, y: ROW_Y + i * ROW_H });
 const bagRow = (i: number) => ({ x: BAG_X, y: BAG_Y + i * BAG_H });
 const HEADER = { x: 1589, y: 201, size: 110 }, BAG_TOTAL = { x: 1352, y: 752, size: 64 };
 export const BOARD_TOTAL = HEADER;
@@ -63,7 +64,7 @@ export function BagCard({ fly = 0 }: { fly?: number }) {
   const start = manifest.events.find(row => row.kind === 'start') as AuctionEvent;
   const lerp = (a: number, b: number) => a + (b - a) * fly;
   return <>
-    <div style={{ position: 'absolute', left: BAG_X - 50, top: 150, width: 1120, height: 680, borderRadius: 28, background: C.surface, border: `1px solid ${C.line}`, boxShadow: '0 20px 60px rgba(23,22,26,.08)', opacity: chrome }}>
+    <div style={{ position: 'absolute', left: BAG_X - 50, top: 150, width: 1120, height: 680, ...glass, borderRadius: 28, opacity: chrome }}>
       <div style={{ position: 'absolute', left: 50, top: 34, fontSize: 34, fontWeight: 800, letterSpacing: '-.02em' }}>Your bag · {ROWS.length} items</div>
       <div style={{ position: 'absolute', left: 50, right: 50, top: 568, height: 1, background: C.line }} />
       <div style={{ position: 'absolute', left: 50, top: 586, fontSize: 30, color: C.muted }}>Total, all in</div>
@@ -84,15 +85,15 @@ export function BagCard({ fly = 0 }: { fly?: number }) {
 }
 
 function Chip({ shop, price, filled, won, cheaper, x, opacity }: { shop: Shop; price: number; filled: boolean; won: boolean; cheaper: boolean; x: number; opacity: number }) {
-  const bg = won ? C.mint : filled ? C.ink : C.surface, fg = won ? C.saving : filled ? C.surface : C.ink;
-  return <div style={{ position: 'absolute', left: x, top: 12, width: CHIP_W - 16, height: 64, boxSizing: 'border-box', borderRadius: 32, background: bg, color: fg, border: `2px solid ${cheaper ? C.accent : won ? C.saving : filled ? C.ink : C.line}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '0 22px', opacity }}>
+  const bg = won ? C.mint : filled ? 'rgba(255,255,255,.92)' : 'rgba(255,255,255,.06)', fg = won ? C.saving : filled ? C.onLight : C.ink;
+  return <div style={{ position: 'absolute', left: x, top: 12, width: CHIP_W - 16, height: 64, boxSizing: 'border-box', borderRadius: 32, background: bg, color: fg, border: `2px solid ${cheaper ? C.accent : won ? C.saving : filled ? 'transparent' : C.line}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '0 22px', opacity }}>
     <span style={{ fontSize: 25, fontWeight: 600 }}>{SHORT_NAMES[shop]}</span>
     <span style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums', fontSize: 32, letterSpacing: '-.02em', fontWeight: won ? 600 : 400 }}>{cash(Math.round(price))}</span>
   </div>;
 }
 
 function Row({ id, i, s }: { id: string; i: number; s: number }) {
-  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const frame = useFrame(), fps = MOTION_FPS;
   const item = board.items.find(row => row.id === id)!;
   const lanes = item.lanes.filter(lane => lane.steps.length);
   const prices = lanes.map(lane => valueAt(lane.steps, s, DUR.standard / fps, ease) ?? Infinity);
@@ -124,23 +125,23 @@ function Row({ id, i, s }: { id: string; i: number; s: number }) {
 
 // One shop note at a time, attributed, with what happened to it.
 function Notes({ s }: { s: number }) {
-  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const frame = useFrame(), fps = MOTION_FPS;
   const note = s >= onBoard.haneul ? null
     : s >= onBoard.agent && agentBid?.note && !BANNED.test(agentBid.note) ? { shop: agentBid.shop as Shop, text: `“${clip110(agentBid.note)}”`, tag: 'agent' as const, from: onBoard.agent }
     : s >= onBoard.reject && reject ? { shop: reject.shop as Shop, text: `Its agent ${REASONS[reject.reason]}.`, tag: 'rejected' as const, from: onBoard.reject }
     : null;
   if (!note) return null;
   const f = Math.round(note.from * fps), p = enter(frame, fps, f);
-  return <div key={note.from} style={{ position: 'absolute', left: ROW_X, right: 600, top: 254, minHeight: 64, display: 'flex', alignItems: 'center', gap: 18, padding: '10px 24px', borderRadius: 18, background: note.tag === 'rejected' ? C.tint : C.surface, border: `1px solid ${note.tag === 'rejected' ? C.accent : C.line}`, transform: `translateX(${note.tag === 'rejected' ? shake(frame, f + 14) : 0}px)`, ...rise(p, 12) }}>
+  return <div key={note.from} style={{ position: 'absolute', left: ROW_X, right: 600, top: 254, minHeight: 64, display: 'flex', alignItems: 'center', gap: 18, padding: '10px 24px', ...glass, borderRadius: 18, background: note.tag === 'rejected' ? C.tint : glass.background, boxShadow: `inset 0 0 0 1px ${note.tag === 'rejected' ? C.accent : 'rgba(255,255,255,.12)'}`, transform: `translateX(${note.tag === 'rejected' ? shake(frame, f + 14) : 0}px)`, ...rise(p, 12) }}>
     <span style={{ fontSize: 26, fontWeight: 800, whiteSpace: 'nowrap' }}>{SHOP_NAMES[note.shop]}:</span>
     <span style={{ flex: 1, fontSize: 26, lineHeight: 1.25 }}><Rich text={note.tag === 'agent' ? typed(note.text, frame, f + 6, fps) : note.text} /></span>
-    <span style={{ fontSize: 22, fontWeight: 700, borderRadius: 999, padding: '6px 14px', whiteSpace: 'nowrap', transform: `scale(${note.tag === 'rejected' ? 1.2 - 0.2 * Math.min(1, pop(frame, fps, f + 8)) : 1})`, ...(note.tag === 'agent' ? { background: C.butter, color: C.ink } : { background: C.surface, color: C.accentHover, border: `2px solid ${C.accent}` }) }}>{note.tag === 'agent' ? 'Written by agent' : "Rejected by Rally's checks"}</span>
+    <span style={{ fontSize: 22, fontWeight: 700, borderRadius: 999, padding: '6px 14px', whiteSpace: 'nowrap', transform: `scale(${note.tag === 'rejected' ? 1.2 - 0.2 * Math.min(1, pop(frame, fps, f + 8)) : 1})`, ...(note.tag === 'agent' ? { background: C.butter, color: C.onLight } : { background: 'transparent', color: C.accentHover, border: `2px solid ${C.accent}` }) }}>{note.tag === 'agent' ? 'Written by agent' : "Rejected by Rally's checks"}</span>
   </div>;
 }
 
 // Haneul's bundle: a bracket over its two rows, carrying the goal it came from.
 function Bracket({ s }: { s: number }) {
-  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const frame = useFrame(), fps = MOTION_FPS;
   const rows = bundle.map(id => ROWS.indexOf(id)).filter(i => i >= 0);
   if (rows.length < 2 || s < onBoard.haneul) return null;
   const p = enter(frame, fps, Math.round(onBoard.haneul * fps));
@@ -148,7 +149,7 @@ function Bracket({ s }: { s: number }) {
   return <div style={{ opacity: p }}>
     <div style={{ position: 'absolute', left: BRACKET_X, top, width: 18, height: (bottom - top) * p, borderTop: `3px solid ${C.accent}`, borderBottom: `3px solid ${C.accent}`, borderRight: `3px solid ${C.accent}`, borderRadius: '0 10px 10px 0' }} />
     <div style={{ position: 'absolute', left: BRACKET_X + 34, top: (top + bottom) / 2 - 76, width: 270, display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <span style={{ alignSelf: 'flex-start', fontSize: 23, fontWeight: 700, color: C.surface, background: C.accent, borderRadius: 999, padding: '5px 14px' }}>Haneul bundle</span>
+      <span style={{ alignSelf: 'flex-start', fontSize: 23, fontWeight: 700, color: '#fff', background: C.accent, borderRadius: 999, padding: '5px 14px' }}>Haneul bundle</span>
       <span style={{ fontSize: 24, lineHeight: 1.25, color: C.accentHover, background: C.tint, borderRadius: 12, padding: '8px 14px' }}>Her goal: “{manifest.vars.goal_quote}”</span>
     </div>
   </div>;
@@ -157,7 +158,7 @@ function Bracket({ s }: { s: number }) {
 const Money = ({ v, strong }: { v: string; strong?: boolean }) => <span style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums', letterSpacing: '-.02em', fontSize: strong ? 44 : 34, fontWeight: strong ? 600 : 400, color: strong ? C.saving : C.ink }}>{v}</span>;
 
 export function Bidding() {
-  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const frame = useFrame(), fps = MOTION_FPS;
   const s = frame / fps;
   const fly = ease(interpolate(frame, [6, 6 + FLY], [0, 1], clamp));
   const shown = interpolate(frame, [6 + FLY * 0.5, 6 + FLY], [0, 1], clamp), landed = frame >= 6 + FLY;
@@ -184,7 +185,7 @@ export function Bidding() {
       </div>
       <div style={{ position: 'absolute', right: 100, top: 112, width: 620, textAlign: 'right' }}>
         <div style={{ fontSize: 26, color: C.muted }}>Total, all in</div>
-        <div style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums', fontSize: HEADER.size, lineHeight: 1.05, letterSpacing: '-.03em', color: awarded ? C.saving : C.ink, opacity: landed ? 1 : 0 }}>{cash(Math.min(hold, Math.round(total)))}</div>
+        <div style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums', fontSize: HEADER.size, lineHeight: 1.05, letterSpacing: '-.03em', color: awarded ? C.saving : C.ink, opacity: landed ? 1 : 0 }}><Odometer cents={Math.min(hold, total)} digits={String(hold).length} /></div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 22, color: C.accentHover, marginTop: 6 }}>
           <div style={{ flex: 1, height: 2, background: C.accent }} />
           <span>PayPal holds <span style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums' }}>{cash(hold)}</span> · can only go down</span>

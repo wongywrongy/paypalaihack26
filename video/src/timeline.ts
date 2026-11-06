@@ -1,18 +1,15 @@
 // The one place to re-time the video. The voice drives it: every cue starts GAP seconds after the previous one ends,
 // and each scene is its cues plus LEAD and TAIL. Shot and camera times hang off cues, so nothing here is in seconds
 // except clip in/out points. {name} in a text is filled from run.json and order.json (see buildFacts in schema.ts).
-export const FPS = 30;
+export const FPS = 60;
 export const MAX_SECONDS = 175;
 // Silence between lines, at the start of a scene and at its end. LEAD + TAIL and GAP stay under MAX_SILENCE.
 export const GAP = 0.3, LEAD = 0.2, TAIL = 0.3, MAX_SILENCE = 0.6;
 
+// The real screen recordings, shown only as small proof shots (src/ui/glass.tsx, Proof).
 export const CLIPS = {
-  '02-products-edit': "Products: Cica Barrier Cream's lowest price edited, saved",
-  '03-agent-goal': 'Agent: suggestion, Review rules, From your goal, Apply',
-  '04-storefront-bag': 'Storefront, four products, bag, Total, all in',
-  '05-paypal-hold': 'PayPal sandbox approval',
-  '06-bidding': 'The live bidding board, start to award',
-  '07-receipt': 'Receipt: You paid, One box from N shops, Duties included',
+  '05-paypal-hold': 'PayPal sandbox approval, around the approve click',
+  '06-bidding': 'The live bidding board',
   '08-handoff-payout': 'Orders: Record hand-off, Won · Handed off · Payout sent · Paid',
 } as const;
 export type ClipName = keyof typeof CLIPS;
@@ -26,24 +23,21 @@ export type Role = keyof typeof ROLES;
 // step: in the demo, the step this line shows, filled on the rail. 'before' is the shop's setup ahead of step 3.
 export type Step = 1 | 2 | 3 | 4 | 5 | 'before';
 export type Cue = { text: string; say?: string; anchor?: 'reject' | 'agent' | 'haneul' | 'award'; pause?: number; step?: Step };
-// A camera keyframe in clip pixels of the 1440×900 window: the point to centre and a zoom over full-bleed (1 to 1.8).
-// It fires at a cue's start (scene cue index, plus delay seconds) or at a clip second.
-export type Key = { cue?: number; clip?: number; delay?: number; x: number; y: number; zoom: number };
-// A spotlight: everything outside `rect` (clip pixels) dims, so one row or one rule is all there is to read.
-export type Spot = { cue?: number; clip?: number; delay?: number; rect: { x: number; y: number; width: number; height: number } };
-// A clip from `in` to `out` seconds, starting at a scene cue and running to the next shot. If the shot is shorter
-// than the span, the clip ramps up to speed in the middle and back to 1×; if longer, it holds the last frame.
-// `bag` is the shopper's bag rebuilt from the run, since the app's bag page does not name the shops.
-export type Shot = { clip: ClipName | 'bag'; cue: number; delay?: number; in: number; out: number; role: Role; keys: Key[]; spots?: Spot[] };
-// act: the five-part spine. Act 3 is the demo, where every line carries a step.
-export type Scene = { id: string; criterion: string; act: 1 | 2 | 3 | 4 | 5; cues: Cue[]; shots?: Shot[] };
+// A product moment, drawn natively from the run (src/ui/panels.tsx), starting at a scene cue (plus delay seconds)
+// and running to the next shot.
+export const PANELS = ['price', 'goal', 'product', 'bag', 'hold', 'receipt', 'order'] as const;
+export type Panel = typeof PANELS[number];
+export type Shot = { panel: Panel; cue: number; delay?: number; role: Role };
+// A real screen recording, small, as proof that the drawn panels are the running product: clip seconds in to out,
+// starting at a scene cue (plus delay). Always shown at 1:1 or smaller.
+// focus: false keeps the scene sharp beside a short proof, where both share the same moment.
+export type Proof = { clip: ClipName; cue: number; delay?: number; in: number; out: number; focus?: boolean };
+export type Scene = { id: string; criterion: string; act: 1 | 2 | 3 | 4 | 5; cues: Cue[]; shots?: Shot[]; proofs?: Proof[] };
 
 // The step rail, word for word.
 export const STEPS = ['One bag', 'PayPal holds', 'Agents bid', 'Seoul hub', "Everyone's paid"] as const;
 
 // Measured on the recorded run, in 1440×900 window pixels.
-const CICA_ROW = { x: 300, y: 424, height: 52 }, GOAL_SENTENCE = { x: 322, y: 197, width: 376, height: 32 };
-const GOAL_RULES = { x: 830, y: 260, width: 560, height: 146 }, APPLY = { x: 1266, y: 660, width: 118, height: 56 };
 
 export const SCENES: Scene[] = [
   // Act 1: the problem, in Korea, concrete and sourced.
@@ -75,14 +69,7 @@ export const SCENES: Scene[] = [
   // Act 3: the demo, the same five steps.
   {
     id: 'haneul', criterion: 'innovation, design', act: 3,
-    shots: [
-      // One row: the public price first, then the private lowest price beside it.
-      { clip: '02-products-edit', cue: 0, in: 0, out: 6.3, role: 'shop', keys: [{ cue: 0, x: 640, y: 450, zoom: 1.8 }],
-        spots: [{ cue: 0, rect: { ...CICA_ROW, width: 453 } }, { cue: 0, delay: 2.4, rect: { ...CICA_ROW, width: 653 } }] },
-      // One take, after the goal reads 20%: its first sentence, then the two rules from it, then Apply.
-      { clip: '03-agent-goal', cue: 1, in: 3.3, out: 9.8, role: 'shop', keys: [{ cue: 1, x: 520, y: 300, zoom: 1.8 }, { cue: 1, delay: 2.4, x: 1110, y: 420, zoom: 1.6 }],
-        spots: [{ cue: 1, rect: GOAL_SENTENCE }, { cue: 1, delay: 2.4, rect: GOAL_RULES }, { clip: 7.4, rect: APPLY }] },
-    ],
+    shots: [{ panel: 'price', cue: 0, role: 'shop' }, { panel: 'goal', cue: 1, role: 'shop' }],
     cues: [
       { text: 'First, a shop owner. Haneul Beauty sets a private lowest price that no rival ever sees.', step: 'before' },
       { text: 'Then a goal for her agent: win two-item bundles. Nothing changes until she applies it.', step: 'before' },
@@ -90,12 +77,9 @@ export const SCENES: Scene[] = [
   },
   {
     id: 'shopper', criterion: 'design, PayPal', act: 3,
-    shots: [
-      { clip: '04-storefront-bag', cue: 0, in: 5.2, out: 8.2, role: 'shopper', keys: [{ cue: 0, x: 760, y: 500, zoom: 1.5 }] },
-      { clip: 'bag', cue: 0, delay: 3, in: 0, out: 0, role: 'shopper', keys: [] },
-      // Just before the approve click and just after.
-      { clip: '05-paypal-hold', cue: 1, in: 2.4, out: 4.6, role: 'shopper', keys: [{ cue: 1, x: 720, y: 640, zoom: 1.6 }] },
-    ],
+    shots: [{ panel: 'product', cue: 0, role: 'shopper' }, { panel: 'bag', cue: 0, delay: 2.4, role: 'shopper' }, { panel: 'hold', cue: 1, role: 'shopper' }],
+    // The real approval, logos blurred: just before the approve click and just after.
+    proofs: [{ clip: '05-paypal-hold', cue: 1, in: 2.4, out: 4.4, focus: false }],
     cues: [
       { text: 'A shopper in California fills a bag: {item_count_words} products, one price of {held}, everything included.', say: 'A shopper in California fills a bag: {item_count_words} products, one price of {held_say}, everything included.', step: 1 },
       { text: "They approve it in PayPal. That's the ceiling.", step: 2 },
@@ -103,6 +87,7 @@ export const SCENES: Scene[] = [
   },
   {
     id: 'bidding', criterion: 'innovation, tech', act: 3,
+    proofs: [{ clip: '06-bidding', cue: 0, delay: 2.6, in: 1, out: 4 }],
     cues: [
       { text: 'The agents bid over {rounds_words} rounds. Each item goes to whichever shop makes the whole box cheapest.', step: 3 },
       { text: '{reject_line}', anchor: 'reject', step: 3 },
@@ -112,7 +97,7 @@ export const SCENES: Scene[] = [
   },
   {
     id: 'result', criterion: 'PayPal, impact', act: 3,
-    shots: [{ clip: '07-receipt', cue: 0, in: 0, out: 11.3, role: 'shopper', keys: [{ cue: 0, x: 720, y: 330, zoom: 1.8 }, { cue: 1, x: 720, y: 640, zoom: 1.8 }] }],
+    shots: [{ panel: 'receipt', cue: 0, role: 'shopper' }],
     cues: [
       { text: '{capture_line}', say: '{capture_say}', step: 5 },
       { text: '{box_line}', step: 4 },
@@ -120,9 +105,9 @@ export const SCENES: Scene[] = [
   },
   {
     id: 'payout', criterion: 'PayPal, impact', act: 3,
-    shots: [
-      { clip: '08-handoff-payout', cue: 0, in: 0, out: 10.5, role: 'shop', keys: [{ cue: 0, x: 900, y: 300, zoom: 1.5 }, { clip: 1.6, x: 1010, y: 330, zoom: 1.8 }, { clip: 6.2, x: 1080, y: 330, zoom: 1.8 }] },
-    ],
+    shots: [{ panel: 'order', cue: 0, role: 'shop' }],
+    // The real stepper reaching Paid.
+    proofs: [{ clip: '08-handoff-payout', cue: 1, delay: 0.1, in: 6.2, out: 9.2 }],
     cues: [
       { text: '{handoff_line}', step: 4 },
       { text: 'and PayPal pays her {payout} right after.', say: 'and PayPal pays her {payout_say} right after.', step: 5 },

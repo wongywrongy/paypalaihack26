@@ -28,6 +28,8 @@ export const RunSchema = z.object({
   winners: z.record(z.string(), z.object({ shop, unit: minor })),
   // Haneul's goal exactly as typed in clip 03. Its first sentence is quoted beside her lane.
   goal: z.string().min(1),
+  // The rules Rally made from that goal, as clip 03 shows them after Apply. A margin, never a lowest price.
+  rules: z.array(z.object({ label: z.string().min(1), value: z.string().min(1) })).min(1),
   redact: z.array(redact),
 });
 

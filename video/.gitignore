@@ -8,3 +8,5 @@ run/
 # Local voice tools: a Python venv with kokoro-onnx and the Kokoro model files.
 .venv
 models
+# Style references (Cluely marketing clips): watched while designing, never committed or shipped.
+reference/

@@ -5,34 +5,34 @@ Remotion project for the Devpost video. Nothing in `frontend/` or `backend/` imp
 | Command | What it does |
 | --- | --- |
 | `npm run studio` | Remotion Studio. Allows placeholders. |
-| `npm run preview` | 720p `out/preview.mp4`. Allows placeholders. |
-| `npm run render` | Final 1080p `out/rally.mp4` and `out/captions.srt`. Refuses placeholders. |
+| `npm run preview` | Half-size 60 fps `out/preview.mp4`. Allows placeholders. |
+| `npm run render` | The 4K master `out/rally-4k.mp4`, the lanczos 1080p `out/rally-1080p.mp4` and `out/captions.srt`; prints bitrate, frame rate and duration, and fails below 25 Mbps (4K) or 10 Mbps (1080p). Refuses placeholders. |
 | `npm run stills` | One PNG per scene at its midpoint, in `out/stills/`. |
 | `npm run voice` | Kokoro narration, spoken locally, one WAV per line in `run/voice/`. The timeline is laid out from their lengths. |
 | `npm test` | Timeline, schema and render-gate tests. |
 
+**Upload the 4K file to YouTube**, even for viewers at 1080p: YouTube gives 4K uploads a much higher bitrate.
+
+The look is in `STYLE.md`, designed from a reference clip in `reference/` (git-ignored, never shipped). Every product moment is drawn natively in `src/ui/panels.tsx` from the run's data, as glass panels on a near-black canvas, so it is sharp at any size. The real recordings appear only as small proof shots (`proofs` in `timeline.ts`), always scaled down: the PayPal approval, the live board and the payout. `npm test` fails if any of the three is missing.
+
 Every command needs `run/run.json`, `run/order.json` and `run/receipt.json` first. There are no stand-in values: without them the build stops and says which file or field is missing. `video/run/` is git-ignored because `order.json` holds a shop's private lowest prices and this repository is public. Keep it out of commits.
 
-## Record the 7 clips (owner checklist)
+## Record the 3 proof clips (owner checklist)
 
-Record one genuine hosted run, in order, in **one browser window** signed in as Haneul Beauty with the judge writer, so the receipt shows "Your shop bid on this order". Save to `run/clips/` with the exact names below.
+Record one genuine hosted run, in order, in **one browser window** signed in as Haneul Beauty with the judge writer. Save to `run/clips/` with the exact names below. Everything else in the film is drawn from that run's data.
 
-- Window 1440×900, browser zoom 100%, 2× device pixel ratio (a 2880×1800 file), browser chrome hidden. Any other size stops the build. The camera zooms up to 1.8× over full-bleed footage, and 2× keeps that text sharp.
-- **Cursor hidden.** Headless Chrome draws none; in a normal browser, hide it in the recorder.
-- Use the deployed app, not the Rootlane review.
-- Keep passwords, the PayPal login, tokens, cookies and account emails out of every frame. Cut the login screen from clip 05.
-- Cut waits and page loads with the recorder's pause, or with each shot's `in`/`out` in `timeline.ts`. Nothing is labelled sped up: a span longer than its shot ramps 1× → up to 3× → 1×, and the test fails past 3×.
+- Window 1440×900, browser zoom 100%, 2× device pixel ratio (a 2880×1800 file), browser chrome hidden, cursor hidden. Any other size stops the build.
+- Use the deployed app. Keep passwords, the PayPal login, tokens and account emails out of every frame.
 - **The bag.** Low-pH Gel Cleanser (Bada, Haneul), Cica Barrier Cream (Bada, Haneul), Rice Toner (all three shops), Volcanic Clay Mask (only Bada, so the box always comes from at least two shops).
+- Before the order: on Products, set a lowest price; on Agent, tap "Win two-item bundles", press Review rules, check the "From your goal" tags, press Apply. Type the two rules it shows into `run.json` `rules`.
 
 | File | Do this | Keep out of frame |
 | --- | --- | --- |
-| `02-products-edit.mp4` | Products, Cica Barrier Cream's row centred: edit Lowest price (USD), press Enter, show it saved | Every lowest and cost value: covered by `private` redactions |
-| `03-agent-goal.mp4` | Agent: tap the "Win two-item bundles" chip, press Review rules, show the "From your goal" tags, press Apply | |
-| `04-storefront-bag.mp4` | Starts on the storefront: add the four products, open the bag, tick Bundles, scroll until "Total, all in" sits above the PayPal button | The PayPal button's mark |
 | `05-paypal-hold.mp4` | Approve in PayPal sandbox | The login screen, buyer email, PayPal marks |
-| `06-bidding.mp4` | The live board from start to award. Don't refresh. Only its first seconds are shown | |
-| `07-receipt.mp4` | Receipt: You paid, held, charged and released, "One box from N shops", "Duties included", "Your shop bid on this order" | |
+| `06-bidding.mp4` | The live board from start to award. Don't refresh | |
 | `08-handoff-payout.mp4` | Hand off in Rally for shops, keep carrier Rally pickup, press Record hand-off, wait for Won · Handed off · Payout sent · Paid. Cut the wait. Stay scrolled to the top | "Your lowest" under "How your agent bid" |
+
+The receipt's "Your shop bid on this order" and "Duties included" lines, and the shop's Home, are not filmed.
 
 **No logos, including PayPal's.** PayPal is named in text only; its marks are blurred with `redact` entries.
 
@@ -91,8 +91,9 @@ If Haneul is outbid, captions change to say so and the payout scene uses `payout
   ```
 
   The voice is `af_heart` at speed 1.0, never sped up; `KOKORO_VOICE=am_michael npm run voice` tries the other one. Run it again whenever the run data changes, because the numbers are spoken.
-- `MUSIC_PATH=/path/to/licensed-track.mp3 npm run render` adds music, at −24 dB under the voice. There is none by default.
-- Captions are burned in (one style: bottom centre, 40 px, two lines at most, over a steady scrim) and also written to `out/captions.srt`.
+- `MUSIC_PATH=/path/to/licensed-track.mp3 npm run render` adds music at −22 dB, another 4 dB down under the voice. None is included: use only a track whose licence allows a public competition submission, and put its licence in `music/LICENSE.txt`.
+- Sound effects (a click on each cursor click, a whoosh as each demo scene opens, a tick on the final price) are synthesised by `scripts/sfx.py` into `sfx/`, CC0, at −18 dB.
+- Captions are burned in, bottom centre, 38 px, white, no box, in chunks of up to six words with the spoken word a little brighter, and also written to `out/captions.srt`.
 
 ## Re-time
 

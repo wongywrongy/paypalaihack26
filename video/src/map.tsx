@@ -1,9 +1,9 @@
 // A flat dot-grid world in the app's colours, no borders. Land is coarse 5° latitude bands of longitude ranges,
 // close enough for a stylised map. Longitudes run -10..340 so Europe, Asia and the Americas all sit on screen.
-import { interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
+import { interpolate } from 'remotion';
 import { evolvePath } from '@remotion/paths';
 import { C } from './theme.ts';
-import { clamp, DUR, ease, enter, pop, smooth } from './motion.ts';
+import { clamp, DUR, ease, enter, MOTION_FPS, pop, smooth, useFrame } from './motion.ts';
 
 // Top of each band: 80, 75, ... -55.
 const LAND: [number, number][][] = [
@@ -35,8 +35,8 @@ const LAND: [number, number][][] = [
   [[-75, -66], [166, 171]],
   [[-74, -64]],
 ];
-// Warm grey at about 3:1 on the ground colour, so the land reads clearly at a glance.
-const LAND_DOT = '#968C82';
+// Soft white on the near-black canvas, so the land reads clearly without competing with pins.
+const LAND_DOT = 'rgba(255,255,255,.24)';
 const TOP = 80, STEP = 2.5, LON0 = -10, LON1 = 340;
 // The map fills 1920 wide: 350° of longitude, the same scale on both axes.
 export const PX = 1920 / (LON1 - LON0), MAP_TOP = 40;
@@ -85,12 +85,12 @@ export const lerpView = (a: MapView, b: MapView, p: number): MapView => ({ x: a.
 
 // Dots breathe very slightly, so a held map is never a still frame.
 export function Land({ opacity = 1 }: { opacity?: number }) {
-  const frame = useCurrentFrame();
+  const frame = useFrame();
   return <g opacity={opacity}>{DOTS.map((dot, i) => <circle key={i} cx={dot.x} cy={dot.y} r={2.6 + 0.35 * Math.sin(frame / 22 + dot.x / 90 + dot.y / 70)} fill={LAND_DOT} />)}</g>;
 }
 
 export function Pin({ city, from, color = C.accent, label, sub, pulse = false, scale = 1 }: { city: City; from: number; color?: string; label?: string; sub?: string; pulse?: boolean; scale?: number }) {
-  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const frame = useFrame(), fps = MOTION_FPS;
   const p = at(city), shown = pop(frame, fps, from);
   const where = (CITIES[city] as { side?: string }).side, side = where === 'left' ? -1 : where === 'right' ? 1 : 0;
   if (frame < from) return null;
@@ -104,7 +104,7 @@ export function Pin({ city, from, color = C.accent, label, sub, pulse = false, s
 }
 
 export function Arc({ from, at: start, dashed = true, color = C.ink, width = 3, fade = 1 }: { from: City; at: number; dashed?: boolean; color?: string; width?: number; fade?: number }) {
-  const frame = useCurrentFrame();
+  const frame = useFrame();
   const { d } = arc(from);
   const p = ease(interpolate(frame, [start, start + DUR.camera], [0, 1], clamp));
   const draw = evolvePath(p, d);
@@ -117,7 +117,7 @@ export function Arc({ from, at: start, dashed = true, color = C.ink, width = 3, 
 
 // One box travelling the single arc from Seoul, as the five trips merge into one.
 export function Parcel({ from, at: start, frames = 50 }: { from: City; at: number; frames?: number }) {
-  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const frame = useFrame(), fps = MOTION_FPS;
   if (frame < start) return null;
   const a = at(from), b = at('california'), d = Math.hypot(b.x - a.x, b.y - a.y);
   const c = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 - d * 0.28 };

@@ -1,9 +1,10 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
+import { interpolate } from 'remotion';
 import { evolvePath } from '@remotion/paths';
 import { money, SHOP_NAMES, SHORT_NAMES } from '../schema.ts';
 import { C, manifest, MONO } from '../theme.ts';
-import { clamp, DUR, ease, enter, pop, rise, smooth } from '../motion.ts';
+import { clamp, DUR, ease, enter, MOTION_FPS, pop, rise, smooth, useFrame } from '../motion.ts';
+import { glass, Words } from '../ui/glass.tsx';
 import { Land, lerpView, mapTransform, onScreen, project, WORLD, type MapView } from '../map.tsx';
 import { Lock, Photo } from '../ui.tsx';
 import { Rail } from './Rail.tsx';
@@ -32,10 +33,10 @@ const shopAt = (v: MapView, shop: Shop) => {
   return { x: p.x + SHOP_SPOTS[shop].dx * k, y: p.y + SHOP_SPOTS[shop].dy * k };
 };
 
-const halo = `0 0 6px ${C.ground}, 0 0 6px ${C.ground}, 0 0 10px ${C.ground}`;
+const halo = '0 0 8px rgba(11,11,15,.9), 0 0 14px rgba(11,11,15,.8)';
 
 function ShopPin({ v, shop, from, note }: { v: MapView; shop: Shop; from: number; note?: ReactNode }) {
-  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const frame = useFrame(), fps = MOTION_FPS;
   if (frame < from) return null;
   const p = shopAt(v, shop), s = Math.min(1.15, pop(frame, fps, from));
   return <div style={{ position: 'absolute', left: p.x, top: p.y, transform: `translate(-50%, -50%) scale(${s})` }}>
@@ -56,13 +57,15 @@ const along = (a: Point, b: Point, u: number, lift = 0.3) => {
 
 // An arc in screen pixels, drawn to `until` of its length.
 function ScreenArc({ a, b, from, until = 1, color = C.ink, dashed = true, width = 3, id }: { a: Point; b: Point; from: number; until?: number; color?: string; dashed?: boolean; width?: number; id: string }) {
-  const frame = useCurrentFrame();
+  const frame = useFrame();
   if (frame < from) return null;
   const c = bend(a, b, 0.3), path = `M ${a.x} ${a.y} Q ${c.x} ${c.y} ${b.x} ${b.y}`;
   const draw = evolvePath(until * ease(interpolate(frame, [from, from + DUR.camera], [0, 1], clamp)), path);
   return <svg width={1920} height={1080} style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
     <mask id={id}><path d={path} stroke="#fff" strokeWidth={width + 6} fill="none" strokeDasharray={draw.strokeDasharray} strokeDashoffset={draw.strokeDashoffset} /></mask>
     <path d={path} stroke={color} strokeWidth={width} fill="none" strokeDasharray={dashed ? '9 10' : undefined} strokeLinecap="round" mask={`url(#${id})`} />
+    {/* A point of light travels each finished arc, so a held map is never still. */}
+    {until === 1 && frame > from + DUR.camera && (() => { const p = along(a, b, ((frame - from - DUR.camera) / 50) % 1); return <circle cx={p.x} cy={p.y} r={5} fill={color === C.ink ? '#fff' : color} />; })()}
   </svg>;
 }
 
@@ -70,13 +73,13 @@ const Source = ({ children, style }: { children: ReactNode; style?: CSSPropertie
 
 // Act 1, beat 1: Korea, three small shops around Seoul, and the sourced figure.
 export function Korea({ laid }: { laid: Laid }) {
-  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const frame = useFrame(), fps = MOTION_FPS;
   const v = { ...KOREA, zoom: KOREA.zoom * (1 + 0.012 * frame / fps) };
   const c0 = cue(laid, 0) * fps;
   return <>
     <Map v={v} />
     {SHOPS.map((shop, i) => <ShopPin key={shop} v={v} shop={shop} from={c0 + 12 + i * 8} />)}
-    <div style={{ position: 'absolute', left: 130, top: 640, display: 'flex', flexDirection: 'column', gap: 6, padding: '22px 30px', borderRadius: 20, background: 'rgba(247,244,240,.92)', ...rise(enter(frame, fps, c0 + 30)) }}>
+    <div style={{ position: 'absolute', left: 130, top: 640, display: 'flex', flexDirection: 'column', gap: 6, padding: '22px 30px', borderRadius: 20, ...glass, ...rise(enter(frame, fps, c0 + 30)) }}>
       <div style={{ fontFamily: MONO, fontSize: 92, letterSpacing: '-.03em', color: C.accent, lineHeight: 1 }}>$11.4B</div>
       <div style={{ fontSize: 32, fontWeight: 700 }}>Korean skincare sold abroad in 2025, a record</div>
       <Source>Ministry of Food and Drug Safety via Korea JoongAng Daily</Source>
@@ -86,7 +89,7 @@ export function Korea({ laid }: { laid: Laid }) {
 
 // Act 1, beats 2 and 3: the four products, the one shop that has them all and doesn't ship abroad, and the split order.
 export function Split({ laid }: { laid: Laid }) {
-  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const frame = useFrame(), fps = MOTION_FPS;
   const c0 = cue(laid, 0) * fps, c1 = cue(laid, 1) * fps, c2 = cue(laid, 2) * fps;
   const out = ease(interpolate(frame, [0, 1.6 * fps], [0, 1], clamp));
   const v0 = lerpView(KOREA, PACIFIC, out), v = { ...v0, zoom: v0.zoom * (1 + 0.01 * frame / fps) };
@@ -116,7 +119,7 @@ export function Split({ laid }: { laid: Laid }) {
       <div style={{ fontSize: 30, fontWeight: 800, textShadow: halo }}>You, in California</div>
       <div style={{ display: 'flex', gap: 10 }}>{items.map((id, i) => <div key={id} style={rise(enter(frame, fps, Math.round(1.2 * fps) + i * 5), 10)}><Photo id={id} size={60} /></div>)}</div>
     </div>
-    {frame >= c2 && <div style={{ position: 'absolute', left: shopper.x - 250, top: shopper.y + 190, width: 500, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', borderRadius: 18, background: C.surface, border: `1px solid ${C.line}`, ...rise(enter(frame, fps, c2), 10) }}>
+    {frame >= c2 && <div style={{ position: 'absolute', left: shopper.x - 250, top: shopper.y + 190, width: 500, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', ...glass, borderRadius: 18, ...rise(enter(frame, fps, c2), 10) }}>
       <Photo id={compare} size={60} />
       {Object.entries(listed[compare]).map(([shop, unit], i) => <span key={shop} style={{ fontFamily: MONO, fontSize: 30, padding: '6px 14px', borderRadius: 999, whiteSpace: 'nowrap', border: `2px solid ${flash === i ? C.accent : C.line}`, background: flash === i ? C.tint : C.surface }}>{SHORT_NAMES[shop as Shop]} {cash(unit)}</span>)}
     </div>}
@@ -125,15 +128,15 @@ export function Split({ laid }: { laid: Laid }) {
 
 // --- Act 2: the five steps, drawn as they are spoken. No UI, the same background. ---
 const SHOP_Y: Record<Shop, number> = { haneul: 420, bada: 600, dalbit: 780 };
-const SHOP_X = 330, HUB = { x: 880, y: 660 }, BAG = { x: 1440, y: 720 }, TAG = { x: 1440, y: 450 };
+const SHOP_X = 330, HUB = { x: 860, y: 660 }, BAG = { x: 1360, y: 720 }, TAG = { x: 1360, y: 450 };
 const winnerShops = [...new Set(Object.values(manifest.run.winners).map(row => row.shop))] as Shop[];
 
 function Node({ x, y, label, sub, color = C.accent, from, children }: { x: number; y: number; label: string; sub?: string; color?: string; from: number; children?: ReactNode }) {
-  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const frame = useFrame(), fps = MOTION_FPS;
   if (frame < from) return null;
   const p = Math.min(1.1, pop(frame, fps, from));
   return <div style={{ position: 'absolute', left: x, top: y, transform: `translate(-50%, -50%) scale(${p})`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-    <div style={{ position: 'relative', width: 70, height: 70, borderRadius: 35, background: color, display: 'grid', placeItems: 'center', color: C.surface, fontSize: 30, fontWeight: 800, boxShadow: '0 6px 20px rgba(23,22,26,.15)' }}>{label[0]}{children}</div>
+    <div style={{ position: 'relative', width: 70, height: 70, borderRadius: 35, background: color, display: 'grid', placeItems: 'center', color: '#fff', fontSize: 30, fontWeight: 800, boxShadow: '0 6px 24px rgba(0,0,0,.45)' }}>{label[0]}{children}</div>
     <div style={{ fontSize: 28, fontWeight: 800, whiteSpace: 'nowrap' }}>{label}</div>
     {sub && <div style={{ fontSize: 22, color: C.muted, whiteSpace: 'nowrap' }}>{sub}</div>}
   </div>;
@@ -141,7 +144,7 @@ function Node({ x, y, label, sub, color = C.accent, from, children }: { x: numbe
 
 // Something travelling from a to b over `frames`, starting at `from`, then fading.
 function Mover({ a, b, from, frames = 24, children, lift = 0.25 }: { a: Point; b: Point; from: number; frames?: number; children: ReactNode; lift?: number }) {
-  const frame = useCurrentFrame();
+  const frame = useFrame();
   if (frame < from || frame > from + frames + 6) return null;
   const p = along(a, b, smooth((frame - from) / frames), lift);
   return <div style={{ position: 'absolute', left: p.x, top: p.y, transform: 'translate(-50%, -50%)', opacity: frame > from + frames ? 1 - (frame - from - frames) / 6 : 1 }}>{children}</div>;
@@ -150,7 +153,7 @@ function Mover({ a, b, from, frames = 24, children, lift = 0.25 }: { a: Point; b
 const Parcel = ({ size }: { size: number }) => <div style={{ width: size, height: size * 0.86, borderRadius: size / 7, background: C.butter, border: `3px solid ${C.ink}`, boxSizing: 'border-box' }} />;
 
 export function Steps({ laid }: { laid: Laid }) {
-  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const frame = useFrame(), fps = MOTION_FPS;
   // The frame each step's line starts, found by its step, so a step can run over more than one line.
   const at = [1, 2, 3, 4, 5].map(n => Math.round((laid.cues.find(line => line.step === n)!.start - laid.start) * fps)), end = Math.round(laid.duration * fps);
   const step = at.filter(f => frame >= f).length;
@@ -167,14 +170,14 @@ export function Steps({ laid }: { laid: Laid }) {
     {/* Seoul side: the three shops, then their agents and the owner's limits. */}
     <div style={{ position: 'absolute', left: SHOP_X - 110, top: 310, fontSize: 24, fontWeight: 700, color: C.muted, opacity: enter(frame, fps, 0) }}>Shops in Seoul</div>
     {SHOPS.map((shop, i) => <Node key={shop} x={SHOP_X} y={SHOP_Y[shop]} label={SHOP_NAMES[shop]} from={6 + i * 5}>
-      {frame >= at[2] && <span style={{ position: 'absolute', left: 52, top: -10, fontSize: 19, fontWeight: 800, color: C.ink, background: C.butter, borderRadius: 999, padding: '3px 10px', whiteSpace: 'nowrap', transform: `scale(${Math.min(1, pop(frame, fps, at[2] + i * 5))})` }}>AI agent</span>}
+      {frame >= at[2] && <span style={{ position: 'absolute', left: 52, top: -10, fontSize: 19, fontWeight: 800, color: C.onLight, background: C.butter, borderRadius: 999, padding: '3px 10px', whiteSpace: 'nowrap', transform: `scale(${Math.min(1, pop(frame, fps, at[2] + i * 5))})` }}>AI agent</span>}
     </Node>)}
     {frame >= at[2] + 20 && <div style={{ position: 'absolute', left: SHOP_X + 150, top: SHOP_Y.haneul + 14, display: 'flex', alignItems: 'center', gap: 8, fontSize: 22, fontWeight: 700, color: C.accentHover, border: `2px solid ${C.accent}`, borderRadius: 999, padding: '4px 14px', background: C.surface, ...rise(enter(frame, fps, at[2] + 20), 8) }}><Lock size={20} color={C.accent} />owner's limits</div>}
     {/* California side: the shopper's bag and its one price. */}
     <Node x={BAG.x} y={BAG.y} label="Shopper" sub="California" color={C.ink} from={6} />
     {frame >= at[0] && items.map((id, i) => <Mover key={id} a={{ x: BAG.x - 330 + i * 110, y: BAG.y + 200 }} b={BAG} from={at[0] + i * 4} frames={22} lift={0.6}><Photo id={id} size={64} /></Mover>)}
     {frame >= at[0] + 24 && <div style={{ position: 'absolute', left: TAG.x, top: TAG.y, transform: 'translate(-50%, -50%)', ...rise(tagIn, 12) }}>
-      <div style={{ position: 'relative', padding: '18px 30px', borderRadius: 20, background: C.surface, border: `1px solid ${C.line}`, textAlign: 'center', boxShadow: '0 12px 40px rgba(23,22,26,.08)' }}>
+      <div style={{ position: 'relative', padding: '18px 30px', ...glass, borderRadius: 20, textAlign: 'center' }}>
         <div style={{ fontSize: 22, fontWeight: 700, color: C.muted }}>One bag, all in</div>
         <div style={{ fontFamily: MONO, fontSize: 72, letterSpacing: '-.03em', lineHeight: 1.05, color: step >= 5 ? C.saving : C.ink }}>{cash(Math.round(price))}</div>
         <div style={{ fontSize: 21, color: C.muted, whiteSpace: 'nowrap' }}>items · shipping · duties · tax · Rally's fee</div>
@@ -188,7 +191,7 @@ export function Steps({ laid }: { laid: Laid }) {
     {/* Step 3: bids fly from the shops to the bag, again and again. */}
     {step === 3 && [0, 1, 2, 3, 4, 5, 6, 7].map(n => {
       const shop = SHOPS[n % 3], f = at[2] + 10 + n * 14;
-      return <Mover key={n} a={{ x: SHOP_X + 40, y: SHOP_Y[shop] }} b={{ x: TAG.x - 180, y: TAG.y + 20 }} from={f} frames={30} lift={0.15}><span style={{ fontSize: 22, fontWeight: 800, color: C.ink, background: C.butter, borderRadius: 999, padding: '4px 12px' }}>bid</span></Mover>;
+      return <Mover key={n} a={{ x: SHOP_X + 40, y: SHOP_Y[shop] }} b={{ x: TAG.x - 180, y: TAG.y + 20 }} from={f} frames={30} lift={0.15}><span style={{ fontSize: 22, fontWeight: 800, color: C.onLight, background: C.butter, borderRadius: 999, padding: '4px 12px' }}>bid</span></Mover>;
     })}
     {/* Step 4: winning items go a short way to the Seoul hub; one box goes on to California, duties paid. */}
     <Node x={HUB.x} y={HUB.y} label="Rally hub" sub="Seoul" color={C.saving} from={at[3]} />
@@ -208,13 +211,13 @@ const CARDS = [
   { who: 'PayPal', line: 'A hard spending limit AI agents cannot cross' },
 ];
 export function Why({ laid }: { laid: Laid }) {
-  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const frame = useFrame(), fps = MOTION_FPS;
   return <>
     <Map v={{ ...WORLD, zoom: 1 + 0.01 * frame / fps }} dim={0.28} />
     <div style={{ position: 'absolute', left: 0, right: 0, top: 290, display: 'flex', justifyContent: 'center', gap: 40, transform: `scale(${1 + 0.008 * frame / fps})` }}>
       {CARDS.map((card, i) => {
         const p = enter(frame, fps, Math.round(cue(laid, i) * fps));
-        return <div key={card.who} style={{ width: 480, minHeight: 300, boxSizing: 'border-box', padding: '36px 40px', borderRadius: 24, background: i === 2 ? C.tint : C.surface, border: `1px solid ${i === 2 ? C.accent : C.line}`, boxShadow: '0 16px 50px rgba(23,22,26,.08)', display: 'flex', flexDirection: 'column', gap: 18, ...rise(p, 24) }}>
+        return <div key={card.who} style={{ width: 480, minHeight: 300, boxSizing: 'border-box', padding: '36px 40px', borderRadius: 24, ...glass, background: i === 2 ? C.tint : glass.background, display: 'flex', flexDirection: 'column', gap: 18, ...rise(p, 24) }}>
           <div style={{ fontSize: 30, fontWeight: 800, color: i === 2 ? C.accentHover : C.accent }}>{card.who}</div>
           <div style={{ fontSize: 44, fontWeight: 800, letterSpacing: '-.02em', lineHeight: 1.12 }}>{card.line}</div>
         </div>;
@@ -226,7 +229,7 @@ export function Why({ laid }: { laid: Laid }) {
 // Seoul's hub is live; the others are illustrations, outlined and marked Next.
 const NEXT_HUBS = [{ name: 'Tokyo', lat: 35.7, lon: 139.7, dy: 70 }, { name: 'Milan', lat: 45.5, lon: 9.2, dy: 0 }, { name: 'Mexico City', lat: 19.4, lon: -99.1, dy: 0 }];
 function Hub({ x, y, name, live, from }: { x: number; y: number; name: string; live: boolean; from: number }) {
-  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const frame = useFrame(), fps = MOTION_FPS;
   if (frame < from) return null;
   const p = Math.min(1.1, pop(frame, fps, from)), ring = live ? 0 : ((frame - from) % 45) / 45;
   return <div style={{ position: 'absolute', left: x, top: y, transform: `translate(-50%, -20px) scale(${p})`, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
@@ -238,7 +241,7 @@ function Hub({ x, y, name, live, from }: { x: number; y: number; name: string; l
   </div>;
 }
 export function Where() {
-  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const frame = useFrame(), fps = MOTION_FPS;
   const v0 = lerpView(PACIFIC, WORLD, ease(interpolate(frame, [0, 1.4 * fps], [0, 1], clamp))), v = { ...v0, zoom: v0.zoom * (1 + 0.012 * frame / fps) };
   const seoul = onScreen(v, SEOUL_AT);
   return <>
@@ -250,7 +253,7 @@ export function Where() {
 
 // Act 5: one technical line, then the title.
 export function Close() {
-  const frame = useCurrentFrame(), { fps } = useVideoConfig();
+  const frame = useFrame(), fps = MOTION_FPS;
   return <div style={{ position: 'absolute', inset: '0 0 200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', transform: `scale(${1 + 0.01 * frame / fps})` }}>
     <div style={{ fontSize: 22, color: C.muted, marginBottom: 56, ...rise(enter(frame, fps, 0), 12) }}>FastAPI · PostgreSQL · PayPal Orders v2, Payouts, webhooks · open-weight models on Bitdeer</div>
     <div style={{ fontSize: 170, fontWeight: 800, letterSpacing: '-.045em', lineHeight: 1, ...rise(enter(frame, fps, 10), 20) }}>Rally.</div>

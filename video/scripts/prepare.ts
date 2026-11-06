@@ -70,6 +70,8 @@ export function prepare(root: string, { allowPlaceholders = false, probe = ffpro
     mkdirSync(join(generated, 'voice'), { recursive: true });
     for (const file of voice) copyFileSync(join(run_dir, 'voice', file), join(generated, 'voice', file));
   }
+  // The synthesised sound effects (sfx/LICENSE.txt).
+  if (existsSync(join(root, 'sfx'))) cpSync(join(root, 'sfx'), join(generated, 'sfx'), { recursive: true });
   let musicFile: string | null = null;
   if (music) {
     if (!existsSync(music)) throw new Error(`MUSIC_PATH ${music} does not exist.`);

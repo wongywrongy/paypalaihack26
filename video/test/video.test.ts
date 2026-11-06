@@ -4,7 +4,6 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { prepare } from '../scripts/prepare.ts';
-import { clipTime, MAX_ZOOM, peakSpeed, view } from '../src/motion.ts';
 import { anchored, buildBoard, roundAt, sceneAt, valueAt } from '../src/auction.ts';
 import { buildFacts, crossCheck, finalCheck, finalPrices, money, OrderSchema, parse, ReceiptSchema, receiptCheck, RunSchema, spokenMoney } from '../src/schema.ts';
 import { CLIPS, cueAt, GAP, layout, MAX_SECONDS, MAX_SILENCE, railAt, SCENES, spokenText, STEPS, toScript, toSrt, type ClipName } from '../src/timeline.ts';
@@ -19,7 +18,7 @@ const events = () => [
   { seq: 6, t: 0, kind: 'done' },
 ];
 const order = () => ({ id: 'o1', currency: 'USD', payment_state: 'CHARGED', maximum_minor: 3000, lowest: { a: 900 }, events: events(), payout: { status: 'completed', amount_minor: 1300, currency: 'USD' } });
-const run = () => ({ order_id: 'o1', currency: 'USD', held_minor: 3000, charged_minor: 2800, payout_usd_cents: 1300, payout_status: 'completed', payout_shop: 'haneul', winners: { a: { shop: 'haneul', unit: 1300 }, b: { shop: 'dalbit', unit: 1500 } }, goal: 'Win two-item bundles. Keep a margin.', redact: [] });
+const run = () => ({ order_id: 'o1', currency: 'USD', held_minor: 3000, charged_minor: 2800, payout_usd_cents: 1300, payout_status: 'completed', payout_shop: 'haneul', winners: { a: { shop: 'haneul', unit: 1300 }, b: { shop: 'dalbit', unit: 1500 } }, goal: 'Win two-item bundles. Keep a margin.', rules: [{ label: 'Discount per round', value: 'Up to 20%' }], redact: [] });
 const receipt = () => ({ breakdown: { currency: 'USD', goods: 2800, domestic: 0, shipping: 0, duty: 0, tax: 0, fee: 0, total: 2800 }, lines: [{ id: 'a', shop: 'haneul', unit: 1300 }, { id: 'b', shop: 'dalbit', unit: 1500 }] });
 const parsed = (r: unknown = run(), o: unknown = order()) => [parse(RunSchema, r, 'run.json'), parse(OrderSchema, o, 'order.json')] as const;
 const factsOf = (r: unknown = run(), o: unknown = order(), rc: unknown = receipt()) => buildFacts(...parsed(r, o), parse(ReceiptSchema, rc, 'receipt.json'));
@@ -82,34 +81,28 @@ test('captions fit two lines and never overlap', () => {
   });
 });
 
-test('every shot starts on a line, keeps its clip span, and ramps no faster than 3×', () => {
+test('every shot starts on a line and has time on screen', () => {
   for (const plan of plans()) for (const scene of plan.scenes) (scene.scene.shots || []).forEach((shot, i, shots) => {
     const at = (n: number) => cueAt(scene, shots[n].cue) + (shots[n].delay ?? 0);
     const from = i === 0 ? 0 : at(i), to = i + 1 < shots.length ? at(i + 1) : scene.duration;
-    assert.ok(to > from, `${scene.id} shot ${i} has no time`);
-    assert.ok(shot.out <= ((built?.clips?.[shot.clip]?.frames ?? Infinity) / 30) + 0.05, `${shot.clip} out past its end`);
-    assert.ok(peakSpeed(to - from, shot.in, shot.out) <= 3, `${scene.id} ${shot.clip} ramps to ${peakSpeed(to - from, shot.in, shot.out).toFixed(2)}×`);
-    for (const key of shot.keys) assert.ok(key.zoom >= 1 && key.zoom <= MAX_ZOOM, `${shot.clip} zoom ${key.zoom}`);
+    assert.ok(to - from >= 1.5, `${scene.id} ${shot.panel} has ${(to - from).toFixed(2)} s`);
   });
 });
 
-test('speed ramp: starts at in, ends at out, never runs backwards, and is 1× at both ends', () => {
-  const at = (t: number) => clipTime(t, 4, 2, 9);
-  assert.equal(at(0), 2);
-  assert.ok(Math.abs(at(4) - 9) < 1e-9);
-  for (let t = 0; t < 4; t += 0.05) assert.ok(at(t + 0.05) >= at(t));
-  assert.ok(Math.abs((at(0.01) - at(0)) / 0.01 - 1) < 0.01 && Math.abs((at(4) - at(3.99)) / 0.01 - 1) < 0.01);
-  assert.equal(clipTime(10, 6, 0, 3), 3, 'a short span holds its last frame');
-});
-
-test('camera: never zooms past 1.8 or shows past the clip edge', () => {
-  for (const key of [{ x: 0, y: 0, zoom: 3 }, { x: 1440, y: 900, zoom: 1 }, { x: 720, y: 450, zoom: 1.8 }]) for (const s of [0, 0.4, 3, 9]) {
-    const v = view([{ ...key, s: 0 }], s), half = 960 / (1920 / 1440 * v.zoom), tall = 540 / (1920 / 1440 * v.zoom);
-    assert.ok(v.zoom >= 1 && v.zoom <= MAX_ZOOM);
-    assert.ok(v.x - half >= -1e-6 && v.x + half <= 1440 + 1e-6 && v.y - tall >= -1e-6 && v.y + tall <= 900 + 1e-6, JSON.stringify(v));
+// Panels are drawn from the run; these prove they are the running product. The build fails without them.
+test('proof shots: the real approval, board and payout recordings each appear, scaled down and inside their clip', () => {
+  const proofs = SCENES.flatMap(scene => (scene.proofs ?? []).map(proof => ({ ...proof, scene: scene.id })));
+  for (const [scene, clip] of [['shopper', '05-paypal-hold'], ['bidding', '06-bidding'], ['payout', '08-handoff-payout']] as const) {
+    const proof = proofs.find(row => row.scene === scene && row.clip === clip);
+    assert.ok(proof, `no proof shot of ${clip} in ${scene}`);
+    assert.ok(proof.out - proof.in >= (clip === '05-paypal-hold' ? 2 : 3) - 1e-9, `${clip} proof is too short`);
+    const frames = built?.clips?.[clip]?.frames;
+    if (built) assert.ok(frames && proof.out <= frames / 60 + 0.05, `${clip} proof runs past its recording`);
   }
-  const held = [0, 1, 2, 3].map(s => view([{ s: 0, x: 720, y: 450, zoom: 1.4 }], s).zoom);
-  assert.ok(held[3] > held[0], 'a held frame drifts');
+  const glass = readFileSync('src/ui/glass.tsx', 'utf8');
+  const width = Number(glass.match(/export const PROOF_W = (\d+)/)![1]);
+  assert.ok(width <= 1440, 'a proof shot would be scaled up');
+  assert.match(glass, /Screen recording · PayPal sandbox/);
 });
 
 test('no banned word in any on-screen source', () => {
@@ -228,7 +221,7 @@ test('prepare: missing inputs fail with a clear message and no fallback', () => 
 });
 
 test('prepare: placeholders pass for review and fail for the final render', () => {
-  const { root, done } = project({ 'run.json': run(), 'order.json': order() }, allClips.slice(0, 6));
+  const { root, done } = project({ 'run.json': run(), 'order.json': order() }, allClips.slice(0, 2));
   assert.deepEqual(prepare(root, { allowPlaceholders: true, probe }).missing, ['08-handoff-payout.mp4']);
   assert.throws(() => prepare(root, { allowPlaceholders: false, probe }), /Placeholders cannot go in the final render[\s\S]*08-handoff-payout/);
   done();
@@ -237,7 +230,7 @@ test('prepare: placeholders pass for review and fail for the final render', () =
 test('prepare: a full set passes, and the wrong size fails', () => {
   const { root, done } = project({ 'run.json': run(), 'order.json': order() }, allClips);
   const { manifest } = prepare(root, { allowPlaceholders: false, probe });
-  assert.equal(manifest.clips['06-bidding' as ClipName]?.frames, 300);
+  assert.equal(manifest.clips['06-bidding' as ClipName]?.frames, 600);
   assert.ok(!readFileSync(join(root, 'src/generated/manifest.json'), 'utf8').includes('lowest'));
   assert.throws(() => prepare(root, { allowPlaceholders: false, probe: () => ({ width: 1920, height: 1080, seconds: 1 }) }), /must be 1440×900/);
   done();
@@ -316,7 +309,7 @@ test('the rejection, agent and Haneul lines come from the run, in plain words', 
 });
 
 test('private covers parse, and blur stays the default for logos', () => {
-  const r = parse(RunSchema, { ...run(), redact: [{ clip: '02-products-edit', from: 0, to: 1, rect: { x: 0, y: 0, width: 1, height: 1 }, style: 'private' }, { clip: '05-paypal-hold', from: 0, to: 1, rect: { x: 0, y: 0, width: 1, height: 1 } }] }, 'run.json');
+  const r = parse(RunSchema, { ...run(), redact: [{ clip: '08-handoff-payout', from: 0, to: 1, rect: { x: 0, y: 0, width: 1, height: 1 }, style: 'private' }, { clip: '05-paypal-hold', from: 0, to: 1, rect: { x: 0, y: 0, width: 1, height: 1 } }] }, 'run.json');
   assert.deepEqual(r.redact.map(row => row.style), ['private', 'blur']);
 });
 
