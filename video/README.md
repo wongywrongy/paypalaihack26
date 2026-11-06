@@ -6,12 +6,10 @@ Remotion project for the Devpost video. Nothing in `frontend/` or `backend/` imp
 | --- | --- |
 | `npm run studio` | Remotion Studio. Allows placeholders. |
 | `npm run preview` | Half-size 60 fps `out/preview.mp4`. Allows placeholders. |
-| `npm run render` | The 4K master `out/rally-4k.mp4`, the lanczos 1080p `out/rally-1080p.mp4` and `out/captions.srt`; prints bitrate, frame rate and duration, and fails below 25 Mbps (4K) or 10 Mbps (1080p). Refuses placeholders. |
+| `npm run render` | Final 1080p 60 fps `out/rally-1080p.mp4` (12 Mbps video, slow preset, AAC 320 kbps; CRF 16 gave only 3.4 Mbps on this mostly flat dark film) and `out/captions.srt`; prints bitrate, frame rate and duration, and fails below 10 Mbps. Refuses placeholders. |
 | `npm run stills` | One PNG per scene at its midpoint, in `out/stills/`. |
 | `npm run voice` | Kokoro narration, spoken locally, one WAV per line in `run/voice/`. The timeline is laid out from their lengths. |
 | `npm test` | Timeline, schema and render-gate tests. |
-
-**Upload the 4K file to YouTube**, even for viewers at 1080p: YouTube gives 4K uploads a much higher bitrate.
 
 The look is in `STYLE.md`, designed from a reference clip in `reference/` (git-ignored, never shipped). Every product moment is drawn natively in `src/ui/panels.tsx` from the run's data, as glass panels on a near-black canvas, so it is sharp at any size. The real recordings appear only as small proof shots (`proofs` in `timeline.ts`), always scaled down: the PayPal approval, the live board and the payout. `npm test` fails if any of the three is missing.
 
