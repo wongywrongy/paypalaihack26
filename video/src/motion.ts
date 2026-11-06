@@ -43,5 +43,3 @@ export const reveal = (p: number): CSSProperties => ({ opacity: p, transform: `t
 
 // A panel arriving: tilted back in 3D, flattening as it becomes the subject.
 export const tiltIn = (p: number): CSSProperties => ({ opacity: Math.min(1, p * 1.4), transform: `perspective(1600px) rotateX(${(1 - p) * 8}deg) translateY(${(1 - p) * 40}px) scale(${0.96 + 0.04 * p})`, transformOrigin: '50% 100%' });
-// Depth of field for every layer that is not the subject.
-export const behind = (on: number): CSSProperties => ({ opacity: 1 - 0.6 * on, filter: on > 0.001 ? `blur(${8 * on}px)` : undefined });

@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import { prepare } from '../scripts/prepare.ts';
 import { anchored, buildBoard, roundAt, sceneAt, valueAt } from '../src/auction.ts';
 import { buildFacts, crossCheck, finalCheck, finalPrices, money, OrderSchema, parse, ReceiptSchema, receiptCheck, RunSchema, spokenMoney } from '../src/schema.ts';
+import { phrases } from '../src/captions.ts';
 import { CLIPS, cueAt, GAP, layout, MAX_SECONDS, MAX_SILENCE, railAt, SCENES, spokenText, STEPS, toScript, toSrt, type ClipName } from '../src/timeline.ts';
 
 // Test data only: nothing here reaches a build.
@@ -90,19 +91,79 @@ test('every shot starts on a line and has time on screen', () => {
 });
 
 // Panels are drawn from the run; these prove they are the running product. The build fails without them.
-test('proof shots: the real approval, board and payout recordings each appear, scaled down and inside their clip', () => {
+test('proof cuts: the real approval, board and payout recordings each cut in full frame, never above their own pixels', () => {
   const proofs = SCENES.flatMap(scene => (scene.proofs ?? []).map(proof => ({ ...proof, scene: scene.id })));
-  for (const [scene, clip] of [['shopper', '05-paypal-hold'], ['bidding', '06-bidding'], ['payout', '08-handoff-payout']] as const) {
+  for (const [scene, clip, seconds] of [['shopper', '05-paypal-hold', 2], ['bidding', '06-bidding', 2.5], ['payout', '08-handoff-payout', 2.5]] as const) {
     const proof = proofs.find(row => row.scene === scene && row.clip === clip);
-    assert.ok(proof, `no proof shot of ${clip} in ${scene}`);
-    assert.ok(proof.out - proof.in >= (clip === '05-paypal-hold' ? 2 : 3) - 1e-9, `${clip} proof is too short`);
+    assert.ok(proof, `no proof cut of ${clip} in ${scene}`);
+    assert.ok(Math.abs(proof.out - proof.in - seconds) < 1e-9, `${clip} runs ${proof.out - proof.in} s, not ${seconds}`);
+    const { x, y, width, height } = proof.crop;
+    assert.ok(x >= 0 && y >= 0 && x + width <= 1440 && y + height <= 900, `${clip} crop leaves the window`);
     const frames = built?.clips?.[clip]?.frames;
     if (built) assert.ok(frames && proof.out <= frames / 60 + 0.05, `${clip} proof runs past its recording`);
   }
   const glass = readFileSync('src/ui/glass.tsx', 'utf8');
-  const width = Number(glass.match(/export const PROOF_W = (\d+)/)![1]);
-  assert.ok(width <= 1440, 'a proof shot would be scaled up');
-  assert.match(glass, /Screen recording · PayPal sandbox/);
+  // Window pixels are 2 recorded pixels (2880×1800), so a window-to-frame scale above 2 would upscale.
+  assert.match(glass, /export const proofScale = \(crop: Rect\) => Math\.min\(2,/);
+  assert.match(glass, /fontSize: 26[^\n]*>Screen recording · PayPal sandbox</);
+});
+
+// The frame stays still. The only camera moves are the two map pull-backs, in Split and Where; nothing else scales or
+// moves a scene's root layer over time.
+test('camera: only the two map pull-backs move the frame', () => {
+  const body = (file: string, name: string) => {
+    const source = readFileSync(file, 'utf8'), start = source.indexOf(`function ${name}(`);
+    assert.ok(start >= 0, `${file}: ${name}`);
+    const next = source.indexOf('\nexport function ', start + 1), rest = source.indexOf('\nfunction ', start + 1);
+    return source.slice(start, Math.min(...[next, rest, source.length].filter(n => n > 0)));
+  };
+  const root = (code: string) => code.slice(code.indexOf('return <'), code.indexOf('>', code.indexOf('return <')) + 1);
+  const moving = /transform|scale\(|zoom/;
+  const scenes = { 'src/scenes/Story.tsx': ['Korea', 'Split', 'Steps', 'Why', 'Where', 'Close'], 'src/scenes/Bidding.tsx': ['Bidding'], 'src/scenes/ClipScene.tsx': ['ClipScene'], 'src/Video.tsx': ['Shot'] };
+  for (const [file, names] of Object.entries(scenes)) for (const name of names) {
+    const code = body(file, name);
+    assert.ok(!moving.test(root(code)), `${name} transforms its root layer`);
+    const views = [...code.matchAll(/<Map v=\{([^}]*\}?)\}/g)].map(match => match[1]);
+    const moves = ['Split', 'Where'].includes(name);
+    if (!moves) for (const view of views) assert.ok(/^[A-Z_]+$|^v$/.test(view) && !/frame/.test(code.match(new RegExp(`const v = [^;]*`))?.[0] ?? ''), `${name} moves the map camera: ${view}`);
+    else assert.match(code, /lerpView\([A-Z_]+, [A-Z_]+, smooth\(frame \//, `${name}: one continuous ease-in-out move`);
+  }
+  assert.ok(!/useCurrentFrame|frame/.test(readFileSync('src/scenes/Story.tsx', 'utf8').match(/const KOREA[^\n]*/)![0]));
+});
+
+test('captions: phrase chunks of up to seven words, never split inside an amount or a name', () => {
+  for (const plan of plans()) for (const line of plan.lines) {
+    const parts = phrases(line.text);
+    assert.equal(parts.flat().join(' '), line.text);
+    for (const [i, part] of parts.entries()) {
+      assert.ok(part.length <= 7, `${part.join(' ')}`);
+      const next = parts[i + 1]?.[0];
+      if (next) {
+        const last = part[part.length - 1];
+        assert.ok(!(/^\$[\d.,]*\d/.test(last) && /^(billion|million)/.test(next)), `amount split: ${last} | ${next}`);
+        assert.ok(!(/^[A-Z]/.test(last) && /^[A-Z]/.test(next) && !/[,.:;?!]$/.test(last)), `name split: ${last} | ${next}`);
+      }
+    }
+  }
+  assert.deepEqual(phrases('Korean skincare sold a record $11.4 billion abroad in 2025, and small shops grow.').map(row => row.join(' ')).filter(row => row.includes('$11.4')), ['a record $11.4 billion abroad in 2025,']);
+});
+
+// An amount said in a caption is written exactly as the screen shows it, whole, and shown in the same scene.
+test('caption amounts are whole and appear on screen in their scene', { skip: !built }, () => {
+  const files: Record<string, string[]> = { korea: ['src/scenes/Story.tsx'], shopper: ['src/scenes/Bidding.tsx', 'src/ui/panels.tsx'], bidding: ['src/scenes/Bidding.tsx'], result: ['src/ui/panels.tsx'], payout: ['src/ui/panels.tsx'] };
+  // How each run amount is drawn, in the scene source.
+  const drawn: Record<string, RegExp> = { held: /cash\(hold\)|cash\(held\)/, charged: /vars\.charged|cents=\{charged\}/, released: /held - charged/, payout: /payout_usd_cents/ };
+  const amount = /\$[\d,]*\d(?:\.\d+)?(?: billion| million)?/g;
+  for (const line of layout(built.vars, built.spoken).lines) for (const value of line.text.match(amount) ?? []) {
+    for (const part of phrases(line.text)) {
+      const text = part.join(' ');
+      if (text.includes(value.split(' ')[0])) assert.ok(text.includes(value), `${value} is split across captions`);
+    }
+    const source = (files[line.scene] ?? []).map(file => readFileSync(file, 'utf8')).join('\n');
+    assert.ok(source, `${line.scene} says ${value} but shows no amounts`);
+    const key = Object.keys(drawn).find(name => built.vars[name] === value);
+    assert.ok(key ? drawn[key].test(source) : source.includes(`>${value}<`), `${value} in "${line.text}" is not on screen in ${line.scene}`);
+  }
 });
 
 test('no banned word in any on-screen source', () => {

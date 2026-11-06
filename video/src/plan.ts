@@ -12,8 +12,16 @@ export function shotSpan(laid: Laid, i: number) {
   return { from, length: to - from };
 }
 
-// A proof shot's start in scene seconds; it lasts as long as its clip span, at 1×.
+// A proof cut's start in scene seconds; it lasts as long as its clip span, at 1×.
 export const proofSpan = (laid: Laid, i: number) => {
   const proof = laid.scene.proofs![i];
   return { from: cueAt(laid, proof.cue) + (proof.delay ?? 0), length: proof.out - proof.in };
 };
+
+// Every proof cut in film seconds, and how far one is dissolved in at second t (0 to 1): a 0.4 s blur dissolve each way.
+export const PROOFS = PLAN.scenes.flatMap(laid => (laid.scene.proofs ?? []).map((proof, i) => {
+  const { from, length } = proofSpan(laid, i);
+  return { proof, from: laid.start + from, length };
+}));
+export const DISSOLVE_S = 0.4;
+export const proofOn = (t: number) => Math.max(0, ...PROOFS.map(({ from, length }) => Math.min(1, (t - from) / DISSOLVE_S, (from + length - t) / DISSOLVE_S)));

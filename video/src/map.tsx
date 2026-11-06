@@ -99,7 +99,7 @@ export function Pin({ city, from, color = C.accent, label, sub, pulse = false, s
     {pulse && <circle r={9 + 22 * ring} fill="none" stroke={color} strokeWidth={2} opacity={1 - ring} />}
     <circle r={9 * Math.min(1.2, shown)} fill={color} stroke={C.surface} strokeWidth={3} />
     {label && <text x={side ? side * 20 : 0} y={side ? 0 : -24} textAnchor={side ? (side > 0 ? 'start' : 'end') : 'middle'} fontSize={27} fontWeight={800} fill={C.ink} stroke={C.ground} strokeWidth={6} paintOrder="stroke" opacity={Math.min(1, shown)}>{label}</text>}
-    {sub && <text x={side ? side * 20 : 0} y={side ? 26 : 40} textAnchor={side ? (side > 0 ? 'start' : 'end') : 'middle'} fontSize={21} fontWeight={700} fill={color === C.muted ? C.ink : color} stroke={C.ground} strokeWidth={5} paintOrder="stroke" opacity={Math.min(1, shown)}>{sub}</text>}
+    {sub && <text x={side ? side * 20 : 0} y={side ? 26 : 40} textAnchor={side ? (side > 0 ? 'start' : 'end') : 'middle'} fontSize={22} fontWeight={700} fill={color === C.muted ? C.ink : color} stroke={C.ground} strokeWidth={5} paintOrder="stroke" opacity={Math.min(1, shown)}>{sub}</text>}
   </g>;
 }
 

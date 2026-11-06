@@ -44,7 +44,7 @@ function WinsIntoOrder() {
     const a = boardRow(ROWS.indexOf(id)), b = ORDER_ROWS(i), p = ease((frame - i * 2) / DUR.camera);
     if (p >= 1) return null;
     return <div key={id} style={{ position: 'absolute', left: a.x + (b.x - a.x) * p, top: a.y + (b.y - a.y) * p, display: 'flex', alignItems: 'center', gap: 16, opacity: 1 - enter(frame, MOTION_FPS, DUR.camera - 4, 6) }}>
-      <Photo id={id} size={84 - 28 * p} /><span style={{ fontSize: 34 - 4 * p, fontWeight: 700 }}>{manifest.names[id]}</span>
+      <Photo id={id} size={84 - 12 * p} /><span style={{ fontSize: 34 + 2 * p, fontWeight: 700 }}>{manifest.names[id]}</span>
     </div>;
   })}</>;
 }

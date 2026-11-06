@@ -5,12 +5,14 @@ import { money, SHOP_NAMES } from '../schema.ts';
 import { C, manifest, MONO } from '../theme.ts';
 import { clamp, DUR, enter, pop, reveal, tiltIn, useFrame } from '../motion.ts';
 import { Lock, Photo } from '../ui.tsx';
+import { SCENES } from '../timeline.ts';
 import { Cursor, Glass, Keycap, Odometer, Shimmer } from './glass.tsx';
 
 const cash = (value: number) => money(value, manifest.run.currency);
 const start = manifest.events.find(row => row.kind === 'start')!;
 const listed = start.listed as Record<string, Record<string, number>>;
 const digits = String(manifest.run.held_minor).length;
+const PLAN_PROOF = SCENES.find(row => row.id === 'shopper')!.proofs![0];
 export type PanelProps = { at: (cue: number) => number; length: number };
 
 const Centre = ({ children, width, top = 230, left = (1920 - width) / 2 }: { children: React.ReactNode; width: number; top?: number; left?: number }) =>
@@ -84,12 +86,13 @@ export function ProductPanel() {
   </>;
 }
 
-// PayPal's hold, drawn abstractly: the price in a bracket under a ceiling line. No PayPal interface.
-export function HoldPanel() {
+// PayPal's hold, drawn abstractly: the price in a bracket under a ceiling line. No PayPal interface. Approve is clicked
+// as the line starts; the real approval cuts in over it, and the ceiling lands as the cut dissolves back out.
+export function HoldPanel({ at }: PanelProps) {
   const frame = useFrame(), held = manifest.run.held_minor;
-  const clickAt = 28, approved = frame >= clickAt;
-  const bracket = enter(frame, 30, clickAt + 2, DUR.camera);
-  return <><Centre width={900} top={300} left={330}><div style={tiltIn(enter(frame, 30, 0, DUR.camera))}><Glass style={{ padding: '44px 56px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22, textAlign: 'center' }}>
+  const proof = PLAN_PROOF, clickAt = at(1), approved = frame >= clickAt;
+  const bracket = enter(frame, 30, clickAt + (proof.out - proof.in) * 30 - 6, DUR.camera);
+  return <><Centre width={900} top={300}><div style={tiltIn(enter(frame, 30, 0, DUR.camera))}><Glass style={{ padding: '44px 56px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 22, textAlign: 'center' }}>
     <Label>Your bag, all in</Label>
     <div style={{ position: 'relative', padding: '18px 40px' }}>
       <div style={{ position: 'absolute', left: -30, right: -30, top: -26, height: 3, background: C.accent, opacity: bracket, transform: `scaleX(${bracket})` }} />
@@ -99,7 +102,7 @@ export function HoldPanel() {
     </div>
     {approved ? <span style={{ fontSize: 30, fontWeight: 700, color: C.ink, ...reveal(enter(frame, 30, clickAt)) }}>Approved with PayPal · sandbox</span> : <Button>Approve</Button>}
   </Glass></div></Centre>
-    <Cursor from={{ x: 1300, y: 980 }} to={{ x: 790, y: 750 }} start={2} click={clickAt} />
+    <Cursor from={{ x: 1400, y: 980 }} to={{ x: 970, y: 750 }} start={clickAt - 30} click={clickAt} />
   </>;
 }
 
@@ -127,7 +130,7 @@ export function ReceiptPanel({ at }: PanelProps) {
 
 // Haneul's order: what she won, the hand-off, then the payout stepper with the amount rolling up.
 const STEPS = ['Won', 'Handed off', 'Payout sent', 'Paid'];
-export const ORDER_ROWS = (i: number) => ({ x: 386, y: 358 + i * 74 });
+export const ORDER_ROWS = (i: number) => ({ x: 356, y: 316 + i * 98 });
 export function OrderPanel({ at }: PanelProps) {
   const frame = useFrame();
   const won = Object.entries(manifest.run.winners).filter(([, row]) => row.shop === 'haneul');
@@ -135,27 +138,27 @@ export function OrderPanel({ at }: PanelProps) {
   const step = frame >= paidAt + 30 ? 4 : frame >= paidAt + 14 ? 3 : frame >= clickAt ? 2 : 1;
   const payout = manifest.run.payout_usd_cents * enter(frame, 30, paidAt, DUR.camera * 1.5);
   const code = `RL-${manifest.run.order_id.slice(0, 5).toUpperCase()}`;
-  return <><Centre width={1240} top={260}><div style={tiltIn(enter(frame, 30, 0, DUR.camera))}><Glass style={{ padding: '34px 46px', display: 'flex', gap: 40 }}>
+  return <><Centre width={1300} top={210}><div style={tiltIn(enter(frame, 30, 0, DUR.camera))}><Glass style={{ padding: '40px 46px', display: 'flex', gap: 48 }}>
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}><span style={{ fontFamily: MONO, fontSize: 34 }}>{code}</span><Label>{SHOP_NAMES.haneul} won {won.length} items</Label></div>
-      {won.map(([id, row]) => <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 16, height: 60, opacity: frame >= 20 ? 1 : 0 }}>
-        <Photo id={id} size={56} /><span style={{ flex: 1, fontSize: 30, fontWeight: 700 }}>{manifest.names[id]}</span><span style={{ fontFamily: MONO, fontSize: 30 }}>{cash(row.unit)}</span>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, height: 52 }}><span style={{ fontFamily: MONO, fontSize: 42 }}>{code}</span><Label>{SHOP_NAMES.haneul} won {won.length} items</Label></div>
+      {won.map(([id, row]) => <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 20, height: 84, opacity: frame >= 20 ? 1 : 0 }}>
+        <Photo id={id} size={72} /><span style={{ flex: 1, fontSize: 36, fontWeight: 700 }}>{manifest.names[id]}</span><span style={{ fontFamily: MONO, fontSize: 36 }}>{cash(row.unit)}</span>
       </div>)}
-      <div style={{ marginTop: 10 }}><Button pressed={frame >= clickAt && frame < clickAt + 6}>{frame >= clickAt ? 'Handed off to the Seoul hub' : 'Record hand-off'}</Button></div>
+      <div style={{ marginTop: 18 }}><Button pressed={frame >= clickAt && frame < clickAt + 6}>{frame >= clickAt ? 'Handed off to the Seoul hub' : 'Record hand-off'}</Button></div>
     </div>
-    <div style={{ width: 380, display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ width: 400, display: 'flex', flexDirection: 'column', gap: 20 }}>
       {STEPS.map((label, i) => {
         const on = step > i, last = i === 3;
-        return <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 30, fontWeight: 700, color: on ? (last ? C.saving : C.ink) : C.muted }}>
-          <span style={{ width: 30, height: 30, borderRadius: 15, boxShadow: `inset 0 0 0 3px ${on ? C.saving : 'rgba(255,255,255,.25)'}`, background: on ? C.saving : 'transparent', transform: `scale(${on ? 0.9 + 0.1 * Math.min(1, pop(frame, 30, i === 0 ? 0 : i === 1 ? clickAt : paidAt + (i === 2 ? 14 : 30))) : 1})` }} />{label}
+        return <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 36, fontWeight: 700, color: on ? (last ? C.saving : C.ink) : C.muted }}>
+          <span style={{ width: 34, height: 34, borderRadius: 17, boxShadow: `inset 0 0 0 3px ${on ? C.saving : 'rgba(255,255,255,.25)'}`, background: on ? C.saving : 'transparent', transform: `scale(${on ? 0.9 + 0.1 * Math.min(1, pop(frame, 30, i === 0 ? 0 : i === 1 ? clickAt : paidAt + (i === 2 ? 14 : 30))) : 1})` }} />{label}
         </div>;
       })}
       <div style={{ marginTop: 18, padding: '20px 24px', borderRadius: 18, background: C.mint, opacity: interpolate(frame, [paidAt, paidAt + 10], [0, 1], clamp) }}>
-        <div style={{ fontSize: 24, fontWeight: 700, color: C.saving }}>PayPal payout</div>
-        <div style={{ fontSize: 64, color: C.saving }}><Odometer cents={payout} digits={String(manifest.run.payout_usd_cents).length} /></div>
+        <div style={{ fontSize: 28, fontWeight: 700, color: C.saving }}>PayPal payout</div>
+        <div style={{ fontSize: 84, color: C.saving }}><Odometer cents={payout} digits={String(manifest.run.payout_usd_cents).length} /></div>
       </div>
     </div>
   </Glass></div></Centre>
-    <Cursor from={{ x: 1100, y: 980 }} to={{ x: 560, y: 750 }} start={clickAt - 30} click={clickAt} />
+    <Cursor from={{ x: 1100, y: 980 }} to={{ x: 500, y: 664 }} start={clickAt - 30} click={clickAt} />
   </>;
 }

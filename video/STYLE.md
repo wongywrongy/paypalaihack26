@@ -25,7 +25,7 @@ Designed from one reference: `reference/cluelyreference.mp4` (Cluely's product v
 - **Canvas:** near-black `#0B0B0F`, like the reference's black, with two or three large, very soft colour fields drifting behind: Rally raspberry, a cool blue-grey, and a faint green that only appears in money moments. These are Rally's, not Cluely's: the reference has none (it gets colour from the meeting footage), and without footage behind the panels the fields give the glass something to blur. 2–3% grain over everything, so the fields don't band.
 - **Panels:** the reference's floating window, drawn natively. Dark glass at 24 px radius, 1 px inner border at white 12%, backdrop blur of the fields, two-layer shadow. A panel enters tilted (rotateX 8°, perspective 1600 px) and eases flat as it becomes the subject, as at 0:26.
 - **Depth of field:** at most one panel in focus; the rest at 40% opacity with 8 px blur, as at 0:26 and 0:52.
-- **Camera:** a continuous push-in of 1.00 to 1.05 across every shot, with the map, the fields and the panels moving at different speeds. No large 3D swings: the reference's swings serve 30 s product walkthroughs, and Rally's shots are 3–8 s.
+- **Camera:** locked. Constant push-ins read as cheap and pushed layouts into each other, so the frame stays still and motion comes from elements. Two deliberate moves only, both map pull-backs (Korea to California, Seoul to the world), each one ease-in-out. The colour fields still drift behind everything. No large 3D swings: the reference's swings serve 30 s product walkthroughs, and Rally's shots are 3–8 s.
 - **Text:** the app's display font (Schibsted Grotesk), headlines 96–140 px at −2% tracking. Words reveal one at a time from 8 px blur and 14 px below, three frames apart at 60 fps: the reference's motion-blur entrance (0:04), made calmer.
 - **Numbers:** the app's mono (IBM Plex Mono), tabular. Totals roll like an odometer and only roll down; the final price gets the one shimmer.
 - **Keycaps and cursor:** keycaps only while the goal is typed (real keystrokes); a drawn cursor on curved paths with a click ripple only on Add to bag, Approve, Apply and Record hand-off, as at 0:16.
@@ -33,10 +33,10 @@ Designed from one reference: `reference/cluelyreference.mp4` (Cluely's product v
 
 ## Where Rally deliberately differs
 
-- **Captions have no box.** The reference uses a dark bar (0:10). Rally's canvas is already dark, so white at 92% reads without one; 38 px, at most six words, the spoken word slightly brighter.
+- **Captions have no box.** The reference uses a dark bar (0:10). Rally's canvas is already dark, so white at 92% reads without one; 38 px, phrase chunks of at most seven words, the spoken word slightly brighter; dark over a proof cut's light canvas.
 - **Colour fields.** Not in the reference; see Canvas above.
-- **No live footage in the main frame.** The reference is all real recording. Rally rebuilds product moments natively for sharpness and shows the real recordings as small proof shots on the app's warm light canvas, scaled down only, labelled "Screen recording · PayPal sandbox".
-- **No PayPal interface.** The hold is drawn abstractly (a bracket and a ceiling line); the real PayPal window appears only as a proof shot with its marks blurred.
+- **No live footage in the main frame.** The reference is all real recording. Rally rebuilds product moments natively for sharpness and shows the real recordings as short full-frame proof cuts on the app's warm light canvas, cropped to the relevant region, never upscaled, framed by a thin line and labelled "Screen recording · PayPal sandbox".
+- **No PayPal interface.** The hold is drawn abstractly (a bracket and a ceiling line); the real PayPal window appears only as a 2 s proof cut with its marks blurred.
 - **Music.** None ships with this repository: no track with a licence that allows a public competition submission has been provided. Sound effects are synthesised for this project (`sfx/`).
 
 ## Palette
@@ -50,4 +50,4 @@ Designed from one reference: `reference/cluelyreference.mp4` (Cluely's product v
 | Raspberry | `#B4235A` field, `#F0679B` on dark text | Rally and the shops |
 | Green | `#2BB673` field, `#5BE3A2` on dark text | Money released or paid |
 | Blue-grey | `#3A4A66` | Neutral field |
-| Light canvas | `#F7F4F0` | Proof shots only (the app's ground) |
+| Light canvas | `#F7F4F0` | Proof cuts only (the app's ground) |

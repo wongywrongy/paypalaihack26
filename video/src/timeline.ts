@@ -6,7 +6,7 @@ export const MAX_SECONDS = 175;
 // Silence between lines, at the start of a scene and at its end. LEAD + TAIL and GAP stay under MAX_SILENCE.
 export const GAP = 0.3, LEAD = 0.2, TAIL = 0.3, MAX_SILENCE = 0.6;
 
-// The real screen recordings, shown only as small proof shots (src/ui/glass.tsx, Proof).
+// The real screen recordings, shown only as short full-frame proof cuts (src/ui/glass.tsx, Proof).
 export const CLIPS = {
   '05-paypal-hold': 'PayPal sandbox approval, around the approve click',
   '06-bidding': 'The live bidding board',
@@ -28,10 +28,11 @@ export type Cue = { text: string; say?: string; anchor?: 'reject' | 'agent' | 'h
 export const PANELS = ['price', 'goal', 'product', 'bag', 'hold', 'receipt', 'order'] as const;
 export type Panel = typeof PANELS[number];
 export type Shot = { panel: Panel; cue: number; delay?: number; role: Role };
-// A real screen recording, small, as proof that the drawn panels are the running product: clip seconds in to out,
-// starting at a scene cue (plus delay). Always shown at 1:1 or smaller.
-// focus: false keeps the scene sharp beside a short proof, where both share the same moment.
-export type Proof = { clip: ClipName; cue: number; delay?: number; in: number; out: number; focus?: boolean };
+// A real screen recording as a full-frame cut, proof that the drawn panels are the running product: clip seconds in
+// to out, starting at a scene cue (plus delay, which may be negative). crop is the region shown, in 1440×900 window
+// pixels; it is fitted to the frame but never shown above the recording's own pixel size.
+export type Rect = { x: number; y: number; width: number; height: number };
+export type Proof = { clip: ClipName; cue: number; delay?: number; in: number; out: number; crop: Rect };
 export type Scene = { id: string; criterion: string; act: 1 | 2 | 3 | 4 | 5; cues: Cue[]; shots?: Shot[]; proofs?: Proof[] };
 
 // The step rail, word for word.
@@ -77,9 +78,10 @@ export const SCENES: Scene[] = [
   },
   {
     id: 'shopper', criterion: 'design, PayPal', act: 3,
-    shots: [{ panel: 'product', cue: 0, role: 'shopper' }, { panel: 'bag', cue: 0, delay: 2.4, role: 'shopper' }, { panel: 'hold', cue: 1, role: 'shopper' }],
+    // The hold card arrives on "everything included", ready to approve; the approval itself is the real one.
+    shots: [{ panel: 'product', cue: 0, role: 'shopper' }, { panel: 'bag', cue: 0, delay: 2.4, role: 'shopper' }, { panel: 'hold', cue: 1, delay: -1.6, role: 'shopper' }],
     // The real approval, logos blurred: just before the approve click and just after.
-    proofs: [{ clip: '05-paypal-hold', cue: 1, in: 2.4, out: 4.4, focus: false }],
+    proofs: [{ clip: '05-paypal-hold', cue: 1, in: 2.4, out: 4.4, crop: { x: 436, y: 0, width: 568, height: 770 } }],
     cues: [
       { text: 'A shopper in California fills a bag: {item_count_words} products, one price of {held}, everything included.', say: 'A shopper in California fills a bag: {item_count_words} products, one price of {held_say}, everything included.', step: 1 },
       { text: "They approve it in PayPal. That's the ceiling.", step: 2 },
@@ -87,7 +89,8 @@ export const SCENES: Scene[] = [
   },
   {
     id: 'bidding', criterion: 'innovation, tech', act: 3,
-    proofs: [{ clip: '06-bidding', cue: 0, delay: 2.6, in: 1, out: 4 }],
+    // The real board landing on the final total, right after the drawn board's arithmetic appears.
+    proofs: [{ clip: '06-bidding', cue: 3, delay: 3.4, in: 14.3, out: 16.8, crop: { x: 190, y: 90, width: 1060, height: 470 } }],
     cues: [
       { text: 'The agents bid over {rounds_words} rounds. Each item goes to whichever shop makes the whole box cheapest.', step: 3 },
       { text: '{reject_line}', anchor: 'reject', step: 3 },
@@ -106,8 +109,8 @@ export const SCENES: Scene[] = [
   {
     id: 'payout', criterion: 'PayPal, impact', act: 3,
     shots: [{ panel: 'order', cue: 0, role: 'shop' }],
-    // The real stepper reaching Paid.
-    proofs: [{ clip: '08-handoff-payout', cue: 1, delay: 0.1, in: 6.2, out: 9.2 }],
+    // The real stepper reaching Paid, right after the payout lands; it runs to the act's dissolve.
+    proofs: [{ clip: '08-handoff-payout', cue: 1, delay: 1.65, in: 6.7, out: 9.2, crop: { x: 598, y: 122, width: 802, height: 410 } }],
     cues: [
       { text: '{handoff_line}', step: 4 },
       { text: 'and PayPal pays her {payout} right after.', say: 'and PayPal pays her {payout_say} right after.', step: 5 },

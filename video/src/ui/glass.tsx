@@ -4,7 +4,7 @@ import { Audio, interpolate, OffthreadVideo, Freeze, Sequence, staticFile, useCu
 import { C, FIELDS, LIGHT, manifest, MONO, SANS } from '../theme.ts';
 import { clamp, DUR, ease, enter, MOTION_FPS, reveal, smooth, useFrame, words } from '../motion.ts';
 import { Redactions } from '../ui.tsx';
-import type { ClipName } from '../timeline.ts';
+import type { ClipName, Rect } from '../timeline.ts';
 
 // Near-black, with large soft colour fields drifting slowly behind everything, and grain so they never band.
 // money: 0 to 1, how much of the green field shows.
@@ -111,23 +111,23 @@ export function Cursor({ from, to, start, click }: { from: Point; to: Point; sta
 export const Keycap = ({ label, down }: { label: string; down: boolean }) => <span style={{ display: 'inline-grid', placeItems: 'center', minWidth: 58, height: 58, padding: '0 14px', boxSizing: 'border-box', borderRadius: 14, fontFamily: MONO, fontSize: 28, color: C.ink,
   background: down ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.08)', boxShadow: down ? 'inset 0 0 0 1px rgba(255,255,255,.3)' : 'inset 0 0 0 1px rgba(255,255,255,.16), 0 4px 0 rgba(0,0,0,.45)', transform: `translateY(${down ? 3 : 0}px)` }}>{label}</span>;
 
-// The real recording, small, in a light frame: proof the drawn panels are the running product. It is only ever
-// scaled down (a 1440×900 window shown 540 px wide), and its redactions travel with it.
-export const PROOF_W = 540;
-export function Proof({ name, from, to }: { name: ClipName; from: number; to: number }) {
+// The real recording as a full-frame cut on the light canvas: proof the drawn panels are the running product. It is
+// cropped to the region that matters and fitted into PROOF_BOX, never above its own pixels (2× window pixels in a
+// 2880×1800 recording), and its redactions travel with it. `p` is how far the cut has dissolved in.
+export const PROOF_BOX = { width: 1696, height: 800 };
+export const proofScale = (crop: Rect) => Math.min(2, PROOF_BOX.width / crop.width, PROOF_BOX.height / crop.height);
+export function Proof({ name, from, to, crop, p }: { name: ClipName; from: number; to: number; crop: Rect; p: number }) {
   const frame = useFrame(), { fps } = useVideoConfig();
   const s = frame / MOTION_FPS, meta = manifest.clips[name];
   const at = Math.min(from + s, to, meta ? (meta.frames - 2) / fps : Infinity);
-  const p = enter(frame, MOTION_FPS, 0, DUR.standard), out = 1 - enter(frame, MOTION_FPS, (to - from) * MOTION_FPS - DUR.standard, DUR.standard);
-  const k = PROOF_W / 1440;
-  return <div style={{ position: 'absolute', right: 48, bottom: 200, width: PROOF_W + 20, padding: 10, borderRadius: 20, background: LIGHT.ground, boxShadow: '0 30px 80px rgba(0,0,0,.55)', opacity: Math.min(p, out), transform: `translateY(${(1 - p) * 24}px)` }}>
-    <div style={{ fontSize: 22, fontWeight: 700, color: LIGHT.ink, padding: '2px 6px 10px' }}>Screen recording · PayPal sandbox</div>
-    <div style={{ position: 'relative', width: PROOF_W, height: 900 * k, overflow: 'hidden', borderRadius: 12 }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, width: 1440, height: 900, transformOrigin: '0 0', transform: `scale(${k})` }}>
+  const k = proofScale(crop), w = crop.width * k, h = crop.height * k;
+  return <div style={{ position: 'absolute', inset: 0, background: LIGHT.ground, opacity: p, filter: p < 0.999 ? `blur(${12 * (1 - p)}px)` : undefined }}>
+    <div style={{ position: 'absolute', left: 40, top: 36, fontSize: 26, fontWeight: 700, color: LIGHT.ink, fontFamily: SANS }}>Screen recording · PayPal sandbox</div>
+    <div style={{ position: 'absolute', left: (1920 - w) / 2, top: 110 + (PROOF_BOX.height - h) / 2, width: w, height: h, overflow: 'hidden', borderRadius: 10, boxShadow: '0 0 0 1.5px rgba(23,22,26,.24), 0 20px 60px rgba(23,22,26,.12)' }}>
+      <div style={{ position: 'absolute', left: -crop.x * k, top: -crop.y * k, width: 1440, height: 900, transformOrigin: '0 0', transform: `scale(${k})` }}>
         {meta && <Freeze frame={0}><OffthreadVideo src={staticFile(`generated/clips/${name}.mp4`)} muted trimBefore={Math.round(at * fps)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} /></Freeze>}
         <Redactions name={name} seconds={at} />
       </div>
     </div>
   </div>;
 }
-

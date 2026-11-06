@@ -6,7 +6,7 @@ import { BANNED, C, manifest, MONO } from '../theme.ts';
 import { clamp, DUR, ease, enter, MOTION_FPS, pop, rise, shake, typed, useFrame } from '../motion.ts';
 import { glass, Odometer } from '../ui/glass.tsx';
 import { Photo, Rich } from '../ui.tsx';
-import { scene } from '../plan.ts';
+import { proofSpan, scene } from '../plan.ts';
 import type { Laid } from '../timeline.ts';
 
 type Shop = keyof typeof SHOP_NAMES;
@@ -31,7 +31,9 @@ export const ROW_X = 140, ROW_Y = 362, ROW_H = 108, CHIP_X = 700, CHIP_W = 264, 
 const BAG_X = 450, BAG_Y = 250, BAG_H = 116;
 export const boardRow = (i: number) => ({ x: ROW_X, y: ROW_Y + i * ROW_H });
 const bagRow = (i: number) => ({ x: BAG_X, y: BAG_Y + i * BAG_H });
-const HEADER = { x: 1589, y: 201, size: 110 }, BAG_TOTAL = { x: 1352, y: 752, size: 64 };
+// The header grid: role tag top left with the title on its own row under it, the rail top centre, the total top right
+// under its label. Every block keeps 32 px or more from the next.
+const HEADER = { x: 1589, y: 128, size: 110 }, BAG_TOTAL = { x: 1352, y: 752, size: 64 };
 export const BOARD_TOTAL = HEADER;
 const FLY = 26, FROM = 1.4;
 
@@ -132,7 +134,7 @@ function Notes({ s }: { s: number }) {
     : null;
   if (!note) return null;
   const f = Math.round(note.from * fps), p = enter(frame, fps, f);
-  return <div key={note.from} style={{ position: 'absolute', left: ROW_X, right: 600, top: 254, minHeight: 64, display: 'flex', alignItems: 'center', gap: 18, padding: '10px 24px', ...glass, borderRadius: 18, background: note.tag === 'rejected' ? C.tint : glass.background, boxShadow: `inset 0 0 0 1px ${note.tag === 'rejected' ? C.accent : 'rgba(255,255,255,.12)'}`, transform: `translateX(${note.tag === 'rejected' ? shake(frame, f + 14) : 0}px)`, ...rise(p, 12) }}>
+  return <div key={note.from} style={{ position: 'absolute', left: ROW_X, right: 760, top: 254, minHeight: 64, display: 'flex', alignItems: 'center', gap: 18, padding: '10px 24px', ...glass, borderRadius: 18, background: note.tag === 'rejected' ? C.tint : glass.background, boxShadow: `inset 0 0 0 1px ${note.tag === 'rejected' ? C.accent : 'rgba(255,255,255,.12)'}`, transform: `translateX(${note.tag === 'rejected' ? shake(frame, f + 14) : 0}px)`, ...rise(p, 12) }}>
     <span style={{ fontSize: 26, fontWeight: 800, whiteSpace: 'nowrap' }}>{SHOP_NAMES[note.shop]}:</span>
     <span style={{ flex: 1, fontSize: 26, lineHeight: 1.25 }}><Rich text={note.tag === 'agent' ? typed(note.text, frame, f + 6, fps) : note.text} /></span>
     <span style={{ fontSize: 22, fontWeight: 700, borderRadius: 999, padding: '6px 14px', whiteSpace: 'nowrap', transform: `scale(${note.tag === 'rejected' ? 1.2 - 0.2 * Math.min(1, pop(frame, fps, f + 8)) : 1})`, ...(note.tag === 'agent' ? { background: C.butter, color: C.onLight } : { background: 'transparent', color: C.accentHover, border: `2px solid ${C.accent}` }) }}>{note.tag === 'agent' ? 'Written by agent' : "Rejected by Rally's checks"}</span>
@@ -165,11 +167,10 @@ export function Bidding() {
   const total = valueAt(board.totals, s, DUR.scene / fps, ease) ?? hold;
   const awarded = s >= board.awardAt;
   const round = board.rounds.filter(step => step.t <= s).length;
-  const sumAt = Math.round(board.awardAt * fps) + ROWS.length * 4 + DUR.standard;
+  // The arithmetic lands after the rows collapse and the cheaper toner is explained, 0.9 s before the real board cuts in.
+  const sumAt = Math.max(Math.round(board.awardAt * fps) + ROWS.length * 4 + DUR.standard, Math.round((proofSpan(laid, 0).from - 0.9) * fps));
   const sum = enter(frame, fps, sumAt);
-  // The whole board drifts very slightly closer, so a held moment is never a still frame.
-  const drift = 1 + 0.0006 * s + 0.003 * Math.max(0, s - board.awardAt);
-  return <div style={{ position: 'absolute', inset: 0, transform: `scale(${drift})` }}>
+  return <div style={{ position: 'absolute', inset: 0 }}>
     <div style={{ opacity: shown }}>
       <div style={{ position: 'absolute', left: ROW_X, top: 124, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ fontSize: 50, fontWeight: 800, letterSpacing: '-.03em' }}>{awarded ? 'Bidding complete' : 'Shops are bidding'}</div>
@@ -183,10 +184,10 @@ export function Bidding() {
           {manifest.vars.agent_line && awarded && <span style={{ fontSize: 24, color: C.saving, marginLeft: 20 }}>{manifest.vars.agent_line}</span>}
         </div>
       </div>
-      <div style={{ position: 'absolute', right: 100, top: 112, width: 620, textAlign: 'right' }}>
-        <div style={{ fontSize: 26, color: C.muted }}>Total, all in</div>
+      <div style={{ position: 'absolute', right: 100, top: 36, width: 520, textAlign: 'right' }}>
+        <div style={{ fontSize: 26, color: C.muted, lineHeight: '34px' }}>Total, all in</div>
         <div style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums', fontSize: HEADER.size, lineHeight: 1.05, letterSpacing: '-.03em', color: awarded ? C.saving : C.ink, opacity: landed ? 1 : 0 }}><Odometer cents={Math.min(hold, total)} digits={String(hold).length} /></div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 22, color: C.accentHover, marginTop: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 24, color: C.accentHover, marginTop: 6, whiteSpace: 'nowrap' }}>
           <div style={{ flex: 1, height: 2, background: C.accent }} />
           <span>PayPal holds <span style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums' }}>{cash(hold)}</span> · can only go down</span>
         </div>

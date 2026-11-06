@@ -6,12 +6,12 @@ Remotion project for the Devpost video. Nothing in `frontend/` or `backend/` imp
 | --- | --- |
 | `npm run studio` | Remotion Studio. Allows placeholders. |
 | `npm run preview` | Half-size 60 fps `out/preview.mp4`. Allows placeholders. |
-| `npm run render` | Final 1080p 60 fps `out/rally-1080p.mp4` (12 Mbps video, slow preset, AAC 320 kbps; CRF 16 gave only 3.4 Mbps on this mostly flat dark film) and `out/captions.srt`; prints bitrate, frame rate and duration, and fails below 10 Mbps. Refuses placeholders. |
+| `npm run render` | Final 60 fps `out/rally-1080p.mp4` (12 Mbps) and `out/rally-4k.mp4` (40 Mbps), both h264 slow preset, AAC 320 kbps (CRF 16 gave only 3.4 Mbps on this mostly flat dark film), and `out/captions.srt`; prints bitrate, frame rate and duration, and fails below 10 Mbps at 1080p or 25 Mbps at 4K. Refuses placeholders. |
 | `npm run stills` | One PNG per scene at its midpoint, in `out/stills/`. |
 | `npm run voice` | Kokoro narration, spoken locally, one WAV per line in `run/voice/`. The timeline is laid out from their lengths. |
 | `npm test` | Timeline, schema and render-gate tests. |
 
-The look is in `STYLE.md`, designed from a reference clip in `reference/` (git-ignored, never shipped). Every product moment is drawn natively in `src/ui/panels.tsx` from the run's data, as glass panels on a near-black canvas, so it is sharp at any size. The real recordings appear only as small proof shots (`proofs` in `timeline.ts`), always scaled down: the PayPal approval, the live board and the payout. `npm test` fails if any of the three is missing.
+The look is in `STYLE.md`, designed from a reference clip in `reference/` (git-ignored, never shipped). Every product moment is drawn natively in `src/ui/panels.tsx` from the run's data, as glass panels on a near-black canvas, so it is sharp at any size. The real recordings appear only as short full-frame proof cuts (`proofs` in `timeline.ts`) on the app's light canvas, labelled "Screen recording · PayPal sandbox", cropped to the region that matters and never shown above their own pixels: the PayPal approval (2 s, logos blurred), the live board landing on its final total (2.5 s) and the payout reaching Paid (2.5 s). `npm test` fails if any of the three is missing.
 
 Every command needs `run/run.json`, `run/order.json` and `run/receipt.json` first. There are no stand-in values: without them the build stops and says which file or field is missing. `video/run/` is git-ignored because `order.json` holds a shop's private lowest prices and this repository is public. Keep it out of commits.
 
@@ -91,7 +91,7 @@ If Haneul is outbid, captions change to say so and the payout scene uses `payout
   The voice is `af_heart` at speed 1.0, never sped up; `KOKORO_VOICE=am_michael npm run voice` tries the other one. Run it again whenever the run data changes, because the numbers are spoken.
 - `MUSIC_PATH=/path/to/licensed-track.mp3 npm run render` adds music at −22 dB, another 4 dB down under the voice. None is included: use only a track whose licence allows a public competition submission, and put its licence in `music/LICENSE.txt`.
 - Sound effects (a click on each cursor click, a whoosh as each demo scene opens, a tick on the final price) are synthesised by `scripts/sfx.py` into `sfx/`, CC0, at −18 dB.
-- Captions are burned in, bottom centre, 38 px, white, no box, in chunks of up to six words with the spoken word a little brighter, and also written to `out/captions.srt`.
+- Captions are burned in, bottom centre, 38 px, white, no box, in phrase chunks of up to seven words (`src/captions.ts`: breaks only after a comma or clause end, or before "and" or "but", never inside an amount or a name) with the spoken word a little brighter, and also written to `out/captions.srt`.
 
 ## Re-time
 
@@ -99,9 +99,10 @@ If Haneul is outbid, captions change to say so and the payout scene uses `payout
 
 **Spoken numbers come from the run.** Captions show amounts as `$93.30`; the voice reads the same amounts as words (`{charged_say}` and friends from `buildFacts`), generated from the numbers, so no amount is typed by hand.
 
-**The voice drives the timeline.** `src/timeline.ts` holds the lines, shots and camera keys, but no scene or cue times: every line starts `GAP` (0.3 s) after the previous one ends, and each scene is its lines plus half a second. `npm test` fails on any silence over 0.6 s, except the planned 1 s pause before the close, and on a video over 175 s.
+**The voice drives the timeline.** `src/timeline.ts` holds the lines, shots and proof cuts, but no scene or cue times: every line starts `GAP` (0.3 s) after the previous one ends, and each scene is its lines plus half a second. `npm test` fails on any silence over 0.6 s, except the planned 1 s pause before the close, and on a video over 175 s.
 
-- A shot starts on a line (`cue`, the scene's line index) and plays its clip from `in` to `out`. A camera key fires at a line's start (plus `delay`) or at a clip second, and centres a point of the 1440×900 window at a zoom from 1 to 1.8. Every key drifts 4% closer while it holds, so nothing sits still.
+- A shot starts on a line (`cue`, the scene's line index, plus `delay`) and shows its panel until the next shot. A proof cut starts the same way, plays its clip from `in` to `out` at 1×, and blur-dissolves in and out.
+- **The camera is locked.** The frame never zooms or drifts; motion comes from elements (panels enter, numbers roll, chips glide). The only two camera moves are the map pull-backs, Korea to California in act 1 and Seoul to the world in act 4, each one ease-in-out move. `npm test` fails if any other scene transforms its root layer over time.
 - The bidding board is item first, like the app's Deal screen: a row per item, a price chip per shop, the lowest filled. It pins each event to the line about it: the first rejection (its replacement lands as the line ends), the first agent-written bid, Haneul's bundle (a bracket with her goal), and the award, after which each row keeps only its winner and the sum appears. If a winner is not its row's lowest single price, a line explains that the cheapest whole box wins and the cheaper chip comes back beside it. Time runs evenly between pins.
 - A shot's `spots` dim everything but one rectangle, so one row or one rule is all there is to read. A `bag` shot is the shopper's bag rebuilt from the run, since the app's bag page does not name the shops; its items fly into the board's rows.
 - A line whose run fact is empty (no rejection, say) is dropped, and the scene closes up around it.

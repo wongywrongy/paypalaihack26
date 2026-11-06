@@ -5,7 +5,9 @@
   "scripts": {
     "studio": "node scripts/prepare.ts --allow-placeholders && remotion studio src/index.ts",
     "preview": "node scripts/prepare.ts --allow-placeholders && remotion render src/index.ts Rally out/preview.mp4 --codec=h264 --scale=0.5",
-    "render": "node scripts/prepare.ts && remotion render src/index.ts Rally out/rally-1080p.mp4 --codec=h264 --video-bitrate=12M --x264-preset=slow --pixel-format=yuv420p --audio-codec=aac --audio-bitrate=320k && node scripts/finish.ts",
+    "render": "node scripts/prepare.ts && npm run render:1080p && npm run render:4k && node scripts/finish.ts out/rally-1080p.mp4:10 out/rally-4k.mp4:25",
+    "render:1080p": "remotion render src/index.ts Rally out/rally-1080p.mp4 --codec=h264 --video-bitrate=12M --x264-preset=slow --pixel-format=yuv420p --audio-codec=aac --audio-bitrate=320k",
+    "render:4k": "remotion render src/index.ts Rally out/rally-4k.mp4 --scale=2 --codec=h264 --video-bitrate=40M --x264-preset=slow --pixel-format=yuv420p --audio-codec=aac --audio-bitrate=320k",
     "stills": "node scripts/prepare.ts --allow-placeholders && node scripts/stills.ts",
     "test": "node --test test/*.test.ts",
     "typecheck": "tsc --noEmit",
