@@ -6,7 +6,7 @@ import { C, manifest, MONO } from '../theme.ts';
 import { clamp, DUR, enter, pop, reveal, tiltIn, useFrame } from '../motion.ts';
 import { Lock, Photo } from '../ui.tsx';
 import { SCENES } from '../timeline.ts';
-import { Cursor, Glass, Keycap, Odometer, Shimmer } from './glass.tsx';
+import { Cursor, Glass, Keycap, Odometer, Shimmer, Words } from './glass.tsx';
 
 const cash = (value: number) => money(value, manifest.run.currency);
 const start = manifest.events.find(row => row.kind === 'start')!;
@@ -21,10 +21,11 @@ const Label = ({ children }: { children: React.ReactNode }) => <div style={{ fon
 const Button = ({ children, pressed, tone = 'ink' }: { children: React.ReactNode; pressed?: boolean; tone?: 'ink' | 'accent' }) =>
   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '16px 30px', borderRadius: 16, fontSize: 30, fontWeight: 700, color: tone === 'ink' ? C.onLight : '#fff', background: tone === 'ink' ? 'rgba(255,255,255,.92)' : C.accent, transform: `scale(${pressed ? 0.96 : 1})`, boxShadow: '0 10px 30px rgba(0,0,0,.35)' }}>{children}</span>;
 
-// One product row: the public price, then the lowest price beside it, which is never shown: a Private pill springs on.
+// One product row: the public price, then the lowest price beside it, which is never shown: a Private pill springs on
+// as "private" is said, and what rivals see is written out on "no rival ever sees".
 export function PricePanel({ at }: PanelProps) {
   const frame = useFrame(), id = 'sae-cica-cream';
-  const panel = enter(frame, 30, 0, DUR.camera), pill = pop(frame, 30, at(0) + 66);
+  const panel = enter(frame, 30, 0, DUR.camera), pill = pop(frame, 30, at(0) + 90), rivals = at(0) + 140;
   return <Centre width={1180} top={390}><div style={tiltIn(panel)}><Glass style={{ padding: '34px 44px' }}>
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 220px 260px', alignItems: 'end', gap: 24, paddingBottom: 18, borderBottom: '1px solid rgba(255,255,255,.1)' }}>
       <Label>Product</Label><Label>Listed price</Label><Label>Lowest price</Label>
@@ -32,8 +33,9 @@ export function PricePanel({ at }: PanelProps) {
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 220px 260px', alignItems: 'center', gap: 24, paddingTop: 22 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}><Photo id={id} size={96} /><span style={{ fontSize: 40, fontWeight: 700 }}>{manifest.names[id]}</span></div>
       <span style={{ fontFamily: MONO, fontSize: 44 }}>{cash(listed[id].haneul)}</span>
-      {frame >= at(0) + 66 && <span style={{ justifySelf: 'start', display: 'inline-flex', alignItems: 'center', gap: 12, padding: '12px 24px', borderRadius: 999, border: `2px solid ${C.accent}`, color: C.accentHover, fontSize: 32, fontWeight: 700, transform: `scale(${0.6 + 0.4 * Math.min(1.08, pill)})`, opacity: Math.min(1, pill * 1.5) }}><Lock size={30} color={C.accentHover} />Private</span>}
+      {frame >= at(0) + 90 && <span style={{ justifySelf: 'start', display: 'inline-flex', alignItems: 'center', gap: 12, padding: '12px 24px', borderRadius: 999, border: `2px solid ${C.accent}`, color: C.accentHover, fontSize: 32, fontWeight: 700, transform: `scale(${0.6 + 0.4 * Math.min(1.08, pill)})`, opacity: Math.min(1, pill * 1.5) }}><Lock size={30} color={C.accentHover} />Private</span>}
     </div>
+    {frame >= rivals && <Words text={`Rival shops see only the listed ${cash(listed[id].haneul)}.`} from={rivals} size={30} weight={600} color={C.muted} style={{ marginTop: 26 }} />}
   </Glass></div></Centre>;
 }
 

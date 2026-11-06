@@ -109,8 +109,8 @@ export const SCENES: Scene[] = [
   {
     id: 'payout', criterion: 'PayPal, impact', act: 3,
     shots: [{ panel: 'order', cue: 0, role: 'shop' }],
-    // The real stepper reaching Paid, right after the payout lands; it runs to the act's dissolve.
-    proofs: [{ clip: '08-handoff-payout', cue: 1, delay: 1.65, in: 6.7, out: 9.2, crop: { x: 598, y: 122, width: 802, height: 410 } }],
+    // The real stepper turning from Payout sent to Paid, right after the payout lands; it runs to the act's dissolve.
+    proofs: [{ clip: '08-handoff-payout', cue: 1, delay: 1.65, in: 5, out: 7.5, crop: { x: 598, y: 122, width: 802, height: 410 } }],
     cues: [
       { text: '{handoff_line}', step: 4 },
       { text: 'and PayPal pays her {payout} right after.', say: 'and PayPal pays her {payout_say} right after.', step: 5 },
