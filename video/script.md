@@ -2,63 +2,54 @@
 
 Generated from src/timeline.ts and the measured voice: edit cues there. Times are from this run.
 
-## korea (0.0s to 9.0s, impact)
+## cold (0.0s to 6.3s, presentation, impact)
 
-- 00:00 Korean skincare sold a record $11.4 billion abroad in 2025, and small shops are a fast-growing share of it.
+- 00:00 You just saved $11.01 on Korean skincare.
+- 00:03 You didn't haggle. Three shops' AI agents did.
 
-## split (9.0s to 27.4s, impact)
+## split (6.3s to 15.9s, impact)
 
-- 00:09 Say you want four products. The one shop that stocks all four only ships inside Korea.
-- 00:14 So you split what you can across other shops: more checkouts, more parcels, and since August 2025, US duties on each parcel.
-- 00:23 And when two shops sell the same cleanser at different prices, you compare.
+- 00:06 Normally? The shop with all four only ships in Korea.
+- 00:09 So you split it: more checkouts, more shipping, and US duties on every parcel.
+- 00:13 Rally makes the shops compete for it instead.
 
-## steps (27.4s to 65.3s, innovation, PayPal)
+## haneul (15.9s to 22.6s, innovation, design)
 
-- 00:27 Rally turns that into one order, in five steps.
-- 00:30 One: you fill one bag and see one price, with shipping, duties, tax and Rally's small fee already in it.
-- 00:36 Two: you approve that price with PayPal. PayPal holds it, so it's the most you can be charged.
-- 00:42 Three: each shop's AI agent bids to win your bag, inside limits its owner set. Bids can only bring the price down.
-- 00:50 Four: the winning shops drop their items at Rally's hub in Seoul, a local delivery they already make.
-- 00:56 Rally ships one box to you, duties paid.
-- 00:59 Five: PayPal charges the final price, releases the rest, and pays each shop once it hands off.
+- 00:16 In Seoul, Haneul's shop sets a lowest price no one else can see.
+- 00:19 Her AI agent gets one goal: win two-item bundles.
 
-## haneul (65.3s to 77.2s, innovation, design)
+## shopper (22.6s to 30.8s, design, PayPal)
 
-- 01:05 First, a shop owner. Haneul Beauty sets a private lowest price that no rival ever sees.
-- 01:11 Then a goal for her agent: win two-item bundles. Nothing changes until she applies it.
+- 00:22 Then you fill one bag and see one price: $104.31, shipping and duties in.
+- 00:27 You approve it with PayPal. That's the most you can pay.
 
-## shopper (77.2s to 87.7s, design, PayPal)
+## bidding (30.8s to 49.2s, innovation, tech)
 
-- 01:17 A shopper in California fills a bag: four products, one price of $104.31, everything included.
-- 01:25 They approve it in PayPal. That's the ceiling.
+- 00:30 Now the agents fight for your bag. Three rounds, and prices only go down.
+- 00:35 Dalbit's agent asks for something its shop doesn't allow. Rally's checks throw it out.
+- 00:39 Haneul's bid does what she asked: a two-item bundle.
+- 00:42 Dalbit's toner was cheaper alone, but Haneul's bundle makes the whole box cheaper. You pay $93.30.
 
-## bidding (87.7s to 109.7s, innovation, tech)
+## result (49.2s to 56.2s, PayPal, impact)
 
-- 01:27 The agents bid over three rounds. Each item goes to whichever shop makes the whole box cheapest.
-- 01:33 Dalbit's agent asks for something its shop doesn't allow. Rally's checks throw it out.
-- 01:38 Haneul's bid does what she asked: a two-item bundle.
-- 01:42 Dalbit's toner was cheaper alone, but Haneul's bundle made the whole box cheaper. Final price: $93.30.
+- 00:49 PayPal charges that and hands back the other $11.01.
+- 00:53 One box from two shops, duties already paid.
 
-## result (109.7s to 117.7s, PayPal, impact)
+## payout (56.2s to 62.5s, PayPal, impact)
 
-- 01:49 PayPal charges that and releases the other $11.01.
-- 01:54 One box from two shops, duties already paid.
+- 00:56 Haneul drops her three items at the Seoul hub,
+- 00:58 and PayPal pays her $39.04 on the spot.
 
-## payout (117.7s to 124.7s, PayPal, impact)
+## why (62.5s to 69.6s, impact, PayPal)
 
-- 01:57 Haneul hands her three items to the Seoul hub,
-- 02:00 and PayPal pays her $39.04 right after.
+- 01:02 You pay less, and get one box.
+- 01:04 Small shops sell abroad without shipping abroad.
+- 01:06 And AI agents get a spending limit they can't break.
 
-## why (124.7s to 138.6s, impact, PayPal)
+## where (69.6s to 73.8s, impact)
 
-- 02:04 Shoppers get one box and a price that can only go down.
-- 02:08 Small shops sell abroad with no export logistics, and are paid once they hand off.
-- 02:13 And PayPal's hold gives AI agents a hard spending limit they can't cross.
+- 01:09 Seoul is first. The same setup can work anywhere small shops cluster.
 
-## where (138.6s to 143.7s, impact)
+## close (73.8s to 77.1s, tech, presentation)
 
-- 02:18 Seoul is the first hub. The same pattern can work wherever small shops cluster.
-
-## close (143.7s to 147.6s, tech, presentation)
-
-- 02:24 Rally. Agents bargain. PayPal keeps it honest.
+- 01:14 Rally. Agents bargain. PayPal keeps it honest.
