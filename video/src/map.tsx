@@ -35,6 +35,8 @@ const LAND: [number, number][][] = [
   [[-75, -66], [166, 171]],
   [[-74, -64]],
 ];
+// Warm grey at about 3:1 on the ground colour, so the land reads clearly at a glance.
+const LAND_DOT = '#968C82';
 const TOP = 80, STEP = 2.5, LON0 = -10, LON1 = 340;
 // The map fills 1920 wide: 350° of longitude, the same scale on both axes.
 export const PX = 1920 / (LON1 - LON0), MAP_TOP = 40;
@@ -56,7 +58,7 @@ const DOTS = (() => {
 export const CITIES = {
   seoul: { lat: 37.5, lon: 127, name: 'Seoul', side: 'left' },
   tokyo: { lat: 35.7, lon: 139.7, name: 'Tokyo', side: 'right' },
-  milan: { lat: 45.5, lon: 9.2, name: 'Milan' },
+  milan: { lat: 45.5, lon: 9.2, name: 'Milan', side: 'right' },
   mexico: { lat: 19.4, lon: -99.1, name: 'Mexico City' },
   lagos: { lat: 6.5, lon: 3.4, name: 'Lagos' },
   california: { lat: 36.8, lon: -119.4, name: 'California' },
@@ -84,7 +86,7 @@ export const lerpView = (a: MapView, b: MapView, p: number): MapView => ({ x: a.
 // Dots breathe very slightly, so a held map is never a still frame.
 export function Land({ opacity = 1 }: { opacity?: number }) {
   const frame = useCurrentFrame();
-  return <g opacity={opacity}>{DOTS.map((dot, i) => <circle key={i} cx={dot.x} cy={dot.y} r={2.1 + 0.35 * Math.sin(frame / 22 + dot.x / 90 + dot.y / 70)} fill="#CFC7BC" />)}</g>;
+  return <g opacity={opacity}>{DOTS.map((dot, i) => <circle key={i} cx={dot.x} cy={dot.y} r={2.6 + 0.35 * Math.sin(frame / 22 + dot.x / 90 + dot.y / 70)} fill={LAND_DOT} />)}</g>;
 }
 
 export function Pin({ city, from, color = C.accent, label, sub, pulse = false, scale = 1 }: { city: City; from: number; color?: string; label?: string; sub?: string; pulse?: boolean; scale?: number }) {
@@ -96,12 +98,12 @@ export function Pin({ city, from, color = C.accent, label, sub, pulse = false, s
   return <g transform={`translate(${p.x} ${p.y}) scale(${scale})`}>
     {pulse && <circle r={9 + 22 * ring} fill="none" stroke={color} strokeWidth={2} opacity={1 - ring} />}
     <circle r={9 * Math.min(1.2, shown)} fill={color} stroke={C.surface} strokeWidth={3} />
-    {label && <text x={side ? side * 18 : 0} y={side ? -2 : -22} textAnchor={side ? (side > 0 ? 'start' : 'end') : 'middle'} fontSize={22} fontWeight={700} fill={C.ink} opacity={Math.min(1, shown)}>{label}</text>}
-    {sub && <text x={side ? side * 18 : 0} y={side ? 22 : 34} textAnchor={side ? (side > 0 ? 'start' : 'end') : 'middle'} fontSize={17} fontWeight={600} fill={color} opacity={Math.min(1, shown)}>{sub}</text>}
+    {label && <text x={side ? side * 20 : 0} y={side ? 0 : -24} textAnchor={side ? (side > 0 ? 'start' : 'end') : 'middle'} fontSize={27} fontWeight={800} fill={C.ink} stroke={C.ground} strokeWidth={6} paintOrder="stroke" opacity={Math.min(1, shown)}>{label}</text>}
+    {sub && <text x={side ? side * 20 : 0} y={side ? 26 : 40} textAnchor={side ? (side > 0 ? 'start' : 'end') : 'middle'} fontSize={21} fontWeight={700} fill={color === C.muted ? C.ink : color} stroke={C.ground} strokeWidth={5} paintOrder="stroke" opacity={Math.min(1, shown)}>{sub}</text>}
   </g>;
 }
 
-export function Arc({ from, at: start, dashed = true, color = C.ink, width = 2.5, fade = 1 }: { from: City; at: number; dashed?: boolean; color?: string; width?: number; fade?: number }) {
+export function Arc({ from, at: start, dashed = true, color = C.ink, width = 3, fade = 1 }: { from: City; at: number; dashed?: boolean; color?: string; width?: number; fade?: number }) {
   const frame = useCurrentFrame();
   const { d } = arc(from);
   const p = ease(interpolate(frame, [start, start + DUR.camera], [0, 1], clamp));

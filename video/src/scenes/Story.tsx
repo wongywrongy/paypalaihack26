@@ -27,7 +27,7 @@ export function Shift({ laid }: { laid: Laid }) {
   const quiet = interpolate(frame, [c1, c1 + DUR.standard], [1, 0.32], clamp);
   const v = { ...WORLD, zoom: 0.94 + 0.06 * (frame / (laid.duration * fps)) };
   return <>
-    <Map v={v} dim={0.35} />
+    <Map v={v} dim={0.6} />
     <div style={{ position: 'absolute', left: 170, top: 250, display: 'flex', flexDirection: 'column', gap: 18 }}>
       <div style={{ opacity: quiet }}><Words text="Agents will shop for us." from={c0} size={104} /></div>
       <div style={{ opacity: quiet }}><Words text="Agents will sell for us." from={c0 + Math.round((c0end - c0) * 0.55)} size={104} /></div>
@@ -42,7 +42,7 @@ export function Problem({ laid }: { laid: Laid }) {
   const c0 = cue(laid, 0) * fps, c1 = cue(laid, 1) * fps;
   const grow = enter(frame, fps, 0, DUR.scene * 2);
   const v = { ...WORLD, zoom: 0.94 + 0.06 * grow + 0.02 * (frame / (laid.duration * fps)) };
-  return <Map v={v} dim={0.35 + 0.65 * grow}>
+  return <Map v={v} dim={0.6 + 0.4 * grow}>
     <Pin city="california" from={c0} color={C.ink} label="Shopper" />
     {SHOPS.map((city, i) => <Pin key={city} city={city} from={c0 + 10 + i * 5} label={CITIES[city].name} />)}
     {SHOPS.map((city, i) => <Arc key={city} from={city} at={c1 + i * 6} />)}
@@ -54,10 +54,10 @@ function Fee({ city, from }: { city: City; from: number }) {
   const frame = useCurrentFrame(), { fps } = useVideoConfig();
   const p = enter(frame, fps, from, DUR.standard);
   if (frame < from) return null;
-  const { x, y } = arcMid(city), text = FEES[city], w = text.length * 10.5 + 28;
+  const { x, y } = arcMid(city), text = FEES[city], w = text.length * 12.5 + 32;
   return <g transform={`translate(${x} ${y}) scale(${0.85 + 0.15 * p})`} opacity={p}>
-    <rect x={-w / 2} y={-18} width={w} height={36} rx={18} fill={C.surface} stroke={C.line} />
-    <text x={0} y={7} textAnchor="middle" fontSize={19} fontWeight={600} fill={C.accentHover}>{text}</text>
+    <rect x={-w / 2} y={-21} width={w} height={42} rx={21} fill={C.surface} stroke={C.accent} strokeWidth={2} />
+    <text x={0} y={8} textAnchor="middle" fontSize={23} fontWeight={700} fill={C.accentHover}>{text}</text>
   </g>;
 }
 // Where along its arc each tag sits, so tags on near-identical arcs (Seoul, Tokyo) do not collide.
@@ -130,7 +130,7 @@ export function Where({ laid }: { laid: Laid }) {
   const v = { ...v0, zoom: v0.zoom * (1 + 0.06 * (frame / (laid.duration * fps))) };
   const s = 1 / v.zoom, end = enter(frame, fps, c2, DUR.scene);
   return <>
-    <Map v={v} dim={1 - 0.55 * end}>
+    <Map v={v} dim={1 - 0.5 * end}>
       <Arc from="seoul" at={c1} dashed={false} color={C.accent} width={4 * s} />
       <Parcel from="seoul" at={c1 + 10} frames={60} />
       <Pin city="california" from={0} color={C.ink} label="Shopper" scale={s} />
@@ -138,7 +138,7 @@ export function Where({ laid }: { laid: Laid }) {
       {NEXT.map((row, i) => <Pin key={row.city} city={row.city} from={Math.round(1.2 * fps) + i * 6} color={C.muted} label={CITIES[row.city].name} sub={`Next · ${row.what}`} pulse scale={s} />)}
     </Map>
     {frame >= c2 && <div style={{ position: 'absolute', inset: '0 0 200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', ...rise(end, 24) }}>
-      <div style={{ background: 'rgba(247,244,240,.92)', borderRadius: 32, padding: '48px 80px', display: 'flex', flexDirection: 'column', alignItems: 'center', transform: `scale(${1 + 0.012 * Math.max(0, frame - c2) / fps})` }}>
+      <div style={{ background: C.ground, border: `1px solid ${C.line}`, boxShadow: '0 24px 80px rgba(23,22,26,.12)', borderRadius: 32, padding: '56px 96px', display: 'flex', flexDirection: 'column', alignItems: 'center', transform: `scale(${1 + 0.012 * Math.max(0, frame - c2) / fps})` }}>
         <div style={{ fontSize: 170, fontWeight: 800, letterSpacing: '-.045em', lineHeight: 1 }}>Rally.</div>
         <div style={{ fontSize: 56, fontWeight: 700, letterSpacing: '-.02em', marginTop: 24 }}>Agents bargain. <span style={{ color: C.accent }}>PayPal keeps it honest.</span></div>
         <div style={{ fontFamily: MONO, fontSize: 34, marginTop: 40 }}>github.com/wongywrongy/paypalaihack26</div>
