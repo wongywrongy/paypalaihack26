@@ -61,7 +61,7 @@ export function prepare(root: string, { allowPlaceholders = false, probe = ffpro
     copyFileSync(photo, join(generated, 'products', `${id}.png`));
   }
   // Written by npm run voice: one WAV per line and its spoken length. Used only if it was made for these lines.
-  const vars = buildFacts(run, order, receipt);
+  const vars = buildFacts(run, order, receipt, names);
   const timing = join(run_dir, 'voiceover.json');
   const saved: { lines: { text: string; file: string; spoken: number }[] } | null = existsSync(timing) ? readJson(timing, 'video/run/voiceover.json') : null;
   const fresh = !!saved?.lines && JSON.stringify(saved.lines.map(line => line.text)) === JSON.stringify(spokenText(vars)) && saved.lines.every(line => existsSync(join(run_dir, 'voice', line.file)));

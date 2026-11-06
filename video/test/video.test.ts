@@ -6,8 +6,8 @@ import { test } from 'node:test';
 import { prepare } from '../scripts/prepare.ts';
 import { clipTime, MAX_ZOOM, peakSpeed, view } from '../src/motion.ts';
 import { anchored, buildBoard, roundAt, sceneAt, valueAt } from '../src/auction.ts';
-import { buildFacts, crossCheck, finalCheck, finalPrices, money, OrderSchema, parse, ReceiptSchema, receiptCheck, RunSchema } from '../src/schema.ts';
-import { CLIPS, cueAt, GAP, layout, MAX_SECONDS, MAX_SILENCE, SCENES, spokenText, toScript, toSrt, type ClipName } from '../src/timeline.ts';
+import { buildFacts, crossCheck, finalCheck, finalPrices, money, OrderSchema, parse, ReceiptSchema, receiptCheck, RunSchema, spokenMoney } from '../src/schema.ts';
+import { CLIPS, cueAt, GAP, layout, MAX_SECONDS, MAX_SILENCE, railAt, SCENES, spokenText, STEPS, toScript, toSrt, type ClipName } from '../src/timeline.ts';
 
 // Test data only: nothing here reaches a build.
 const events = () => [
@@ -45,9 +45,9 @@ const built = (() => { try { return JSON.parse(readFileSync('src/generated/manif
 const facts = () => factsOf();
 const plans = () => [layout(facts(), null), ...(built ? [layout(built.vars, built.spoken)] : [])];
 
-test(`the video stays within ${MAX_SECONDS} s, and the built cut within 2:05 to 2:20`, () => {
+test(`the video stays within ${MAX_SECONDS} s, and the built cut within 2:20 to 2:30`, () => {
   for (const plan of plans()) assert.ok(plan.total <= MAX_SECONDS, `${plan.total} s`);
-  if (built?.spoken) { const total = layout(built.vars, built.spoken).total; assert.ok(total >= 125 && total <= 140, `${total} s`); }
+  if (built?.spoken) { const total = layout(built.vars, built.spoken).total; assert.ok(total >= 140 && total <= 150, `${total} s`); }
 });
 
 test(`no silence over ${MAX_SILENCE} s except the planned pause before the close`, () => {
@@ -84,7 +84,8 @@ test('captions fit two lines and never overlap', () => {
 
 test('every shot starts on a line, keeps its clip span, and ramps no faster than 3×', () => {
   for (const plan of plans()) for (const scene of plan.scenes) (scene.scene.shots || []).forEach((shot, i, shots) => {
-    const from = i === 0 ? 0 : cueAt(scene, shot.cue), to = i + 1 < shots.length ? cueAt(scene, shots[i + 1].cue) : scene.duration;
+    const at = (n: number) => cueAt(scene, shots[n].cue) + (shots[n].delay ?? 0);
+    const from = i === 0 ? 0 : at(i), to = i + 1 < shots.length ? at(i + 1) : scene.duration;
     assert.ok(to > from, `${scene.id} shot ${i} has no time`);
     assert.ok(shot.out <= ((built?.clips?.[shot.clip]?.frames ?? Infinity) / 30) + 0.05, `${shot.clip} out past its end`);
     assert.ok(peakSpeed(to - from, shot.in, shot.out) <= 3, `${scene.id} ${shot.clip} ramps to ${peakSpeed(to - from, shot.in, shot.out).toFixed(2)}×`);
@@ -113,8 +114,9 @@ test('camera: never zooms past 1.8 or shows past the clip edge', () => {
 
 test('no banned word in any on-screen source', () => {
   const words = /\b(demo|example|simulated|preview|fixture)\b/i;
-  for (const file of ['src/timeline.ts', 'src/scenes/Story.tsx', 'src/scenes/Bidding.tsx', 'src/scenes/Architecture.tsx', 'src/scenes/ClipScene.tsx']) {
-    const strings = readFileSync(file, 'utf8').split('\n').filter(line => !line.trim().startsWith('//'));
+  // The one exception is the demo's own disclosure lower-third, which says what is a test and what is fictional.
+  for (const file of ['src/timeline.ts', 'src/scenes/Story.tsx', 'src/scenes/Bidding.tsx', 'src/scenes/Rail.tsx', 'src/scenes/ClipScene.tsx', 'src/Video.tsx']) {
+    const strings = readFileSync(file, 'utf8').split('\n').filter(line => !line.trim().startsWith('//') && !line.includes('Live demo · PayPal sandbox · fictional shops and hub'));
     assert.ok(!words.test(strings.join('\n')), file);
   }
 });
@@ -204,9 +206,8 @@ test('captions adapt when Haneul is outbid', () => {
   const [run2, order2] = parsed(r, o);
   crossCheck(run2, order2);
   const facts = factsOf(r, o, { ...receipt(), lines: [{ id: 'a', shop: 'bada', unit: 1300 }, { id: 'b', shop: 'dalbit', unit: 1500 }] });
-  assert.match(facts.shop_result, /Haneul Beauty was outbid/);
-  assert.match(facts.shop_result, /Dalbit Official won 1 of 2/);
-  assert.match(facts.receipt_line, /One box from 2 shops/);
+  assert.match(facts.handoff_line, /^Haneul was outbid\. Dalbit Official hands its items/);
+  assert.match(facts.box_line, /One box from two shops/);
   assert.equal(facts.payout_shop, 'Dalbit Official');
 });
 
@@ -215,9 +216,9 @@ test('captions stay true when no bid beats checkout', () => {
   const o = order();
   o.events[3].total = 3000; o.events[4].total = 3000;
   const facts = factsOf(r, o, { ...receipt(), breakdown: { ...receipt().breakdown, shipping: 200, total: 3000 } });
-  assert.match(facts.result_line, /stands/);
+  assert.match(facts.why_line, /^The cheapest whole box wins\. Final price: \$30\.00\.$/);
   assert.match(facts.capture_line, /exactly the hold/);
-  assert.ok(!facts.receipt_line.includes('released'));
+  assert.ok(!facts.capture_line.includes('releases'));
 });
 
 test('prepare: missing inputs fail with a clear message and no fallback', () => {
@@ -268,7 +269,7 @@ test('schema: rejected events and agent counts parse, and the counts must match'
   assert.throws(() => factsOf(run(), o), /1 rejected events but the award counts 0/);
   (o.events.find(row => row.kind === 'award') as any).agents.rejected = 1;
   const facts = factsOf(run(), o);
-  assert.match(facts.reject_line, /^Haneul's agent went below what its shop can accept, so Rally's checks threw it out and sent the shop's best valid bid\.$/);
+  assert.equal(facts.reject_line, "Haneul's agent goes below what its shop can accept. Rally's checks throw it out.");
   assert.equal(facts.agent_line, "Shop agents wrote 1 of 1 bid · Rally's checks rejected 1.");
   assert.equal(factsOf().reject_line, '', 'no rejection, no line');
   const bad = order();
@@ -292,7 +293,7 @@ test('narration: plain words for a judge outside tech', () => {
     assert.ok(!salesy.test(cue.text), `sounds like an ad: ${cue.text}`);
     assert.ok(!/\b(I|I'm|my|me)\b/.test(cue.text), `third person only: ${cue.text}`);
   }
-  for (const file of ['src/timeline.ts', 'script.md', 'src/scenes/Architecture.tsx']) assert.ok(!/candidate indexes|code-built options/i.test(readFileSync(file, 'utf8')), file);
+  for (const file of ['src/timeline.ts', 'script.md', 'src/scenes/Story.tsx']) assert.ok(!/candidate indexes|code-built options/i.test(readFileSync(file, 'utf8')), file);
   const [r, o] = parsed();
   for (const text of Object.values(factsOf())) assert.ok(!jargon.test(text), `jargon in a fact: ${text}`);
 });
@@ -305,13 +306,12 @@ test('the rejection, agent and Haneul lines come from the run, in plain words', 
   (o.events.find(row => row.kind === 'bid') as any).perks = { a: ['bundle', 'freeship'] };
   (o.events.find(row => row.kind === 'bid') as any).bundle = { items: ['a', 'b'], price: 2800 };
   const f = factsOf(run(), o);
-  assert.equal(f.reject_line, "Bada's agent went below what its shop can accept, so Rally's checks threw it out and sent the shop's best valid bid.");
-  assert.equal(f.agent_bid_line, "In round 1, Haneul's agent writes its own bid, and it passes.");
-  assert.equal(f.haneul_line, "Haneul's agent does what she asked: a two-item bundle with free shipping in Korea.");
+  assert.equal(f.reject_line, "Bada's agent goes below what its shop can accept. Rally's checks throw it out.");
+  assert.equal(f.haneul_line, "Haneul's agent does what she asked: a two-item bundle.");
   assert.equal(f.goal_quote, 'Win two-item bundles.');
   // A beat the run did not produce drops its line rather than saying something false.
   const plain = layout(facts(), null);
-  assert.ok(!plain.lines.some(line => /threw it out/.test(line.text)));
+  assert.ok(!plain.lines.some(line => /throw it out/.test(line.text)));
   assert.equal(spokenText(facts()).length, plain.lines.length);
 });
 
@@ -338,10 +338,10 @@ test('arithmetic: the winning prices plus the rest of the bill equal the charged
 });
 
 test('the cheaper-item line appears only when a winner is not the lowest single price in its row', () => {
-  assert.equal(factsOf().why_line, '', "every fixture winner is its row's lowest");
+  assert.equal(factsOf().why_shown, '', "every fixture winner is its row's lowest");
   const o = order();
   (o.events[1] as any).items = { a: 1300, 'b:older': 1400 };
-  assert.match(factsOf(run(), o).why_line, /cheapest whole box/);
+  assert.equal(factsOf(run(), o).why_shown, 'yes');
   assert.equal(finalPrices(parse(OrderSchema, o, 'order.json')).b.haneul, 1400);
 });
 
@@ -351,4 +351,25 @@ test('the agent share shows only when agents wrote at least half the bids', () =
   assert.equal(factsOf(run(), o).agent_line, '');
   (o.events.find(row => row.kind === 'award') as any).agents = { written: 2, options: 1, rejected: 0, code: 1, changed: 1 };
   assert.equal(factsOf(run(), o).agent_line, 'Shop agents wrote 2 of 4 bids.');
+});
+
+test('rail: every demo moment has exactly one step, the one its line is about', () => {
+  assert.deepEqual([...STEPS], ['One bag', 'PayPal holds', 'Agents bid', 'Seoul hub', "Everyone's paid"]);
+  for (const plan of plans()) {
+    const demo = plan.scenes.filter(scene => scene.scene.act === 3);
+    for (const line of plan.lines.filter(row => demo.some(scene => scene.id === row.scene))) {
+      assert.ok(line.step, `no step for: ${line.text}`);
+      for (const t of [line.start, (line.start + line.end) / 2, line.end - 0.01]) assert.equal(railAt(plan, t), line.step, line.text);
+    }
+    for (const scene of demo) for (let t = scene.start; t < scene.start + scene.duration; t += 0.25) assert.ok(railAt(plan, t) !== null, `no step at ${t}`);
+    for (const scene of plan.scenes.filter(row => row.scene.act !== 3)) assert.equal(railAt(plan, scene.start + scene.duration / 2), null, scene.id);
+  }
+});
+
+test('spoken amounts are generated from the numbers', () => {
+  assert.equal(spokenMoney(9330, 'USD'), 'ninety-three dollars thirty');
+  assert.equal(spokenMoney(10431, 'USD'), 'one hundred four dollars thirty-one');
+  assert.equal(spokenMoney(1101, 'USD'), 'eleven dollars and one cent');
+  assert.equal(spokenMoney(3900, 'USD'), 'thirty-nine dollars');
+  if (built) for (const line of layout(built.vars, built.spoken).lines) assert.ok(!/\$\d/.test(line.say), `the voice would read digits: ${line.say}`);
 });

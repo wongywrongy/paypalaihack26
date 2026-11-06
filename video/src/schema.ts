@@ -76,6 +76,23 @@ export function parse<T>(schema: z.ZodType<T>, value: unknown, file: string): T 
 }
 
 const SYMBOLS = { USD: '$', CAD: 'C$', GBP: '£', EUR: '€', AUD: 'A$' };
+const UNITS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+// Whole numbers below a million in words, for the voice.
+export function words(n: number): string {
+  if (n < 20) return UNITS[n];
+  if (n < 100) return TENS[Math.floor(n / 10)] + (n % 10 ? `-${UNITS[n % 10]}` : '');
+  if (n < 1000) return `${UNITS[Math.floor(n / 100)]} hundred${n % 100 ? ` ${words(n % 100)}` : ''}`;
+  return `${words(Math.floor(n / 1000))} thousand${n % 1000 ? ` ${words(n % 1000)}` : ''}`;
+}
+// An amount as Kokoro should say it: "ninety-three dollars thirty", "eleven dollars and one cent".
+const NAMES = { USD: ['dollar', 'dollars'], CAD: ['Canadian dollar', 'Canadian dollars'], AUD: ['Australian dollar', 'Australian dollars'], GBP: ['pound', 'pounds'], EUR: ['euro', 'euros'] } as const;
+export function spokenMoney(value: number, code: keyof typeof SYMBOLS) {
+  const major = Math.floor(value / 100), minor = value % 100, unit = NAMES[code][major === 1 ? 0 : 1];
+  const whole = `${words(major)} ${unit}`;
+  if (!minor) return whole;
+  return minor < 10 ? `${whole} and ${words(minor)} ${minor === 1 ? 'cent' : 'cents'}` : `${whole} ${words(minor)}`;
+}
 export const money = (value: number, code: keyof typeof SYMBOLS) => SYMBOLS[code] + (value / 100).toFixed(2);
 
 // run.json is typed by hand, so everything that can be is checked against the saved order.
@@ -135,18 +152,19 @@ export function finalCheck(run: Run, order: Order) {
 }
 
 // Plain words for a rejection, from backend REASONS.
-const REASONS = { limit: 'went below what its shop can accept', raise: 'raised a price its shop had already offered', rules: 'broke a rule its owner set', invalid: "asked for something its shop doesn't allow" };
+const REASONS = { limit: 'goes below what its shop can accept', raise: 'raises a price its shop already offered', rules: 'breaks a rule its owner set', invalid: "asks for something its shop doesn't allow" };
 type Bid = Extract<Order['events'][number], { kind: 'bid' }>;
 const firstSentence = (text: string) => text.match(/^.*?[.!?](?=\s|$)/)?.[0] ?? text;
 
-export function buildFacts(run: Run, order: Order, receipt: Receipt) {
-  const cash = (value: number) => money(value, run.currency);
+export function buildFacts(run: Run, order: Order, receipt: Receipt, names: Record<string, string> = {}) {
+  const cash = (value: number) => money(value, run.currency), say = (value: number) => spokenMoney(value, run.currency);
+  // "Low-pH Gel Cleanser" is "cleanser" in a sentence.
+  const kind = (id: string) => (names[id] ?? id).split(/[\s-]+/).at(-1)!.toLowerCase();
   const start = order.events.find(row => row.kind === 'start');
   const award = order.events.find(row => row.kind === 'award');
   if (!start || start.kind !== 'start' || !award || award.kind !== 'award') throw new Error('order.json needs a start and an award event.');
   const won = (id: string) => Object.values(run.winners).filter(row => row.shop === id).length;
   const payoutShop = SHOP_NAMES[run.payout_shop];
-  const count = Object.keys(run.winners).length;
   const rounds = Math.max(0, ...order.events.map(row => row.kind === 'round' ? row.round : 0));
   const boxShops = new Set(Object.values(run.winners).map(row => row.shop)).size;
   const released = run.held_minor - run.charged_minor;
@@ -163,35 +181,49 @@ export function buildFacts(run: Run, order: Order, receipt: Receipt) {
   const terms = ['a two-item bundle', has('freeship') && 'free shipping in Korea'].filter(Boolean).join(' with ');
   // A winner that is not the lowest single price in its row: the whole box, not the item, decides.
   const prices = finalPrices(order);
-  const undercut = Object.entries(run.winners).some(([id, row]) => Math.min(...Object.values(prices[id] ?? {})) < row.unit);
+  const undercut = Object.entries(run.winners).map(([id, row]) => {
+    const cheaper = Object.entries(prices[id] ?? {}).filter(([shop, unit]) => shop !== row.shop && unit < row.unit).sort((a, b) => a[1] - b[1])[0];
+    return cheaper && { id, winner: row.shop, cheaper: cheaper[0] as keyof typeof SHORT_NAMES };
+  }).find(Boolean);
+  // The winner's own last bid says whether that item went as part of a bundle.
+  const bundled = undercut && [...allBids].reverse().find(row => row.shop === undercut.winner)?.perks[undercut.id]?.includes('bundle');
+  const listed = start.listed as Record<string, Record<string, number>>;
+  const compare = start.items.find(id => new Set(Object.values(listed[id] ?? {})).size > 1) ?? start.items[0];
+  const sellers = new Set(Object.values(start.shops).flat()).size;
+  const why = undercut
+    ? bundled ? `${SHORT_NAMES[undercut.cheaper]}'s ${kind(undercut.id)} was cheaper alone, but ${SHORT_NAMES[undercut.winner]}'s bundle made the whole box cheaper.` : 'Rally picks the cheapest whole box, not the cheapest single item.'
+    : 'The cheapest whole box wins.';
   const extras = receipt.breakdown.total - receipt.breakdown.goods;
-  const box = `One box from ${boxShops} ${boxShops === 1 ? 'shop' : 'shops'}, duties included.`;
+  const haneulWon = won('haneul');
   return {
     held: cash(run.held_minor),
+    held_say: say(run.held_minor),
     charged: cash(run.charged_minor),
     released: cash(released),
     payout: money(run.payout_usd_cents, 'USD'),
+    payout_say: spokenMoney(run.payout_usd_cents, 'USD'),
     payout_shop: payoutShop,
     rounds: String(rounds),
+    rounds_words: words(rounds),
+    item_count_words: words(start.items.length),
+    shop_count_words: words(sellers),
+    compare_item: kind(compare),
     box_shops: String(boxShops),
     goal_quote: firstSentence(run.goal),
-    reject_line: reject ? `${SHORT_NAMES[reject.shop]}'s agent ${REASONS[reject.reason]}, so Rally's checks threw it out and sent the shop's best valid bid.` : '',
-    agent_bid_line: agentBid ? `In round ${agentBid.round}, ${SHORT_NAMES[agentBid.shop]}'s agent writes its own bid, and it passes.` : '',
-    haneul_line: asked ? `Haneul's ${asked.authored === 'code' ? 'bid follows her goal' : 'agent does what she asked'}: ${terms}.` : '',
+    reject_line: reject ? `${SHORT_NAMES[reject.shop]}'s agent ${REASONS[reject.reason]}. Rally's checks throw it out.` : '',
+    haneul_line: asked ? `Haneul's ${asked.authored === 'code' ? 'bid' : 'agent'} does what she asked: ${terms.split(' with ')[0]}.` : '',
     // Shown only when agents wrote at least half the bids; a small share undercuts the scene without adding to it.
     agent_line: written * 2 >= bids ? `Shop agents wrote ${written} of ${bids} ${bids === 1 ? 'bid' : 'bids'}${rejected ? ` · Rally's checks rejected ${rejected}` : ''}.` : '',
-    why_line: undercut ? 'Rally picks the cheapest whole box, counting bundles and shipping, not the cheapest single item.' : '',
+    why_line: `${why} Final price: ${cash(run.charged_minor)}.`,
+    why_say: `${why} Final price: ${say(run.charged_minor)}.`,
+    why_shown: undercut ? 'yes' : '',
     items_total: cash(receipt.breakdown.goods),
     extras_total: cash(extras),
-    result_line: released
-      ? `The best total for the whole bag wins: ${cash(run.charged_minor)}.`
-      : `No bid beat the checkout total, so ${cash(run.held_minor)} stands.`,
-    capture_line: released
-      ? `PayPal charges ${cash(run.charged_minor)}, ${cash(released)} less than it held.`
-      : `PayPal charges ${cash(run.charged_minor)}, exactly the hold.`,
-    receipt_line: `${box} Nothing is due at the door.`,
-    shop_result: won('haneul')
-      ? `${payoutShop} won ${won(run.payout_shop)} of ${count} items and hands off the parcel.`
-      : `Haneul Beauty was outbid. ${payoutShop} won ${won(run.payout_shop)} of ${count} items and hands off the parcel.`,
+    capture_line: released ? `PayPal charges that and releases the other ${cash(released)}.` : `PayPal charges ${cash(run.charged_minor)}, exactly the hold.`,
+    capture_say: released ? `PayPal charges that and releases the other ${say(released)}.` : `PayPal charges ${say(run.charged_minor)}, exactly the hold.`,
+    box_line: `One box from ${words(boxShops)} ${boxShops === 1 ? 'shop' : 'shops'}, duties already paid.`,
+    handoff_line: haneulWon
+      ? `Haneul hands her ${words(haneulWon)} items to the Seoul hub,`
+      : `Haneul was outbid. ${payoutShop} hands its items to the Seoul hub,`,
   };
 }

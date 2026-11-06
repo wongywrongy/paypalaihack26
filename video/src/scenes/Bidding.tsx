@@ -40,8 +40,8 @@ function pace(laid: Laid) {
   let whyAt = Infinity;
   for (const line of laid.cues) {
     const at = line.start - laid.start;
-    if (line.anchor === 'why') whyAt = at;
-    else if (line.anchor === 'award') knots.push({ t: raw.awardAt, s: at + 0.25 });
+    // The cheaper single price comes back once each row has collapsed to its winner.
+    if (line.anchor === 'award') { knots.push({ t: raw.awardAt, s: at + 0.25 }); if (manifest.vars.why_shown) whyAt = at + 1.6; }
     else if (line.anchor && events[line.anchor]) knots.push({ t: events[line.anchor]!.t, s: at + 0.25 });
     // The replacement lands as the line says the checks sent it.
     if (line.anchor === 'reject' && replace) knots.push({ t: replace.t, s: line.end - laid.start - 0.8 });

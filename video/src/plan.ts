@@ -8,8 +8,8 @@ export const scene = (id: string) => PLAN.scenes.find(row => row.id === id)!;
 
 // A shot's start and length in scene seconds. The last shot runs to the end of its scene.
 export function shotSpan(laid: Laid, i: number) {
-  const shots = laid.scene.shots!, from = i === 0 ? 0 : cueAt(laid, shots[i].cue);
-  const to = i + 1 < shots.length ? cueAt(laid, shots[i + 1].cue) : laid.duration;
+  const shots = laid.scene.shots!, at = (n: number) => cueAt(laid, shots[n].cue) + (shots[n].delay ?? 0);
+  const from = i === 0 ? 0 : at(i), to = i + 1 < shots.length ? at(i + 1) : laid.duration;
   return { from, length: to - from };
 }
 

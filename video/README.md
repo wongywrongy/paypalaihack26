@@ -96,6 +96,10 @@ If Haneul is outbid, captions change to say so and the payout scene uses `payout
 
 ## Re-time
 
+**The story has five acts** (`act` on each scene): the problem in Korea, how Rally works in five steps, the demo, why it matters and where it goes, then one technical line. The five steps are the **step rail** (`STEPS` in `timeline.ts`): act 2 builds it one label at a time, and through the demo it sits at the top with the step being shown filled. Every demo line carries its `step`; `npm test` fails if any demo moment has no step or the wrong one.
+
+**Spoken numbers come from the run.** Captions show amounts as `$93.30`; the voice reads the same amounts as words (`{charged_say}` and friends from `buildFacts`), generated from the numbers, so no amount is typed by hand.
+
 **The voice drives the timeline.** `src/timeline.ts` holds the lines, shots and camera keys, but no scene or cue times: every line starts `GAP` (0.3 s) after the previous one ends, and each scene is its lines plus half a second. `npm test` fails on any silence over 0.6 s, except the planned 1 s pause before the close, and on a video over 175 s.
 
 - A shot starts on a line (`cue`, the scene's line index) and plays its clip from `in` to `out`. A camera key fires at a line's start (plus `delay`) or at a clip second, and centres a point of the 1440×900 window at a zoom from 1 to 1.8. Every key drifts 4% closer while it holds, so nothing sits still.

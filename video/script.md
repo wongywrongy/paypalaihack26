@@ -2,63 +2,63 @@
 
 Generated from src/timeline.ts and the measured voice: edit cues there. Times are from this run.
 
-## problem (0.0s to 8.3s, impact)
+## korea (0.0s to 9.0s, impact)
 
-- 00:00 The things you want are spread across small shops in other countries.
-- 00:03 Five shops means five checkouts, five parcels, five customs bills.
+- 00:00 Korean skincare sold a record $11.4 billion abroad in 2025, and small shops are a fast-growing share of it.
 
-## promise (8.3s to 12.1s, innovation)
+## split (9.0s to 27.4s, impact)
 
-- 00:08 What if those shops' AI agents competed for your whole cart?
+- 00:09 Say you want four products. The one shop that stocks all four only ships inside Korea.
+- 00:14 So you split what you can across other shops: more checkouts, more parcels, and since August 2025, US duties on each parcel.
+- 00:23 And when two shops sell the same cleanser at different prices, you compare.
 
-## title (12.1s to 17.1s, innovation, PayPal)
+## steps (27.4s to 65.3s, innovation, PayPal)
 
-- 00:12 You approve one price. PayPal holds it. The agents can only bid it down.
+- 00:27 Rally turns that into one order, in five steps.
+- 00:30 One: you fill one bag and see one price, with shipping, duties, tax and Rally's small fee already in it.
+- 00:36 Two: you approve that price with PayPal. PayPal holds it, so it's the most you can be charged.
+- 00:42 Three: each shop's AI agent bids to win your bag, inside limits its owner set. Bids can only bring the price down.
+- 00:50 Four: the winning shops drop their items at Rally's hub in Seoul, a local delivery they already make.
+- 00:56 Rally ships one box to you, duties paid.
+- 00:59 Five: PayPal charges the final price, releases the rest, and pays each shop once it hands off.
 
-## market (17.1s to 24.2s, impact)
+## haneul (65.3s to 77.2s, innovation, design)
 
-- 00:17 It starts with Korean skincare: exports hit a record $11.4 billion in 2025.
+- 01:05 First, a shop owner. Haneul Beauty sets a private lowest price that no rival ever sees.
+- 01:11 Then a goal for her agent: win two-item bundles. Nothing changes until she applies it.
 
-## haneul (24.2s to 40.7s, innovation, design)
+## shopper (77.2s to 87.7s, design, PayPal)
 
-- 00:24 Meet Haneul Beauty, a small shop in Seoul. Next to each public price, the owner sets a private lowest price.
-- 00:31 Then a goal in plain words: win two-item bundles with free shipping in Korea.
-- 00:36 Rally turns it into rules, and nothing changes until she presses Apply.
+- 01:17 A shopper in California fills a bag: four products, one price of $104.31, everything included.
+- 01:25 They approve it in PayPal. That's the ceiling.
 
-## shopper (40.7s to 55.4s, design, PayPal)
+## bidding (87.7s to 109.7s, innovation, tech)
 
-- 00:40 A shopper in California fills one bag from several Korean shops.
-- 00:45 Four items, the shops that sell each one, and one price with shipping, duties and tax.
-- 00:50 They approve $104.31 in PayPal, and PayPal holds it.
+- 01:27 The agents bid over three rounds. Each item goes to whichever shop makes the whole box cheapest.
+- 01:33 Dalbit's agent asks for something its shop doesn't allow. Rally's checks throw it out.
+- 01:38 Haneul's bid does what she asked: a two-item bundle.
+- 01:42 Dalbit's toner was cheaper alone, but Haneul's bundle made the whole box cheaper. Final price: $93.30.
 
-## bidding (55.4s to 93.2s, innovation, tech)
+## result (109.7s to 117.7s, PayPal, impact)
 
-- 00:55 Now each shop's agent bids on every item it sells, over 3 rounds.
-- 01:00 Agents offer lower prices, bundles and free shipping in Korea. Every bid is checked.
-- 01:05 Dalbit's agent asked for something its shop doesn't allow, so Rally's checks threw it out and sent the shop's best valid bid.
-- 01:12 In round 3, Dalbit's agent writes its own bid, and it passes.
-- 01:16 Haneul's bid follows her goal: a two-item bundle with free shipping in Korea.
-- 01:21 The total only goes down.
-- 01:23 The best total for the whole bag wins: $93.30.
-- 01:27 Rally picks the cheapest whole box, counting bundles and shipping, not the cheapest single item.
+- 01:49 PayPal charges that and releases the other $11.01.
+- 01:54 One box from two shops, duties already paid.
 
-## result (93.2s to 103.7s, PayPal, impact)
+## payout (117.7s to 124.7s, PayPal, impact)
 
-- 01:33 PayPal charges $93.30, $11.01 less than it held.
-- 01:39 One box from 2 shops, duties included. Nothing is due at the door.
+- 01:57 Haneul hands her three items to the Seoul hub,
+- 02:00 and PayPal pays her $39.04 right after.
 
-## payout (103.7s to 112.7s, PayPal, impact)
+## why (124.7s to 138.6s, impact, PayPal)
 
-- 01:43 Haneul Beauty won 3 of 4 items and hands off the parcel.
-- 01:47 PayPal pays Haneul Beauty $39.04 as soon as it hands off.
+- 02:04 Shoppers get one box and a price that can only go down.
+- 02:08 Small shops sell abroad with no export logistics, and are paid once they hand off.
+- 02:13 And PayPal's hold gives AI agents a hard spending limit they can't cross.
 
-## how (112.7s to 121.7s, tech)
+## where (138.6s to 143.7s, impact)
 
-- 01:52 The shopper approves one total. Agents bid inside their owners' rules.
-- 01:57 Agents propose. Rally's checks decide. PayPal moves the money.
+- 02:18 Seoul is the first hub. The same pattern can work wherever small shops cluster.
 
-## where (121.7s to 134.3s, impact, presentation)
+## close (143.7s to 147.6s, tech, presentation)
 
-- 02:02 Rally runs on Korean skincare today.
-- 02:04 Shops, products, prices and rules are data, so the same engine works for other shops and other countries.
-- 02:11 Rally. Agents bargain, PayPal keeps it honest.
+- 02:24 Rally. Agents bargain. PayPal keeps it honest.
