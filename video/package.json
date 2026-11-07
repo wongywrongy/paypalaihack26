@@ -1,0 +1,30 @@
+{
+  "name": "rally-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "node scripts/prepare.ts --allow-placeholders && remotion studio src/index.ts",
+    "preview": "node scripts/prepare.ts --allow-placeholders && remotion render src/index.ts Rally out/preview.mp4 --codec=h264 --scale=0.5 && node scripts/pace.ts out/preview.mp4",
+    "render": "node scripts/prepare.ts && npm run render:1080p && npm run render:4k && node scripts/finish.ts out/rally-1080p.mp4:10 out/rally-4k.mp4:25",
+    "render:1080p": "remotion render src/index.ts Rally out/rally-1080p.mp4 --codec=h264 --video-bitrate=12M --x264-preset=slow --pixel-format=yuv420p --audio-codec=aac --audio-bitrate=320k",
+    "render:4k": "remotion render src/index.ts Rally out/rally-4k.mp4 --scale=2 --codec=h264 --video-bitrate=40M --x264-preset=slow --pixel-format=yuv420p --audio-codec=aac --audio-bitrate=320k",
+    "stills": "node scripts/prepare.ts --allow-placeholders && node scripts/stills.ts",
+    "test": "node --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "voice": "node scripts/prepare.ts --allow-placeholders && node scripts/voice.ts && node scripts/prepare.ts --allow-placeholders",
+    "pace": "node scripts/pace.ts"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.539",
+    "@remotion/paths": "4.0.539",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.539",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "typescript": "5.9.3"
+  }
+}
