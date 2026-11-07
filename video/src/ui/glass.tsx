@@ -123,7 +123,7 @@ export function Proof({ name, from, to, crop, box, p }: { name: ClipName; from: 
   const s = frame / MOTION_FPS, meta = manifest.clips[name];
   const at = Math.min(from + s, to, meta ? (meta.frames - 2) / fps : Infinity);
   const k = proofScale(crop, box), w = crop.width * k, h = crop.height * k;
-  return <div style={{ position: 'absolute', left: box.x + (box.width - w) / 2, top: box.y + (box.height - 44 - h) / 2, width: w, opacity: p, transform: `translateY(${(1 - p) * 30}px)` }}>
+  return <div style={{ position: 'absolute', left: box.x + (box.width - w) / 2, top: box.y + (box.height - 44 - h) / 2, width: w, opacity: Math.min(1, p * 3), transform: `translateY(${(1 - p) * 160}px)` }}>
     <div style={{ height: 44, fontSize: 26, fontWeight: 700, color: C.muted, fontFamily: SANS }}>Screen recording · PayPal sandbox</div>
     <div style={{ position: 'relative', width: w, height: h, overflow: 'hidden', borderRadius: 14, background: LIGHT.ground, boxShadow: '0 0 0 1.5px rgba(255,255,255,.3), 0 30px 80px rgba(0,0,0,.55)' }}>
       <div style={{ position: 'absolute', left: -crop.x * k, top: -crop.y * k, width: 1440, height: 900, transformOrigin: '0 0', transform: `scale(${k})` }}>

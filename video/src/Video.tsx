@@ -14,10 +14,12 @@ import { Canvas, Grain, Proof, Sfx } from './ui/glass.tsx';
 const VIEWS: Record<string, (props: { laid: Laid }) => React.ReactNode> = { cold: Cold, split: Split, haneul: ClipScene, shopper: ClipScene, bidding: Bidding, result: ClipScene, payout: ClipScene, why: Why, where: Where, close: Close };
 // Music at −22 dB, another 4 dB down under the voice.
 const OPEN = 10 ** (-22 / 20), DUCKED = 10 ** (-26 / 20);
-// A proof window rises in beside or over the drawn panels it proves, plays, then holds its last frame.
+// A proof window rises in beside or over the drawn panels it proves and plays. If more than a second of its scene is
+// left it then steps away, back to the drawn panels; otherwise it holds its last frame to the cut.
 function ProofCut({ index }: { index: number }) {
-  const { proof } = PROOFS[index];
-  return <Proof name={proof.clip} from={proof.in} to={proof.out} crop={proof.crop} box={proof.box} p={enter(useFrame(), MOTION_FPS, 0, DUR.standard)} />;
+  const { proof, length } = PROOFS[index], frame = useFrame(), played = (proof.out - proof.in) * MOTION_FPS;
+  const out = length - (proof.out - proof.in) > 1 && frame >= played ? enter(frame, MOTION_FPS, played, DUR.standard) : 0;
+  return <Proof name={proof.clip} from={proof.in} to={proof.out} crop={proof.crop} box={proof.box} p={enter(frame, MOTION_FPS, 0, DUR.standard) - out} />;
 }
 
 // Whose screen: the bidding board is what the shopper sees; map and diagram scenes have no side.
