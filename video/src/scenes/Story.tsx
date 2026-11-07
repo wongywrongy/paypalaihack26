@@ -1,12 +1,13 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { interpolate } from 'remotion';
-import { evolvePath } from '@remotion/paths';
+import { evolvePath, getLength, getPointAtLength } from '@remotion/paths';
 import { money, SHOP_NAMES, SHORT_NAMES } from '../schema.ts';
 import { C, manifest, MONO } from '../theme.ts';
 import { clamp, DUR, ease, enter, MOTION_FPS, pop, rise, shake, smooth, tiltIn, useFrame } from '../motion.ts';
 import { glass, Odometer, Words } from '../ui/glass.tsx';
 import { Land, lerpView, mapTransform, onScreen, project, WORLD, type MapView } from '../map.tsx';
 import { Lock, Photo } from '../ui.tsx';
+import { Carton } from '../ui/panels.tsx';
 import { Rail } from './Rail.tsx';
 import { wordAt } from '../plan.ts';
 import type { Laid } from '../timeline.ts';
@@ -18,7 +19,7 @@ const SEOUL_AT = project(37.5, 127), CALIFORNIA_AT = project(36.8, -119.4);
 // The opening frame: Korea, its neighbours and the three shop pins, close enough to place them, far enough to read as a map.
 const KOREA: MapView = { ...SEOUL_AT, zoom: 2.6 };
 // Korea and California both in frame, the Pacific between them.
-const PACIFIC: MapView = { x: (SEOUL_AT.x + CALIFORNIA_AT.x) / 2, y: SEOUL_AT.y + 60, zoom: 1.45 };
+const PACIFIC: MapView = { x: (SEOUL_AT.x + CALIFORNIA_AT.x) / 2, y: SEOUL_AT.y + 10, zoom: 1.55 };
 // The whole world for the close, framed so every hub and label sits inside the 80% safe area.
 const WORLD_SAFE: MapView = { x: 796, y: 300, zoom: 0.95 };
 // The only two camera moves in the film, both on the map, each one continuous ease-in-out.
@@ -65,15 +66,18 @@ const along = (a: Point, b: Point, u: number, lift = 0.3) => {
 };
 
 // An arc in screen pixels, drawn to `until` of its length.
+// An arc stopped short of its end is a trip that can't be made: it ends in a cross.
 function ScreenArc({ a, b, from, until = 1, color = C.ink, dashed = true, width = 3, id }: { a: Point; b: Point; from: number; until?: number; color?: string; dashed?: boolean; width?: number; id: string }) {
   const frame = useFrame();
   if (frame < from) return null;
   const c = bend(a, b, 0.3), path = `M ${a.x} ${a.y} Q ${c.x} ${c.y} ${b.x} ${b.y}`;
-  const draw = evolvePath(until * ease(interpolate(frame, [from, from + DUR.camera], [0, 1], clamp)), path);
+  const drawn = ease(interpolate(frame, [from, from + DUR.camera], [0, 1], clamp)), draw = evolvePath(until * drawn, path);
+  const end = until < 1 && drawn > 0.95 ? getPointAtLength(path, getLength(path) * until) : null, cross = end ? Math.min(1.15, pop(frame, MOTION_FPS, from + DUR.camera)) * 11 : 0;
   return <svg width={1920} height={1080} style={{ position: 'absolute', inset: 0, overflow: 'visible' }}>
     <mask id={id}><path d={path} stroke="#fff" strokeWidth={width + 6} fill="none" strokeDasharray={draw.strokeDasharray} strokeDashoffset={draw.strokeDashoffset} /></mask>
     <path d={path} stroke={color} strokeWidth={width} fill="none" strokeDasharray={dashed ? '9 10' : undefined} strokeLinecap="round" mask={`url(#${id})`} />
     {/* A point of light travels each finished arc, so a held map is never still. */}
+    {end && <path d={`M ${end.x - cross} ${end.y - cross} L ${end.x + cross} ${end.y + cross} M ${end.x + cross} ${end.y - cross} L ${end.x - cross} ${end.y + cross}`} stroke={color} strokeWidth={5} strokeLinecap="round" />}
     {until === 1 && frame > from + DUR.camera && (() => { const p = along(a, b, ((frame - from - DUR.camera) / 50) % 1); return <circle cx={p.x} cy={p.y} r={5} fill={color === C.ink ? '#fff' : color} />; })()}
   </svg>;
 }
@@ -124,13 +128,13 @@ export function Split({ laid }: { laid: Laid }) {
       <div style={{ fontSize: 24, fontWeight: 700, color: C.muted, textShadow: halo, ...rise(enter(frame, fps, fees[0]), 8) }}>Each parcel</div>
       {FEES.map((fee, i) => frame >= fees[i] && <Tag key={fee} style={{ transform: `scale(${Math.min(1.1, pop(frame, fps, fees[i]))})`, transformOrigin: 'left center' }}>{fee}</Tag>)}
     </div>}
-    {frame >= sourceAt && <Source style={{ position: 'absolute', left: shopper.x - 300, width: 600, textAlign: 'center', top: shopper.y + 300, ...rise(enter(frame, fps, sourceAt), 6) }}>US de minimis suspended Aug 29, 2025 · CBP</Source>}
+    {frame >= sourceAt && <Source style={{ position: 'absolute', left: shopper.x - 300, width: 600, textAlign: 'center', top: shopper.y + 150, ...rise(enter(frame, fps, sourceAt), 6) }}>US de minimis suspended Aug 29, 2025 · CBP</Source>}
     <div style={{ position: 'absolute', left: shopper.x, top: shopper.y, transform: 'translate(-50%, -50%)', width: 26, height: 26, borderRadius: 13, background: C.ink, border: `4px solid ${C.surface}`, opacity: meIn }} />
     <div style={{ position: 'absolute', left: shopper.x - 170, top: shopper.y + 30, width: 340, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, opacity: meIn }}>
       <div style={{ fontSize: 30, fontWeight: 800, textShadow: halo }}>You, in California</div>
       <div style={{ display: 'flex', gap: 10 }}>{items.map((id, i) => <div key={id} style={rise(enter(frame, fps, Math.round(1.2 * fps) + i * 5), 10)}><Photo id={id} size={60} /></div>)}</div>
     </div>
-    {frame >= c2 && <div style={{ position: 'absolute', left: shopper.x - 400, top: shopper.y + 190, width: 800, display: 'flex', justifyContent: 'center' }}><div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', ...glass, borderRadius: 18, ...rise(enter(frame, fps, c2), 10) }}>
+    {frame >= c2 && <div style={{ position: 'absolute', left: (haneul.x + shopper.x) / 2 - 400, top: shopper.y + 150, width: 800, display: 'flex', justifyContent: 'center' }}><div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', ...glass, borderRadius: 18, ...rise(enter(frame, fps, c2), 10) }}>
       <Photo id={compare} size={60} />
       {Object.entries(listed[compare]).map(([shop, unit], i) => <span key={shop} style={{ fontFamily: MONO, fontSize: 30, padding: '6px 14px', borderRadius: 999, whiteSpace: 'nowrap', border: `2px solid ${flash === i ? C.accent : C.line}`, background: flash === i ? C.tint : C.surface }}>{SHORT_NAMES[shop as Shop]} {cash(unit)}</span>)}
     </div></div>}
@@ -217,8 +221,9 @@ export function Steps({ laid }: { laid: Laid }) {
 }
 
 // --- Act 4 ---
-// One card per line, cut in on the line's first word, each with its own small motion: the price ticks down, a parcel
-// lands in the hub's box, a lock closes on a spending bar.
+// Three cards across the frame, one per line, each coming in on its line's first word with its own small motion: the
+// price ticks down, the bag's items go into one box at the hub, a lock closes on a spending bar. They all stay; the
+// ones already said dim.
 const CARDS = [
   { who: 'Shoppers', line: 'Pay less, get one box' },
   { who: 'Small shops', line: 'Sell abroad without shipping abroad' },
@@ -234,18 +239,16 @@ function PriceDown({ from }: { from: number }) {
 }
 function ParcelIn({ from }: { from: number }) {
   const frame = useFrame(), fps = MOTION_FPS;
-  const fall = interpolate(frame, [from, from + 14], [0, 1], { ...clamp, easing: x => x * x }), landed = frame >= from + 14;
-  return <div style={{ position: 'relative', width: 300, height: 260 }}>
-    <div style={{ position: 'absolute', left: 105, top: 150 * fall - 20, opacity: Math.min(1, (frame - from + 4) / 4) }}><Parcel size={90} /></div>
-    <div style={{ position: 'absolute', left: 40, top: 150, width: 220, height: 100, borderRadius: 14, border: `4px solid ${C.saving}`, borderTop: 'none', boxSizing: 'border-box', transform: `scaleX(${landed ? 1 + 0.06 * Math.sin(Math.PI * Math.min(1, (frame - from - 14) / 8)) : 1})` }} />
-    <div style={{ position: 'absolute', left: 0, right: 0, top: 262, textAlign: 'center', fontSize: 26, fontWeight: 700, color: C.saving, opacity: enter(frame, fps, from + 14) }}>Seoul hub</div>
+  return <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+    <Carton from={from} ids={items} size={230} />
+    <div style={{ fontSize: 26, fontWeight: 700, color: C.saving, opacity: enter(frame, fps, from + items.length * 5 + 10) }}>Packed at the Seoul hub</div>
   </div>;
 }
 function LockedBar({ from }: { from: number }) {
   const frame = useFrame();
   const fill = ease(interpolate(frame, [from, from + 20], [0, 1], clamp)), shut = ease(interpolate(frame, [from + 18, from + 26], [0, 1], clamp));
   const push = frame > from + 26 ? 6 * Math.sin((frame - from - 26) / 3) * Math.max(0, 1 - (frame - from - 26) / 24) : 0;
-  return <div style={{ position: 'relative', width: 340, height: 220 }}>
+  return <div style={{ position: 'relative', width: 340, height: 220, alignSelf: 'center' }}>
     <div style={{ position: 'absolute', left: 0, top: 130, width: 300, height: 40, borderRadius: 20, background: C.surface, boxShadow: `inset 0 0 0 2px ${C.line}` }} />
     <div style={{ position: 'absolute', left: 0, top: 130, width: 300 * fill + push, height: 40, borderRadius: 20, background: C.accent }} />
     <div style={{ position: 'absolute', left: 300, top: 90, width: 4, height: 120, background: C.ink }} />
@@ -257,19 +260,17 @@ function LockedBar({ from }: { from: number }) {
 const VISUALS = [PriceDown, ParcelIn, LockedBar];
 export function Why({ laid }: { laid: Laid }) {
   const frame = useFrame(), fps = MOTION_FPS;
-  const starts = CARDS.map((_, i) => Math.round(cue(laid, i) * fps)), i = Math.max(0, starts.filter(f => frame >= f).length - 1);
-  const card = CARDS[i], Visual = VISUALS[i], from = starts[i], hit = Math.round(wordAt(laid, 2, 'break') * fps);
-  return <>
-    <Map v={WORLD} dim={0.28} />
-    {/* "can't break": the limit holds, and the card takes the knock. */}
-    <div key={i} style={{ position: 'absolute', left: 260 + (i === 2 ? 2 * shake(frame, hit) : 0), top: 250, width: 1400, height: 440, boxSizing: 'border-box', padding: '50px 64px', borderRadius: 32, ...glass, background: i === 2 ? C.tint : glass.background, display: 'flex', alignItems: 'center', gap: 60, ...tiltIn(enter(frame, fps, from, DUR.standard)) }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 22 }}>
-        <div style={{ fontSize: 36, fontWeight: 800, color: i === 2 ? C.accentHover : C.accent }}>{card.who}</div>
-        <div style={{ fontSize: 72, fontWeight: 800, letterSpacing: '-.025em', lineHeight: 1.08 }}>{card.line}</div>
-      </div>
-      <Visual from={from + 6} />
-    </div>
-  </>;
+  const starts = CARDS.map((_, i) => Math.round(cue(laid, i) * fps)), hit = Math.round(wordAt(laid, 2, 'break') * fps);
+  return <>{CARDS.map((card, i) => {
+    const from = starts[i], Visual = VISUALS[i], next = starts[i + 1];
+    if (frame < from) return null;
+    const tilt = tiltIn(enter(frame, fps, from, DUR.standard)), dim = next !== undefined ? 1 - 0.5 * enter(frame, fps, next) : 1;
+    return <div key={i} style={{ position: 'absolute', left: 70 + i * 600 + (i === 2 ? 2 * shake(frame, hit) : 0), top: 170, width: 560, height: 660, boxSizing: 'border-box', padding: '44px 44px', borderRadius: 32, ...glass, background: i === 2 ? C.tint : glass.background, display: 'flex', flexDirection: 'column', gap: 20, ...tilt, opacity: Number(tilt.opacity) * dim }}>
+      <div style={{ fontSize: 32, fontWeight: 800, color: i === 2 ? C.accentHover : C.accent }}>{card.who}</div>
+      <div style={{ fontSize: 56, fontWeight: 800, letterSpacing: '-.025em', lineHeight: 1.08, minHeight: 182 }}>{card.line}</div>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}><Visual from={from + 6} /></div>
+    </div>;
+  })}</>;
 }
 
 // Seoul's hub is live; the others are illustrations, outlined and marked Next.

@@ -82,20 +82,22 @@ test('captions fit two lines and never overlap', () => {
   });
 });
 
-test('every shot starts on a line and has time on screen', () => {
+test('every shot starts on a line, in order, and has time on screen before its scene ends', () => {
   for (const plan of plans()) for (const scene of plan.scenes) (scene.scene.shots || []).forEach((shot, i, shots) => {
-    const at = (n: number) => startAt(scene, shots[n]);
-    const from = i === 0 ? 0 : at(i), to = i + 1 < shots.length ? at(i + 1) : scene.duration;
-    assert.ok(to - from >= 1.5, `${scene.id} ${shot.panel} has ${(to - from).toFixed(2)} s`);
+    const from = i === 0 ? 0 : startAt(scene, shot);
+    if (i) assert.ok(from >= startAt(scene, shots[i - 1]), `${scene.id} ${shot.panel} starts before the shot ahead of it`);
+    assert.ok(scene.duration - from >= 1.5, `${scene.id} ${shot.panel} has ${(scene.duration - from).toFixed(2)} s`);
   });
 });
 
 // Panels are drawn from the run; these prove they are the running product. The build fails without them.
-test('proof cuts: the real approval, board and payout recordings each cut in full frame, never above their own pixels', () => {
+test('proof windows: the real approval, board and payout recordings each play inside the frame, never above their own pixels', () => {
   const proofs = SCENES.flatMap(scene => (scene.proofs ?? []).map(proof => ({ ...proof, scene: scene.id })));
   for (const [scene, clip, seconds] of [['shopper', '05-paypal-hold', 2], ['bidding', '06-bidding', 2], ['payout', '08-handoff-payout', 2]] as const) {
     const proof = proofs.find(row => row.scene === scene && row.clip === clip);
-    assert.ok(proof, `no proof cut of ${clip} in ${scene}`);
+    assert.ok(proof, `no proof window of ${clip} in ${scene}`);
+    const box = proof.box;
+    assert.ok(box.x >= 0 && box.y >= 100 && box.x + box.width <= 1920 && box.y + box.height <= 880, `${clip} window leaves the frame or meets the captions`);
     assert.ok(Math.abs(proof.out - proof.in - seconds) < 1e-9, `${clip} runs ${proof.out - proof.in} s, not ${seconds}`);
     const { x, y, width, height } = proof.crop;
     assert.ok(x >= 0 && y >= 0 && x + width <= 1440 && y + height <= 900, `${clip} crop leaves the window`);
@@ -105,7 +107,7 @@ test('proof cuts: the real approval, board and payout recordings each cut in ful
   }
   const glass = readFileSync('src/ui/glass.tsx', 'utf8');
   // Window pixels are 2 recorded pixels (2880×1800), so a window-to-frame scale above 2 would upscale.
-  assert.match(glass, /export const proofScale = \(crop: Rect\) => Math\.min\(2,/);
+  assert.match(glass, /export const proofScale = \(crop: Rect, box: Rect\) => Math\.min\(2,/);
   assert.match(glass, /fontSize: 26[^\n]*>Screen recording · PayPal sandbox</);
 });
 
@@ -120,7 +122,7 @@ test('camera: only the two map pull-backs move the frame', () => {
   };
   const root = (code: string) => code.slice(code.indexOf('return <'), code.indexOf('>', code.indexOf('return <')) + 1);
   const moving = /transform|scale\(|zoom/;
-  const scenes = { 'src/scenes/Story.tsx': ['Korea', 'Split', 'Steps', 'Why', 'Where', 'Close'], 'src/scenes/Bidding.tsx': ['Bidding'], 'src/scenes/ClipScene.tsx': ['ClipScene'], 'src/Video.tsx': ['Shot'] };
+  const scenes = { 'src/scenes/Story.tsx': ['Korea', 'Split', 'Steps', 'Why', 'Where', 'Close'], 'src/scenes/Bidding.tsx': ['Bidding'], 'src/scenes/ClipScene.tsx': ['ClipScene'] };
   for (const [file, names] of Object.entries(scenes)) for (const name of names) {
     const code = body(file, name);
     assert.ok(!moving.test(root(code)), `${name} transforms its root layer`);

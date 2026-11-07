@@ -1,6 +1,6 @@
 import { AbsoluteFill, Audio, interpolate, Sequence, staticFile } from 'remotion';
 import { C, manifest, SANS } from './theme.ts';
-import { clamp, DUR, ease, MOTION_FPS, useFrame } from './motion.ts';
+import { clamp, DUR, ease, enter, MOTION_FPS, useFrame } from './motion.ts';
 import { Captions, RoleTag } from './ui.tsx';
 import { PLAN, PROOFS } from './plan.ts';
 import { captionEnd, FPS, railAt, type Laid, type Role } from './timeline.ts';
@@ -14,21 +14,10 @@ import { Canvas, Grain, Proof, Sfx } from './ui/glass.tsx';
 const VIEWS: Record<string, (props: { laid: Laid }) => React.ReactNode> = { cold: Cold, split: Split, haneul: ClipScene, shopper: ClipScene, bidding: Bidding, result: ClipScene, payout: ClipScene, why: Why, where: Where, close: Close };
 // Music at −22 dB, another 4 dB down under the voice.
 const OPEN = 10 ** (-22 / 20), DUCKED = 10 ** (-26 / 20);
-// Between acts the picture blurs up and the next blurs down: 12 frames each at 60 fps.
-const DISSOLVE = 6;
-
-// The camera never moves here: an act's first and last moments blur, and everything else moves inside the scene.
-function Shot({ laid, enters, leaves, children }: { laid: Laid; enters: boolean; leaves: boolean; children: React.ReactNode }) {
-  const frame = useFrame(), end = laid.duration * MOTION_FPS;
-  const inP = enters ? interpolate(frame, [0, DISSOLVE * 2], [1, 0], clamp) : 0, outP = leaves ? interpolate(frame, [end - DISSOLVE * 2, end], [0, 1], clamp) : 0;
-  const blur = 12 * Math.max(inP, outP);
-  return <AbsoluteFill style={{ filter: blur > 0.01 ? `blur(${blur}px)` : undefined, opacity: 1 - 0.6 * Math.max(inP, outP) }}>{children}</AbsoluteFill>;
-}
-
-// A proof cut covers the whole frame, the rail and role tag included; only the captions stay over it. Hard in and out.
+// A proof window rises in beside or over the drawn panels it proves, plays, then holds its last frame.
 function ProofCut({ index }: { index: number }) {
   const { proof } = PROOFS[index];
-  return <Proof name={proof.clip} from={proof.in} to={proof.out} crop={proof.crop} p={1} />;
+  return <Proof name={proof.clip} from={proof.in} to={proof.out} crop={proof.crop} box={proof.box} p={enter(useFrame(), MOTION_FPS, 0, DUR.standard)} />;
 }
 
 // Whose screen: the bidding board is what the shopper sees; map and diagram scenes have no side.
@@ -48,10 +37,10 @@ export function Video() {
   const music = (frame: number) => lines.some(([a, b]) => frame >= a - 12 && frame < b + 12) ? DUCKED : OPEN;
   return <AbsoluteFill style={{ background: C.ground, color: C.ink, fontFamily: SANS, fontSynthesis: 'none' }}>
     <Background />
-    {PLAN.scenes.map((laid, i) => {
-      const View = VIEWS[laid.id], prev = PLAN.scenes[i - 1], next = PLAN.scenes[i + 1];
+    {PLAN.scenes.map(laid => {
+      const View = VIEWS[laid.id];
       return <Sequence key={laid.id} name={laid.id} from={frames(laid.start)} durationInFrames={frames(laid.start + laid.duration) - frames(laid.start)}>
-        <Shot laid={laid} enters={!!prev && prev.scene.act !== laid.scene.act} leaves={!!next && next.scene.act !== laid.scene.act}><View laid={laid} /></Shot>
+        <View laid={laid} />
         {laid.scene.act === 3 && <Sfx at={0} kind="whoosh" />}
       </Sequence>;
     })}

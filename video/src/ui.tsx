@@ -3,7 +3,7 @@ import { Img, interpolate, staticFile } from 'remotion';
 import { C, LIGHT, manifest, MONO, SANS } from './theme.ts';
 import { clamp, DUR, ease, enter, MOTION_FPS, useFrame } from './motion.ts';
 import { captionEnd, ROLES, type ClipName, type Role } from './timeline.ts';
-import { PLAN, proofOn } from './plan.ts';
+import { PLAN } from './plan.ts';
 import { chunks } from './captions.ts';
 
 const MONEY = /((?:[AC]\$|[$£€])\d[\d,.]*\d[BM]?(?: billion)?)/;
@@ -45,11 +45,10 @@ export function Captions() {
   if (!line) return null;
   const parts = chunks(line.text, line.start, line.end);
   const part = parts.find((row, n) => s < (parts[n + 1]?.from ?? captionEnd(PLAN, i))) ?? parts[parts.length - 1];
-  // Over a proof cut's light canvas the words turn dark.
-  const light = proofOn(s), ink = (a: number) => `rgba(${Math.round(255 - 232 * light)},${Math.round(255 - 233 * light)},${Math.round(255 - 229 * light)},${a})`;
+  const ink = (a: number) => `rgba(255,255,255,${a})`;
   const fade = Math.min(interpolate(s, [part.from - 0.1, part.from + 0.05], [0, 1], clamp), interpolate(s, [captionEnd(PLAN, i) - 0.15, captionEnd(PLAN, i)], [1, 0], clamp));
   return <div style={{ position: 'absolute', left: 0, right: 0, bottom: 64, display: 'flex', justifyContent: 'center', opacity: fade }}>
-    <div style={{ fontSize: 38, fontWeight: 600, letterSpacing: '-.005em', textShadow: `0 2px 12px rgba(0,0,0,${0.6 * (1 - light)})` }}>
+    <div style={{ fontSize: 38, fontWeight: 600, letterSpacing: '-.005em', textShadow: '0 2px 12px rgba(0,0,0,.6)' }}>
       {part.words.map((w, n) => <span key={n} style={{ color: s >= w.from && s < w.to + 0.05 ? ink(1) : ink(0.78) }}><Rich text={w.word} />{n < part.words.length - 1 ? ' ' : ''}</span>)}
     </div>
   </div>;

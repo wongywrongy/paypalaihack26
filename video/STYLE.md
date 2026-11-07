@@ -29,7 +29,7 @@ Designed from one reference: `reference/cluelyreference.mp4` (Cluely's product v
 - **Text:** the app's display font (Schibsted Grotesk), headlines 96–140 px at −2% tracking. Words reveal one at a time from 8 px blur and 14 px below, three frames apart at 60 fps: the reference's motion-blur entrance (0:04), made calmer.
 - **Numbers:** the app's mono (IBM Plex Mono), tabular. Totals roll like an odometer and only roll down; the final price gets the one shimmer.
 - **Keycaps and cursor:** keycaps only while the goal is typed (real keystrokes); a drawn cursor on curved paths with a click ripple only on Add to bag, Approve, Apply and Record hand-off, as at 0:16.
-- **Transitions:** a 12-frame blur dissolve only between acts (cold to split, split to demo, demo to why, where to close); inside the demo, hard cuts on a line's first word when the panel changes; proof cuts in and out hard on the light canvas (see Pacing).
+- **Transitions:** as few as possible. One hard cut where the scene changes, no dissolves. Inside a scene nothing cuts: the demo frame is two columns, a scene's panels come in on their lines and stay, and the one not being spoken about dims. Things that carry over carry over visibly: the added product flies into the bag, the bag's rows slide into the board's rows and its total flies into the board's total, the receipt stays beside the shop's order. The real recordings rise in as windows beside or over what they prove.
 
 ## Pacing (revision 7)
 
@@ -38,15 +38,15 @@ The reference runs 2:25 because it walks through a product people already want. 
 - **Result first.** The film opens on the run's result (`cold`): the bag, the price rolling from what PayPal held to what was charged, and the shops whose agents bargained. The problem comes second; the demo starts inside 20 s.
 - **Told once.** No explainer before the demo. The step rail fills as the demo goes; it does not need its own act.
 - **Spoken to the viewer.** Second person ("you fill one bag"), one breath per line: at most 20 words, 13 on average (`MAX_WORDS`, `MEAN_WORDS`). Kokoro at 1.12 (`VOICE_SPEED`), lines 0.12 s apart. Better still: the owner's own voice (`RECORDED_DIR`, see README).
-- **Something new every 2.5 s.** `MAX_HOLD`. Inside a scene, a beat lands at least every 2.5 s: a panel enters, a value rolls, a chip moves, a highlight sweeps, or a hard cut to the next panel. A held frame with drifting colour fields does not count: `npm run pace` compares edges (text, panels, chips), not pixels, with the captions cropped out, and fails on any stretch that holds still past 2.5 s.
+- **Something new every 2.5 s.** `MAX_HOLD`. Inside a scene, a beat lands at least every 2.5 s: a panel enters, a value rolls, a chip moves, a highlight sweeps, or a new panel comes in beside the last. A held frame with drifting colour fields does not count: `npm run pace` compares edges (text, panels, chips), not pixels, with the captions cropped out, and fails on any stretch that holds still past 2.5 s.
 - **Length.** 60–95 s (`TARGET_SECONDS`). Every scene but bidding under 12 s; bidding under 20 s.
 
 ## Where Rally deliberately differs
 
-- **Captions have no box.** The reference uses a dark bar (0:10). Rally's canvas is already dark, so white at 92% reads without one; 38 px, phrase chunks of at most seven words, the spoken word slightly brighter; dark over a proof cut's light canvas.
+- **Captions have no box.** The reference uses a dark bar (0:10). Rally's canvas is already dark, so white at 92% reads without one; 38 px, phrase chunks of at most seven words, the spoken word slightly brighter.
 - **Colour fields.** Not in the reference; see Canvas above.
-- **No live footage in the main frame.** The reference is all real recording. Rally rebuilds product moments natively for sharpness and shows the real recordings as short full-frame proof cuts on the app's warm light canvas, cropped to the relevant region, never upscaled, framed by a thin line and labelled "Screen recording · PayPal sandbox".
-- **No PayPal interface.** The hold is drawn abstractly (a bracket and a ceiling line); the real PayPal window appears only as a 2 s proof cut with its marks blurred.
+- **No live footage in the main frame.** The reference is all real recording. Rally rebuilds product moments natively for sharpness and shows the real recordings as windows inside the frame, on the app's warm light ground, cropped to the relevant region, never upscaled, framed by a thin line and labelled "Screen recording · PayPal sandbox".
+- **No PayPal interface.** The hold is drawn abstractly (a bracket and a ceiling line); the real PayPal window plays for 2 s in the shopper's right-hand column, its marks blurred.
 - **Music.** None ships with this repository: no track with a licence that allows a public competition submission has been provided. Sound effects are synthesised for this project (`sfx/`).
 
 ## Palette
@@ -60,4 +60,4 @@ The reference runs 2:25 because it walks through a product people already want. 
 | Raspberry | `#B4235A` field, `#F0679B` on dark text | Rally and the shops |
 | Green | `#2BB673` field, `#5BE3A2` on dark text | Money released or paid |
 | Blue-grey | `#3A4A66` | Neutral field |
-| Light canvas | `#F7F4F0` | Proof cuts only (the app's ground) |
+| Light canvas | `#F7F4F0` | Proof windows only (the app's ground) |

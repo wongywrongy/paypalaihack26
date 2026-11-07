@@ -1,51 +1,50 @@
-// A demo scene: its product panels in turn, and any proof shot of the real recording over them.
-import { Sequence, useVideoConfig } from 'remotion';
-import { manifest } from '../theme.ts';
-import { DUR, ease, enter, MOTION_FPS, pop, useFrame } from '../motion.ts';
-import { Photo } from '../ui.tsx';
-import { shotSpan, wordAt } from '../plan.ts';
+// A demo scene: its product panels sharing one frame, each coming in on its line and staying to the scene's end.
+import { Freeze, Sequence, useVideoConfig } from 'remotion';
+import { DUR, enter, MOTION_FPS, pop, useFrame } from '../motion.ts';
+import { proofSpan, scene, shotSpan, wordAt } from '../plan.ts';
 import { cueAt, type Laid, type Panel } from '../timeline.ts';
-import { GoalPanel, HoldPanel, ORDER_ROWS, OrderPanel, PAID_SHOP, PricePanel, ProductPanel, ReceiptPanel, type PanelProps } from '../ui/panels.tsx';
-import { BagCard, boardRow, ROWS } from './Bidding.tsx';
-import { RAIL_PILL } from './Rail.tsx';
+import { addedAt, ADDED, approvedAt, GoalPanel, HoldPanel, OrderPanel, PricePanel, productId, ProductPanel, ReceiptPanel, type PanelProps } from '../ui/panels.tsx';
+import { BagCard, ROWS } from './Bidding.tsx';
+import { Quiet } from '../ui/glass.tsx';
 
-// The bag fills row by row, its one price lands as it is said, then it shrinks into the rail's "One bag" pill.
-function Bag({ word, length }: PanelProps) {
-  const frame = useFrame(), end = length * MOTION_FPS;
-  const p = ease((frame - (end - 16)) / 16), totalAt = Math.max(2 + ROWS.length * 7, word(0, '$'));
-  const dx = (RAIL_PILL.x - 960) * p, dy = (RAIL_PILL.y - 500) * p;
-  return <div style={{ position: 'absolute', inset: 0, transformOrigin: '960px 500px', transform: `translate(${dx}px, ${dy}px) scale(${1 - 0.92 * p})`, opacity: 1 - p * 0.8 }}>
-    <BagCard row={i => enter(frame, MOTION_FPS, 2 + i * 7)} total={pop(frame, MOTION_FPS, totalAt)} note={enter(frame, MOTION_FPS, Math.max(totalAt + 6, word(0, 'shipping')))} />
-  </div>;
+// The bag fills row by row, the product added on the right landing last; its one price lands as it is said, and
+// PayPal's ceiling draws over it on "approve".
+function Bag({ word }: PanelProps) {
+  const frame = useFrame(), fps = MOTION_FPS, added = ROWS.indexOf(productId);
+  const others = ROWS.map((_, i) => i).filter(i => i !== added);
+  const arrive = (i: number) => i === added ? addedAt(word) + ADDED : 2 + others.indexOf(i) * 7;
+  const totalAt = Math.max(...ROWS.map((_, i) => arrive(i)), word(0, '$'));
+  const approve = approvedAt(word);
+  return <BagCard row={i => enter(frame, fps, arrive(i))} total={pop(frame, fps, totalAt)} note={enter(frame, fps, Math.max(totalAt + 6, word(0, 'shipping')))} ceiling={frame >= approve ? enter(frame, fps, approve, 12) : 0} />;
 }
 
 const VIEWS: Record<Panel, (props: PanelProps) => React.ReactNode> = { price: PricePanel, goal: GoalPanel, product: ProductPanel, bag: Bag, hold: HoldPanel, receipt: ReceiptPanel, order: OrderPanel };
 
-export function ClipScene({ laid }: { laid: Laid }) {
-  const { fps } = useVideoConfig();
-  return <>
-    <div style={{ position: 'absolute', inset: 0 }}>
-      {laid.scene.shots!.map((shot, i) => {
-        const { from, length } = shotSpan(laid, i), View = VIEWS[shot.panel];
-        const at = (cue: number) => (cueAt(laid, cue) - from) * MOTION_FPS, word = (cue: number, text: string) => (wordAt(laid, cue, text) - from) * MOTION_FPS;
-        return <Sequence key={i} from={Math.round(from * fps)} durationInFrames={i + 1 < laid.scene.shots!.length ? Math.max(1, Math.round(length * fps)) : undefined} layout="none">
-          <View at={at} word={word} length={length} />
-        </Sequence>;
-      })}
-      {laid.id === 'payout' && <WinsIntoOrder />}
-    </div>
-  </>;
+// A panel's timing functions, in frames from the start of its shot.
+const timing = (laid: Laid, from: number) => ({
+  at: (cue: number) => (cueAt(laid, cue) - from) * MOTION_FPS,
+  word: (cue: number, text: string) => (wordAt(laid, cue, text) - from) * MOTION_FPS,
+});
+
+// The receipt as the result scene left it: it stays on the left, dimmed, while the shop is paid, until the real
+// payout rises in over it.
+function Receipt({ laid }: { laid: Laid }) {
+  const { fps } = useVideoConfig(), frame = useFrame(), result = scene('result'), { from, length } = shotSpan(result, 0);
+  const proof = Math.round(proofSpan(laid, 0).from * MOTION_FPS);
+  return <div style={{ position: 'absolute', inset: 0, opacity: 0.45 * (1 - enter(frame, MOTION_FPS, proof, DUR.standard)) }}>
+    <Quiet.Provider value><Freeze frame={Math.round(result.duration * fps) - 1}><ReceiptPanel {...timing(result, from)} length={length} boxed={false} /></Freeze></Quiet.Provider>
+  </div>;
 }
 
-// The paid shop's winning items slide from the board's rows into its order.
-function WinsIntoOrder() {
-  const frame = useFrame();
-  const won = Object.entries(manifest.run.winners).filter(([, row]) => row.shop === PAID_SHOP).map(([id]) => id);
-  return <>{won.map((id, i) => {
-    const a = boardRow(ROWS.indexOf(id)), b = ORDER_ROWS(i), p = ease((frame - i * 2) / DUR.camera);
-    if (p >= 1) return null;
-    return <div key={id} style={{ position: 'absolute', left: a.x + (b.x - a.x) * p, top: a.y + (b.y - a.y) * p, display: 'flex', alignItems: 'center', gap: 16, opacity: 1 - enter(frame, MOTION_FPS, DUR.camera - 4, 6) }}>
-      <Photo id={id} size={84 - 12 * p} /><span style={{ fontSize: 34 + 2 * p, fontWeight: 700 }}>{manifest.names[id]}</span>
-    </div>;
-  })}</>;
+export function ClipScene({ laid }: { laid: Laid }) {
+  const { fps } = useVideoConfig();
+  return <div style={{ position: 'absolute', inset: 0 }}>
+    {laid.id === 'payout' && <Receipt laid={laid} />}
+    {laid.scene.shots!.map((shot, i) => {
+      const { from, length } = shotSpan(laid, i), View = VIEWS[shot.panel];
+      return <Sequence key={i} from={Math.round(from * fps)} layout="none">
+        <View {...timing(laid, from)} length={length} />
+      </Sequence>;
+    })}
+  </div>;
 }

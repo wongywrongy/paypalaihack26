@@ -14,7 +14,7 @@ export const VOICE_SPEED = 1.12;
 // Pacing gates (test/pacing.test.ts and scripts/pace.ts). A line is one breath; the picture changes at least every MAX_HOLD s.
 export const MAX_WORDS = 20, MEAN_WORDS = 13, MAX_HOLD = 2.5;
 
-// The real screen recordings, shown only as short full-frame proof cuts (src/ui/glass.tsx, Proof).
+// The real screen recordings, shown only as proof windows inside the frame (src/ui/glass.tsx, Proof).
 export const CLIPS = {
   '05-paypal-hold': 'PayPal sandbox approval, around the approve click',
   '06-bidding': 'The live bidding board',
@@ -32,15 +32,16 @@ export type Role = keyof typeof ROLES;
 export type Step = 1 | 2 | 3 | 4 | 5 | 'before';
 export type Cue = { text: string; say?: string; anchor?: 'reject' | 'agent' | 'haneul' | 'award'; pause?: number; step?: Step };
 // A product moment, drawn natively from the run (src/ui/panels.tsx), starting at a scene cue, or at a word of it
-// (word), plus delay seconds, and running to the next shot.
+// (word), plus delay seconds. A scene's shots share one frame and stay to its end: each panel has its own place.
 export const PANELS = ['price', 'goal', 'product', 'bag', 'hold', 'receipt', 'order'] as const;
 export type Panel = typeof PANELS[number];
 export type Shot = { panel: Panel; cue: number; word?: string; delay?: number; role: Role };
-// A real screen recording as a full-frame cut, proof that the drawn panels are the running product: clip seconds in
-// to out, starting at a scene cue or a word of it (plus delay, which may be negative). crop is the region shown, in 1440×900 window
-// pixels; it is fitted to the frame but never shown above the recording's own pixel size.
+// A real screen recording in a window inside the frame, proof that the drawn panels are the running product: clip
+// seconds in to out, starting at a scene cue or a word of it (plus delay, which may be negative), then holding its last
+// frame to the scene's end. crop is the region shown, in 1440×900 window pixels; box is where the window sits, in frame
+// pixels. The crop is fitted to the box but never shown above the recording's own pixel size.
 export type Rect = { x: number; y: number; width: number; height: number };
-export type Proof = { clip: ClipName; cue: number; word?: string; delay?: number; in: number; out: number; crop: Rect };
+export type Proof = { clip: ClipName; cue: number; word?: string; delay?: number; in: number; out: number; crop: Rect; box: Rect };
 export type Scene = { id: string; criterion: string; act: 1 | 2 | 3 | 4 | 5; cues: Cue[]; shots?: Shot[]; proofs?: Proof[] };
 
 // The step rail, word for word.
@@ -77,10 +78,10 @@ export const SCENES: Scene[] = [
   },
   {
     id: 'shopper', criterion: 'design, PayPal', act: 3,
-    // A hard cut to the hold card on the PayPal line's first word; Approve is clicked on "approve".
-    shots: [{ panel: 'product', cue: 0, role: 'shopper' }, { panel: 'bag', cue: 0, word: 'bag', delay: 0.25, role: 'shopper' }, { panel: 'hold', cue: 1, role: 'shopper' }],
-    // The real approval, logos blurred, right after the drawn click: just before the approve click and just after.
-    proofs: [{ clip: '05-paypal-hold', cue: 1, word: 'approve', delay: 0.35, in: 2.4, out: 4.4, crop: { x: 436, y: 0, width: 568, height: 770 } }],
+    // The bag fills on the left; on the right the product is added, then the hold is approved, on "approve".
+    shots: [{ panel: 'product', cue: 0, role: 'shopper' }, { panel: 'bag', cue: 0, word: 'fill', role: 'shopper' }, { panel: 'hold', cue: 1, role: 'shopper' }],
+    // The real approval, logos blurred, in the right-hand column right after the drawn click.
+    proofs: [{ clip: '05-paypal-hold', cue: 1, word: 'approve', delay: 0.35, in: 2.4, out: 4.4, crop: { x: 436, y: 0, width: 568, height: 770 }, box: { x: 1130, y: 150, width: 700, height: 700 } }],
     cues: [
       { text: 'Then you fill one bag and see one price: {held}, shipping and duties in.', say: 'Then you fill one bag and see one price: {held_say}, shipping and duties in.', step: 1 },
       { text: "You approve it with PayPal. That's the most you can pay.", step: 2 },
@@ -88,8 +89,8 @@ export const SCENES: Scene[] = [
   },
   {
     id: 'bidding', criterion: 'innovation, tech', act: 3,
-    // The real board landing on the final total, right after the drawn board's arithmetic appears.
-    proofs: [{ clip: '06-bidding', cue: 3, delay: 2.4, in: 14.3, out: 16.3, crop: { x: 190, y: 90, width: 1060, height: 470 } }],
+    // The real board landing on the final total, over the drawn rows, right after the drawn board's arithmetic appears.
+    proofs: [{ clip: '06-bidding', cue: 3, delay: 2.4, in: 14.3, out: 16.3, crop: { x: 190, y: 90, width: 1060, height: 470 }, box: { x: 110, y: 330, width: 1700, height: 540 } }],
     cues: [
       { text: 'Now the agents fight for your bag. {rounds_phrase}, and prices only go down.', step: 3 },
       { text: '{reject_line}', anchor: 'reject', step: 3 },
@@ -107,9 +108,10 @@ export const SCENES: Scene[] = [
   },
   {
     id: 'payout', criterion: 'PayPal, impact', act: 3,
+    // The shopper's receipt stays on the left, dimmed; the shop's order comes in on the right.
     shots: [{ panel: 'order', cue: 0, role: 'shop' }],
-    // The real stepper turning from Payout sent to Paid, as the payout that just landed is said.
-    proofs: [{ clip: '08-handoff-payout', cue: 1, word: '$', in: 5, out: 7, crop: { x: 598, y: 122, width: 802, height: 410 } }],
+    // The real stepper turning from Payout sent to Paid, in place of the receipt, as the payout that just landed is said.
+    proofs: [{ clip: '08-handoff-payout', cue: 1, word: '$', in: 5, out: 7, crop: { x: 598, y: 122, width: 802, height: 410 }, box: { x: 70, y: 170, width: 860, height: 640 } }],
     cues: [
       { text: '{handoff_line}', step: 4 },
       { text: 'and PayPal pays {payout_who} {payout} on the spot.', say: 'and PayPal pays {payout_who} {payout_say} on the spot.', step: 5 },

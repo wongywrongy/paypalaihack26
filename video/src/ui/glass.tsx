@@ -1,8 +1,8 @@
 // The film's kit (STYLE.md): canvas, glass panels, word reveals, odometer numbers, the shimmer, cursor and keycaps.
-import type { CSSProperties, ReactNode } from 'react';
+import { createContext, useContext, type CSSProperties, type ReactNode } from 'react';
 import { Audio, interpolate, OffthreadVideo, Freeze, Sequence, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
 import { C, FIELDS, LIGHT, manifest, MONO, SANS } from '../theme.ts';
-import { clamp, DUR, ease, enter, MOTION_FPS, reveal, smooth, useFrame, words } from '../motion.ts';
+import { clamp, DUR, MOTION_FPS, reveal, smooth, useFrame, words } from '../motion.ts';
 import { Redactions } from '../ui.tsx';
 import type { ClipName, Rect } from '../timeline.ts';
 
@@ -69,9 +69,12 @@ export function Odometer({ cents, digits, symbol = '$', style }: { cents: number
   </span>;
 }
 
-// A sound effect at a motion frame, at −18 dB (sfx/LICENSE.txt).
+// A sound effect at a motion frame, at −18 dB (sfx/LICENSE.txt). Silent inside <Quiet>, for a panel held from an
+// earlier scene.
+export const Quiet = createContext(false);
 export function Sfx({ at, kind }: { at: number; kind: 'click' | 'whoosh' | 'tick' }) {
   const { fps } = useVideoConfig();
+  if (useContext(Quiet)) return null;
   return <Sequence from={Math.max(0, Math.round(at * fps / MOTION_FPS))} layout="none"><Audio src={staticFile(`generated/sfx/${kind}.wav`)} volume={10 ** (-18 / 20)} /></Sequence>;
 }
 
@@ -111,19 +114,18 @@ export function Cursor({ from, to, start, click }: { from: Point; to: Point; sta
 export const Keycap = ({ label, down }: { label: string; down: boolean }) => <span style={{ display: 'inline-grid', placeItems: 'center', minWidth: 58, height: 58, padding: '0 14px', boxSizing: 'border-box', borderRadius: 14, fontFamily: MONO, fontSize: 28, color: C.ink,
   background: down ? 'rgba(255,255,255,.22)' : 'rgba(255,255,255,.08)', boxShadow: down ? 'inset 0 0 0 1px rgba(255,255,255,.3)' : 'inset 0 0 0 1px rgba(255,255,255,.16), 0 4px 0 rgba(0,0,0,.45)', transform: `translateY(${down ? 3 : 0}px)` }}>{label}</span>;
 
-// The real recording as a full-frame cut on the light canvas: proof the drawn panels are the running product. It is
-// cropped to the region that matters and fitted into PROOF_BOX, never above its own pixels (2× window pixels in a
-// 2880×1800 recording), and its redactions travel with it. `p` is how far the cut has dissolved in.
-export const PROOF_BOX = { width: 1696, height: 800 };
-export const proofScale = (crop: Rect) => Math.min(2, PROOF_BOX.width / crop.width, PROOF_BOX.height / crop.height);
-export function Proof({ name, from, to, crop, p }: { name: ClipName; from: number; to: number; crop: Rect; p: number }) {
+// The real recording as a window inside the frame: proof the drawn panels are the running product. It is cropped to
+// the region that matters and fitted into its box, never above its own pixels (2× window pixels in a 2880×1800
+// recording), and its redactions travel with it. `p` is how far the window has risen in.
+export const proofScale = (crop: Rect, box: Rect) => Math.min(2, box.width / crop.width, (box.height - 44) / crop.height);
+export function Proof({ name, from, to, crop, box, p }: { name: ClipName; from: number; to: number; crop: Rect; box: Rect; p: number }) {
   const frame = useFrame(), { fps } = useVideoConfig();
   const s = frame / MOTION_FPS, meta = manifest.clips[name];
   const at = Math.min(from + s, to, meta ? (meta.frames - 2) / fps : Infinity);
-  const k = proofScale(crop), w = crop.width * k, h = crop.height * k;
-  return <div style={{ position: 'absolute', inset: 0, background: LIGHT.ground, opacity: p, filter: p < 0.999 ? `blur(${12 * (1 - p)}px)` : undefined }}>
-    <div style={{ position: 'absolute', left: 40, top: 36, fontSize: 26, fontWeight: 700, color: LIGHT.ink, fontFamily: SANS }}>Screen recording · PayPal sandbox</div>
-    <div style={{ position: 'absolute', left: (1920 - w) / 2, top: 110 + (PROOF_BOX.height - h) / 2, width: w, height: h, overflow: 'hidden', borderRadius: 10, boxShadow: '0 0 0 1.5px rgba(23,22,26,.24), 0 20px 60px rgba(23,22,26,.12)' }}>
+  const k = proofScale(crop, box), w = crop.width * k, h = crop.height * k;
+  return <div style={{ position: 'absolute', left: box.x + (box.width - w) / 2, top: box.y + (box.height - 44 - h) / 2, width: w, opacity: p, transform: `translateY(${(1 - p) * 30}px)` }}>
+    <div style={{ height: 44, fontSize: 26, fontWeight: 700, color: C.muted, fontFamily: SANS }}>Screen recording · PayPal sandbox</div>
+    <div style={{ position: 'relative', width: w, height: h, overflow: 'hidden', borderRadius: 14, background: LIGHT.ground, boxShadow: '0 0 0 1.5px rgba(255,255,255,.3), 0 30px 80px rgba(0,0,0,.55)' }}>
       <div style={{ position: 'absolute', left: -crop.x * k, top: -crop.y * k, width: 1440, height: 900, transformOrigin: '0 0', transform: `scale(${k})` }}>
         {meta && <Freeze frame={0}><OffthreadVideo src={staticFile(`generated/clips/${name}.mp4`)} muted trimBefore={Math.round(at * fps)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} /></Freeze>}
         <Redactions name={name} seconds={at} />

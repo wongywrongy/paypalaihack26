@@ -6,7 +6,6 @@ import { BANNED, C, manifest, MONO } from '../theme.ts';
 import { clamp, DUR, ease, enter, MOTION_FPS, pop, rise, shake, typed, useFrame } from '../motion.ts';
 import { glass, Odometer } from '../ui/glass.tsx';
 import { Flight, Photo, Rich } from '../ui.tsx';
-import { HOLD_PRICE } from '../ui/panels.tsx';
 import { proofSpan, scene } from '../plan.ts';
 import type { Laid } from '../timeline.ts';
 
@@ -28,14 +27,15 @@ export const ROWS = [...raw.items].sort((a, b) => Number(!bundle.includes(a.id))
 
 // Layout, in frame pixels. The bag card and the board share item sizes, so items only move between them.
 export const PHOTO = 84;
-export const ROW_X = 140, ROW_Y = 362, ROW_H = 108, CHIP_X = 700, CHIP_W = 264, BRACKET_X = 1504;
-const BAG_X = 450, BAG_Y = 250, BAG_H = 116;
+export const ROW_X = 140, ROW_Y = 362, ROW_H = 116, CHIP_X = 700, CHIP_W = 264, BRACKET_X = 1504;
+const BAG_X = 130, BAG_Y = 250, BAG_H = 116;
 export const boardRow = (i: number) => ({ x: ROW_X, y: ROW_Y + i * ROW_H });
-const bagRow = (i: number) => ({ x: BAG_X, y: BAG_Y + i * BAG_H });
+export const bagRow = (i: number) => ({ x: BAG_X, y: BAG_Y + i * BAG_H });
 // The header grid: role tag top left with the title on its own row under it, the rail top centre, the total top right
 // under its label. Every block keeps 32 px or more from the next.
-const HEADER = { x: 1589, y: 128, size: 110 }, BAG_TOTAL = { x: 1352, y: 752, size: 64 };
-// The hold card's price flies into the board's total; the rows rise in under it, 4 frames apart, chips and all.
+const HEADER = { x: 1589, y: 128, size: 110 }, BAG_TOTAL = { x: 890, y: 752, size: 64 };
+// The bag becomes the board: its total flies up into the board's total and its rows slide down into the board's rows,
+// the lowest first, 3 frames apart, so they never cross; the chips fade in beside them.
 const FLY = 16, FROM = 0.9;
 
 function pace(laid: Laid) {
@@ -63,16 +63,20 @@ const winners = manifest.run.winners as Record<string, { shop: Shop; unit: numbe
 const wonCount = Object.keys(winners).length;
 
 // The shopper's bag, rebuilt from the run: the items, who sells each, and the one price PayPal holds. row(i) and total
-// are each one's arrival, 0 to 1; note is the "all in" line's.
-export function BagCard({ row = () => 1, total = 1, note = 1 }: { row?: (i: number) => number; total?: number; note?: number }) {
+// are each one's arrival, 0 to 1; note is the "all in" line's; ceiling is PayPal's hold drawing over the total.
+export function BagCard({ row = () => 1, total = 1, note = 1, ceiling = 0 }: { row?: (i: number) => number; total?: number; note?: number; ceiling?: number }) {
   const start = manifest.events.find(row => row.kind === 'start') as AuctionEvent;
   return <>
-    <div style={{ position: 'absolute', left: BAG_X - 50, top: 150, width: 1120, height: 680, ...glass, borderRadius: 28 }}>
+    <div style={{ position: 'absolute', left: BAG_X - 50, top: 150, width: 1000, height: 680, ...glass, borderRadius: 28 }}>
       <div style={{ position: 'absolute', left: 50, top: 34, fontSize: 34, fontWeight: 800, letterSpacing: '-.02em' }}>Your bag · {ROWS.length} items</div>
       <div style={{ position: 'absolute', left: 50, right: 50, top: 568, height: 1, background: C.line }} />
       <div style={{ position: 'absolute', left: 50, top: 586, fontSize: 30, color: C.muted }}>Total, all in</div>
       <div style={{ position: 'absolute', left: 50, top: 630, fontSize: 30, fontWeight: 700, color: C.accentHover, ...rise(note, 24) }}>Shipping, duties and tax included</div>
+      {/* PayPal's hold: the ceiling line draws over the total and a bracket closes round it. */}
+      <div style={{ position: 'absolute', left: 560, right: 30, top: 560, height: 4, background: C.accent, transformOrigin: 'right center', transform: `scaleX(${ceiling})` }} />
+      {ceiling > 0 && <div style={{ position: 'absolute', right: 50, top: 648, fontSize: 24, fontWeight: 700, color: C.accentHover, opacity: ceiling }}>The most you can be charged</div>}
     </div>
+    {ceiling > 0 && <div style={{ position: 'absolute', left: BAG_TOTAL.x - 170, top: BAG_TOTAL.y - 46, width: 340, height: 92, borderRadius: 20, boxShadow: `inset 0 0 0 4px ${C.accent}`, opacity: ceiling, transform: `scale(${1.1 - 0.1 * ceiling})` }} />}
     {ROWS.map((id, i) => {
       const a = bagRow(i);
       return <div key={id} style={{ position: 'absolute', left: a.x, top: a.y, display: 'flex', alignItems: 'center', gap: 22, ...rise(row(i), 40) }}>
@@ -109,16 +113,16 @@ function Row({ id, i, s }: { id: string; i: number; s: number }) {
   const collapse = ease(interpolate(frame, [awardF, awardF + DUR.standard], [0, 1], clamp));
   const winner = winners[id]?.shop, whyF = Math.round(whyAt * fps);
   const why = interpolate(frame, [whyF, whyF + DUR.standard], [0, 1], clamp);
-  const { x, y } = boardRow(i), chips = CHIP_X - ROW_X;
+  const { x, y } = boardRow(i), chips = CHIP_X - ROW_X, from = bagRow(i), slide = enter(frame, fps, (ROWS.length - 1 - i) * 3, DUR.scene);
   // Thrown out: the rejected shop's chip shakes, drops and fades as the checks reject it.
   const out = s - onBoard.reject;
   const undercut = lanes.some((lane, n) => lane.shop !== winner && prices[n] < (winners[id]?.unit ?? 0));
-  return <div style={{ position: 'absolute', left: x, top: y, width: 1500, height: ROW_H, ...rise(enter(frame, fps, i * 4), 80) }}>
+  return <div style={{ position: 'absolute', left: x, top: y, width: 1500, height: ROW_H, transform: `translate(${(from.x - x) * (1 - slide)}px, ${(from.y - y) * (1 - slide)}px)` }}>
     <div style={{ position: 'absolute', left: 0, top: 0, display: 'flex', alignItems: 'center', gap: 22 }}>
       <Photo id={id} size={PHOTO} />
       <span style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-.015em' }}>{manifest.names[id]}</span>
     </div>
-    {lanes.map((lane, n) => {
+    <div style={{ opacity: slide }}>{lanes.map((lane, n) => {
       const shop = lane.shop as Shop, isWinner = shop === winner;
       // The cheaper single price comes back next to the winner when the line explains why it lost.
       const cheaper = !isWinner && prices[n] < (winners[id]?.unit ?? 0);
@@ -130,7 +134,7 @@ function Row({ id, i, s }: { id: string; i: number; s: number }) {
         <Chip shop={shop} price={prices[n]} filled={n === low && collapse < 0.5} won={isWinner && collapse > 0.5} cheaper={cheaper && why > 0} x={left} bump={collapse > 0 ? 0 : bumps[n]} opacity={opacity * (thrown ? enter(frame, fps, Math.round((onBoard.reject + 0.7) * fps)) : 1)} />
         {thrown && <div style={{ position: 'absolute', left: left + shake(frame, Math.round(onBoard.reject * fps)), top: 12 + 90 * ease((out - 0.35) / 0.5), width: CHIP_W - 16, height: 64, boxSizing: 'border-box', borderRadius: 32, background: C.tint, border: `2px solid ${C.accent}`, color: C.accentHover, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 800, opacity: 1 - ease((out - 0.6) / 0.4), transform: `rotate(${8 * ease((out - 0.35) / 0.5)}deg)` }}>{SHORT_NAMES[shop]} · rejected</div>}
       </div>;
-    })}
+    })}</div>
     {winner && collapse > 0 && <span style={{ position: 'absolute', left: chips + CHIP_W * (1 + (undercut ? why : 0)) + 6, top: 30, fontSize: 26, fontWeight: 700, color: C.saving, opacity: collapse }}>{SHOP_NAMES[winner]} wins</span>}
   </div>;
 }
@@ -237,6 +241,6 @@ export function Bidding() {
         <span style={{ color: C.muted }}>=</span><Money v={manifest.vars.charged} strong />
       </div>}
     </div>
-    {!landed && <Flight from={HOLD_PRICE} to={HEADER} frames={FLY}><span style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums', letterSpacing: '-.03em' }}>{cash(hold)}</span></Flight>}
+    {!landed && <Flight from={BAG_TOTAL} to={HEADER} frames={FLY}><span style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums', letterSpacing: '-.03em' }}>{cash(hold)}</span></Flight>}
   </div>;
 }
