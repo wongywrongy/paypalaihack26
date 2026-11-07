@@ -3,7 +3,7 @@
 import { interpolate } from 'remotion';
 import { money, SHOP_NAMES } from '../schema.ts';
 import { C, manifest, MONO } from '../theme.ts';
-import { clamp, DUR, ease, enter, pop, reveal, rise, tiltIn, useFrame } from '../motion.ts';
+import { clamp, DUR, ease, enter, pop, reveal, rise, smooth, tiltIn, useFrame } from '../motion.ts';
 import { Lock, Photo } from '../ui.tsx';
 import { Cursor, Glass, Keycap, Odometer, Shimmer } from './glass.tsx';
 import { bagRow, PHOTO, ROWS } from '../scenes/Bidding.tsx';
@@ -17,28 +17,30 @@ export type PanelProps = { at: (cue: number) => number; word: (cue: number, word
 
 // The demo's frame is two columns: a scene's panels share it and stay up, so nothing cuts inside a scene. The one not
 // being spoken about dims (STYLE.md, depth of field).
-export const COLS = { left: { x: 70, width: 860 }, right: { x: 990, width: 860 } } as const;
-const Column = ({ side, top = 180, dim = 0, children }: { side: keyof typeof COLS; top?: number; dim?: number; children: React.ReactNode }) =>
-  <div style={{ position: 'absolute', left: COLS[side].x, top, width: COLS[side].width, opacity: 1 - 0.55 * dim }}>{children}</div>;
+export const COLS = { left: { x: 70, width: 860 }, right: { x: 990, width: 860 }, center: { x: 530, width: 860 } } as const;
+const Column = ({ side, x = COLS[side].x, top = 180, dim = 0, children }: { side: keyof typeof COLS; x?: number; top?: number; dim?: number; children: React.ReactNode }) =>
+  <div style={{ position: 'absolute', left: x, top, width: COLS[side].width, opacity: 1 - 0.55 * dim }}>{children}</div>;
 const Label = ({ children }: { children: React.ReactNode }) => <div style={{ fontSize: 24, fontWeight: 700, color: C.muted, letterSpacing: '.01em' }}>{children}</div>;
 const Button = ({ children, pressed, tone = 'ink' }: { children: React.ReactNode; pressed?: boolean; tone?: 'ink' | 'accent' }) =>
   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '16px 30px', borderRadius: 16, fontSize: 30, fontWeight: 700, whiteSpace: 'nowrap', color: tone === 'ink' ? C.onLight : '#fff', background: tone === 'ink' ? 'rgba(255,255,255,.92)' : C.accent, transform: `scale(${pressed ? 0.96 : 1})`, boxShadow: '0 10px 30px rgba(0,0,0,.35)' }}>{children}</span>;
 
 // One product row: the public price, then the lowest price beside it, which is never shown. On "lowest" a masked
 // field is filled in, on "no one else" a Private pill springs on in its place, and what rivals see is written out.
-// It stays on the left, dimmed, while her goal is set on the right.
+// It opens centre frame and large, and glides left to size, making room for her goal on the right; then it dims.
 export function PricePanel({ at, word }: PanelProps) {
   const frame = useFrame(), id = 'sae-cica-cream';
   const panel = enter(frame, 30, 0, DUR.camera), maskAt = word(0, 'lowest'), pillAt = word(0, 'no'), rivals = pillAt + 2;
-  const pill = pop(frame, 30, pillAt), dots = Math.max(0, Math.min(4, Math.floor((frame - maskAt) / 3)));
-  return <Column side="left" dim={enter(frame, 30, at(1))}>
-    <div style={tiltIn(panel)}><Glass style={{ padding: '34px 40px' }}>
+  const pill = pop(frame, 30, pillAt), dots = Math.max(0, Math.min(4, Math.floor((frame - maskAt) / 5)));
+  const glide = smooth(frame / at(1));
+  return <Column side="left" x={COLS.center.x + (COLS.left.x - COLS.center.x) * glide} dim={enter(frame, 30, at(1))}>
+    <div style={{ transformOrigin: '50% 0', transform: `scale(${1.3 - 0.3 * glide})` }}><div style={tiltIn(panel)}><Glass style={{ padding: '34px 40px' }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 220px', alignItems: 'end', gap: 20, paddingBottom: 18, borderBottom: '1px solid rgba(255,255,255,.1)' }}>
         <Label>Product</Label><Label>Listed price</Label><Label>Lowest price</Label>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 220px', alignItems: 'center', gap: 20, paddingTop: 22, height: 100 }}>
+      {/* The row, then its listed price, come in after the panel: the price is set before the lowest price is. */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 220px', alignItems: 'center', gap: 20, paddingTop: 22, height: 100, ...rise(enter(frame, 30, 15), 24) }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}><Photo id={id} size={88} /><span style={{ fontSize: 34, fontWeight: 700, lineHeight: 1.1 }}>{manifest.names[id]}</span></div>
-        <span style={{ fontFamily: MONO, fontSize: 42 }}>{cash(listed[id].haneul)}</span>
+        <span style={{ fontFamily: MONO, fontSize: 42, ...rise(enter(frame, 30, 36), 24) }}>{cash(listed[id].haneul)}</span>
         {frame >= pillAt
           ? <span style={{ justifySelf: 'start', display: 'inline-flex', alignItems: 'center', gap: 12, padding: '12px 22px', borderRadius: 999, border: `2px solid ${C.accent}`, background: C.tint, color: C.accentHover, fontSize: 32, fontWeight: 700, transform: `scale(${0.5 + 0.5 * Math.min(1.1, pill)})`, opacity: Math.min(1, pill * 1.5) }}><Lock size={28} color={C.accentHover} />Private</span>
           : frame >= maskAt && <span style={{ justifySelf: 'start', width: 200, padding: '12px 20px', boxSizing: 'border-box', borderRadius: 14, boxShadow: `inset 0 0 0 2px ${C.accent}`, fontFamily: MONO, fontSize: 40, letterSpacing: '.1em', opacity: enter(frame, 30, maskAt, DUR.micro) }}>{'•'.repeat(dots)}<span style={{ color: C.accent }}>|</span></span>}
@@ -53,19 +55,19 @@ export function PricePanel({ at, word }: PanelProps) {
       </div>
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 28, color: C.muted }}><Lock size={26} color={C.muted} />Lowest price hidden</span>
     </Glass></div>}
-  </Column>;
+  </div></Column>;
 }
 
-// The goal typed in a second, then the two rules Rally made from it, each on its own beat, then Apply. On the right,
+// The goal typed over about 2.5 s, then the two rules Rally made from it, each on its own beat, then Apply. On the right,
 // beside the price it protects.
 const APPLY_AT = { x: 1736, y: 652 };
 export function GoalPanel({ length }: PanelProps) {
   const frame = useFrame(), goal = manifest.vars.goal_quote;
-  const typeFrom = 3, perChar = Math.min(1.1, 30 / goal.length), typedTo = typeFrom + goal.length * perChar;
+  const typeFrom = 3, perChar = 72 / goal.length, typedTo = typeFrom + goal.length * perChar;
   const n = Math.max(0, Math.min(goal.length, Math.floor((frame - typeFrom) / perChar)));
   const key = n > 0 && n < goal.length ? goal[n - 1] : '';
   const rules = manifest.run.rules;
-  const rulesAt = typedTo + 6, ruleGap = 12, applyAt = Math.min(length * 30 - 12, rulesAt + rules.length * ruleGap + 16);
+  const rulesAt = typedTo + 12, ruleGap = 24, applyAt = Math.min(length * 30 - 60, rulesAt + rules.length * ruleGap + 36);
   const applied = frame >= applyAt;
   return <><Column side="right"><div style={tiltIn(enter(frame, 30, 0, DUR.standard))}><Glass style={{ padding: '34px 40px', display: 'flex', flexDirection: 'column', gap: 24 }}>
     <Label>Your shop goal</Label>
@@ -141,14 +143,14 @@ export function HoldPanel({ word }: PanelProps) {
 }
 
 // A shipping box: the items drop in one after another, then the lid comes down on them.
-export function Carton({ from, ids, size }: { from: number; ids: string[]; size: number }) {
+export function Carton({ from, ids, size, gap = 5 }: { from: number; ids: string[]; size: number; gap?: number }) {
   const frame = useFrame(), w = size, top = size * 0.42, h = size * 0.6, photo = size * 0.32;
-  const shut = from + ids.length * 5 + 10, lid = ease(interpolate(frame, [shut, shut + 8], [0, 1], clamp));
+  const shut = from + ids.length * gap + 10, lid = ease(interpolate(frame, [shut, shut + 8], [0, 1], clamp));
   const edge = `3px solid ${C.ink}`, tape = <div style={{ position: 'absolute', left: '43%', width: '14%', top: 0, bottom: 0, background: 'rgba(0,0,0,.1)' }} />;
   return <div style={{ position: 'relative', width: w, height: top + h, flex: 'none' }}>
     <div style={{ position: 'absolute', left: w * 0.05, top: top - size * 0.08, width: w * 0.9, height: size * 0.1, background: '#B89A45', borderRadius: '10px 10px 0 0' }} />
     {ids.map((id, i) => {
-      const p = interpolate(frame, [from + i * 5, from + i * 5 + 12], [0, 1], { ...clamp, easing: x => x * x });
+      const p = interpolate(frame, [from + i * gap, from + i * gap + 12], [0, 1], { ...clamp, easing: x => x * x });
       const x = w * 0.1 + (w * 0.8 - photo) * (ids.length > 1 ? i / (ids.length - 1) : 0.5);
       return <div key={id} style={{ position: 'absolute', left: x, top: -photo + (top - photo * 0.35 + photo) * p, opacity: Math.min(1, p * 4) }}><Photo id={id} size={photo} /></div>;
     })}
@@ -157,50 +159,55 @@ export function Carton({ from, ids, size }: { from: number; ids: string[]; size:
   </div>;
 }
 
-// The receipt: on the left, what was held rolls down to what was paid and the three tiles pop in on "hands back"; on
-// the right, the bag's items drop into one box and Duties paid is stamped on it as it is said. The left half stays,
-// dimmed, while the shop is paid (boxed false).
+// The receipt, centre frame: what was held rolls down to what was paid, then the three tiles come in left to right, one
+// a beat, from "hands back"; the released amount stays lit. The camera pushes in on it the whole scene.
 const items: string[] = start.items;
-export function ReceiptPanel({ at, word, boxed = true }: PanelProps & { boxed?: boolean }) {
+const TILE_BEAT = 48;
+export function ReceiptPanel({ word, length }: PanelProps) {
   const frame = useFrame(), { held_minor: held, charged_minor: charged } = manifest.run;
-  const roll = ease(interpolate(frame, [4, 4 + 24], [0, 1], clamp)), rolled = frame >= 28;
-  const tilesAt = word(0, 'hands'), box = at(1), duties = word(1, 'duties');
-  const shops = Number(manifest.vars.box_shops), stamp = pop(frame, 30, duties);
+  const roll = ease(interpolate(frame, [12, 66], [0, 1], clamp)), rolled = frame >= 66;
+  const tilesAt = word(0, 'hands');
   const tiles = [['PayPal held', cash(held), false], ['Charged', cash(charged), false], ['Released', cash(held - charged), true]] as const;
-  return <>
-    <Column side="left" top={200}><div style={tiltIn(enter(frame, 30, 0, DUR.standard))}><Glass style={{ padding: '44px 44px', display: 'flex', flexDirection: 'column', gap: 30 }}>
-      <Label>{rolled ? 'You paid' : 'PayPal held'}</Label>
-      {/* The price makes room for the tiles as they come in. */}
-      <span style={{ fontSize: 200 - 50 * ease(interpolate(frame, [tilesAt, tilesAt + 10], [0, 1], clamp)), lineHeight: 1, color: rolled ? C.saving : C.ink }}><Shimmer at={30}><Odometer cents={held - (held - charged) * roll} digits={digits} /></Shimmer></span>
-      <div style={{ display: 'flex', gap: 16, height: 110 }}>
-        {tiles.map(([label, value, isMoney], i) => {
-          const from = tilesAt + i * 4, p = pop(frame, 30, from);
-          return <div key={label} style={{ flex: 1, padding: '18px 20px', borderRadius: 18, background: isMoney ? C.mint : 'rgba(255,255,255,.05)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.1)', opacity: frame < from ? 0 : Math.min(1, p * 1.5), transform: `scale(${0.6 + 0.4 * Math.min(1.08, p)})` }}>
-            <div style={{ fontSize: 24, color: isMoney ? C.saving : C.muted, fontWeight: 600 }}>{label}</div>
-            <div style={{ fontFamily: MONO, fontSize: 40, color: isMoney ? C.saving : C.ink }}>{value}</div>
-          </div>;
-        })}
-      </div>
-    </Glass></div></Column>
-    {boxed && frame >= box && <Column side="right" top={200}><div style={tiltIn(enter(frame, 30, box, DUR.standard))}><Glass style={{ padding: '40px 44px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
-      <div style={{ position: 'relative' }}>
-        <Carton from={box + 4} ids={items} size={320} />
-        {frame >= duties && <div style={{ position: 'absolute', left: '50%', top: '62%', padding: '10px 22px', borderRadius: 12, border: `4px solid ${C.saving}`, background: 'rgba(11,11,15,.85)', color: C.saving, fontSize: 34, fontWeight: 800, whiteSpace: 'nowrap', opacity: Math.min(1, stamp * 1.5), transform: `translate(-50%, -50%) rotate(-8deg) scale(${1.6 - 0.6 * Math.min(1.05, stamp)})` }}>Duties paid</div>}
-      </div>
-      <div style={{ fontSize: 44, fontWeight: 800, ...reveal(enter(frame, 30, box)) }}>One box from {shops} {shops === 1 ? 'shop' : 'shops'}</div>
-      <div style={{ fontSize: 28, color: C.muted, ...reveal(enter(frame, 30, duties)) }}>Nothing to pay at the door.</div>
-    </Glass></div></Column>}
-  </>;
+  const lit = tilesAt + 2 * TILE_BEAT, ring = frame >= lit + 12 ? ((frame - lit - 12) % 54) / 54 : 0;
+  return <Column side="center" top={200}><div style={{ transformOrigin: '50% 40%', transform: `scale(${1 + 0.2 * frame / (length * 30)})` }}><div style={tiltIn(enter(frame, 30, 0, DUR.standard))}><Glass style={{ padding: '44px 44px', display: 'flex', flexDirection: 'column', gap: 30 }}>
+    <Label>{rolled ? 'You paid' : 'PayPal held'}</Label>
+    {/* The price makes room for the tiles as they come in. */}
+    <span style={{ fontSize: 200 - 50 * ease(interpolate(frame, [tilesAt, tilesAt + 10], [0, 1], clamp)), lineHeight: 1, color: rolled ? C.saving : C.ink }}><Shimmer at={68}><Odometer cents={held - (held - charged) * roll} digits={digits} /></Shimmer></span>
+    <div style={{ display: 'flex', gap: 16, height: 110 }}>
+      {tiles.map(([label, value, isMoney], i) => {
+        const from = tilesAt + i * TILE_BEAT, p = pop(frame, 30, from);
+        return <div key={label} style={{ position: 'relative', flex: 1, padding: '18px 20px', borderRadius: 18, background: isMoney ? C.mint : 'rgba(255,255,255,.05)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.1)', opacity: frame < from ? 0 : Math.min(1, p * 1.5), transform: `scale(${0.6 + 0.4 * Math.min(1.08, p)})` }}>
+          <div style={{ fontSize: 24, color: isMoney ? C.saving : C.muted, fontWeight: 600 }}>{label}</div>
+          <div style={{ fontFamily: MONO, fontSize: 40, color: isMoney ? C.saving : C.ink }}>{value}</div>
+          {isMoney && ring > 0 && <div style={{ position: 'absolute', inset: -6 - 40 * ring, borderRadius: 22 + 24 * ring, border: `5px solid ${C.saving}`, opacity: 1 - ring * ring }} />}
+        </div>;
+      })}
+    </div>
+  </Glass></div></div></Column>;
 }
 
-// The winning shop's order, on the right: what it won, the hand-off, then the payout stepper, one step every 0.4 s,
-// the amount rolling up and landing just before it is said.
+// The box, on the left: the bag's items drop in one by one and the lid shuts; Duties paid is stamped on it as it is
+// said. It dims when the shop's order comes in on the right.
+export function BoxPanel({ at, word }: PanelProps) {
+  const frame = useFrame(), duties = word(0, 'duties'), shops = Number(manifest.vars.box_shops), stamp = pop(frame, 30, duties);
+  return <Column side="left" top={200} dim={enter(frame, 30, at(1))}><div style={tiltIn(enter(frame, 30, 0, DUR.standard))}><Glass style={{ padding: '40px 44px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
+    <div style={{ position: 'relative' }}>
+      <Carton from={8} ids={items} size={320} gap={9} />
+      {frame >= duties && <div style={{ position: 'absolute', left: '50%', top: '62%', padding: '10px 22px', borderRadius: 12, border: `4px solid ${C.saving}`, background: 'rgba(11,11,15,.85)', color: C.saving, fontSize: 34, fontWeight: 800, whiteSpace: 'nowrap', opacity: Math.min(1, stamp * 1.5), transform: `translate(-50%, -50%) rotate(-8deg) scale(${1.6 - 0.6 * Math.min(1.05, stamp)})` }}>Duties paid</div>}
+    </div>
+    <div style={{ fontSize: 44, fontWeight: 800, ...reveal(enter(frame, 30, word(0, 'box'))) }}>One box from {shops} {shops === 1 ? 'shop' : 'shops'}</div>
+    <div style={{ fontSize: 28, color: C.muted, ...reveal(enter(frame, 30, duties + 12)) }}>Nothing to pay at the door.</div>
+  </Glass></div></Column>;
+}
+
+// The winning shop's order, on the right: what it won, the hand-off, then the payout stepper, one step at a time (Won
+// as it comes in, Handed off on the click, Payout sent as the payout line starts, Paid just before the amount is said).
 const STEPS = ['Won', 'Handed off', 'Payout sent', 'Paid'];
 export const PAID_SHOP = manifest.run.payout_shop as keyof typeof SHOP_NAMES;
 export function OrderPanel({ at, word }: PanelProps) {
   const frame = useFrame();
   const won = Object.entries(manifest.run.winners).filter(([, row]) => row.shop === PAID_SHOP);
-  const clickAt = Math.max(DUR.camera + 6, word(0, 'at')), paidAt = word(1, '$') - 16, sentAt = Math.min(paidAt - 12, at(1));
+  const clickAt = Math.max(DUR.camera + 6, word(1, 'at')), paidAt = word(2, '$') - 16, sentAt = Math.min(paidAt - 12, at(2));
   const turns = [0, clickAt, sentAt, paidAt];
   const step = turns.filter(f => frame >= f).length;
   const payout = manifest.run.payout_usd_cents * ease(interpolate(frame, [paidAt, paidAt + 14], [0, 1], clamp));

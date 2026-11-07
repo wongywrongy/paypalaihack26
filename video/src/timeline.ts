@@ -1,14 +1,13 @@
-// The one place to re-time the video. The voice drives it: every cue starts GAP seconds after the previous one ends,
-// and each scene is its cues plus LEAD and TAIL. Shot and camera times hang off cues, so nothing here is in seconds
-// except clip in/out points. {name} in a text is filled from run.json and order.json (see buildFacts in schema.ts).
+// The one place to re-time the video. Each scene has a fixed length and each cue a start in scene seconds (at); the
+// voice decides only where a line ends. Shot and proof times hang off cues and their words. {name} in a text is filled from run.json and order.json (see buildFacts in schema.ts).
 import { chunks } from './captions.ts';
 
 export const FPS = 60;
 export const MAX_SECONDS = 175;
-// The cut a judge sits through: aim here, and the tests hold the built cut to it.
-export const TARGET_SECONDS = [60, 95] as const;
-// Silence between lines, at the start of a scene and at its end. Conversation, not a reading: lines nearly touch.
-export const GAP = 0.12, LEAD = 0.1, TAIL = 0.15, MAX_SILENCE = 0.6;
+// The cut a judge sits through, exactly: the scenes' seconds add up to it.
+export const TOTAL_SECONDS = 150;
+// The least silence between two lines, and the least time a caption stays up.
+export const GAP = 0.12, MIN_CAPTION = 2.5;
 // Kokoro's speaking rate (scripts/voice.ts reads KOKORO_SPEED, default this). 1.0 sounds like someone reading aloud.
 export const VOICE_SPEED = 1.12;
 // Pacing gates (test/pacing.test.ts and scripts/pace.ts). A line is one breath; the picture changes at least every MAX_HOLD s.
@@ -27,22 +26,26 @@ export const ROLES = { shop: 'Haneul Beauty · shop owner in Seoul', shopper: 'S
 export type Role = keyof typeof ROLES;
 
 // say: what Kokoro reads, when the caption's spelling would trip it. anchor: the auction event this line lands on.
-// pause: extra silence before the line, only for the planned beat before the close (0.5 s here, plus TAIL and LEAD: 1 s).
+// at: when the line starts, in scene seconds; it waits if the line before runs long. Lines leave room for the picture:
+// whatever a line brings in lands and holds 1.5 s or more before the next line.
 // step: in the demo, the step this line shows, filled on the rail. 'before' is the shop's setup ahead of step 3.
 export type Step = 1 | 2 | 3 | 4 | 5 | 'before';
-export type Cue = { text: string; say?: string; anchor?: 'reject' | 'agent' | 'haneul' | 'award'; pause?: number; step?: Step };
+export type Cue = { text: string; say?: string; anchor?: 'reject' | 'agent' | 'haneul' | 'award'; at: number; step?: Step };
 // A product moment, drawn natively from the run (src/ui/panels.tsx), starting at a scene cue, or at a word of it
 // (word), plus delay seconds. A scene's shots share one frame and stay to its end: each panel has its own place.
-export const PANELS = ['price', 'goal', 'product', 'bag', 'hold', 'receipt', 'order'] as const;
+export const PANELS = ['price', 'goal', 'product', 'bag', 'hold', 'receipt', 'box', 'order'] as const;
 export type Panel = typeof PANELS[number];
 export type Shot = { panel: Panel; cue: number; word?: string; delay?: number; role: Role };
 // A real screen recording in a window inside the frame, proof that the drawn panels are the running product: clip
 // seconds in to out, starting at a scene cue or a word of it (plus delay, which may be negative), then holding its last
 // frame to the scene's end. crop is the region shown, in 1440×900 window pixels; box is where the window sits, in frame
-// pixels. The crop is fitted to the box but never shown above the recording's own pixel size.
+// pixels. It rises in its box, grows to near full frame for big seconds, then settles back. The crop is fitted to the
+// box but never shown above the recording's own pixel size.
 export type Rect = { x: number; y: number; width: number; height: number };
-export type Proof = { clip: ClipName; cue: number; word?: string; delay?: number; in: number; out: number; crop: Rect; box: Rect };
-export type Scene = { id: string; criterion: string; act: 1 | 2 | 3 | 4 | 5; cues: Cue[]; shots?: Shot[]; proofs?: Proof[] };
+// Where a proof window grows to: near full frame, clear of the role tag and rail above and the captions below.
+export const BIG: Rect = { x: 60, y: 100, width: 1800, height: 780 };
+export type Proof = { clip: ClipName; cue: number; word?: string; delay?: number; in: number; out: number; big: number; crop: Rect; box: Rect };
+export type Scene = { id: string; criterion: string; act: 1 | 2 | 3 | 4 | 5; seconds: number; cues: Cue[]; shots?: Shot[]; proofs?: Proof[] };
 
 // The step rail, word for word.
 export const STEPS = ['One bag', 'PayPal holds', 'Agents bid', 'Seoul hub', "Everyone's paid"] as const;
@@ -50,89 +53,81 @@ export const STEPS = ['One bag', 'PayPal holds', 'Agents bid', 'Seoul hub', "Eve
 // Measured on the recorded run, in 1440×900 window pixels.
 
 export const SCENES: Scene[] = [
-  // Act 1: open on the result. Act 2: the mess it replaces. The first picture is the product, not a map.
+  // Open on the result, then the mess it replaces. The first picture is the product, not a map.
   {
-    id: 'cold', criterion: 'presentation, impact', act: 1,
+    id: 'cold', criterion: 'presentation, impact', act: 1, seconds: 12,
     cues: [
-      { text: '{hook_line}', say: '{hook_say}' },
-      { text: "You didn't haggle. {shop_count_cap} shops' AI agents did." },
+      { text: '{hook_line}', say: '{hook_say}', at: 0.4 },
+      { text: "You didn't haggle. {shop_count_cap} shops' AI agents did.", at: 5.6 },
     ],
   },
   {
-    id: 'split', criterion: 'impact', act: 2,
+    id: 'split', criterion: 'impact', act: 2, seconds: 18,
     cues: [
-      { text: 'Normally? The shop with all {item_count_words} only ships in Korea.' },
-      { text: 'So you split it: more checkouts, more shipping, and US duties on every parcel.' },
+      { text: 'Normally? The shop with all {item_count_words} only ships in Korea.', at: 0.6 },
+      { text: 'So you split it: more checkouts, more shipping, and US duties on every parcel.', at: 7.6 },
       // The compare chips flash on this line: two shops, two prices, and now they compete.
-      { text: 'Rally makes the shops compete for it instead.' },
+      { text: 'Rally makes the shops compete for it instead.', at: 13.5 },
     ],
   },
-  // Act 3: the demo. One step on the rail per line; the shop's setup comes before the order.
+  // The demo. One step on the rail per line; the shop's setup comes before the order.
   {
-    id: 'haneul', criterion: 'innovation, design', act: 3,
+    id: 'haneul', criterion: 'innovation, design', act: 3, seconds: 15,
     shots: [{ panel: 'price', cue: 0, role: 'shop' }, { panel: 'goal', cue: 1, role: 'shop' }],
     cues: [
-      { text: "In Seoul, Haneul's shop sets a lowest price no one else can see.", step: 'before' },
-      { text: 'Her AI agent gets one goal: win two-item bundles.', step: 'before' },
+      { text: "In Seoul, Haneul's shop sets a lowest price no one else can see.", step: 'before', at: 0.2 },
+      { text: 'Her AI agent gets one goal: win two-item bundles.', step: 'before', at: 5.6 },
     ],
   },
   {
-    id: 'shopper', criterion: 'design, PayPal', act: 3,
+    id: 'shopper', criterion: 'design, PayPal', act: 3, seconds: 15,
     // The bag fills on the left; on the right the product is added, then the hold is approved, on "approve".
     shots: [{ panel: 'product', cue: 0, role: 'shopper' }, { panel: 'bag', cue: 0, word: 'fill', role: 'shopper' }, { panel: 'hold', cue: 1, role: 'shopper' }],
     // The real approval, logos blurred, in the right-hand column right after the drawn click.
-    proofs: [{ clip: '05-paypal-hold', cue: 1, word: 'approve', delay: 0.35, in: 2.4, out: 4.4, crop: { x: 436, y: 0, width: 568, height: 770 }, box: { x: 1130, y: 150, width: 700, height: 700 } }],
+    proofs: [{ clip: '05-paypal-hold', cue: 1, word: 'approve', delay: 0.35, in: 0.4, out: 4.9, big: 4, crop: { x: 436, y: 0, width: 568, height: 770 }, box: { x: 1130, y: 150, width: 700, height: 700 } }],
     cues: [
-      { text: 'Then you fill one bag and see one price: {held}, shipping and duties in.', say: 'Then you fill one bag and see one price: {held_say}, shipping and duties in.', step: 1 },
-      { text: "You approve it with PayPal. That's the most you can pay.", step: 2 },
+      { text: 'Then you fill one bag and see one price: {held}, shipping and duties in.', say: 'Then you fill one bag and see one price: {held_say}, shipping and duties in.', step: 1, at: 0.4 },
+      { text: "You approve it with PayPal. That's the most you can pay.", step: 2, at: 7.4 },
     ],
   },
   {
-    id: 'bidding', criterion: 'innovation, tech', act: 3,
-    // The real board landing on the final total, over the drawn rows, right after the drawn board's arithmetic appears.
-    proofs: [{ clip: '06-bidding', cue: 3, delay: 2.4, in: 14.3, out: 16.3, crop: { x: 190, y: 90, width: 1060, height: 470 }, box: { x: 110, y: 330, width: 1700, height: 540 } }],
+    id: 'bidding', criterion: 'innovation, tech', act: 3, seconds: 40,
+    // The real board, round 1 to the final total, after the drawn board's arithmetic appears; then back to the board.
+    proofs: [{ clip: '06-bidding', cue: 3, delay: 7, in: 9.8, out: 16.3, big: 6, crop: { x: 190, y: 90, width: 1060, height: 470 }, box: { x: 110, y: 330, width: 1700, height: 540 } }],
     cues: [
-      { text: 'Now the agents fight for your bag. {rounds_phrase}, and prices only go down.', step: 3 },
-      { text: '{reject_line}', anchor: 'reject', step: 3 },
-      { text: '{haneul_line}', anchor: 'haneul', step: 3 },
-      { text: '{why_line}', say: '{why_say}', anchor: 'award', step: 3 },
+      { text: 'Now the agents fight for your bag. {rounds_phrase}, and prices only go down.', step: 3, at: 0.6 },
+      { text: '{reject_line}', anchor: 'reject', step: 3, at: 8.5 },
+      { text: '{haneul_line}', anchor: 'haneul', step: 3, at: 17 },
+      { text: '{why_line}', say: '{why_say}', anchor: 'award', step: 3, at: 23 },
     ],
   },
   {
-    id: 'result', criterion: 'PayPal, impact', act: 3,
+    id: 'result', criterion: 'PayPal, impact', act: 3, seconds: 12,
     shots: [{ panel: 'receipt', cue: 0, role: 'shopper' }],
+    cues: [{ text: '{capture_line}', say: '{capture_say}', step: 5, at: 0.5 }],
+  },
+  {
+    id: 'payout', criterion: 'PayPal, impact', act: 3, seconds: 18,
+    // The box on the left; the shop's order comes in on the right.
+    shots: [{ panel: 'box', cue: 0, role: 'shopper' }, { panel: 'order', cue: 1, role: 'shop' }],
+    // The real stepper turning from Payout sent to Paid, over the box, as the payout that just landed is said.
+    proofs: [{ clip: '08-handoff-payout', cue: 2, word: '$', in: 4, out: 7.6, big: 3, crop: { x: 598, y: 122, width: 802, height: 410 }, box: { x: 70, y: 170, width: 860, height: 640 } }],
     cues: [
-      { text: '{capture_line}', say: '{capture_say}', step: 5 },
-      { text: '{box_line}', step: 4 },
+      { text: '{box_line}', step: 4, at: 0.5 },
+      { text: '{handoff_line}', step: 4, at: 4.4 },
+      { text: 'and PayPal pays {payout_who} {payout} on the spot.', say: 'and PayPal pays {payout_who} {payout_say} on the spot.', step: 5, at: 9 },
     ],
   },
+  // Why it matters, one card each; out to the map for where it goes; then the title.
   {
-    id: 'payout', criterion: 'PayPal, impact', act: 3,
-    // The shopper's receipt stays on the left, dimmed; the shop's order comes in on the right.
-    shots: [{ panel: 'order', cue: 0, role: 'shop' }],
-    // The real stepper turning from Payout sent to Paid, in place of the receipt, as the payout that just landed is said.
-    proofs: [{ clip: '08-handoff-payout', cue: 1, word: '$', in: 5, out: 7, crop: { x: 598, y: 122, width: 802, height: 410 }, box: { x: 70, y: 170, width: 860, height: 640 } }],
+    id: 'close', criterion: 'impact, PayPal, tech, presentation', act: 4, seconds: 20,
     cues: [
-      { text: '{handoff_line}', step: 4 },
-      { text: 'and PayPal pays {payout_who} {payout} on the spot.', say: 'and PayPal pays {payout_who} {payout_say} on the spot.', step: 5 },
+      { text: 'You pay less, and get one box.', at: 0.4 },
+      { text: 'Small shops sell abroad without shipping abroad.', at: 3.3 },
+      { text: "And AI agents get a spending limit they can't break.", at: 6.2 },
+      { text: 'Seoul is first. The same setup can work anywhere small shops cluster.', at: 10.6 },
+      { text: 'Rally. Agents bargain. PayPal keeps it honest.', at: 15 },
     ],
-  },
-  // Act 4: why it matters, one breath each, then where it goes.
-  {
-    id: 'why', criterion: 'impact, PayPal', act: 4,
-    cues: [
-      { text: 'You pay less, and get one box.' },
-      { text: 'Small shops sell abroad without shipping abroad.' },
-      { text: "And AI agents get a spending limit they can't break." },
-    ],
-  },
-  {
-    id: 'where', criterion: 'impact', act: 4,
-    cues: [{ text: 'Seoul is first. The same setup can work anywhere small shops cluster.' }],
-  },
-  {
-    id: 'close', criterion: 'tech, presentation', act: 5,
-    cues: [{ text: 'Rally. Agents bargain. PayPal keeps it honest.', pause: 0.3 }],
   },
 ];
 
@@ -157,23 +152,20 @@ export function layout(vars: Record<string, string>, spoken?: number[] | null): 
   let t = 0, n = 0;
   const lines: Line[] = [];
   const scenes = SCENES.map(scene => {
-    const start = t;
-    t += LEAD;
-    const cues: Line[] = [];
+    const start = t, cues: Line[] = [];
     scene.cues.forEach((cue, index) => {
       const text = fill(cue.text, vars), say = fill(cue.say ?? cue.text, vars);
       if (!text) return;
-      if (cues.length) t += GAP;
-      t += cue.pause ?? 0;
-      const length = spoken?.[n] ?? estimate(say);
+      const length = spoken?.[n] ?? estimate(say), last = cues.at(-1);
       n++;
-      const line = { scene: scene.id, index, text, say, anchor: cue.anchor, step: cue.step, start: t, end: t + length };
+      const from = Math.max(start + cue.at, last ? Math.max(last.end + GAP, last.start + MIN_CAPTION) : start);
+      const line = { scene: scene.id, index, text, say, anchor: cue.anchor, step: cue.step, start: from, end: from + length };
+      if (Math.max(line.end, from + MIN_CAPTION) > start + scene.seconds) throw new Error(`${scene.id}: "${text}" runs past the scene's ${scene.seconds} s. Start it earlier or lengthen the scene.`);
       cues.push(line);
       lines.push(line);
-      t = line.end;
     });
-    t += TAIL;
-    return { id: scene.id, start, duration: t - start, cues, scene };
+    t += scene.seconds;
+    return { id: scene.id, start, duration: scene.seconds, cues, scene };
   });
   return { scenes, lines, total: t };
 }
@@ -207,8 +199,8 @@ const stamp = (seconds: number, sep: string) => {
   return `${pad(Math.floor(ms / 3600000))}:${pad(Math.floor(ms / 60000) % 60)}:${pad(Math.floor(ms / 1000) % 60)}${sep}${pad(ms % 1000, 3)}`;
 };
 
-// A caption stays up while its line is spoken, plus a short tail that never reaches the next line.
-export const captionEnd = (plan: Plan, i: number) => Math.min(plan.lines[i].end + 0.25, plan.lines[i + 1]?.start ?? Infinity);
+// A caption stays up while its line is spoken plus a short tail, and at least MIN_CAPTION; never into the next line.
+export const captionEnd = (plan: Plan, i: number) => Math.min(Math.max(plan.lines[i].end + 0.25, plan.lines[i].start + MIN_CAPTION), plan.lines[i + 1]?.start ?? plan.total);
 
 export const toSrt = (plan: Plan) => plan.lines.map((line, i) => `${i + 1}\n${stamp(line.start, ',')} --> ${stamp(captionEnd(plan, i), ',')}\n${line.text}\n`).join('\n');
 

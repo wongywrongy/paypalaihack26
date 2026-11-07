@@ -37,6 +37,8 @@ const HEADER = { x: 1589, y: 128, size: 110 }, BAG_TOTAL = { x: 890, y: 752, siz
 // The bag becomes the board: its total flies up into the board's total and its rows slide down into the board's rows,
 // the lowest first, 3 frames apart, so they never cross; the chips fade in beside them.
 const FLY = 16, FROM = 0.9;
+// Seconds the rejection holds the frame on its own.
+const FOCUS = 4;
 
 function pace(laid: Laid) {
   const knots: Knot[] = [];
@@ -64,13 +66,15 @@ const wonCount = Object.keys(winners).length;
 
 // The shopper's bag, rebuilt from the run: the items, who sells each, and the one price PayPal holds. row(i) and total
 // are each one's arrival, 0 to 1; note is the "all in" line's; ceiling is PayPal's hold drawing over the total.
-export function BagCard({ row = () => 1, total = 1, note = 1, ceiling = 0 }: { row?: (i: number) => number; total?: number; note?: number; ceiling?: number }) {
+export function BagCard({ row = () => 1, total = 1, note = 1, ceiling = 0, lit = 0 }: { row?: (i: number) => number; total?: number; note?: number; ceiling?: number; lit?: number }) {
   const start = manifest.events.find(row => row.kind === 'start') as AuctionEvent;
   return <>
     <div style={{ position: 'absolute', left: BAG_X - 50, top: 150, width: 1000, height: 680, ...glass, borderRadius: 28 }}>
       <div style={{ position: 'absolute', left: 50, top: 34, fontSize: 34, fontWeight: 800, letterSpacing: '-.02em' }}>Your bag · {ROWS.length} items</div>
       <div style={{ position: 'absolute', left: 50, right: 50, top: 568, height: 1, background: C.line }} />
-      <div style={{ position: 'absolute', left: 50, top: 586, fontSize: 30, color: C.muted }}>Total, all in</div>
+      {/* The total row lights as its price is said, until PayPal's ceiling takes over. */}
+      <div style={{ position: 'absolute', left: 20, right: 20, top: 574, bottom: 20, borderRadius: 20, background: C.tint, opacity: lit }} />
+      <div style={{ position: 'absolute', left: 50, top: 586, fontSize: 30, color: lit > 0.5 ? C.ink : C.muted }}>Total, all in</div>
       <div style={{ position: 'absolute', left: 50, top: 630, fontSize: 30, fontWeight: 700, color: C.accentHover, ...rise(note, 24) }}>Shipping, duties and tax included</div>
       {/* PayPal's hold: the ceiling line draws over the total and a bracket closes round it. */}
       <div style={{ position: 'absolute', left: 560, right: 30, top: 560, height: 4, background: C.accent, transformOrigin: 'right center', transform: `scaleX(${ceiling})` }} />
@@ -206,12 +210,14 @@ export function Bidding() {
   const total = valueAt(board.totals, s, DUR.scene / fps, ease) ?? hold;
   const awarded = s >= board.awardAt;
   const round = board.rounds.filter(step => step.t <= s).length;
-  // The arithmetic lands after the rows collapse and the cheaper toner is explained, 0.9 s before the real board cuts in.
-  const sumAt = Math.max(Math.round(board.awardAt * fps) + ROWS.length * 4 + DUR.standard, Math.round((proofSpan(laid, 0).from - 0.9) * fps));
+  // The arithmetic lands after the rows collapse and the cheaper toner is explained, before the real board comes in.
+  const sumAt = Math.min(Math.max(Math.round(board.awardAt * fps) + ROWS.length * 4 + DUR.standard, Math.round((whyAt + 2) * fps)), Math.round((proofSpan(laid, 0).from - 0.9) * fps));
   const sum = enter(frame, fps, sumAt);
+  // Once the thrown-out chip has dropped, everything but its note dims for FOCUS seconds.
+  const focusAt = Math.round((onBoard.reject + 1.1) * fps), focus = Number.isFinite(focusAt) ? enter(frame, fps, focusAt, DUR.scene) - enter(frame, fps, focusAt + FOCUS * fps, DUR.scene) : 0;
   return <div style={{ position: 'absolute', inset: 0 }}>
     <div style={{ opacity: shown }}>
-      <div style={{ position: 'absolute', left: ROW_X, top: 124, display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ position: 'absolute', left: ROW_X, top: 124, display: 'flex', flexDirection: 'column', gap: 14, opacity: 1 - 0.7 * focus }}>
         <div style={{ fontSize: 50, fontWeight: 800, letterSpacing: '-.03em' }}>{awarded ? 'Bidding complete' : 'Shops are bidding'}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {[1, 2, 3].map(n => {
@@ -223,7 +229,7 @@ export function Bidding() {
           {manifest.vars.agent_line && awarded && <span style={{ fontSize: 24, color: C.saving, marginLeft: 20 }}>{manifest.vars.agent_line}</span>}
         </div>
       </div>
-      <div style={{ position: 'absolute', right: 100, top: 36, width: 520, textAlign: 'right' }}>
+      <div style={{ position: 'absolute', right: 100, top: 36, width: 520, textAlign: 'right', opacity: 1 - 0.7 * focus }}>
         <div style={{ fontSize: 26, color: C.muted, lineHeight: '34px' }}>Total, all in</div>
         <div style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums', fontSize: HEADER.size, lineHeight: 1.05, letterSpacing: '-.03em', color: awarded ? C.saving : C.ink, opacity: landed ? 1 : 0 }}><Odometer cents={Math.min(hold, total)} digits={String(hold).length} /></div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 24, color: C.accentHover, marginTop: 6, whiteSpace: 'nowrap' }}>
@@ -231,10 +237,12 @@ export function Bidding() {
           <span>PayPal holds <span style={{ fontFamily: MONO, fontVariantNumeric: 'tabular-nums' }}>{cash(hold)}</span> · can only go down</span>
         </div>
       </div>
-      <Notes s={s} />
-      <Feed s={s} />
-      {ROWS.map((id, i) => <Row key={id} id={id} i={i} s={s} />)}
-      <Bracket s={s} />
+      <div style={{ position: 'absolute', inset: 0, opacity: 1 - 0.7 * focus }}>
+        <Feed s={s} />
+        {ROWS.map((id, i) => <Row key={id} id={id} i={i} s={s} />)}
+        <Bracket s={s} />
+      </div>
+      <div style={{ position: 'absolute', inset: 0, transformOrigin: `${ROW_X}px 290px`, transform: `scale(${1 + 0.12 * focus})` }}><Notes s={s} /></div>
       {frame >= sumAt && <div style={{ position: 'absolute', left: 0, right: 0, top: boardRow(ROWS.length).y + 6, display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: 22, fontSize: 34, ...rise(sum, 16) }}>
         <span style={{ color: C.muted }}>{wonCount} items</span><Money v={manifest.vars.items_total} />
         <span style={{ color: C.muted }}>+ shipping, duties, tax and fee</span><Money v={manifest.vars.extras_total} />

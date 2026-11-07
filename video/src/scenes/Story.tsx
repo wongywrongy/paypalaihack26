@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { interpolate } from 'remotion';
+import { interpolate, Sequence, useVideoConfig } from 'remotion';
 import { evolvePath, getLength, getPointAtLength } from '@remotion/paths';
 import { money, SHOP_NAMES, SHORT_NAMES } from '../schema.ts';
 import { C, manifest, MONO } from '../theme.ts';
@@ -22,8 +22,10 @@ const KOREA: MapView = { ...SEOUL_AT, zoom: 2.6 };
 const PACIFIC: MapView = { x: (SEOUL_AT.x + CALIFORNIA_AT.x) / 2, y: SEOUL_AT.y + 10, zoom: 1.55 };
 // The whole world for the close, framed so every hub and label sits inside the 80% safe area.
 const WORLD_SAFE: MapView = { x: 796, y: 300, zoom: 0.95 };
-// The only two camera moves in the film, both on the map, each one continuous ease-in-out.
-const OPEN_MOVE = 2.2, CLOSE_MOVE = 2.6;
+// The map's camera moves, each one continuous ease-in-out: out from Korea to the Pacific, a slow push in as the shops
+// are made to compete, and out from Seoul to the world at the close.
+const OPEN_MOVE = 2.5, CLOSE_MOVE = 2.6;
+const PUSH: MapView = { ...PACIFIC, zoom: 1.66 };
 // The three shops sit around Seoul. Their spread is screen pixels at Korea's zoom, shrinking as the map pulls out.
 // Bada, which ships only in Korea, sits lowest, so its tags hang into open sea below the arcs.
 // Dalbit's label hangs below its pin, clear of the arc it sends up toward California.
@@ -103,25 +105,27 @@ export function Korea({ laid }: { laid: Laid }) {
 // Act 1, beats 2 and 3: the four products, the one shop that has them all and doesn't ship abroad, and the split order.
 export function Split({ laid }: { laid: Laid }) {
   const frame = useFrame(), fps = MOTION_FPS;
-  const c0 = cue(laid, 0) * fps, c1 = cue(laid, 1) * fps, c2 = cue(laid, 2) * fps;
-  // Camera move 1 of 2: the pull-back from Korea to California.
-  const v = lerpView(KOREA, PACIFIC, smooth(frame / (OPEN_MOVE * fps)));
+  const c2 = cue(laid, 2) * fps, word = (i: number, text: string) => Math.round(wordAt(laid, i, text) * fps);
+  // Bada's two tags on "all" and "only"; once they have been read, the pull-back from Korea to California.
+  const stocksAt = word(0, 'all'), arcAt = word(0, 'only'), shipsAt = arcAt + DUR.camera, moveAt = shipsAt + 45, split = word(1, 'split');
+  const out = lerpView(KOREA, PACIFIC, smooth((frame - moveAt) / (OPEN_MOVE * fps)));
+  const v = frame < c2 ? out : lerpView(PACIFIC, PUSH, smooth((frame - c2) / (laid.duration * fps - c2)));
   const shopper = onScreen(v, CALIFORNIA_AT);
   const bada = shopAt(v, 'bada'), haneul = shopAt(v, 'haneul'), dalbit = shopAt(v, 'dalbit');
   const listed = start.listed as Record<string, Record<string, number>>;
   const compare = items.find(id => new Set(Object.values(listed[id] ?? {})).size > 1) ?? items[0];
   const flash = frame >= c2 ? Math.floor((frame - c2) / 12) % 2 : -1;
-  const meIn = enter(frame, fps, Math.round(1.2 * fps));
-  const fees = ['checkouts', 'shipping', 'duties'].map(word => Math.round(wordAt(laid, 1, word) * fps)), sourceAt = fees[2] + 24;
+  const meIn = enter(frame, fps, moveAt + 30);
+  const fees = ['checkouts', 'shipping', 'duties'].map(text => word(1, text)), sourceAt = fees[2] + 24;
   return <>
     <Map v={v} />
-    <ScreenArc id="bada" a={bada} b={shopper} from={c0 + 40} until={0.16} color={C.accent} />
-    <ScreenArc id="haneul" a={haneul} b={shopper} from={c1} />
-    <ScreenArc id="dalbit" a={dalbit} b={shopper} from={c1 + 8} />
-    {SHOPS.map(shop => <ShopPin key={shop} v={v} shop={shop} from={-30}
-      note={shop === 'bada' && frame >= c0 + 20 ? <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
-        <Tag tone="ok" style={rise(enter(frame, fps, c0 + 20), 8)}>Stocks all {items.length}</Tag>
-        {frame >= c0 + 40 + DUR.camera && <Tag tone="stop" style={rise(enter(frame, fps, c0 + 40 + DUR.camera), 8)}>Ships only in Korea</Tag>}
+    <ScreenArc id="bada" a={bada} b={shopper} from={arcAt} until={0.16} color={C.accent} />
+    <ScreenArc id="haneul" a={haneul} b={shopper} from={split} />
+    <ScreenArc id="dalbit" a={dalbit} b={shopper} from={split + 8} />
+    {SHOPS.map((shop, i) => <ShopPin key={shop} v={v} shop={shop} from={6 + i * 8}
+      note={shop === 'bada' && frame >= stocksAt ? <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+        <Tag tone="ok" style={rise(enter(frame, fps, stocksAt), 8)}>Stocks all {items.length}</Tag>
+        {frame >= shipsAt && <Tag tone="stop" style={rise(enter(frame, fps, shipsAt), 8)}>Ships only in Korea</Tag>}
       </div> : undefined} />)}
     {/* What each extra parcel adds, each fee on its word, beside the shopper and clear of the arcs; the source under everything. */}
     {frame >= fees[0] && <div style={{ position: 'absolute', left: shopper.x + 44, top: shopper.y - 210, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
@@ -288,8 +292,9 @@ function Hub({ x, y, name, live, from }: { x: number; y: number; name: string; l
     <div style={{ fontSize: 22, fontWeight: 800, color: live ? C.saving : C.ink, textShadow: halo }}>{live ? 'Live' : 'Next'}</div>
   </div>;
 }
-export function Where({ laid }: { laid: Laid }) {
-  const frame = useFrame(), fps = MOTION_FPS, anywhere = Math.round(wordAt(laid, 0, 'anywhere') * fps);
+// from: when the map comes in, in scene seconds; it runs on its own clock from there.
+export function Where({ laid, line, from }: { laid: Laid; line: number; from: number }) {
+  const frame = useFrame(), fps = MOTION_FPS, anywhere = Math.round((wordAt(laid, line, 'anywhere') - from) * fps);
   // Camera move 2 of 2: the pull-back from Seoul to the world.
   const v = lerpView(KOREA, WORLD_SAFE, smooth(frame / (CLOSE_MOVE * fps)));
   const seoul = onScreen(v, SEOUL_AT);
@@ -301,7 +306,7 @@ export function Where({ laid }: { laid: Laid }) {
   </>;
 }
 
-// Act 5: one technical line, then the title.
+// One technical line, then the title.
 export function Close() {
   const frame = useFrame(), fps = MOTION_FPS;
   return <div style={{ position: 'absolute', inset: '0 0 200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
@@ -311,4 +316,17 @@ export function Close() {
     <div style={{ fontFamily: MONO, fontSize: 34, marginTop: 40, ...rise(enter(frame, fps, 26), 12) }}>github.com/wongywrongy/paypalaihack26</div>
     <div style={{ fontSize: 28, color: C.muted, marginTop: 12, ...rise(enter(frame, fps, 30), 12) }}>Open source, MIT</div>
   </div>;
+}
+
+// The close, one scene: the three cards; then they shrink away as the map pulls out from Seoul to the world; then the
+// title over the dimmed map, held to the end.
+export function Finale({ laid }: { laid: Laid }) {
+  const frame = useFrame(), fps = MOTION_FPS, { fps: video } = useVideoConfig();
+  const mapAt = cue(laid, 3) - 0.3, titleAt = cue(laid, 4) - 0.2;
+  const away = enter(frame, fps, mapAt * fps, DUR.scene), dim = enter(frame, fps, titleAt * fps, DUR.scene);
+  return <>
+    <Sequence from={Math.round(mapAt * video)} layout="none"><div style={{ position: 'absolute', inset: 0, opacity: away * (1 - 0.88 * dim) }}><Where laid={laid} line={3} from={mapAt} /></div></Sequence>
+    {away < 1 && <div style={{ position: 'absolute', inset: 0, opacity: 1 - away, transform: `scale(${1 - 0.2 * away})` }}><Why laid={laid} /></div>}
+    <Sequence from={Math.round(titleAt * video)} layout="none"><Close /></Sequence>
+  </>;
 }

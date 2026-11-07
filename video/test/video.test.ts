@@ -7,7 +7,7 @@ import { prepare } from '../scripts/prepare.ts';
 import { anchored, buildBoard, roundAt, sceneAt, valueAt } from '../src/auction.ts';
 import { buildFacts, crossCheck, finalCheck, finalPrices, money, OrderSchema, parse, ReceiptSchema, receiptCheck, RunSchema, spokenMoney } from '../src/schema.ts';
 import { phrases } from '../src/captions.ts';
-import { CLIPS, cueAt, GAP, startAt, LEAD, layout, MAX_SECONDS, MAX_SILENCE, MAX_WORDS, MEAN_WORDS, railAt, SCENES, spokenText, STEPS, TAIL, TARGET_SECONDS, toScript, toSrt, type ClipName } from '../src/timeline.ts';
+import { BIG, captionEnd, CLIPS, cueAt, FPS, GAP, startAt, layout, MAX_SECONDS, MAX_WORDS, MEAN_WORDS, MIN_CAPTION, railAt, SCENES, spokenText, STEPS, TOTAL_SECONDS, toScript, toSrt, type ClipName } from '../src/timeline.ts';
 
 // Test data only: nothing here reaches a build.
 const events = () => [
@@ -45,32 +45,32 @@ const built = (() => { try { return JSON.parse(readFileSync('src/generated/manif
 const facts = () => factsOf();
 const plans = () => [layout(facts(), null), ...(built ? [layout(built.vars, built.spoken)] : [])];
 
-test(`the video stays within ${MAX_SECONDS} s, and the built cut within ${TARGET_SECONDS[0]} to ${TARGET_SECONDS[1]} s`, () => {
-  for (const plan of plans()) assert.ok(plan.total <= TARGET_SECONDS[1], `${plan.total} s`);
-  if (built?.spoken) { const total = layout(built.vars, built.spoken).total; assert.ok(total >= TARGET_SECONDS[0] && total <= TARGET_SECONDS[1], `${total} s`); }
-});
-
-test(`no silence over ${MAX_SILENCE} s except the planned pause before the close`, () => {
+test(`the cut is exactly ${TOTAL_SECONDS} s in 8 scenes, so 7 hard cuts`, () => {
+  assert.ok(TOTAL_SECONDS <= MAX_SECONDS);
+  assert.equal(SCENES.length, 8);
   for (const plan of plans()) {
-    assert.ok(plan.lines[0].start <= MAX_SILENCE);
-    plan.lines.slice(1).forEach((line, i) => {
-      const gap = line.start - plan.lines[i].end, planned = SCENES.find(row => row.id === line.scene)!.cues[line.index].pause;
-      if (planned) assert.ok(gap <= planned + MAX_SILENCE, `${line.text}: ${gap}`);
-      else assert.ok(gap <= MAX_SILENCE + 1e-9, `${gap.toFixed(2)} s of silence before: ${line.text}`);
-    });
-    assert.ok(plan.total - plan.lines.at(-1)!.end <= MAX_SILENCE);
+    assert.equal(plan.total, TOTAL_SECONDS);
+    assert.equal(Math.ceil(plan.total * FPS), 9000);
   }
-  assert.ok(GAP <= MAX_SILENCE);
 });
 
-test('scenes are contiguous and each lasts its lines plus its lead and tail', () => {
+test(`every caption stays up ${MIN_CAPTION} s or more, inside its scene, and the next line waits for it`, () => {
+  for (const plan of plans()) plan.lines.forEach((line, i) => {
+    const end = captionEnd(plan, i), scene = plan.scenes.find(row => row.id === line.scene)!;
+    assert.ok(end - line.start >= MIN_CAPTION - 1e-9, `${(end - line.start).toFixed(2)} s: ${line.text}`);
+    assert.ok(end <= scene.start + scene.duration + 1e-9, `runs past its scene: ${line.text}`);
+    if (plan.lines[i + 1]) assert.ok(plan.lines[i + 1].start - line.end >= GAP - 1e-9, line.text);
+  });
+});
+
+test('scenes are contiguous and each lasts its set seconds, every line starting at its time or after the one before', () => {
   for (const plan of plans()) {
     let end = 0;
     for (const scene of plan.scenes) {
       assert.ok(Math.abs(scene.start - end) < 1e-9, scene.id);
+      assert.equal(scene.duration, scene.scene.seconds, scene.id);
       end += scene.duration;
-      const spoken = scene.cues.reduce((sum, line) => sum + line.end - line.start, 0), gaps = (scene.cues.length - 1) * GAP + scene.cues.reduce((sum, line) => sum + (SCENES.find(row => row.id === scene.id)!.cues[line.index].pause ?? 0), 0);
-      assert.ok(Math.abs(scene.duration - spoken - gaps - LEAD - TAIL) < 1e-6, scene.id);
+      for (const line of scene.cues) assert.ok(line.start - scene.start >= scene.scene.cues[line.index].at - 1e-9, line.text);
     }
   }
 });
@@ -93,11 +93,12 @@ test('every shot starts on a line, in order, and has time on screen before its s
 // Panels are drawn from the run; these prove they are the running product. The build fails without them.
 test('proof windows: the real approval, board and payout recordings each play inside the frame, never above their own pixels', () => {
   const proofs = SCENES.flatMap(scene => (scene.proofs ?? []).map(proof => ({ ...proof, scene: scene.id })));
-  for (const [scene, clip, seconds] of [['shopper', '05-paypal-hold', 2], ['bidding', '06-bidding', 2], ['payout', '08-handoff-payout', 2]] as const) {
+  for (const [scene, clip, seconds] of [['shopper', '05-paypal-hold', 4.5], ['bidding', '06-bidding', 6.5], ['payout', '08-handoff-payout', 3.6]] as const) {
     const proof = proofs.find(row => row.scene === scene && row.clip === clip);
     assert.ok(proof, `no proof window of ${clip} in ${scene}`);
-    const box = proof.box;
-    assert.ok(box.x >= 0 && box.y >= 100 && box.x + box.width <= 1920 && box.y + box.height <= 880, `${clip} window leaves the frame or meets the captions`);
+    for (const box of [proof.box, BIG]) assert.ok(box.x >= 0 && box.y >= 100 && box.x + box.width <= 1920 && box.y + box.height <= 880, `${clip} window leaves the frame or meets the captions`);
+    // It keeps playing for as long as it is near full frame.
+    assert.ok(proof.out - proof.in >= proof.big, `${clip} freezes while big`);
     assert.ok(Math.abs(proof.out - proof.in - seconds) < 1e-9, `${clip} runs ${proof.out - proof.in} s, not ${seconds}`);
     const { x, y, width, height } = proof.crop;
     assert.ok(x >= 0 && y >= 0 && x + width <= 1440 && y + height <= 900, `${clip} crop leaves the window`);
@@ -111,9 +112,9 @@ test('proof windows: the real approval, board and payout recordings each play in
   assert.match(glass, /fontSize: 26[^\n]*>Screen recording · PayPal sandbox</);
 });
 
-// The frame stays still. The only camera moves are the two map pull-backs, in Split and Where; nothing else scales or
-// moves a scene's root layer over time.
-test('camera: only the two map pull-backs move the frame', () => {
+// Scenes don't transform their own root: the one push-in is Drift, in Video.tsx, the same for every scene. The map's
+// camera moves only in Split (out to the Pacific, then a push in) and Where (out to the world), each an ease-in-out.
+test('camera: one shared push-in, and the map moves only in Split and Where', () => {
   const body = (file: string, name: string) => {
     const source = readFileSync(file, 'utf8'), start = source.indexOf(`function ${name}(`);
     assert.ok(start >= 0, `${file}: ${name}`);
@@ -122,16 +123,14 @@ test('camera: only the two map pull-backs move the frame', () => {
   };
   const root = (code: string) => code.slice(code.indexOf('return <'), code.indexOf('>', code.indexOf('return <')) + 1);
   const moving = /transform|scale\(|zoom/;
-  const scenes = { 'src/scenes/Story.tsx': ['Korea', 'Split', 'Steps', 'Why', 'Where', 'Close'], 'src/scenes/Bidding.tsx': ['Bidding'], 'src/scenes/ClipScene.tsx': ['ClipScene'] };
+  const scenes = { 'src/scenes/Story.tsx': ['Split', 'Why', 'Where', 'Close', 'Finale'], 'src/scenes/Bidding.tsx': ['Bidding'], 'src/scenes/ClipScene.tsx': ['ClipScene'], 'src/scenes/Cold.tsx': ['Cold'] };
   for (const [file, names] of Object.entries(scenes)) for (const name of names) {
     const code = body(file, name);
     assert.ok(!moving.test(root(code)), `${name} transforms its root layer`);
-    const views = [...code.matchAll(/<Map v=\{([^}]*\}?)\}/g)].map(match => match[1]);
-    const moves = ['Split', 'Where'].includes(name);
-    if (!moves) for (const view of views) assert.ok(/^[A-Z_]+$|^v$/.test(view) && !/frame/.test(code.match(new RegExp(`const v = [^;]*`))?.[0] ?? ''), `${name} moves the map camera: ${view}`);
-    else assert.match(code, /lerpView\([A-Z_]+, [A-Z_]+, smooth\(frame \//, `${name}: one continuous ease-in-out move`);
+    if (['Split', 'Where'].includes(name)) assert.match(code, /lerpView\([A-Z_]+, [A-Z_]+, smooth\(\(?frame/, `${name}: continuous ease-in-out moves`);
+    else assert.ok(!/lerpView/.test(code), `${name} moves the map camera`);
   }
-  assert.ok(!/useCurrentFrame|frame/.test(readFileSync('src/scenes/Story.tsx', 'utf8').match(/const KOREA[^\n]*/)![0]));
+  assert.match(readFileSync('src/Video.tsx', 'utf8'), /function Drift[\s\S]*scale\(\$\{1 \+ 0\.04 \* s \/ seconds\}\)/);
 });
 
 test('captions: phrase chunks of up to seven words, never split inside an amount or a name', () => {
@@ -183,7 +182,7 @@ test('script.md matches the laid-out timeline', { skip: !built }, () => assert.e
 test('srt numbers cues and uses comma timestamps', () => {
   const [r, o] = parsed();
   const srt = toSrt(layout(factsOf(), null));
-  assert.match(srt, /^1\n00:00:00,100 --> 00:00:0\d,\d{3}\n/);
+  assert.match(srt, /^1\n00:00:00,400 --> 00:00:0\d,\d{3}\n/);
   assert.ok(srt.includes('$28.00'));
   assert.ok(!srt.includes('{'));
 });
@@ -449,17 +448,17 @@ test('pacing: it talks to the viewer, not a lecture', () => {
   }
 });
 
-test('pacing: the first picture is the product, and the demo starts inside 20 s', () => {
+test('pacing: the first picture is the product, and the demo starts by 30 s', () => {
   assert.equal(SCENES[0].id, 'cold');
   for (const plan of plans()) {
     const demo = plan.scenes.find(scene => scene.scene.act === 3)!;
-    assert.ok(demo.start <= 20, `the demo starts at ${demo.start.toFixed(1)} s`);
+    assert.ok(demo.start <= 30, `the demo starts at ${demo.start.toFixed(1)} s`);
   }
 });
 
 test('pacing: no scene drags', () => {
   for (const plan of plans()) for (const scene of plan.scenes) {
-    const limit = scene.id === 'bidding' ? 20 : 12;
+    const limit = scene.id === 'bidding' ? 40 : 20;
     assert.ok(scene.duration <= limit, `${scene.id} runs ${scene.duration.toFixed(1)} s (limit ${limit} s)`);
   }
 });

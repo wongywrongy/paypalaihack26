@@ -30,20 +30,20 @@ export function Cold({ laid }: { laid: Laid }) {
   // On the second line the result moves up to make room for the shops.
   const lift = ease(interpolate(frame, [line2, line2 + 12], [0, 1], clamp));
   // The roll starts on the first word and lands well before the line ends, so "saved" is already true on screen.
-  const roll = smooth(interpolate(frame, [8, 8 + 1.4 * fps], [0, 1], clamp)), landed = 8 + Math.round(1.4 * fps);
+  const roll = smooth(interpolate(frame, [30, 30 + 1.6 * fps], [0, 1], clamp)), landed = 30 + Math.round(1.6 * fps);
   return <>
     <div style={{ position: 'absolute', left: 0, right: 0, top: 170, display: 'flex', justifyContent: 'center', gap: 26, transform: `translateY(${-90 * lift}px) scale(${1 - 0.35 * lift})` }}>
       {items.map((id, i) => <div key={id} style={{ ...rise(enter(frame, fps, i * 3), 18) }}><Photo id={id} size={150} /></div>)}
     </div>
     {FLICKS.map((flick, i) => {
-      const from = 8 + i * 4, p = (frame - from) / 20;
+      const from = 30 + i * 6, p = (frame - from) / 24;
       if (p < 0 || p > 1) return null;
       return <div key={i} style={{ position: 'absolute', left: 1500 - 1100 * p, top: 430 + (i % 3) * 90, opacity: 0.3 * Math.sin(Math.PI * p), padding: '10px 22px', borderRadius: 999, ...glass, fontSize: 34, whiteSpace: 'nowrap' }}>
         <span style={{ fontWeight: 700 }}>{SHORT_NAMES[flick.shop]}</span> <span style={{ fontFamily: MONO }}>{cash(flick.price)}</span>
       </div>;
     })}
     <div style={{ position: 'absolute', left: 0, right: 0, top: 380, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, transform: `translateY(${-150 * lift}px)` }}>
-      <div style={{ fontFamily: MONO, fontSize: 40, color: C.muted, textDecoration: frame >= landed ? 'line-through' : undefined, ...rise(enter(frame, fps, 4), 10) }}>PayPal held {cash(held)}</div>
+      <div style={{ fontFamily: MONO, fontSize: 40, color: C.muted, textDecoration: frame >= landed ? 'line-through' : undefined, ...rise(enter(frame, fps, 14), 10) }}>PayPal held {cash(held)}</div>
       <div style={{ fontSize: 200, lineHeight: 1, color: frame >= landed ? C.saving : C.ink }}>
         <Shimmer at={landed}><Odometer cents={held - (held - charged) * roll} digits={String(held).length} /></Shimmer>
       </div>
@@ -53,7 +53,7 @@ export function Cold({ laid }: { laid: Laid }) {
     {/* The haggling, named: each shop arrives with its agent on the second line. */}
     <div style={{ position: 'absolute', left: 0, right: 0, top: 660, display: 'flex', justifyContent: 'center', gap: 28 }}>
       {shops.map((shop, i) => {
-        const from = c1 + i * 4, p = Math.min(1.05, pop(frame, fps, from));
+        const from = c1 + i * 12, p = Math.min(1.05, pop(frame, fps, from));
         if (frame < from) return null;
         return <div key={shop} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '18px 28px', borderRadius: 999, ...glass, transform: `scale(${p})` }}>
           <Sfx at={from} kind="tick" />
